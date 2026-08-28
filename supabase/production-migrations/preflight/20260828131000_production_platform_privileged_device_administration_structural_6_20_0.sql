@@ -1,0 +1,41 @@
+-- Independent read-only predecessor-contract preflight for 20260828131000.
+with latest as (select version,name from supabase_migrations.schema_migrations order by version desc limit 1)
+select case when (select version='20260828130000' and name='production_platform_foundation_lineage_bridge' from latest)
+    and exists(select 1 from supabase_migrations.schema_migrations where version='20260828130000'
+      and name='production_platform_foundation_lineage_bridge' and md5(coalesce(array_to_string(statements,E'\n'),''))='071d06a5cdbbee8c7a441fd944d2d0c6')
+    and ((select count(*)=9 and bool_and(c.relrowsecurity) and count(distinct c.relowner)=1
+      and bool_and(c.relowner=(select relowner from pg_class
+        where oid=to_regclass('public.user_device_authorizations')))
+      and bool_and(not exists(select 1 from pg_policy where polrelid=c.oid))
+      and bool_and(not has_table_privilege('anon',c.oid,'select,insert,update,delete'))
+      and bool_and(not has_table_privilege('authenticated',c.oid,'select,insert,update,delete'))
+    from (values ('webauthn_privileged_device_feature'),('device_security_credentials'),
+      ('device_possession_challenges'),('device_possession_challenge_consumers'),
+      ('privileged_device_listing_sessions'),('system_owner_credential_bootstrap_authorizations'),
+      ('system_owner_credential_recovery_authorizations'),('privileged_device_authorization_audit_log'),
+      ('system_owner_device_authorization_operations')) required(name)
+    join pg_class c on c.oid=to_regclass('public.'||required.name))
+    and (select count(t.oid)=9 from (values
+      ('device_security_credentials_lifecycle_guard','device_security_credentials'),
+      ('user_device_authorizations_security_credential_guard','user_device_authorizations'),
+      ('device_possession_challenges_identity_guard','device_possession_challenges'),
+      ('device_possession_challenge_consumers_guard','device_possession_challenge_consumers'),
+      ('privileged_device_listing_sessions_lifecycle_guard','privileged_device_listing_sessions'),
+      ('system_owner_bootstrap_authorizations_lifecycle_guard','system_owner_credential_bootstrap_authorizations'),
+      ('system_owner_recovery_authorizations_lifecycle_guard','system_owner_credential_recovery_authorizations'),
+      ('privileged_device_authorization_audit_immutable','privileged_device_authorization_audit_log'),
+      ('system_owner_device_authorization_operations_immutable','system_owner_device_authorization_operations'))
+      required(trigger_name,relation_name)
+      join pg_class c on c.oid=to_regclass('public.'||required.relation_name)
+      join pg_trigger t on t.tgrelid=c.oid and t.tgname=required.trigger_name and not t.tgisinternal)
+    and (select md5(coalesce(string_agg(i.tablename||'|'||i.indexname||'|'||i.indexdef,
+      E'\n' order by i.tablename,i.indexname),'')) from pg_indexes i
+      where i.schemaname='public' and i.tablename=any(array[
+      'webauthn_privileged_device_feature','device_security_credentials',
+      'device_possession_challenges','device_possession_challenge_consumers',
+      'privileged_device_listing_sessions','system_owner_credential_bootstrap_authorizations',
+      'system_owner_credential_recovery_authorizations','privileged_device_authorization_audit_log',
+      'system_owner_device_authorization_operations']))='5059f8c84bc709b10cdc258660de52b9')
+    and (select count(*)=1 and bool_and(not enabled) from public.webauthn_privileged_device_feature)
+    and (select count(*)=1 and bool_and(not enforcement_enabled) from public.device_authorization_enforcement)
+  then 'PASS' else 'BLOCKED' end;

@@ -1,0 +1,78 @@
+{
+  "schema": "PHASE_2AL_BASELINE_ORDER_V1",
+  "declaration": "LAB_ONLY_NOT_PRODUCTION_MIGRATION_HISTORY",
+  "postgresMajor": 17,
+  "fixture": "audit/phase-2al/fixture.sql",
+  "bootstrapIdentityFixture": "audit/phase-2al/bootstrap-identity-fixture.sql",
+  "postMigrationCheckpoints": [
+    {
+      "after": "supabase/migrations/20260730_5_0_0_system_access_foundation.sql",
+      "file": "audit/phase-2al/post-5-0-bootstrap-approval-checkpoint.sql",
+      "classification": "LAB_ONLY_SYNTHETIC_BOOTSTRAP_IDENTITY"
+    },
+    {
+      "after": "supabase/migrations/20260801_5_4_1_device_guarded_rpc_foundation.sql",
+      "file": "audit/phase-2al/pre-5-4-2-legacy-acl-checkpoint.sql",
+      "classification": "LAB_ONLY_CANONICAL_5_4_2_INCOMING_ACL_CONTRACT"
+    }
+  ],
+  "historicalSources": [
+    {"version":"20260824121653","variable":"history_6_15_body","gitSelector":"fb407fb9ad0f46693f6a216e90f26f02eb4a3b9b:supabase/migrations/20260824_6_15_0_organization_membership_reconciliation.sql","blob":"a9b39a7b1a35df166e16ff7de1ab837e6350670c","md5":"cb5c461d6a8b0f20d814d2984ce5214f"},
+    {"version":"20260824180055","variable":"history_6_16_body","gitSelector":"892b44a901717f872c518ed8f9cd64b66a43e070:supabase/migrations/obsolete/20260824_6_16_0_webauthn_privileged_device_security_foundation.sql","blob":"bc53042a0fa5e77b5485487f5e581d050f62292d","md5":"1776e168f18f0a587192ad0d60c621ae"},
+    {"version":"20260826191608","variable":"history_6_17_body","gitSelector":"1dc5c935f98b7136b4fb4b098bc4e51b224fe7a3:supabase/migrations/20260826_6_17_0_conference_authorization_chain_hardening.sql","blob":"7e241f7977b98e0a491d4a1f8f653473e8daf456","md5":"ca136f8ef4e70b7a74f43b47142bdc14"},
+    {"version":"20260826191920","variable":"history_6_18_body","gitSelector":"1dc5c935f98b7136b4fb4b098bc4e51b224fe7a3:supabase/migrations/20260826_6_18_0_conference_lifecycle_hardening.sql","blob":"15964bc43310aa68b883dd835d58f315612c7775","md5":"699f1bf58271c8c75d6026ebc0436b28"},
+    {"version":"20260826193052","variable":"history_6_19_body","gitSelector":"1dc5c935f98b7136b4fb4b098bc4e51b224fe7a3:supabase/migrations/20260826_6_19_0_snapshot_sync_account_authorization_hardening.sql","blob":"df53a8153d68c280fb90d16f64d207878cc8cc5a","md5":"b62936c7a81c6a743b206d3ef37ff0e2"}
+  ],
+  "preHistoricalMigrationCheckpoint": {"before":"supabase/migrations/20260826_6_19_0_snapshot_sync_account_authorization_hardening.sql","file":"audit/phase-2al/pre-6-19-production-history-checkpoint.sql","classification":"LAB_ONLY_PRODUCTION_HISTORY_RECONSTRUCTION"},
+  "postHistoricalMigrationCheckpoint": {"after":"supabase/migrations/20260826_6_19_0_snapshot_sync_account_authorization_hardening.sql","file":"audit/phase-2al/post-6-19-production-history-checkpoint.sql","classification":"LAB_ONLY_EXACT_LIVE_PRODUCTION_FIVE_ROW_LINEAGE"},
+  "expectedMigrationCount": 41,
+  "autoDiscoveryPermitted": false,
+  "migrations": [
+    "supabase/migrations/20260728_3_3_0_online_schema.sql",
+    "supabase/migrations/20260728_3_3_0_conflict_resolution.sql",
+    "supabase/migrations/20260728_3_3_0_conference_locks.sql",
+    "supabase/migrations/20260728_3_3_0_idempotent_conference_creation.sql",
+    "supabase/migrations/20260729_4_0_0_conference_membership.sql",
+    "supabase/migrations/20260730_5_0_0_system_access_foundation.sql",
+    "supabase/migrations/20260801_5_1_0_organization_foundation.sql",
+    "supabase/migrations/20260801_5_2_0_organization_security_activation.sql",
+    "supabase/migrations/20260801_5_3_0_organization_administration.sql",
+    "supabase/migrations/20260801_5_3_1_organization_access_locking.sql",
+    "supabase/migrations/20260801_5_3_2_organization_administration_rpc_reads.sql",
+    "supabase/migrations/20260801_5_3_3_organization_access_role_variable_fix.sql",
+    "supabase/migrations/20260801_5_3_4_organization_member_list_role_variable_fix.sql",
+    "supabase/migrations/20260801_5_4_0_device_authorization_foundation.sql",
+    "supabase/migrations/20260801_5_4_1_device_guarded_rpc_foundation.sql",
+    "supabase/migrations/20260802_5_4_2_device_authorization_administration.sql",
+    "supabase/migrations/20260803_5_4_3_device_authorization_rerequest.sql",
+    "supabase/migrations/20260805_5_4_4_multi_device_authorization.sql",
+    "supabase/migrations/20260805_5_4_5_conference_snapshots_realtime_publication.sql",
+    "supabase/migrations/20260806_6_0_0_conference_section_locks.sql",
+    "supabase/migrations/20260807_6_1_0_conference_role_management.sql",
+    "supabase/migrations/20260808_6_2_0_user_management_read_layer.sql",
+    "supabase/migrations/20260808_6_3_0_account_administration.sql",
+    "supabase/migrations/20260808_6_4_0_user_management_scoped_read.sql",
+    "supabase/migrations/20260809_6_5_0_first_system_bootstrap.sql",
+    "supabase/migrations/20260809_6_5_1_first_system_bootstrap_identity_binding.sql",
+    "supabase/migrations/20260810_6_6_0_organization_management.sql",
+    "supabase/migrations/20260810_6_6_1_security_definer_extension_resolution.sql",
+    "supabase/migrations/20260811_6_7_0_organization_archive_restore.sql",
+    "supabase/migrations/20260812_6_8_0_organization_template_sync.sql",
+    "supabase/migrations/20260813_6_9_0_shared_template_library.sql",
+    "supabase/migrations/20260814_6_10_0_conference_snapshot_device_guard.sql",
+    "supabase/migrations/20260815_6_11_0_launch_membership_integrity.sql",
+    "supabase/migrations/20260816_6_12_0_conference_section_lock_device_guard.sql",
+    "supabase/migrations/20260817_6_13_0_conference_membership_integrity_variable_fix.sql",
+    "supabase/migrations/20260818_6_14_0_legacy_conference_organization_preflight.sql",
+    "supabase/migrations/20260824_6_15_0_organization_membership_reconciliation.sql",
+    "supabase/migrations/obsolete/20260824_6_16_0_webauthn_privileged_device_security_foundation.sql",
+    "supabase/migrations/20260826_6_17_0_conference_authorization_chain_hardening.sql",
+    "supabase/migrations/20260826_6_18_0_conference_lifecycle_hardening.sql",
+    {
+      "path": "supabase/migrations/20260826_6_19_0_snapshot_sync_account_authorization_hardening.sql",
+      "gitSelector": "1dc5c935f98b7136b4fb4b098bc4e51b224fe7a3:supabase/migrations/20260826_6_19_0_snapshot_sync_account_authorization_hardening.sql",
+      "md5": "b62936c7a81c6a743b206d3ef37ff0e2",
+      "provenance": "HISTORICAL_PRODUCTION_BODY"
+    }
+  ]
+}

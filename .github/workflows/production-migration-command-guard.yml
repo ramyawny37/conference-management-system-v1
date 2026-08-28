@@ -1,0 +1,14 @@
+name: production migration command guard
+on:
+  pull_request:
+  push:
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tests/production-migration-stream.test.js
+      - run: node tests/production-platform-foundation-lineage-bridge.test.js

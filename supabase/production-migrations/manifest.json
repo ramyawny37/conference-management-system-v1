@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "stream": "conference-production-forward-reconciliation",
+  "productionProjectRef": "mpezfbvcdfxpgflehuot",
+  "forbiddenProjectRefs": [
+    "gppwltrifgfxrkzvvxoe"
+  ],
+  "productionDatabaseIdentity": {
+    "databaseName": "postgres",
+    "systemIdentifier": "7662742571317219726",
+    "serverAddress": "2a05:d016:2b6:b301:1134:745d:9db0:a0c7/128",
+    "serverPort": 5432,
+    "postgresMajor": 17
+  },
+  "migrationHistoryEvidence": {
+    "source": "PHASE_2AM_PRODUCTION_READ_ONLY",
+    "rowCount": 5,
+    "statementsArrayElementsPerRow": 1,
+    "columns": [
+      {
+        "ordinal": 1,
+        "name": "version",
+        "type": "text",
+        "udtSchema": "pg_catalog",
+        "udtName": "text",
+        "nullable": false,
+        "default": null,
+        "identity": "",
+        "generated": "NEVER"
+      },
+      {
+        "ordinal": 2,
+        "name": "statements",
+        "type": "ARRAY",
+        "udtSchema": "pg_catalog",
+        "udtName": "_text",
+        "nullable": true,
+        "default": null,
+        "identity": "",
+        "generated": "NEVER"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type": "text",
+        "udtSchema": "pg_catalog",
+        "udtName": "text",
+        "nullable": true,
+        "default": null,
+        "identity": "",
+        "generated": "NEVER"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_by",
+        "type": "text",
+        "udtSchema": "pg_catalog",
+        "udtName": "text",
+        "nullable": true,
+        "default": null,
+        "identity": "",
+        "generated": "NEVER"
+      },
+      {
+        "ordinal": 5,
+        "name": "idempotency_key",
+        "type": "text",
+        "udtSchema": "pg_catalog",
+        "udtName": "text",
+        "nullable": true,
+        "default": null,
+        "identity": "",
+        "generated": "NEVER"
+      },
+      {
+        "ordinal": 6,
+        "name": "rollback",
+        "type": "ARRAY",
+        "udtSchema": "pg_catalog",
+        "udtName": "_text",
+        "nullable": true,
+        "default": null,
+        "identity": "",
+        "generated": "NEVER"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "schema_migrations_idempotency_key_key",
+        "type": "u",
+        "definition": "UNIQUE (idempotency_key)"
+      },
+      {
+        "name": "schema_migrations_pkey",
+        "type": "p",
+        "definition": "PRIMARY KEY (version)"
+      }
+    ]
+  },
+  "migrationHistoryContractSha256": "12fbe74b43ec33bae664d37f60567191dbeb07723ab34a13a3a455081aa6d458",
+  "normalSupabaseBulkCommandsPermitted": false,
+  "initialPredecessor": {
+    "version": "20260826193052",
+    "name": "snapshot_sync_account_authorization_hardening_6_19_0"
+  },
+  "migrations": [
+    {
+      "version": "20260828130000",
+      "name": "production_platform_foundation_lineage_bridge",
+      "semanticRelease": "6.19-production-bridge",
+      "predecessor": {
+        "version": "20260826193052",
+        "name": "snapshot_sync_account_authorization_hardening_6_19_0"
+      },
+      "file": "20260828130000_production_platform_foundation_lineage_bridge.sql",
+      "sourceCanonicalPath": null,
+      "canonicalSourceSha256": null,
+      "productionSha256": "f9181e66772a6f7d6d6226acfd92dee6cd7b824b043d260a4974bcd030ed117d",
+      "verifier": "verify/20260828130000_production_platform_foundation_lineage_bridge.sql",
+      "verifierSha256": "c0ff5f9c859a77fd94c6a620e6fcf883d0b39ed13ae905ea3fea225b92870ab4",
+      "preflight": "preflight/20260828130000_production_platform_foundation_lineage_bridge.sql",
+      "preflightSha256": "acb0e18cab977bcee9f215023489c9c7f1c5b05cacf94533ce8da3cb40d403da",
+      "intentionalDelta": "PRODUCTION_LINEAGE_BRIDGE",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828131000",
+      "name": "production_platform_privileged_device_administration_structural_6_20_0",
+      "semanticRelease": "6.20.0",
+      "predecessor": {
+        "version": "20260828130000",
+        "name": "production_platform_foundation_lineage_bridge"
+      },
+      "file": "20260828131000_production_platform_privileged_device_administration_structural_6_20_0.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827_6_20_0_platform_privileged_device_administration.sql",
+      "canonicalSourceSha256": "8c0324fd0f5c9fe9ad05a45ff99ba24819ca217ff8e6781f35499853bc73acb1",
+      "productionSha256": "b9db2ff3b422bffb32b5338064328a39891e52bf2cf22aefbaf83a700cfa2433",
+      "verifier": "verify/20260828131000_production_platform_privileged_device_administration_structural_6_20_0.sql",
+      "verifierSha256": "132186d9d19b024dd8987de9cea454a5add6232713a241e6fa69722ff22da4fc",
+      "preflight": "preflight/20260828131000_production_platform_privileged_device_administration_structural_6_20_0.sql",
+      "preflightSha256": "0437feee1c68a2079de11fc4b0d0fd565f2df57be36512a60ae82e12ce8febd8",
+      "intentionalDelta": "PRODUCTION_ACTIVATION_DEFERRED",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828132000",
+      "name": "production_credential_enrollment_challenge_expiry_reconciliation_6_20_1",
+      "semanticRelease": "6.20.1",
+      "predecessor": {
+        "version": "20260828131000",
+        "name": "production_platform_privileged_device_administration_structural_6_20_0"
+      },
+      "file": "20260828132000_production_credential_enrollment_challenge_expiry_reconciliation_6_20_1.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827111559_credential_enrollment_challenge_expiry_reconciliation_6_20_1.sql",
+      "canonicalSourceSha256": "f83e674dab796499faaac9fb15b5f29ebc4e09989d72f3c8613a899cbd736eeb",
+      "productionSha256": "9e09ea7386e11e192f0be9239f85d9f102860995d12aa2bde5f3f22d1a3348c7",
+      "verifier": "verify/20260828132000_production_credential_enrollment_challenge_expiry_reconciliation_6_20_1.sql",
+      "verifierSha256": "14a3ff5ad5a9902868bca2b4349f178ccf0e5efb5e6e3bcd035893e43b4491b4",
+      "preflight": "preflight/20260828132000_production_credential_enrollment_challenge_expiry_reconciliation_6_20_1.sql",
+      "preflightSha256": "46c63d168240e7f8af974b3a73e1cba0144870be6397cf650a985606c092ee28",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828133000",
+      "name": "production_credential_enrollment_expiry_default_alignment_6_20_2",
+      "semanticRelease": "6.20.2",
+      "predecessor": {
+        "version": "20260828132000",
+        "name": "production_credential_enrollment_challenge_expiry_reconciliation_6_20_1"
+      },
+      "file": "20260828133000_production_credential_enrollment_expiry_default_alignment_6_20_2.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827112620_credential_enrollment_expiry_default_alignment_reconciliation_6_20_2.sql",
+      "canonicalSourceSha256": "426f55319474ae4491bde59141d62ebe2b6df7c1c0b7709006abfc8dce6e908b",
+      "productionSha256": "ce0b67af83b8ea4020b6d6b561a29c7e0c095f29400575e49a18f86b0b630a37",
+      "verifier": "verify/20260828133000_production_credential_enrollment_expiry_default_alignment_6_20_2.sql",
+      "verifierSha256": "ea72a27d964799998c15b8d053c9fa9bc4f64128974a7f54f0401f419f5497df",
+      "preflight": "preflight/20260828133000_production_credential_enrollment_expiry_default_alignment_6_20_2.sql",
+      "preflightSha256": "0e942067d4b4f1fe684056f8eceb735e51c5f2ad9702d91234cf6d5b906ed1cd",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828134000",
+      "name": "production_system_owner_synced_passkey_policy_reconciliation_6_20_3",
+      "semanticRelease": "6.20.3",
+      "predecessor": {
+        "version": "20260828133000",
+        "name": "production_credential_enrollment_expiry_default_alignment_6_20_2"
+      },
+      "file": "20260828134000_production_system_owner_synced_passkey_policy_reconciliation_6_20_3.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827121228_system_owner_synced_passkey_policy_reconciliation_6_20_3.sql",
+      "canonicalSourceSha256": "e3048a821fa08cef32e77bcc5266649aea9a7356181f6edfa373b280224a6f55",
+      "productionSha256": "5cec6fdbed5bef11aa6fc3f006e5975c2f490206a9785a6d3fce16e3e58ca115",
+      "verifier": "verify/20260828134000_production_system_owner_synced_passkey_policy_reconciliation_6_20_3.sql",
+      "verifierSha256": "e70bef8f9415571a70627daf8a8f0180b0711a9a2c89eac8dc68b4985fd91ef1",
+      "preflight": "preflight/20260828134000_production_system_owner_synced_passkey_policy_reconciliation_6_20_3.sql",
+      "preflightSha256": "0540b4112d0d13035ffe2aa1270673a0bca8d804f8b13a2a83ef18b1db4637d9",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828135000",
+      "name": "production_system_owner_synced_passkey_policy_full_reconciliation_6_20_4",
+      "semanticRelease": "6.20.4",
+      "predecessor": {
+        "version": "20260828134000",
+        "name": "production_system_owner_synced_passkey_policy_reconciliation_6_20_3"
+      },
+      "file": "20260828135000_production_system_owner_synced_passkey_policy_full_reconciliation_6_20_4.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827125056_system_owner_synced_passkey_policy_full_reconciliation_6_20_4.sql",
+      "canonicalSourceSha256": "8aff93237bf07517fbf55579d5370aab17d42ba0141e70e5c1db273b22a07a2e",
+      "productionSha256": "15784333bfa7bf9ae29962633fbca44354336f01112f4b3ea3291e3dc60fc82b",
+      "verifier": "verify/20260828135000_production_system_owner_synced_passkey_policy_full_reconciliation_6_20_4.sql",
+      "verifierSha256": "83c3e52d6ed85a1e4a70d2084cd61dca39158e1a0ab87f28898563fdc8e9c578",
+      "preflight": "preflight/20260828135000_production_system_owner_synced_passkey_policy_full_reconciliation_6_20_4.sql",
+      "preflightSha256": "644b4ff67d5a599152868107bdb9c100553b3b9a46285be95f22434e53ba438d",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828140000",
+      "name": "production_webauthn_time_boundary_reconciliation_6_20_5",
+      "semanticRelease": "6.20.5",
+      "predecessor": {
+        "version": "20260828135000",
+        "name": "production_system_owner_synced_passkey_policy_full_reconciliation_6_20_4"
+      },
+      "file": "20260828140000_production_webauthn_time_boundary_reconciliation_6_20_5.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827130503_webauthn_time_boundary_reconciliation_6_20_5.sql",
+      "canonicalSourceSha256": "44014caad48d58a772aa75149943e0c0b5028681ccfc748e4c5cc371ba049e1a",
+      "productionSha256": "da46e392f5c92b7cd24d103b33b4661a453a62b78f88921c140be714c0f2d3f3",
+      "verifier": "verify/20260828140000_production_webauthn_time_boundary_reconciliation_6_20_5.sql",
+      "verifierSha256": "b1fa9483522f8ac091e7f2c995196e209e6ae45d053ecc4f6736c7f7936b5d07",
+      "preflight": "preflight/20260828140000_production_webauthn_time_boundary_reconciliation_6_20_5.sql",
+      "preflightSha256": "17c7096c1fbd38b388de0db6de112b09db51c5cc649ddd983066b500eeeb058b",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828141000",
+      "name": "production_webauthn_verification_material_base64_reconciliation_6_20_6",
+      "semanticRelease": "6.20.6",
+      "predecessor": {
+        "version": "20260828140000",
+        "name": "production_webauthn_time_boundary_reconciliation_6_20_5"
+      },
+      "file": "20260828141000_production_webauthn_verification_material_base64_reconciliation_6_20_6.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827143343_webauthn_verification_material_base64_reconciliation_6_20_6.sql",
+      "canonicalSourceSha256": "8b8299cb46fd8822b4fe19cc4cda86d904c2556f849d91bdb7b9f8d82f92d25c",
+      "productionSha256": "5627a74a21f2b7093189d4d13b5274748a94a4269c2fccd86386ddf3979df84c",
+      "verifier": "verify/20260828141000_production_webauthn_verification_material_base64_reconciliation_6_20_6.sql",
+      "verifierSha256": "2504e7a215ab12e737d160be440d44d00bedd8ffac1656f01b75932c270138e8",
+      "preflight": "preflight/20260828141000_production_webauthn_verification_material_base64_reconciliation_6_20_6.sql",
+      "preflightSha256": "bb263f351fc116baf489b812852818bf9f22f547736ed268c32b37cfd591dd80",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828142000",
+      "name": "production_pending_device_listing_source_purpose_reconciliation_6_20_7",
+      "semanticRelease": "6.20.7",
+      "predecessor": {
+        "version": "20260828141000",
+        "name": "production_webauthn_verification_material_base64_reconciliation_6_20_6"
+      },
+      "file": "20260828142000_production_pending_device_listing_source_purpose_reconciliation_6_20_7.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827144122_pending_device_listing_source_purpose_reconciliation_6_20_7.sql",
+      "canonicalSourceSha256": "a3b72c10e0cf2a72037bfbe60a77aefefa2a96a816aabbbc52a2df21f1faa3cb",
+      "productionSha256": "9945748b89ba3bc1ee9a1659888c9acb7066a90ff1eb1a2906f28bf8c9a6151b",
+      "verifier": "verify/20260828142000_production_pending_device_listing_source_purpose_reconciliation_6_20_7.sql",
+      "verifierSha256": "a3a5be1c53ace0a0eede486aa28475c16636731bc209c60892de5b5bc24c2ea5",
+      "preflight": "preflight/20260828142000_production_pending_device_listing_source_purpose_reconciliation_6_20_7.sql",
+      "preflightSha256": "a9794e3f6e3f2d94668b75a199f04222eba67567a16a0b78bdf597e1b56ed3a8",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828143000",
+      "name": "production_pending_device_operation_purpose_qualification_reconciliation_6_20_8",
+      "semanticRelease": "6.20.8",
+      "predecessor": {
+        "version": "20260828142000",
+        "name": "production_pending_device_listing_source_purpose_reconciliation_6_20_7"
+      },
+      "file": "20260828143000_production_pending_device_operation_purpose_qualification_reconciliation_6_20_8.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827145152_pending_device_operation_purpose_qualification_reconciliation_6_20_8.sql",
+      "canonicalSourceSha256": "8e47d38b0833474f3bd7539d05013c6be324048886e015a97186e13cf2e14cbe",
+      "productionSha256": "6fe930a03096553440d1fd0828eba24f2175ceccf9769fce2b07bded10c73091",
+      "verifier": "verify/20260828143000_production_pending_device_operation_purpose_qualification_reconciliation_6_20_8.sql",
+      "verifierSha256": "ee1813dc38e660f2e4abee1da5a9a332916ff2317846416631592988f803a301",
+      "preflight": "preflight/20260828143000_production_pending_device_operation_purpose_qualification_reconciliation_6_20_8.sql",
+      "preflightSha256": "f6b5e187826127d98234aeaea29135cc312e839dfc0fea80de6004991930e060",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828144000",
+      "name": "production_pending_device_operation_purpose_variable_reconciliation_6_20_9",
+      "semanticRelease": "6.20.9",
+      "predecessor": {
+        "version": "20260828143000",
+        "name": "production_pending_device_operation_purpose_qualification_reconciliation_6_20_8"
+      },
+      "file": "20260828144000_production_pending_device_operation_purpose_variable_reconciliation_6_20_9.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260827155527_pending_device_operation_purpose_variable_reconciliation_6_20_9.sql",
+      "canonicalSourceSha256": "7785a1e7694aa182fb80f8385a9a2a84d2fe82d2afff986ffc204a72dbd397b7",
+      "productionSha256": "f4115343ec7cc3886af44f9e8cdc87c0668b35e7bc1b0a16608e37f35309a0ca",
+      "verifier": "verify/20260828144000_production_pending_device_operation_purpose_variable_reconciliation_6_20_9.sql",
+      "verifierSha256": "c29e1fb095f674fb412a6116c4d5594e7b4a38ef597de1a944d5f6dc77094403",
+      "preflight": "preflight/20260828144000_production_pending_device_operation_purpose_variable_reconciliation_6_20_9.sql",
+      "preflightSha256": "0e7e7007f9f432306a32232e5b71423063cc3d8babe0f67b56a6366aa13950fb",
+      "intentionalDelta": "CANONICAL_SEMANTIC_EQUIVALENT",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828145000",
+      "name": "production_platform_foundation_legacy_execute_grant_reconciliation",
+      "semanticRelease": "grant-reconciliation",
+      "predecessor": {
+        "version": "20260828144000",
+        "name": "production_pending_device_operation_purpose_variable_reconciliation_6_20_9"
+      },
+      "file": "20260828145000_production_platform_foundation_legacy_execute_grant_reconciliation.sql",
+      "sourceCanonicalPath": "supabase/migrations/20260828120000_platform_foundation_legacy_execute_grant_reconciliation.sql",
+      "canonicalSourceSha256": "bedc1e109639572d797ffc0ee049899d2ba1c04e9c07a6c79afd02aff8422f10",
+      "productionSha256": "2ddd59271ba32c4a52e1863f4c9d500098668590bc77bd54a9194b38a05ea135",
+      "verifier": "verify/20260828145000_production_platform_foundation_legacy_execute_grant_reconciliation.sql",
+      "verifierSha256": "4721f94c2dec68bcc9c2a9284e7b60f7dd2b50052040c3091b0ffdded756bb6e",
+      "preflight": "preflight/20260828145000_production_platform_foundation_legacy_execute_grant_reconciliation.sql",
+      "preflightSha256": "42ada670ca228ba4783ec5c9ccd17672fea568f4d4aaff66eced130e4e5e47b2",
+      "intentionalDelta": "PRODUCTION_OPTIONAL_HISTORICAL_RLS_AUTO_ENABLE_ABSENCE",
+      "featureActivationPermitted": false,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": false,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    },
+    {
+      "version": "20260828150000",
+      "name": "production_webauthn_privileged_device_final_activation",
+      "semanticRelease": "6.20-final-activation",
+      "predecessor": {
+        "version": "20260828145000",
+        "name": "production_platform_foundation_legacy_execute_grant_reconciliation"
+      },
+      "file": "20260828150000_production_webauthn_privileged_device_final_activation.sql",
+      "sourceCanonicalPath": null,
+      "canonicalSourceSha256": null,
+      "productionSha256": "18a07639aa48e2bd322f24a7be72f8ba4c12caa52e6629f11a93afee194ec0e3",
+      "verifier": "verify/20260828150000_production_webauthn_privileged_device_final_activation.sql",
+      "verifierSha256": "45195e81c0484e8180d385c827ed17789deaab8e596020d7de601880544427b0",
+      "preflight": "preflight/20260828150000_production_webauthn_privileged_device_final_activation.sql",
+      "preflightSha256": "86da4f673802db4a712dcadbedf474a3ed3eba376d5a956a3269bb75a400d587",
+      "intentionalDelta": "PRODUCTION_FINAL_ACTIVATION",
+      "featureActivationPermitted": true,
+      "expectedWebAuthnBefore": false,
+      "expectedWebAuthnAfter": true,
+      "expectedDeviceEnforcementBefore": false,
+      "expectedDeviceEnforcementAfter": false
+    }
+  ]
+}

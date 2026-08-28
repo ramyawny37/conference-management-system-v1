@@ -1,0 +1,351 @@
+{
+  "identity": {
+    "database": "phase2abn_1",
+    "system_identifier": "7679151127080506720",
+    "major": 17,
+    "address": "127.0.0.1/32"
+  },
+  "history": [
+    {
+      "version": "20260824121653",
+      "name": "20260824_6_15_0_organization_membership_reconciliation",
+      "statements_md5": "cb5c461d6a8b0f20d814d2984ce5214f"
+    },
+    {
+      "version": "20260824180055",
+      "name": "20260824_6_16_0_webauthn_privileged_device_security_foundation",
+      "statements_md5": "1776e168f18f0a587192ad0d60c621ae"
+    },
+    {
+      "version": "20260826191608",
+      "name": "conference_authorization_chain_hardening_6_17_0",
+      "statements_md5": "ca136f8ef4e70b7a74f43b47142bdc14"
+    },
+    {
+      "version": "20260826191920",
+      "name": "conference_lifecycle_hardening_6_18_0",
+      "statements_md5": "699f1bf58271c8c75d6026ebc0436b28"
+    },
+    {
+      "version": "20260826193052",
+      "name": "snapshot_sync_account_authorization_hardening_6_19_0",
+      "statements_md5": "b62936c7a81c6a743b206d3ef37ff0e2"
+    },
+    {
+      "version": "20260828130000",
+      "name": "production_platform_foundation_lineage_bridge",
+      "statements_md5": "071d06a5cdbbee8c7a441fd944d2d0c6"
+    },
+    {
+      "version": "20260828131000",
+      "name": "production_platform_privileged_device_administration_structural_6_20_0",
+      "statements_md5": "f0026f5e23a3c36e88646c26344fea88"
+    },
+    {
+      "version": "20260828132000",
+      "name": "production_credential_enrollment_challenge_expiry_reconciliation_6_20_1",
+      "statements_md5": "a57e51772d13635c4cbacb8d183cca7a"
+    },
+    {
+      "version": "20260828133000",
+      "name": "production_credential_enrollment_expiry_default_alignment_6_20_2",
+      "statements_md5": "1161e049346579b636221edf178cf4f6"
+    },
+    {
+      "version": "20260828134000",
+      "name": "production_system_owner_synced_passkey_policy_reconciliation_6_20_3",
+      "statements_md5": "fd8777456bc9937692ec740ab0b7d83e"
+    },
+    {
+      "version": "20260828135000",
+      "name": "production_system_owner_synced_passkey_policy_full_reconciliation_6_20_4",
+      "statements_md5": "94f58043da178dacd210bb61908c44a3"
+    },
+    {
+      "version": "20260828140000",
+      "name": "production_webauthn_time_boundary_reconciliation_6_20_5",
+      "statements_md5": "f387c81e6cd768a32d46e7b177f49478"
+    },
+    {
+      "version": "20260828141000",
+      "name": "production_webauthn_verification_material_base64_reconciliation_6_20_6",
+      "statements_md5": "42ccd207946ad243233ad179f7b86408"
+    },
+    {
+      "version": "20260828142000",
+      "name": "production_pending_device_listing_source_purpose_reconciliation_6_20_7",
+      "statements_md5": "e0bef956c4d974f642305fb5d9fe90c4"
+    },
+    {
+      "version": "20260828143000",
+      "name": "production_pending_device_operation_purpose_qualification_reconciliation_6_20_8",
+      "statements_md5": "234d70bc3af1a1d1d069343cd9f31a7e"
+    },
+    {
+      "version": "20260828144000",
+      "name": "production_pending_device_operation_purpose_variable_reconciliation_6_20_9",
+      "statements_md5": "d44194db2a86d023a04fb67e57fe95f5"
+    },
+    {
+      "version": "20260828145000",
+      "name": "production_platform_foundation_legacy_execute_grant_reconciliation",
+      "statements_md5": "961164b7ebe303f1c6873d25bdf4348e"
+    },
+    {
+      "version": "20260828150000",
+      "name": "production_webauthn_privileged_device_final_activation",
+      "statements_md5": "68c78f523672bafc5b322c33e0fc49e0"
+    }
+  ],
+  "fingerprints": [
+    {
+      "label": "00-baseline",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "2c58a9460c2df93590a6bdabe33d88a1efe7f297fedc720f11195a1fad910f53",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "fd9eab722844eaebc15b97fa893b82cc86b25713945d4c4cff500979b6f8d429",
+      "constraints": "9c3e4d6a3387b87a939d10f882c517bd9331378d113dbeda9dd08f8536c29316",
+      "combined": "c352888699e0b3a9e0989861f2fc8f089e3d7bfa83a5aaf43a98e9d0a9339f57",
+      "file_sha256": "7894ea8f793ee37787debb63961ab782cc9faa2b905d969e93694655bc517291"
+    },
+    {
+      "label": "01-20260828130000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "2c58a9460c2df93590a6bdabe33d88a1efe7f297fedc720f11195a1fad910f53",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "fd9eab722844eaebc15b97fa893b82cc86b25713945d4c4cff500979b6f8d429",
+      "constraints": "9c3e4d6a3387b87a939d10f882c517bd9331378d113dbeda9dd08f8536c29316",
+      "combined": "c352888699e0b3a9e0989861f2fc8f089e3d7bfa83a5aaf43a98e9d0a9339f57",
+      "file_sha256": "7894ea8f793ee37787debb63961ab782cc9faa2b905d969e93694655bc517291"
+    },
+    {
+      "label": "02-20260828131000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "2c58a9460c2df93590a6bdabe33d88a1efe7f297fedc720f11195a1fad910f53",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "e156920850c8998fb3f66379e09ef67b487efb7eab778cc3a15a456be0a6553f",
+      "constraints": "4947f3e80742ae615f2f8ce199f74fd1d6d8b9a6ad53530a5edd0d941a1de3b7",
+      "combined": "74765e8d58913a55ae22af962cd3fa3767620c7a484b907a311db1c9afe17768",
+      "file_sha256": "31a1e73977402987a330a8fe65ff1b785c0b50ba5df885bbecc4126c5332caef"
+    },
+    {
+      "label": "03-20260828132000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "2c58a9460c2df93590a6bdabe33d88a1efe7f297fedc720f11195a1fad910f53",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "e156920850c8998fb3f66379e09ef67b487efb7eab778cc3a15a456be0a6553f",
+      "constraints": "4947f3e80742ae615f2f8ce199f74fd1d6d8b9a6ad53530a5edd0d941a1de3b7",
+      "combined": "74765e8d58913a55ae22af962cd3fa3767620c7a484b907a311db1c9afe17768",
+      "file_sha256": "31a1e73977402987a330a8fe65ff1b785c0b50ba5df885bbecc4126c5332caef"
+    },
+    {
+      "label": "04-20260828133000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "4ecbed5e6b418626f6f7ea6f0a762d4b0cedc78eea510f1cc21771d3a121978d",
+      "constraints": "4947f3e80742ae615f2f8ce199f74fd1d6d8b9a6ad53530a5edd0d941a1de3b7",
+      "combined": "6401d613e11de42d4481fb039241bab02c2bba1e13c4effce277fe5023d562e5",
+      "file_sha256": "ab85712aa06b3433a925aead35327498275260aaa3036af2f0174152c39b305a"
+    },
+    {
+      "label": "05-20260828134000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "ec04aaffdc5ab712abe4c001e82b3d7af0d8f446ab55d9acf7500f90581ef92a",
+      "constraints": "4947f3e80742ae615f2f8ce199f74fd1d6d8b9a6ad53530a5edd0d941a1de3b7",
+      "combined": "7b70285a918f87ec2159e16c6d6fb92eeb31b72ebd42f0e6ffd44845ea4c964b",
+      "file_sha256": "d6e708f7519d6aca3b3447fee0cb19fd2fb804612b715e282a06262714e544ae"
+    },
+    {
+      "label": "06-20260828135000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "80ea93bb1ea4d06b4ee1d0dd5d89ec2c5321e57da99f100b9d005f6581da19f0",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "c0fb72571e1aca09d67427608ba6fc4ce55b4580525119cbda54ca50f760c4e0",
+      "file_sha256": "f74529c5951c2d3834e38479ce71342dc3a8ddad5f793a22212fa8fc4ba98008"
+    },
+    {
+      "label": "07-20260828140000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "da0dd1707e74089f126d79559d0da8aedefa0a7c10e1cea3b9e8f4650985d26f",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "049377adb4257c6c9fbb5aead6b61f78d4d80b9d7729d590cf81d35bd39ecbd8",
+      "file_sha256": "22c8e994f0b5da806d4ddfa09cc7e0a41de0c9ab5eb36b17218ba985761361bc"
+    },
+    {
+      "label": "08-20260828141000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "9fa2957c6ca13180fb97690a3526fc3b0a6040eb593b8b0bcbe965545936e13a",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "c349f5072deec097f59fdd2c7c378bfa719c072814df7982f62cc8fd8b1d9627",
+      "file_sha256": "57ff5534bf8dd74c2605e39a38477c7ae1de45d1568752d2ad402d6d99768b4f"
+    },
+    {
+      "label": "09-20260828142000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "83da625672bbb4ab8bc7e9c52e52e1da1f5f22f2ec7107375223eec29e16c2af",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "97f7bf5e45763df2002f138a2348ae677b7118bd45e0fcce27e46a1f16740f69",
+      "file_sha256": "9b05ea93f3b3c53b7d97a695d6221dc72af89a15ed17c55cf22fca6f2726b035"
+    },
+    {
+      "label": "10-20260828143000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "a63284efbdabb6eae9cd78388380dc2b40be57271d446e79d69b6ebd586826c6",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "b63c9070fbd5a9d1a4fabd13da714a6c59651b5566a1b41588d18834ed74c0ad",
+      "file_sha256": "61c61cff1ec7788be1e96c552e751b76e32626be60e34b1fa3902990d9210a57"
+    },
+    {
+      "label": "11-20260828144000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "fbd4dad3c6200868c7b82eb376722d8898e455183f9e75ae46d94076272440a2",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "1771b37e2e92b585fa7f63d6e581e1c0dd8439020fd26a986cd62bd91c6a6bdf",
+      "file_sha256": "9265c9ea4045883679984dd3aef47f8e391343714eb61f89e2fad36f9c706978"
+    },
+    {
+      "label": "12-20260828145000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "fbd4dad3c6200868c7b82eb376722d8898e455183f9e75ae46d94076272440a2",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "1771b37e2e92b585fa7f63d6e581e1c0dd8439020fd26a986cd62bd91c6a6bdf",
+      "file_sha256": "9265c9ea4045883679984dd3aef47f8e391343714eb61f89e2fad36f9c706978"
+    },
+    {
+      "label": "13-20260828150000",
+      "columns": "3e01149c0e48a8fee450df90899a065b34a9315faaadd9780c0c3d92b43a325f",
+      "indexes": "d5775d0cbf2e5af4616e634f9f13feca118b6461174201b800b4da84dcaa0907",
+      "security": "c534034c8e6e76ae97b9b450e2a1662970fd5048d7119710c5c3535424480f52",
+      "triggers": "d450af52050aa32e5bd8f6dd273d3aaacc45581d1530b6d65ac54c9adfe71dfb",
+      "functions": "fbd4dad3c6200868c7b82eb376722d8898e455183f9e75ae46d94076272440a2",
+      "constraints": "3b03b8b2df234afbc721cb8772dae6431d34fbb64666c05bdf3aaedd8ee4d5b6",
+      "combined": "1771b37e2e92b585fa7f63d6e581e1c0dd8439020fd26a986cd62bd91c6a6bdf",
+      "file_sha256": "9265c9ea4045883679984dd3aef47f8e391343714eb61f89e2fad36f9c706978"
+    }
+  ],
+  "constraints_6_20_4": [
+    {
+      "relation": "device_security_credentials",
+      "name": "device_security_credentials_non_backup_policy",
+      "definition": "CHECK (NOT backup_state OR backup_eligible)"
+    },
+    {
+      "relation": "privileged_device_authorization_audit_log",
+      "name": "privileged_device_audit_webauthn_policy",
+      "definition": "CHECK ((action = ANY (ARRAY['credential_bootstrap_authorization_issued'::text, 'credential_recovery_authorization_issued'::text])) AND actor_credential_id IS NULL AND challenge_id IS NULL AND session_id IS NULL AND challenge_purpose IS NULL AND operation_id IS NULL AND challenge_target_user_id IS NULL AND challenge_target_device_id IS NULL OR (action <> ALL (ARRAY['credential_bootstrap_authorization_issued'::text, 'credential_recovery_authorization_issued'::text])) AND challenge_id IS NOT NULL AND session_id IS NOT NULL AND challenge_purpose IS NOT NULL AND (actor_credential_id IS NOT NULL OR action = 'credential_enrolled'::text AND challenge_purpose = 'SYSTEM_OWNER_CREDENTIAL_ENROLLMENT'::text) AND user_verified = true AND (NOT backup_state OR backup_eligible))"
+    }
+  ],
+  "step12_acl": [
+    {
+      "signature": "acquire_conference_lock(uuid,uuid,uuid,integer)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "complete_system_owner_pending_device_operation(uuid,uuid,uuid,uuid,text,uuid,bytea,uuid,uuid,uuid,text,bigint,text,text,jsonb)",
+      "public": false,
+      "anon": false,
+      "authenticated": false,
+      "service_role": true
+    },
+    {
+      "signature": "enforce_launch_conference_member_contract()",
+      "public": false,
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "get_conference_lock(uuid,uuid)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "get_conference_section_lock(uuid,text,uuid)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "has_conference_role(uuid,text[])",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "is_conference_member(uuid)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "is_conference_owner(uuid)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "prevent_null_conference_organization()",
+      "public": false,
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "release_conference_lock(uuid,uuid,uuid)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "renew_conference_lock(uuid,uuid,uuid,integer)",
+      "public": false,
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    }
+  ],
+  "activation": {
+    "webauthn": true,
+    "device_enforcement": false
+  }
+}
