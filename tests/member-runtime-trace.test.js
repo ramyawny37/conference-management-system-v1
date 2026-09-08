@@ -8,11 +8,11 @@ const marker='canonical-conference-schema-v1';
 const coreAssetMarker='development-3-4-0-platform-foundation-v1';
 const cacheMarker='production-3-4-0-develop-30d5388-v1';
 const memberDiagnosticsAssetMarker='repository-rejection-diagnostics-v1';
-const shellMarker='production-3-4-0-develop-30d5388-v1';
+const shellMarker='production-3-4-0-platform-owner-administration-context-v1';
 const developmentCacheMarker='development-3-4-0-adjustment-conversion-ux-v1';
 const houseMarker='template-floor-conference-sync-v1';
 const accountIdentityMarker='platform-first-login-coordinator-v1';
-const scriptMarker='delayed-warehouse-route-override-v1';
+const scriptMarker='production-platform-owner-administration-context-v1';
 const realtimeMarker='template-sync-isolation-v1';
 const source=fs.readFileSync(path.join(
   root,'js/sync/member-runtime-diagnostics.js'),'utf8');
