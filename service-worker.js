@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'development-3-4-0-adjustment-conversion-ux-v1'
-  : 'production-3-4-0-develop-30d5388-v1';
+  : 'production-3-4-0-device-storage-isolation-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -31,7 +31,8 @@ const CORE_ASSETS = [
   './js/storage/migration-audit.js',
   './js/supabase/public-config.js',
   './js/supabase/runtime-config.js',
-  './js/supabase/device-session.js?rev=warehouse-original-items-secure-restoration-v1',
+  './js/supabase/device-storage-namespace.js?rev=project-device-storage-isolation-v1',
+  './js/supabase/device-session.js?rev=project-device-storage-isolation-v1',
   './js/supabase/conference-device-operation-contract.js?rev=phase1c-v1',
   './js/supabase/warehouse-device-operation-contract.js?rev=opening-balance-ux-correction-v1',
   './js/supabase/platform-device-operation-contract.js?rev=phase-w1-v1',
@@ -49,8 +50,8 @@ const CORE_ASSETS = [
   './js/sync/organization-management-attempt-store.js?rev=organization-management-v1',
   './js/supabase/organization-management-service.js?rev=organization-archive-restore-v1',
   './js/sync/organization-management-ui.js?rev=startup-device-admin-lifecycle-v1',
-  './js/supabase/device-identity.js?rev=organization-membership-operation-key-v1',
-  './js/supabase/device-enrollment.js?rev=phase-w1-native-enrollment-v1',
+  './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
+  './js/supabase/device-enrollment.js?rev=project-device-storage-isolation-v1',
   './js/sync/device-authorization-operation-repository.js',
   './js/supabase/current-device-authorization-service.js?rev=platform-authorization-readiness-v2',
   './js/supabase/device-authorization-administration-service.js?rev=platform-privileged-device-admin-diagnostics-v1',
