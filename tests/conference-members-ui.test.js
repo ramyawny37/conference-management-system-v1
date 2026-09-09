@@ -556,7 +556,7 @@ async function run(){
   // The revision value changes between releases; verify the cache contract
   // instead of coupling Conference Members to a historical release label.
   assert.ok(
-    /const\s+CACHE_REVISION\s*=\s*IS_DEVELOPMENT\s*\?\s*['"]development-3-4-0-warehouse-unit-hierarchy-v1['"]\s*:\s*['"]production-3-4-0-warehouse-unit-hierarchy-v1['"]\s*;/
+    /const\s+CACHE_REVISION\s*=\s*IS_DEVELOPMENT\s*\?\s*['"]development-3-4-0-warehouse-unit-hierarchy-v1['"]\s*:\s*['"]production-3-4-0-item-unit-add-ui-v1['"]\s*;/
       .test(serviceWorkerSource)
   );
   assert.ok(
