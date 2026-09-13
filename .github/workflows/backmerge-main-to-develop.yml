@@ -1,0 +1,68 @@
+name: Backmerge main to develop
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-backmerge-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open main to develop PR when needed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const base = 'develop';
+            const head = 'main';
+
+            const comparison = await github.rest.repos.compareCommitsWithBasehead({
+              owner,
+              repo,
+              basehead: `${base}...${head}`,
+            });
+
+            if (comparison.data.ahead_by === 0) {
+              core.info('develop already contains main; no backmerge PR is needed.');
+              return;
+            }
+
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              base,
+              head: `${owner}:${head}`,
+              per_page: 100,
+            });
+
+            if (existing.data.length > 0) {
+              core.info(`Backmerge PR already open: #${existing.data[0].number}`);
+              return;
+            }
+
+            const pr = await github.rest.pulls.create({
+              owner,
+              repo,
+              base,
+              head,
+              title: 'chore: backmerge main into develop',
+              body: [
+                'Automatic backmerge PR created after a push to `main`.',
+                '',
+                'Purpose: keep Production/main fixes from drifting away from `develop`.',
+                '',
+                '- Do not auto-merge this PR.',
+                '- Resolve conflicts explicitly.',
+                '- Run the normal regression suites before merge.',
+              ].join('\n'),
+              draft: false,
+            });
+
+            core.info(`Created backmerge PR #${pr.data.number}`);
