@@ -68,9 +68,9 @@ test('repository-scoped Conference and Platform home share the operational dashb
 });
 
 test('Conference route correction invalidates the Development runtime cache',()=>{
-  assert.match(html,/script\.js\?rev=platform-dashboard-v2-v4/);
-assert.match(worker,/platform-dashboard-v2-v4/);
-  assert.match(worker,/script\.js\?rev=platform-dashboard-v2-v4/);
+  assert.match(html,/script\.js\?rev=platform-dashboard-v2-v5/);
+assert.match(worker,/platform-dashboard-v2-v5/);
+  assert.match(worker,/script\.js\?rev=platform-dashboard-v2-v5/);
 });
 
 test('authorized async restoration cannot override an explicit Conference home route',()=>{
