@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "check": "node --test tests/platform-*.test.js",
+    "check:development-preview": "node tools/validation/check-development-preview.cjs",
     "release:preflight:development": "node tools/release-preflight/collect-development-evidence.cjs",
     "release:preflight:promotion": "node tools/release-preflight/verify-promotion-readiness.cjs"
   },
