@@ -43,7 +43,7 @@ test('browser-controlled security fields stay rejected and operations are allowl
   assert.match(migration, /p_actor_device_id/);
   assert.match(migration, /p_actor_user_id/);
   assert.match(migration, /p_conference_person_id/);
-  assert.match(edge, /'list_conference_options','get_booking_accommodation'/);
+  assert.match(edge, /'list_conference_options','get_booking_creation_context','get_booking_accommodation'/);
   assert.match(migration, /require_exact_jsonb_keys/);
   assert.match(migration, /RESERVATIONS_OPERATION_BACKEND_REQUIRED|PLATFORM_OPERATION_BACKEND_REQUIRED/);
 });

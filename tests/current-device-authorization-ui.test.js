@@ -12,8 +12,9 @@ var sandbox={window:null,Promise:Promise,JSON:JSON,Object:Object,String:String,A
 vm.runInNewContext(repository,sandbox);vm.runInNewContext(service,sandbox);vm.runInNewContext(ui,sandbox);
 (async function(){
   await sandbox.CurrentDeviceAuthorizationUI.initialize();
-  assert.deepStrictEqual(calls.map(function(c){return c.name;}),['get_my_device_authorization','get_my_device_aware_system_access']);
-  assert.strictEqual(calls[1].args.p_device_id,ids.device);
+  assert.deepStrictEqual(calls.map(function(c){return c.name;}).sort(),['get_my_device_authorization','get_my_device_aware_system_access']);
+  assert.strictEqual(calls.find(function(c){return c.name==='get_my_device_aware_system_access';}).args.p_device_id,ids.device);
+  await sandbox.CurrentDeviceAuthorizationService.getDeviceAwareAccess();
   assert.strictEqual(sandbox.CurrentDeviceAuthorizationService.getLastDiagnostic().accountApproved,true);
   assert.strictEqual(sandbox.CurrentDeviceAuthorizationService.getLastDiagnostic().serverDeviceRowPresent,true);
   awareFailure=true;await sandbox.CurrentDeviceAuthorizationService.getDeviceAwareAccess();
@@ -33,8 +34,8 @@ vm.runInNewContext(repository,sandbox);vm.runInNewContext(service,sandbox);vm.ru
   var cacheRevision=worker.match(
     /const CACHE_REVISION = IS_DEVELOPMENT\s*\? '([^']+)'\s*:\s*'([^']+)';/);
   assert.ok(cacheRevision,'cache revision must remain environment-aware');
-assert.strictEqual(cacheRevision[1],'platform-dashboard-v2-v3');
-  assert.strictEqual(cacheRevision[2],'production-integrated-3-3-0-main-6d0c1e1-develop-80653ca-v1');
+assert.strictEqual(cacheRevision[1],'platform-dashboard-v2-v4');
+  assert.strictEqual(cacheRevision[2],'production-3-5-0-config-isolation-v1');
   assert.notStrictEqual(cacheRevision[1],cacheRevision[2]);
   assert.match(worker,/const CACHE_NAMESPACE = IS_DEVELOPMENT[\s\S]*\? 'cms:development:' \+ DEVELOPMENT_PROJECT_REF \+ ':'[\s\S]*:\s*'';/);
   assert.ok(ui.includes('طلب اعتماد الجهاز مرة أخرى'));

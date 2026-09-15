@@ -27,6 +27,7 @@ function loadFreshBrowser(storedConfig){
   };
   var sandbox={
     window:null,
+    location:{pathname:'/conference-management-system-development-preview/'},
     URL:URL,
     Promise:Promise,
     JSON:JSON,
