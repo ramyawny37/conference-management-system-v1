@@ -1,211 +1,27 @@
-/* Canonical Platform Shell v3 — reference-led, replacement-first.
-   Owns only the global application chrome. Module content remains module-owned. */
-:root {
-  --platform-v2-sidebar-width: 196px;
-  --platform-v2-header-height: 64px;
-  --platform-v2-shell-gap: 12px;
-  --platform-v2-content-pad: 12px;
-  --platform-v2-surface: #ffffff;
-  --platform-v2-page: #f6f9fc;
-  --platform-v2-border: #dbe7f3;
-  --platform-v2-ink: #0f172a;
-  --platform-v2-muted: #64748b;
-  --platform-v2-primary: #0a6cff;
-  --platform-v2-navy: #062b4f;
-  --platform-v2-radius: 16px;
-}
-
-html.platform-shell-v2,
-body.platform-shell-v2 { min-height: 100%; background: var(--platform-v2-page); }
-body.platform-shell-v2 { margin: 0; overflow-x: hidden; }
-
-/* Sidebar: deliberately slimmer than the previous 224/248/288px shells. */
-body.platform-shell-v2 .platform-sidebar {
-  position: fixed !important;
-  inset-block: 0 !important;
-  inset-inline-end: 0 !important;
-  width: var(--platform-v2-sidebar-width) !important;
-  box-sizing: border-box !important;
-  z-index: 1000 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  background: linear-gradient(180deg,#072f57 0%,#052747 100%) !important;
-  border-inline-start: 1px solid rgba(255,255,255,.08) !important;
-  box-shadow: -8px 0 28px rgba(15,23,42,.08) !important;
-}
-body.platform-shell-v2 .platform-sidebar__brand { padding: 14px 12px 12px !important; }
-body.platform-shell-v2 .platform-sidebar__brand img { width: 42px !important; height: 42px !important; }
-body.platform-shell-v2 .platform-sidebar__brand-title { font-size: 12px !important; line-height: 1.35 !important; }
-body.platform-shell-v2 .platform-sidebar__brand-subtitle { font-size: 8px !important; opacity: .72 !important; }
-body.platform-shell-v2 .platform-sidebar__nav { padding: 6px 9px 14px !important; gap: 3px !important; }
-body.platform-shell-v2 .platform-sidebar__link {
-  min-height: 40px !important;
-  padding: 8px 10px !important;
-  border-radius: 10px !important;
-  font-size: 12px !important;
-  gap: 9px !important;
-}
-body.platform-shell-v2 .platform-sidebar__link svg,
-body.platform-shell-v2 .platform-sidebar__link i { width: 18px !important; height: 18px !important; }
-body.platform-shell-v2 .platform-sidebar__link.is-active {
-  background: linear-gradient(90deg,#0758bd,#0a6cff) !important;
-  box-shadow: inset 3px 0 0 #4ea1ff,0 5px 14px rgba(10,108,255,.18) !important;
-}
-
-/* Main frame. */
-body.platform-shell-v2 .application-shell,
-body.platform-shell-v2 .app-shell,
-body.platform-shell-v2 main,
-body.platform-shell-v2 .main-content {
-  box-sizing: border-box;
-}
-body.platform-shell-v2 .application-shell {
-  margin-inline-end: var(--platform-v2-sidebar-width) !important;
-  width: calc(100% - var(--platform-v2-sidebar-width)) !important;
-  min-height: 100vh !important;
-  background: var(--platform-v2-page) !important;
-}
-
-/* White floating header. It visually sits over the opening edge of module content. */
-body.platform-shell-v2 .topbar {
-  position: relative !important;
-  z-index: 900 !important;
-  min-height: var(--platform-v2-header-height) !important;
-  height: var(--platform-v2-header-height) !important;
-  margin: 10px 12px -6px !important;
-  padding: 7px 12px !important;
-  box-sizing: border-box !important;
-  display: grid !important;
-  grid-template-columns: minmax(190px,1fr) minmax(300px,1.45fr) auto !important;
-  align-items: center !important;
-  gap: 10px !important;
-  background: rgba(255,255,255,.97) !important;
-  border: 1px solid var(--platform-v2-border) !important;
-  border-radius: 15px !important;
-  box-shadow: 0 7px 24px rgba(15,23,42,.08) !important;
-  backdrop-filter: blur(12px) !important;
-}
-body.platform-shell-v2 .topbar::before,
-body.platform-shell-v2 .topbar::after { content: none !important; display: none !important; }
-body.platform-shell-v2 .topbar .application-brand-logo,
-body.platform-shell-v2 .topbar .application-brand,
-body.platform-shell-v2 .topbar .brand {
-  min-width: 0 !important;
-  max-width: 230px !important;
-}
-body.platform-shell-v2 .topbar img { max-height: 42px !important; width: auto !important; object-fit: contain !important; }
-body.platform-shell-v2 .topbar input[type="search"],
-body.platform-shell-v2 .topbar .platform-search input {
-  min-height: 38px !important;
-  border-radius: 10px !important;
-  border: 1px solid #d7e4f2 !important;
-  background: #f8fbff !important;
-}
-body.platform-shell-v2 .topbar button,
-body.platform-shell-v2 .topbar .btn { min-height: 36px !important; border-radius: 9px !important; }
-
-/* Remove the old page-wide shell offset that made the header look detached. */
-body.platform-shell-v2 .platform-route-outlet,
-body.platform-shell-v2 #platformRouteOutlet {
-  padding-top: 0 !important;
-}
-
-/* Reservations is the first reference module: its workspace rises under the floating header. */
-body.platform-shell-v2[data-platform-route="reservations"] .reservations-module,
-body.platform-shell-v2.platform-route-reservations .reservations-module,
-body.platform-shell-v2 .reservations-module {
-  padding: 0 12px 16px !important;
-}
-body.platform-shell-v2 .reservations-module > :first-child { margin-top: 0 !important; }
-body.platform-shell-v2 .reservations-module .reservations-context-bar,
-body.platform-shell-v2 .reservations-module .reservations-workspace-header,
-body.platform-shell-v2 .reservations-module [data-reservations-context-bar] {
-  position: relative !important;
-  z-index: 20 !important;
-  min-height: 48px !important;
-  margin: 0 0 -1px !important;
-  padding: 7px 10px !important;
-  border-radius: 12px 12px 0 0 !important;
-  background: rgba(255,255,255,.96) !important;
-  border: 1px solid var(--platform-v2-border) !important;
-  box-shadow: none !important;
-}
-body.platform-shell-v2 .reservations-module .reservations-hero,
-body.platform-shell-v2 .reservations-module [data-reservations-hero] {
-  margin-top: 0 !important;
-  border-radius: 0 0 16px 16px !important;
-  overflow: hidden !important;
-}
-
-/* Keep the conference selector usable without allowing it to dominate the composition. */
-body.platform-shell-v2 .reservations-module select,
-body.platform-shell-v2 .reservations-module .reservations-context-bar button,
-body.platform-shell-v2 .reservations-module .reservations-workspace-header button {
-  min-height: 36px !important;
-  height: 36px !important;
-  border-radius: 9px !important;
-}
-
-/* Medium desktop/tablet: collapse the chrome before content becomes cramped. */
-@media (max-width: 1180px) {
-  :root { --platform-v2-sidebar-width: 176px; }
-  body.platform-shell-v2 .topbar {
-    grid-template-columns: minmax(160px,.8fr) minmax(240px,1.2fr) auto !important;
-    margin-inline: 10px !important;
-  }
-  body.platform-shell-v2 .platform-sidebar__link { font-size: 11px !important; }
-}
-
-@media (max-width: 900px) {
-  :root { --platform-v2-sidebar-width: 72px; --platform-v2-header-height: 60px; }
-  body.platform-shell-v2 .platform-sidebar__brand-title,
-  body.platform-shell-v2 .platform-sidebar__brand-subtitle,
-  body.platform-shell-v2 .platform-sidebar__link span { display: none !important; }
-  body.platform-shell-v2 .platform-sidebar__brand { display: flex !important; justify-content: center !important; padding-inline: 6px !important; }
-  body.platform-shell-v2 .platform-sidebar__brand img { width: 38px !important; height: 38px !important; }
-  body.platform-shell-v2 .platform-sidebar__nav { padding-inline: 8px !important; }
-  body.platform-shell-v2 .platform-sidebar__link { justify-content: center !important; padding: 8px !important; }
-  body.platform-shell-v2 .topbar {
-    grid-template-columns: 1fr auto !important;
-    margin: 8px 8px -5px !important;
-    padding: 6px 9px !important;
-  }
-  body.platform-shell-v2 .topbar .platform-search,
-  body.platform-shell-v2 .topbar input[type="search"] { display: none !important; }
-  body.platform-shell-v2 .reservations-module { padding-inline: 8px !important; }
-}
-
-@media (max-width: 640px) {
-  :root { --platform-v2-sidebar-width: 0px; --platform-v2-header-height: 56px; }
-  body.platform-shell-v2 .platform-sidebar {
-    width: 100% !important;
-    height: 58px !important;
-    inset-block: auto 0 !important;
-    inset-inline: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-  body.platform-shell-v2 .platform-sidebar__brand { display: none !important; }
-  body.platform-shell-v2 .platform-sidebar__nav {
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-around !important;
-    padding: 5px !important;
-    overflow-x: auto !important;
-  }
-  body.platform-shell-v2 .platform-sidebar__link { min-width: 46px !important; min-height: 44px !important; }
-  body.platform-shell-v2 .application-shell {
-    margin-inline-end: 0 !important;
-    width: 100% !important;
-    padding-bottom: 62px !important;
-  }
-  body.platform-shell-v2 .topbar {
-    margin: 6px 6px -4px !important;
-    border-radius: 12px !important;
-  }
-  body.platform-shell-v2 .topbar .application-brand-logo,
-  body.platform-shell-v2 .topbar .application-brand,
-  body.platform-shell-v2 .topbar .brand { max-width: 150px !important; }
-  body.platform-shell-v2 .reservations-module { padding-inline: 6px !important; }
-}
+/* Canonical Platform Shell v4 — approved reference geometry.
+   Global chrome only; module business UI remains module-owned. */
+:root{--ps-side:176px;--ps-head:64px;--ps-blue:#0a6cff;--ps-navy:#082b4d;--ps-page:#f6f9fc;--ps-border:#dce8f3;--ps-text:#0f2742;--ps-muted:#64748b}
+html,body{overflow-x:hidden}body{background:var(--ps-page)}
+#platformShell.platform-shell-v2{position:relative;min-height:100vh;background:var(--ps-page)}
+/* Actual current DOM sidebar. */
+#platformShell>.platform-shell-header{position:fixed!important;z-index:1200!important;inset-block:0!important;inset-inline-end:0!important;width:var(--ps-side)!important;height:100vh!important;display:flex!important;flex-direction:column!important;padding:12px 10px!important;box-sizing:border-box!important;background:linear-gradient(180deg,#082f55,#062643)!important;border:0!important;border-inline-start:1px solid rgba(255,255,255,.08)!important;color:#fff!important;box-shadow:-8px 0 24px rgba(15,23,42,.07)!important;overflow-y:auto!important}
+#platformShell>.platform-shell-header .startup-brand{display:flex!important;align-items:center!important;gap:7px!important;padding:2px 2px 12px!important;margin:0 0 8px!important;border-bottom:1px solid rgba(255,255,255,.12)!important;color:#fff!important}
+#platformShell>.platform-shell-header .startup-logo{width:38px!important;height:38px!important;flex:0 0 38px!important;object-fit:contain!important;border-radius:50%!important;background:#fff!important}
+#platformShell>.platform-shell-header .startup-brand-copy{min-width:0!important;display:block!important}#platformShell>.platform-shell-header .startup-brand-copy h1{margin:0!important;color:#fff!important;font-size:10px!important;line-height:1.35!important;white-space:nowrap!important}#platformShell>.platform-shell-header .startup-brand-copy p{margin:3px 0 0!important;color:rgba(255,255,255,.65)!important;font-size:6px!important;white-space:nowrap!important}
+#platformShell>.platform-shell-header .platform-global-nav{display:grid!important;grid-template-columns:1fr!important;gap:3px!important;width:100%!important;margin:0!important;padding:0!important}
+#platformShell>.platform-shell-header .platform-global-nav-item{width:100%!important;min-height:39px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;padding:7px 9px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:rgba(255,255,255,.88)!important;font-size:11px!important;font-weight:700!important;text-align:right!important;box-shadow:none!important}
+#platformShell>.platform-shell-header .platform-global-nav-item [data-app-icon]{width:18px!important;height:18px!important;flex:0 0 18px!important}#platformShell>.platform-shell-header .platform-global-nav-item small{margin-inline-start:auto!important;color:rgba(255,255,255,.35)!important;font-size:7px!important}#platformShell>.platform-shell-header .platform-global-nav-item:disabled{opacity:.48!important}
+#platformShell>.platform-shell-header .platform-global-nav-item:first-child,#platformShell>.platform-shell-header .platform-global-nav-item.is-active,#platformShell>.platform-shell-header .platform-global-nav-item[aria-current="page"]{background:linear-gradient(90deg,#0758bd,#0a6cff)!important;color:#fff!important;box-shadow:inset 3px 0 0 #4ea1ff,0 5px 14px rgba(10,108,255,.18)!important}
+/* Actual current DOM top header: white bar, aligned to content, never a second navigation row. */
+#platformShell>.platform-topbar{position:fixed!important;z-index:1100!important;inset-block-start:12px!important;inset-inline-end:calc(var(--ps-side) + 16px)!important;inset-inline-start:16px!important;height:var(--ps-head)!important;min-height:var(--ps-head)!important;display:grid!important;grid-template-columns:minmax(210px,.85fr) minmax(320px,1.25fr) auto!important;align-items:center!important;gap:10px!important;padding:7px 12px!important;box-sizing:border-box!important;border:1px solid var(--ps-border)!important;border-radius:14px!important;background:rgba(255,255,255,.98)!important;box-shadow:0 7px 22px rgba(15,23,42,.08)!important;color:var(--ps-text)!important}
+#platformShell>.platform-topbar .platform-navigation-toggle{display:none!important}#platformShell>.platform-topbar .startup-date-card{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}#platformShell>.platform-topbar .startup-date-copy{display:grid!important;gap:1px!important}#platformShell>.platform-topbar .startup-date-copy strong{font-size:10px!important}#platformShell>.platform-topbar .startup-date-copy small,#platformShell>.platform-topbar .startup-time{font-size:9px!important;color:var(--ps-muted)!important}
+#platformShell>.platform-topbar .startup-auth-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:6px!important}#platformShell>.platform-topbar .startup-auth-signed-in,#platformShell>.platform-topbar .startup-auth-signed-out{align-items:center!important;gap:6px!important}#platformShell>.platform-topbar .startup-auth-account-name{max-width:210px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:10px!important;font-weight:800!important}#platformShell>.platform-topbar button{min-height:34px!important;padding:6px 10px!important;border-radius:8px!important;font-size:9px!important}
+/* Main application area starts under header and beside sidebar. */
+#startupScreen.startup-dashboard{box-sizing:border-box!important;width:calc(100% - var(--ps-side))!important;min-height:100vh!important;margin-inline-end:var(--ps-side)!important;padding:84px 0 20px!important;background:var(--ps-page)!important}
+#startupScreen .startup-shell{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}#reservationsWorkspace{width:100%!important;max-width:none!important;margin:0!important}
+/* Hide legacy conference-only topbar while unified module workspace is active. */
+#startupScreen.platform-reservations-active~.conference-module-nav,.platform-reservations-active .conference-module-nav{display:none!important}
+@media(min-width:1500px){:root{--ps-side:176px}#platformShell>.platform-topbar{inset-inline-start:24px!important;inset-inline-end:calc(var(--ps-side) + 24px)!important}#startupScreen.startup-dashboard{padding-top:84px!important}}
+@media(max-width:1100px){:root{--ps-side:76px}#platformShell>.platform-shell-header{padding-inline:7px!important}#platformShell>.platform-shell-header .startup-brand-copy,#platformShell>.platform-shell-header .platform-global-nav-item>span:last-of-type,#platformShell>.platform-shell-header .platform-global-nav-item small{display:none!important}#platformShell>.platform-shell-header .startup-brand{justify-content:center!important}#platformShell>.platform-shell-header .platform-global-nav-item{justify-content:center!important;padding-inline:7px!important}#platformShell>.platform-topbar{inset-inline-end:calc(var(--ps-side) + 10px)!important;inset-inline-start:10px!important;grid-template-columns:1fr auto!important}#platformShell>.platform-topbar .startup-date-card{display:none!important}}
+@media(max-width:820px){:root{--ps-side:0px;--ps-head:58px}#platformShell>.platform-shell-header{inset-block:auto 0!important;inset-inline:0!important;width:100%!important;height:62px!important;display:block!important;padding:5px!important}#platformShell>.platform-shell-header .startup-brand{display:none!important}#platformShell>.platform-shell-header .platform-global-nav{display:flex!important;grid-template-columns:none!important;justify-content:space-around!important;gap:3px!important;overflow-x:auto!important}#platformShell>.platform-shell-header .platform-global-nav-item{width:auto!important;min-width:46px!important;min-height:50px!important}#platformShell>.platform-topbar{inset-inline:8px!important;inset-block-start:8px!important;grid-template-columns:1fr auto!important}#platformShell>.platform-topbar .startup-auth-account-name{max-width:130px!important}#startupScreen.startup-dashboard{width:100%!important;margin:0!important;padding:76px 0 74px!important}}
+@media(max-width:520px){#platformShell>.platform-topbar{inset-inline:6px!important;height:54px!important;min-height:54px!important;padding:5px 8px!important}#platformShell>.platform-topbar .startup-auth-account-name{max-width:100px!important}#platformShell>.platform-topbar button{min-height:44px!important}#startupScreen.startup-dashboard{padding-top:70px!important}}
