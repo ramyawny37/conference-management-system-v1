@@ -43,7 +43,7 @@ assert.match(css,/@media\(max-width:600px\)[\s\S]*?font-size:16px/);
 assert.match(tokens,/--platform-touch-target:44px/);
 assert.match(tokens,/--platform-safe-area-bottom:max\(16px,env\(safe-area-inset-bottom,0px\)\)/);
 assert.match(tokens,/--platform-shell-header-height:72px/);
-assert.match(tokens,/--platform-v2-sidebar-width:288px/);
+assert.match(tokens,/--platform-v2-sidebar-width:248px/);
 assert.match(tokens,/--platform-v2-primary:#0a6cff/);
 assert.match(tokens,/--platform-v2-navy:#0b2747/);
 assert.match(html,/<meta name="viewport" content="width=device-width,initial-scale=1\.0,viewport-fit=cover">/);
