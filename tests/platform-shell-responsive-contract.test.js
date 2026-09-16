@@ -17,7 +17,7 @@ assert.strictEqual((html.match(/class="platform-topbar"/g)||[]).length,1);
 assert.doesNotMatch(html,/startup-home-header/);
 assert.match(html,/platform-shell-v2\.css\?rev=platform-dashboard-v2-v5/);
 assert.match(worker,/platform-shell-v2\.css\?rev=platform-dashboard-v2-v5/);
-assert.match(worker,/\? 'platform-dashboard-v2-v5'/);
+assert.match(worker,/\? 'module-permission-lifecycle-cache-v1'/);
 assert.match(html,/class="topbar conference-module-nav" id="applicationTopbar"/);
 assert.match(css,/\.conference-module-nav \.application-brand-logo,\.conference-module-nav \.application-account-entry\{display:none!important\}/);
 assert.match(html,/class="platform-module-switcher platform-global-nav-item" onclick="showPlatformModules\(\)"/);
