@@ -31,7 +31,7 @@ test('the document exposes exactly one canonical shell, sidebar, header, and wor
 });
 
 test('the canonical shell is the only active global shell stylesheet',()=>{
-  const canonicalAsset='canonical-platform-shell.css?rev=canonical-platform-foundation-v1';
+  const canonicalAsset='canonical-platform-shell.css?rev=reservations-visual-round1-v1';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
@@ -41,7 +41,11 @@ test('the canonical shell is the only active global shell stylesheet',()=>{
   assert.strictEqual(fs.existsSync(path.join(root,'platform-shell-v2.css')),false);
   assert.ok(html.indexOf('modules/reservations/reservations-module.css')<html.indexOf(canonicalAsset));
   assert.doesNotMatch(css,/!important/);
-  assert.doesNotMatch(css,/\.reference-|#reservationsWorkspace|#warehouseWorkspace/);
+  assert.doesNotMatch(css,/(^|\n)\.reference-|#reservationsWorkspace|#warehouseWorkspace/);
+  assert.match(css,/\[data-reservations-module-root\] \.reference-hero\{min-height:140px/);
+  assert.match(css,/\[data-reservations-module-root\] \.reference-stats\{min-height:104px;grid-template-columns:repeat\(7/);
+  assert.match(css,/\[data-reservations-module-root\] \.reference-insights\{min-height:254px/);
+  assert.match(css,/\[data-reservations-module-root\] \.reference-lower-grid\{min-height:364px/);
 });
 
 test('shared tokens remain the global source and the shell owns only local layout variables',()=>{
@@ -85,6 +89,6 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'canonical-platform-foundation-cache-v1'/);
+  assert.match(worker,/\? 'reservations-visual-round1-cache-v1'/);
   assert.match(worker,/: 'production-3-5-0-config-isolation-v1'/);
 });
