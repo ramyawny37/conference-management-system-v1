@@ -1,17 +1,17 @@
 /* Reservations visual source-alignment layer.
    Kept separate from the generated module bundle so the reference UI can be iterated safely. */
-.reference-dashboard.reference-dashboard{gap:24px}
+.reference-dashboard.reference-dashboard{gap:8px}
 .reference-dashboard .reference-hero{min-height:140px;grid-template-columns:minmax(250px,.92fr) minmax(360px,1.08fr) minmax(250px,.92fr);gap:24px;padding:16px 24px;border-radius:16px;box-shadow:0 2px 8px #0f172a0f}
 .reference-dashboard .reference-hero__event{min-height:108px;padding:10px 12px;border:0;border-radius:12px;background:#fff;box-shadow:0 6px 20px #0f172a1f}
 .reference-dashboard .reference-event-art{width:92px;height:88px;border-radius:10px}
 .reference-dashboard .reference-hero__statement{align-self:end;padding-bottom:12px;line-height:1.55}
-.reference-dashboard .reference-stats{min-height:104px;gap:8px}
+.reference-dashboard .reference-stats{min-height:104px;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .reference-dashboard .reference-stat{gap:10px;padding:12px;border-color:#e2e6f0;border-radius:8px;box-shadow:0 2px 8px #0f172a0f}
 .reference-dashboard .reference-stat__icon{border-radius:8px}
-.reference-dashboard .reference-actions{min-height:64px;gap:8px;padding:6px;border-color:#e2e6f0;border-radius:8px;box-shadow:none}
+.reference-dashboard .reference-actions{min-height:64px;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:6px;border-color:#e2e6f0;border-radius:8px;box-shadow:none}
 .reference-dashboard .reference-action{min-height:50px;padding:8px 10px;border-color:#e5edf7;border-radius:6px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
 .reference-dashboard .reference-action:hover{border-color:#b9cbe0;box-shadow:0 3px 10px #0f172a0d;transform:translateY(-1px)}
-.reference-dashboard .reference-insights{min-height:240px;gap:8px}
+.reference-dashboard .reference-insights{min-height:240px;grid-template-columns:.72fr repeat(3,1fr) 1.22fr;gap:8px}
 .reference-dashboard .reference-panel{border-color:#e2e6f0;border-radius:8px;box-shadow:0 2px 8px #0f172a0f}
 .reference-dashboard .reference-panel>header{min-height:42px;padding:8px 12px}
 .reference-dashboard .reference-panel__body{padding:12px}
@@ -23,7 +23,7 @@
 .reference-dashboard .reference-tool-grid{gap:8px}
 .reference-dashboard .reference-tool-grid a{min-height:58px;padding:6px;border:0;border-radius:6px}
 .platform-module[data-reservations-module-root] .platform-state--compact{min-height:168px;gap:10px;border-radius:14px;padding:24px}
-@media(max-width:1360px){.reference-dashboard.reference-dashboard{gap:18px}.reference-dashboard .reference-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.reference-dashboard .reference-insights{grid-template-columns:repeat(2,minmax(0,1fr))}.reference-dashboard .reference-lower-grid{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.reference-dashboard .reference-side-tools{grid-column:1/-1;min-height:auto;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}}
+@media(max-width:1180px){.reference-dashboard .reference-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.reference-dashboard .reference-insights{grid-template-columns:repeat(2,minmax(0,1fr))}.reference-dashboard .reference-lower-grid{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.reference-dashboard .reference-side-tools{grid-column:1/-1;min-height:auto;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}}
 @media(max-width:1040px){.reference-dashboard .reference-hero{grid-template-columns:minmax(220px,.8fr) minmax(320px,1.2fr)}.reference-dashboard .reference-hero__statement{grid-column:1/-1}.reference-dashboard .reference-actions{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:820px){.reference-dashboard.reference-dashboard{gap:14px}.reference-dashboard .reference-hero{min-height:120px;grid-template-columns:1fr;gap:14px;padding:16px}.reference-dashboard .reference-hero__statement{display:none}.reference-dashboard .reference-stats,.reference-dashboard .reference-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.reference-dashboard .reference-insights,.reference-dashboard .reference-lower-grid{grid-template-columns:1fr}.reference-dashboard .reference-side-tools{grid-column:auto;grid-template-columns:1fr}.reference-dashboard .reference-stat{min-height:84px}}
 @media(max-width:520px){.reference-dashboard.reference-dashboard{gap:12px}.reference-dashboard .reference-hero{min-height:108px;padding:14px}.reference-dashboard .reference-hero__event{align-items:flex-start}.reference-dashboard .reference-event-art{width:70px;height:70px}.reference-dashboard .reference-stats,.reference-dashboard .reference-actions,.reference-dashboard .reference-insights{grid-template-columns:1fr}.reference-dashboard .reference-action{min-height:50px}.platform-module[data-reservations-module-root] .platform-state--compact{min-height:150px;padding:18px}}
