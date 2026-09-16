@@ -96,8 +96,8 @@ test('unknown modules fail closed and cannot be opened',()=>{
 });
 
 test('Reservations global navigation and static bundle stay inside the unified Platform artifact',()=>{
-  assert.match(index,/platform-global-nav[\s\S]*data-platform-module="reservations"/);
-  assert.match(index,/class="platform-global-nav-item" data-platform-module="reservations"/);
+  assert.match(index,/canonical-platform-nav[\s\S]*data-platform-module="reservations"/);
+  assert.match(index,/class="canonical-platform-nav__item" data-platform-module="reservations"/);
   assert.match(index,/id="reservationsWorkspace"/);
   assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=platform-dashboard-v2-v5/);
   assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=platform-dashboard-v2-v5/);

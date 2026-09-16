@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'module-permission-generic-service-cache-v2'
+  ? 'canonical-platform-foundation-cache-v1'
   : 'production-3-5-0-config-isolation-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -15,7 +15,7 @@ const CORE_ASSETS = [
   './index.html',
   './shared-design-tokens.css?rev=platform-shell-phase2b-v1',
   './style.css?rev=item-unit-dialog-v1',
-  './platform-shell-v2.css?rev=platform-dashboard-v2-v5',
+  './canonical-platform-shell.css?rev=canonical-platform-foundation-v1',
   './modules/reservations/reservations-module.css?rev=platform-dashboard-v2-v5',
   './js/application-routing.js?rev=canonical-conference-routing-v1',
   './js/storage/environment-namespace.js',
@@ -41,7 +41,7 @@ const CORE_ASSETS = [
   './js/supabase/warehouse-transport.js?rev=phase-w1-v1',
   './js/supabase/client.js?rev=phase1c-v1',
   './js/supabase/auth.js?rev=account-session-identity-v1',
-  './js/platform-integration.js?rev=platform-dashboard-v2-v5',
+  './js/platform-integration.js?rev=canonical-platform-foundation-v1',
   './modules/reservations/reservations-module.js?rev=platform-dashboard-v2-v5',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',
   './js/sync/diagnostics-privacy-policy.js?rev=diagnostics-privacy-hardening-v1',

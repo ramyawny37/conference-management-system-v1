@@ -1,59 +1,90 @@
 'use strict';
 
-const assert=require('assert');
-const fs=require('fs');
-const path=require('path');
+const assert=require('node:assert');
+const fs=require('node:fs');
+const path=require('node:path');
+const test=require('node:test');
 
 const root=path.join(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const css=fs.readFileSync(path.join(root,'platform-shell-v2.css'),'utf8');
+const css=fs.readFileSync(path.join(root,'canonical-platform-shell.css'),'utf8');
 const tokens=fs.readFileSync(path.join(root,'shared-design-tokens.css'),'utf8');
+const reservations=fs.readFileSync(path.join(root,'modules/reservations/reservations-module.js'),'utf8');
+const reservationsCss=fs.readFileSync(path.join(root,'modules/reservations/reservations-module.css'),'utf8');
 const warehouse=fs.readFileSync(path.join(root,'js/warehouse/workspace.js'),'utf8');
 const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
 
-assert.strictEqual((html.match(/class="platform-shell-v2"/g)||[]).length,1);
-assert.strictEqual((html.match(/class="platform-shell-header"/g)||[]).length,1);
-assert.strictEqual((html.match(/class="platform-topbar"/g)||[]).length,1);
-assert.doesNotMatch(html,/startup-home-header/);
-assert.match(html,/platform-shell-v2\.css\?rev=platform-dashboard-v2-v5/);
-assert.match(worker,/platform-shell-v2\.css\?rev=platform-dashboard-v2-v5/);
-assert.match(worker,/\? 'module-permission-generic-service-cache-v2'/);
-assert.match(html,/class="topbar conference-module-nav" id="applicationTopbar"/);
-assert.match(css,/\.conference-module-nav \.application-brand-logo,\.conference-module-nav \.application-account-entry\{display:none!important\}/);
-assert.match(html,/class="platform-module-switcher platform-global-nav-item" onclick="showPlatformModules\(\)"/);
-assert.match(html,/class="platform-global-nav"/);
-assert.strictEqual((html.match(/data-platform-module="conference"/g)||[]).length,1);
-assert.strictEqual((html.match(/data-platform-module="reservations"/g)||[]).length,1);
-assert.strictEqual((html.match(/data-platform-module="warehouse"/g)||[]).length,1);
-assert.doesNotMatch(html,/platform-home|platform-module-grid|platform-module-card/);
-assert.match(html,/platform-navigation-toggle/);
-assert.match(html,/id="conferenceWorkspace"/);
-assert.match(html,/id="warehouseWorkspace"/);
-assert.match(html,/id="reservationsWorkspace"/);
-assert.match(css,/@media\(max-width:1100px\)/);
-assert.match(css,/@media\(max-width:820px\)/);
-assert.match(css,/@media\(max-width:700px\)/);
-assert.match(css,/@media\(max-width:600px\)/);
-assert.match(css,/--platform-v2-sidebar-width\)/);
-assert.match(css,/min-height:44px/);
-assert.match(css,/var\(--platform-safe-area-bottom\)/);
-assert.match(css,/html,body\{max-width:100%;overflow-x:hidden\}/);
-assert.match(css,/@media\(max-width:820px\)[\s\S]*?#warehouseWorkspace \.warehouse-menu-trigger\{display:grid/);
-assert.match(css,/@media\(max-width:600px\)[\s\S]*?font-size:16px/);
-assert.match(tokens,/--platform-touch-target:44px/);
-assert.match(tokens,/--platform-safe-area-bottom:max\(16px,env\(safe-area-inset-bottom,0px\)\)/);
-assert.match(tokens,/--platform-shell-header-height:72px/);
-assert.match(tokens,/--platform-v2-sidebar-width:288px/);
-assert.match(tokens,/--platform-v2-primary:#0a6cff/);
-assert.match(tokens,/--platform-v2-navy:#0b2747/);
-assert.match(html,/<meta name="viewport" content="width=device-width,initial-scale=1\.0,viewport-fit=cover">/);
-assert.doesNotMatch(warehouse,/class="warehouse-brand"/);
-assert.doesNotMatch(warehouse,/class="warehouse-topbar"/);
-assert.doesNotMatch(warehouse,/class="warehouse-account"/);
-assert.doesNotMatch(warehouse,/data-wh-modules/);
-assert.match(warehouse,/class="warehouse-sidebar"[\s\S]*?<nav>/);
-assert.match(warehouse,/class="warehouse-menu-trigger" data-wh-menu/);
-assert.match(html,/data-startup-auth-account-name/);
-assert.match(html,/SyncSettingsUI\.signOut\(\)/);
+test('the document exposes exactly one canonical shell, sidebar, header, and workspace host',()=>{
+  assert.strictEqual((html.match(/data-canonical-platform-shell(?=[\s>])/g)||[]).length,1);
+  assert.strictEqual((html.match(/data-canonical-platform-sidebar(?=[\s>])/g)||[]).length,1);
+  assert.strictEqual((html.match(/data-canonical-platform-header(?=[\s>])/g)||[]).length,1);
+  assert.strictEqual((html.match(/data-canonical-platform-workspace-host(?=[\s>])/g)||[]).length,1);
+  assert.match(html,/class="canonical-platform-nav"/);
+  assert.match(html,/class="canonical-platform-nav__item" data-platform-home/);
+  assert.strictEqual((html.match(/data-platform-module="conference"/g)||[]).length,1);
+  assert.strictEqual((html.match(/data-platform-module="reservations"/g)||[]).length,1);
+  assert.strictEqual((html.match(/data-platform-module="warehouse"/g)||[]).length,1);
+  assert.match(html,/class="topbar conference-module-nav" id="applicationTopbar"/);
+  assert.match(html,/id="conferenceWorkspace"/);
+  assert.match(html,/id="warehouseWorkspace"/);
+  assert.match(html,/id="reservationsWorkspace"/);
+});
 
-console.log('platform shell v2 responsive contract tests passed');
+test('the canonical shell is the only active global shell stylesheet',()=>{
+  const canonicalAsset='canonical-platform-shell.css?rev=canonical-platform-foundation-v1';
+  assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
+  assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
+  assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
+  assert.match(worker,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
+  assert.doesNotMatch(html,/platform-shell-v2\.css|class="platform-shell-v2"/);
+  assert.doesNotMatch(worker,/platform-shell-v2\.css/);
+  assert.strictEqual(fs.existsSync(path.join(root,'platform-shell-v2.css')),false);
+  assert.ok(html.indexOf('modules/reservations/reservations-module.css')<html.indexOf(canonicalAsset));
+  assert.doesNotMatch(css,/!important/);
+  assert.doesNotMatch(css,/\.reference-|#reservationsWorkspace|#warehouseWorkspace/);
+});
+
+test('shared tokens remain the global source and the shell owns only local layout variables',()=>{
+  assert.doesNotMatch(css,/:root\s*\{/);
+  assert.match(css,/\.canonical-platform-shell\{--canonical-sidebar-width:204px;--canonical-shell-gutter:24px;--canonical-header-height:64px/);
+  assert.match(css,/var\(--platform-v2-navy\)/);
+  assert.match(css,/var\(--platform-v2-border\)/);
+  assert.match(css,/var\(--platform-shadow-md\)/);
+  assert.match(tokens,/--platform-touch-target:44px/);
+  assert.match(tokens,/--platform-safe-area-bottom:max\(16px,env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(tokens,/--platform-v2-primary:#0a6cff/);
+  assert.match(tokens,/--platform-v2-navy:#0b2747/);
+});
+
+test('the shell has intentional desktop and mobile layout contracts',()=>{
+  assert.match(css,/\.canonical-platform-sidebar\{[^}]*position:fixed[^}]*width:var\(--canonical-sidebar-width\)/);
+  assert.match(css,/\.canonical-platform-header\{[^}]*right:calc\(var\(--canonical-sidebar-width\) \+ 24px\)/);
+  assert.match(css,/@media\(max-width:900px\)[\s\S]*\.canonical-platform-shell\.platform-navigation-open \.canonical-platform-sidebar\{transform:translateX\(0\)\}/);
+  assert.match(css,/@media\(max-width:600px\)/);
+  assert.match(html,/<meta name="viewport" content="width=device-width,initial-scale=1\.0,viewport-fit=cover">/);
+});
+
+test('Reservations is real module-owned markup within the shared workspace',()=>{
+  assert.match(reservations,/data-reservations-module-root/);
+  for(const className of ['reference-dashboard','reference-hero','reference-stats','reference-actions','reference-insights','reference-lower-grid'])assert.match(reservations,new RegExp(className));
+  assert.match(reservations,/ReservationsPlatformModule/);
+  assert.doesNotMatch(reservationsCss,/\.reference-dashboard\.reference-dashboard/);
+  assert.doesNotMatch(reservationsCss,/min-height:124px/);
+  assert.match(reservationsCss,/\.reference-dashboard\{/);
+});
+
+test('module workspaces do not reintroduce a second brand, topbar, or account shell',()=>{
+  assert.doesNotMatch(warehouse,/class="warehouse-brand"/);
+  assert.doesNotMatch(warehouse,/class="warehouse-topbar"/);
+  assert.doesNotMatch(warehouse,/class="warehouse-account"/);
+  assert.doesNotMatch(warehouse,/data-wh-modules/);
+  assert.match(warehouse,/class="warehouse-sidebar"[\s\S]*?<nav>/);
+  assert.match(warehouse,/class="warehouse-menu-trigger" data-wh-menu/);
+  assert.match(html,/data-startup-auth-account-name/);
+  assert.match(html,/SyncSettingsUI\.signOut\(\)/);
+});
+
+test('Development installs the canonical foundation cache without changing Production revision',()=>{
+  assert.match(worker,/\? 'canonical-platform-foundation-cache-v1'/);
+  assert.match(worker,/: 'production-3-5-0-config-isolation-v1'/);
+});

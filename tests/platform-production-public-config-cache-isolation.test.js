@@ -17,7 +17,7 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
   assert(revisions,'missing environment-specific cache revisions');
   assert.strictEqual(
-    revisions[1],'module-permission-generic-service-cache-v2'
+    revisions[1],'canonical-platform-foundation-cache-v1'
   );
   assert.strictEqual(revisions[2],'production-3-5-0-config-isolation-v1');
 
