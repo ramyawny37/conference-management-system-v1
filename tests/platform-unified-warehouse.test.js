@@ -17,12 +17,12 @@ vm.runInNewContext(conferenceSource,sandbox);vm.runInNewContext(warehouseSource,
 const conference=sandbox.window.ConferenceDeviceOperationContract,warehouse=sandbox.window.WarehouseDeviceOperationContract,platform=sandbox.window.PlatformDeviceOperationContract;
 
 test("unified catalogs include the approved guarded Warehouse operations",()=>{
-  assert.equal(conference.EDGE_ONLY_PROTECTED.length,60);
+  assert.equal(conference.EDGE_ONLY_PROTECTED.length,61);
   assert.equal(warehouse.PROTECTED.length,37);
   assert.equal(warehouse.DISPATCHABLE.length,36);
   assert.equal(warehouse.DEFERRED.length,1);
   assert.equal(warehouse.DEFERRED[0].signature,"warehouse.stage_import(uuid,uuid,jsonb)");
-  assert.equal(platform.DISPATCHABLE.length,96);
+  assert.equal(platform.DISPATCHABLE.length,97);
 });
 
 test("generic Edge and SQL dispatchers expose exactly the dispatchable catalogs",()=>{

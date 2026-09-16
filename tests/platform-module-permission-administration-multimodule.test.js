@@ -18,6 +18,7 @@ function serviceRuntime(){
       if(operation==='list_module_permission_catalog_for_administration')return Promise.resolve([]);
       if(operation==='search_module_permission_candidates')return Promise.resolve([]);
       if(operation==='list_module_permission_grants')return Promise.resolve({status:'success',targetUserId:args.p_target_user_id,grants:[]});
+      if(operation==='list_module_permission_resources_for_administration')return Promise.resolve([{resourceId:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',resourceType:args.p_resource_type,code:'R1',name:'Resource'}]);
       return Promise.resolve({grantId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'});
     }},
     WarehouseTransport:{invoke:(operation,args)=>{warehouseCalls.push({operation,args});return Promise.resolve([]);}}
@@ -55,23 +56,24 @@ test('business keys are exact-module only and cross-module requests fail closed'
   assert.equal((await runtime.api.catalogMutation('reservations',{action:'grant',targetUserId:user,permissionKey:'warehouse.store.view'})).status,'invalid_input');
 });
 
-test('Store discovery is explicitly Warehouse-only',async()=>{
+test('resource discovery is generic for Warehouse stores and Reservations events',async()=>{
   const runtime=serviceRuntime();
-  assert.equal((await runtime.api.listStores('reservations')).status,'invalid_input');
+  assert.equal((await runtime.api.listResources('warehouse','store')).ok,true);
+  assert.equal((await runtime.api.listResources('reservations','event')).ok,true);
+  const calls=runtime.protectedCalls.filter((item)=>item.operation==='list_module_permission_resources_for_administration');
+  assert.deepEqual(calls.map((item)=>item.args.p_resource_type),['store','event']);
   assert.equal(runtime.warehouseCalls.length,0);
-  assert.equal((await runtime.api.listStores('warehouse')).ok,true);
-  assert.equal(runtime.warehouseCalls.length,1);
 });
 
-test('UI is module-selectable, resets stale state, and keeps resource controls Warehouse-only',()=>{
+test('UI is module-selectable, resets generic resource state, and avoids module branches',()=>{
   assert.match(uiSource,/data-module-permission-module="warehouse"/);
   assert.match(uiSource,/data-module-permission-module="reservations"/);
   assert.match(uiSource,/مخازن|المخازن/);
   assert.match(uiSource,/الحجوزات/);
   assert.match(uiSource,/function selectModule/);
-  assert.match(uiSource,/selected:null[\s\S]*candidates:\[\][\s\S]*grants:\[\][\s\S]*catalog:\[\][\s\S]*stores:\[\]/);
-  assert.match(uiSource,/state\.moduleKey==='warehouse'/);
-  assert.doesNotMatch(uiSource,/Organization|organization|مؤسسة|مؤتمر|فعالية/);
+  assert.match(uiSource,/selected:null[\s\S]*candidates:\[\][\s\S]*grants:\[\][\s\S]*catalog:\[\][\s\S]*resourcesByType:\{\}/);
+  assert.doesNotMatch(uiSource,/supportsStore|data-store-grant|state\.stores/);
+  assert.match(uiSource,/allowedResourceType/);
 });
 
 test('Device Session protection and actor-device override denial remain intact',()=>{

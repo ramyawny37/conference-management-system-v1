@@ -22,9 +22,9 @@ test('7 Warehouse business permissions are not hardcoded',()=>{assert.doesNotMat
 test('8 canonical grant list is reused',()=>assert.match(service,/invoke\('list_module_permission_grants'/));
 test('9 foundation mutation uses canonical protected operation',()=>assert.match(service,/manage_foundation_module_grant/));
 test('10 business mutation uses canonical protected operation',()=>assert.match(service,/manage_catalog_module_grant/));
-test('11 administration store picker uses its dedicated operation',()=>assert.match(service,/list_permission_administration_stores/));
-test('12 administration store picker avoids ordinary Warehouse reads',()=>assert.doesNotMatch(service,/warehouse\.store\.view|['"]list_stores['"]|['"]discover_stores['"]/));
-test('13 exact store scope is canonical',()=>assert.match(ui,/mutateBusiness\('grant',button,'store',selectNode\.value,null\)/));
+test('11 administration resource picker uses the generic protected operation',()=>assert.match(service,/list_module_permission_resources_for_administration/));
+test('12 administration resource picker avoids ordinary module reads',()=>assert.doesNotMatch(service,/warehouse\.store\.view|['"]list_stores['"]|['"]discover_stores['"]|get_booking_creation_context/));
+test('13 exact resource scope is metadata-driven',()=>assert.match(ui,/mutateBusiness\('grant',button,type,selectNode\.value,null\)/));
 test('14 Store UUID is passed without rewriting',()=>assert.match(service,/args\.p_resource_id=input\.resourceId==null\?null:String\(input\.resourceId\)/));
 test('15 module.access controls exist',()=>assert.match(ui,/foundationRow\('module\.access'/));
 test('16 module.manage controls are owner-confirmation restricted',()=>assert.match(ui,/foundationRow\('module\.manage'[\s\S]*true\)/));
@@ -42,11 +42,11 @@ test('27 no device data is displayed',()=>assert.doesNotMatch(ui,/device(?:Id|Na
 test('28 no Conference capability is displayed',()=>assert.doesNotMatch(service+ui,/can_create_conferences|canCreateConferences/));
 test('29 Settings tab is independent from users tab',()=>{assert.match(script,/activeSettingsTab==='module-permissions'/);assert.match(script,/activeSettingsTab === 'users'/);assert.doesNotMatch(script,/activeSettingsTab === 'users'\s*\|\|\s*activeSettingsTab==='module-permissions'/);});
 test('30 asset order loads service before UI',()=>assert.ok(html.indexOf('module-permission-administration-service.js')<html.indexOf('module-permission-administration-ui.js')));
-test('31 PWA asset graph includes both versioned assets',()=>{for(const name of ['module-permission-administration-service.js?rev=platform-multimodule-permissions-v1','module-permission-administration-ui.js?rev=platform-multimodule-permissions-v1'])assert.ok(worker.includes(name));});
+test('31 PWA asset graph includes both versioned assets',()=>{for(const name of ['module-permission-administration-service.js?rev=generic-permission-resources-v1','module-permission-administration-ui.js?rev=generic-permission-resources-v1'])assert.ok(worker.includes(name));});
 test('32 responsive CSS covers tablet and mobile',()=>{assert.match(css,/module-permission-layout/);assert.match(css,/@media\(max-width:900px\)/);assert.match(css,/@media\(max-width:600px\)/);});
 test('33 actor-device override is rejected and never sent',()=>{assert.match(service,/ACTOR_DEVICE_OVERRIDE_DENIED/);assert.doesNotMatch(ui,/p_actor_device_id|p_device_id/);});
 test('34 unified Platform Device Session route is reused',()=>assert.match(service,/PlatformDeviceSession\.invokeProtected/));
-test('35 Warehouse store administration reuses unified Warehouse transport',()=>assert.match(service,/WarehouseTransport\.invoke/));
+test('35 resource administration reuses unified Platform Device Session transport',()=>assert.match(service,/invoke\('list_module_permission_resources_for_administration'/));
 test('36 no direct RPC or table bypass is introduced',()=>assert.doesNotMatch(service+ui,/\.rpc\s*\(|\.from\s*\(|\.insert\s*\(|\.update\s*\(|\.delete\s*\(/));
 test('37 selected-user summary stays minimal',()=>{for(const value of ['displayName','email','accountStatus'])assert.match(service,new RegExp(value));assert.doesNotMatch(ui,/membership|systemRoles|platformRoles|deviceList/i);});
 test('38 active and revoked grant history are distinguished',()=>{assert.match(service,/active:row\.revokedAt==null/);assert.match(ui,/item\.active\?'نشطة':'ملغاة'/);});
@@ -68,14 +68,14 @@ test('40 no migration is introduced by Round 3G.3 assets',()=>assert.doesNotMatc
 
 function serviceRuntime(capability){
   var calls=[];
-  var sandbox={window:{crypto:{randomUUID:()=> 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'},PlatformDeviceSession:{invokeProtected:(name,args)=>{calls.push({name,args});if(name==='get_user_management_actor_capabilities')return Promise.resolve(capability);if(name==='list_module_permission_catalog_for_administration')return Promise.resolve([]);return Promise.reject({code:'UNEXPECTED_OPERATION'});}},WarehouseTransport:{invoke:()=>Promise.resolve([])}}};
+  var sandbox={window:{crypto:{randomUUID:()=> 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'},PlatformDeviceSession:{invokeProtected:(name,args)=>{calls.push({name,args});if(name==='get_user_management_actor_capabilities')return Promise.resolve(capability);if(name==='list_module_permission_catalog_for_administration')return Promise.resolve([]);return Promise.reject({code:'UNEXPECTED_OPERATION'});}}}};
   vm.runInNewContext(service,sandbox);
   return {api:sandbox.window.ModulePermissionAdministrationService,calls:calls};
 }
 function uiRuntime(ownerConfirmed){
   var mutationCalls=[];
   var target='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-  var api={MODULE_KEYS:['warehouse','reservations'],isSupportedModule:(key)=>['warehouse','reservations'].includes(key),probeAvailability:()=>Promise.resolve({ok:true,data:{catalog:[],ownerConfirmed:ownerConfirmed}}),listStores:()=>Promise.resolve({ok:true,data:{stores:[]}}),searchCandidates:()=>Promise.resolve({ok:true,data:{candidates:[{userId:target,displayName:'Test',email:'test@example.invalid',accountStatus:'approved'}]}}),listGrants:()=>Promise.resolve({ok:true,data:{grants:[]}}),foundationMutation:(moduleKey,input)=>{mutationCalls.push(input);return Promise.resolve({ok:false});}};
+  var api={MODULE_KEYS:['warehouse','reservations'],isSupportedModule:(key)=>['warehouse','reservations'].includes(key),probeAvailability:()=>Promise.resolve({ok:true,data:{catalog:[],ownerConfirmed:ownerConfirmed}}),listResources:()=>Promise.resolve({ok:true,data:{resources:[]}}),searchCandidates:()=>Promise.resolve({ok:true,data:{candidates:[{userId:target,displayName:'Test',email:'test@example.invalid',accountStatus:'approved'}]}}),listGrants:()=>Promise.resolve({ok:true,data:{grants:[]}}),foundationMutation:(moduleKey,input)=>{mutationCalls.push(input);return Promise.resolve({ok:false});}};
   var sandbox={window:{ModulePermissionAdministrationService:api,confirm:()=>true,document:null}};
   vm.runInNewContext(ui,sandbox);
   return {api:sandbox.window.ModulePermissionAdministrationUI,calls:mutationCalls,target:target};
