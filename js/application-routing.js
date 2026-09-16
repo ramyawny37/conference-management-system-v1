@@ -27,8 +27,8 @@
   }
 
   /* Presentation layers intentionally load after document CSS. */
-  appendStylesheet('platform-shell-reference-v3.css?rev=approved-reference-v3','data-platform-shell-reference','v3');
-  appendStylesheet('modules/reservations/reservations-visual-source-v2.css?rev=reference-source-v2','data-reservations-visual-source','v2');
+  appendStylesheet('platform-shell-reference-v3.css?rev=approved-reference-v4','data-platform-shell-reference','v4');
+  appendStylesheet('modules/reservations/reservations-visual-source-v2.css?rev=reference-source-v3','data-reservations-visual-source','v3');
 
   function composeReferenceTopbar(){
     if(!document||!document.querySelector)return;
