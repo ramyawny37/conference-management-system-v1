@@ -1,47 +1,59 @@
-const fs = require('fs');
-const path = require('path');
-const test = require('node:test');
-const assert = require('node:assert/strict');
+'use strict';
 
-const root = path.resolve(__dirname, '..');
-const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
 
-test('canonical shell owns compact desktop geometry and floating header composition', () => {
-  const css = read('platform-shell-v2.css');
-  const tokens = read('shared-design-tokens.css');
+const root=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const css=fs.readFileSync(path.join(root,'platform-shell-v2.css'),'utf8');
+const tokens=fs.readFileSync(path.join(root,'shared-design-tokens.css'),'utf8');
+const warehouse=fs.readFileSync(path.join(root,'js/warehouse/workspace.js'),'utf8');
+const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
 
-  assert.match(css, /--platform-v2-sidebar-width:\s*196px/);
-  assert.match(tokens, /--platform-v2-sidebar-width:196px/);
-  assert.match(css, /--platform-v2-header-height:\s*64px/);
-  assert.match(css, /\.platform-sidebar\s*\{/);
-  assert.match(css, /width:\s*var\(--platform-v2-sidebar-width\)\s*!important/);
-  assert.match(css, /\.application-shell\s*\{[\s\S]*margin-inline-end:\s*var\(--platform-v2-sidebar-width\)\s*!important/);
-  assert.match(css, /\.topbar\s*\{[\s\S]*margin:\s*10px 12px -6px\s*!important/);
-  assert.match(css, /\.topbar::before,[\s\S]*\.topbar::after\s*\{[\s\S]*content:\s*none\s*!important/);
-});
+assert.strictEqual((html.match(/class="platform-shell-v2"/g)||[]).length,1);
+assert.strictEqual((html.match(/class="platform-shell-header"/g)||[]).length,1);
+assert.strictEqual((html.match(/class="platform-topbar"/g)||[]).length,1);
+assert.doesNotMatch(html,/startup-home-header/);
+assert.match(html,/platform-shell-v2\.css\?rev=platform-dashboard-v2-v5/);
+assert.match(worker,/platform-shell-v2\.css\?rev=platform-dashboard-v2-v5/);
+assert.match(worker,/\? 'module-permission-generic-service-cache-v2'/);
+assert.match(html,/class="topbar conference-module-nav" id="applicationTopbar"/);
+assert.match(css,/\.conference-module-nav \.application-brand-logo,\.conference-module-nav \.application-account-entry\{display:none!important\}/);
+assert.match(html,/class="platform-module-switcher platform-global-nav-item" onclick="showPlatformModules\(\)"/);
+assert.match(html,/class="platform-global-nav"/);
+assert.strictEqual((html.match(/data-platform-module="conference"/g)||[]).length,1);
+assert.strictEqual((html.match(/data-platform-module="reservations"/g)||[]).length,1);
+assert.strictEqual((html.match(/data-platform-module="warehouse"/g)||[]).length,1);
+assert.doesNotMatch(html,/platform-home|platform-module-grid|platform-module-card/);
+assert.match(html,/platform-navigation-toggle/);
+assert.match(html,/id="conferenceWorkspace"/);
+assert.match(html,/id="warehouseWorkspace"/);
+assert.match(html,/id="reservationsWorkspace"/);
+assert.match(css,/@media\(max-width:1100px\)/);
+assert.match(css,/@media\(max-width:820px\)/);
+assert.match(css,/@media\(max-width:700px\)/);
+assert.match(css,/@media\(max-width:600px\)/);
+assert.match(css,/--platform-v2-sidebar-width\)/);
+assert.match(css,/min-height:44px/);
+assert.match(css,/var\(--platform-safe-area-bottom\)/);
+assert.match(css,/html,body\{max-width:100%;overflow-x:hidden\}/);
+assert.match(css,/@media\(max-width:820px\)[\s\S]*?#warehouseWorkspace \.warehouse-menu-trigger\{display:grid/);
+assert.match(css,/@media\(max-width:600px\)[\s\S]*?font-size:16px/);
+assert.match(tokens,/--platform-touch-target:44px/);
+assert.match(tokens,/--platform-safe-area-bottom:max\(16px,env\(safe-area-inset-bottom,0px\)\)/);
+assert.match(tokens,/--platform-shell-header-height:72px/);
+assert.match(tokens,/--platform-v2-sidebar-width:288px/);
+assert.match(tokens,/--platform-v2-primary:#0a6cff/);
+assert.match(tokens,/--platform-v2-navy:#0b2747/);
+assert.match(html,/<meta name="viewport" content="width=device-width,initial-scale=1\.0,viewport-fit=cover">/);
+assert.doesNotMatch(warehouse,/class="warehouse-brand"/);
+assert.doesNotMatch(warehouse,/class="warehouse-topbar"/);
+assert.doesNotMatch(warehouse,/class="warehouse-account"/);
+assert.doesNotMatch(warehouse,/data-wh-modules/);
+assert.match(warehouse,/class="warehouse-sidebar"[\s\S]*?<nav>/);
+assert.match(warehouse,/class="warehouse-menu-trigger" data-wh-menu/);
+assert.match(html,/data-startup-auth-account-name/);
+assert.match(html,/SyncSettingsUI\.signOut\(\)/);
 
-test('reservations workspace is visually integrated below the floating shell header', () => {
-  const css = read('platform-shell-v2.css');
-  assert.match(css, /\.reservations-module\s*\{[\s\S]*padding:\s*0 12px 16px\s*!important/);
-  assert.match(css, /\.reservations-context-bar/);
-  assert.match(css, /border-radius:\s*12px 12px 0 0\s*!important/);
-  assert.match(css, /\.reservations-hero/);
-  assert.match(css, /border-radius:\s*0 0 16px 16px\s*!important/);
-});
-
-test('shell collapses progressively for tablet and mobile without horizontal overflow', () => {
-  const css = read('platform-shell-v2.css');
-  assert.match(css, /@media \(max-width:\s*1180px\)/);
-  assert.match(css, /--platform-v2-sidebar-width:\s*176px/);
-  assert.match(css, /@media \(max-width:\s*900px\)/);
-  assert.match(css, /--platform-v2-sidebar-width:\s*72px/);
-  assert.match(css, /@media \(max-width:\s*640px\)/);
-  assert.match(css, /--platform-v2-sidebar-width:\s*0px/);
-  assert.match(css, /\.application-shell\s*\{[\s\S]*margin-inline-end:\s*0\s*!important/);
-  assert.match(css, /\.platform-sidebar\s*\{[\s\S]*height:\s*58px\s*!important/);
-});
-
-test('legacy pseudo-brand duplication is explicitly retired by the canonical shell', () => {
-  const css = read('platform-shell-v2.css');
-  assert.match(css, /\.topbar::before,[\s\S]*\.topbar::after\s*\{\s*content:\s*none\s*!important;\s*display:\s*none\s*!important;\s*\}/);
-});
+console.log('platform shell v2 responsive contract tests passed');
