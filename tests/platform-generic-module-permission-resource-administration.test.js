@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const {spawnSync}=require('node:child_process');
 const test=require('node:test');
 const vm=require('node:vm');
 const {JSDOM}=require('jsdom');
@@ -10,6 +11,26 @@ const uiSource=fs.readFileSync('js/sync/module-permission-administration-ui.js',
 const migration=fs.readFileSync('supabase/migrations/20260916120000_generic_module_permission_resource_administration.sql','utf8');
 const canonicalGrantMigration=fs.readFileSync('supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
+
+test('Platform dispatcher session SELECT parses in PostgreSQL',()=>{
+  const select=migration.match(/select item\.\* into session[\s\S]*?profile\.account_status='approved';/)[0]
+    .replace(' into session','')
+    .replace(/p_session_id/g,"'00000000-0000-0000-0000-000000000001'::uuid")
+    .replace(/p_user_id/g,"'00000000-0000-0000-0000-000000000002'::uuid")
+    .replace(/p_token_hash/g,"'\\\\x00'::bytea");
+  const setup=`begin;
+create schema platform;
+create schema platform_private;
+create table platform_private.device_sessions(id uuid,user_id uuid,token_hash bytea,binding_id uuid,device_authorization_id uuid,device_id uuid,purpose text,revoked_at timestamptz,expires_at timestamptz,public_key_thumbprint text);
+create table platform.device_key_bindings(id uuid,user_id uuid,device_id uuid,device_authorization_id uuid,public_key_thumbprint text,algorithm text,lifecycle_status text,revoked_at timestamptz,retired_at timestamptz);
+create table platform.user_device_authorizations(id uuid,user_id uuid,device_id uuid,status text,revoked_at timestamptz);
+create table platform.devices(id uuid,lifecycle_status text,retired_at timestamptz,compromised_at timestamptz);
+create table platform.profiles(user_id uuid,account_status text);
+${select}
+rollback;`;
+  const parsed=spawnSync('psql',['-X','-v','ON_ERROR_STOP=1','-d','postgres','-f','-'],{input:setup,encoding:'utf8'});
+  assert.equal(parsed.status,0,parsed.stderr);
+});
 
 function uiRuntime(scopeMode,grant){
   const dom=new JSDOM('<div id="module_permission_administration_screen"></div>');

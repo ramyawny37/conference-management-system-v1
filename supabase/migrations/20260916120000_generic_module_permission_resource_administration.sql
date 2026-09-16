@@ -131,7 +131,7 @@ begin
   select item.* into session
   from platform_private.device_sessions item
   join platform.device_key_bindings binding on binding.id=item.binding_id
-  join platform.user_device_authorizations authorization on authorization.id=item.device_authorization_id
+  join platform.user_device_authorizations device_authorization on device_authorization.id=item.device_authorization_id
   join platform.devices device on device.id=item.device_id
   join platform.profiles profile on profile.user_id=item.user_id
   where item.id=p_session_id and item.user_id=p_user_id and item.token_hash=p_token_hash
@@ -142,8 +142,8 @@ begin
     and binding.public_key_thumbprint=item.public_key_thumbprint
     and binding.algorithm='ECDSA_P256_SHA256' and binding.lifecycle_status='active'
     and binding.revoked_at is null and binding.retired_at is null
-    and authorization.user_id=item.user_id and authorization.device_id=item.device_id
-    and authorization.status='approved' and authorization.revoked_at is null
+    and device_authorization.user_id=item.user_id and device_authorization.device_id=item.device_id
+    and device_authorization.status='approved' and device_authorization.revoked_at is null
     and device.lifecycle_status='active' and device.retired_at is null
     and device.compromised_at is null and profile.account_status='approved';
   if not found then
