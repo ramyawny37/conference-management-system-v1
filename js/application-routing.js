@@ -17,6 +17,16 @@
     baseUrl=null;
   }
 
+  /* Keep the generated Reservations bundle stable while the approved visual
+     source is iterated. This layer is intentionally loaded after document CSS. */
+  if(document&&document.createElement&&document.head&&baseUrl){
+    var reservationsVisual=document.createElement('link');
+    reservationsVisual.rel='stylesheet';
+    reservationsVisual.href=new URL('modules/reservations/reservations-visual-source-v2.css?rev=reference-source-v2',baseUrl).href;
+    reservationsVisual.setAttribute('data-reservations-visual-source','v2');
+    document.head.appendChild(reservationsVisual);
+  }
+
   function requireBase(){
     if(!baseUrl)throw new Error('APPLICATION_BASE_UNAVAILABLE');
     return baseUrl;
