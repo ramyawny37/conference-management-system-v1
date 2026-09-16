@@ -17,14 +17,47 @@
     baseUrl=null;
   }
 
-  /* Keep the generated Reservations bundle stable while the approved visual
-     source is iterated. This layer is intentionally loaded after document CSS. */
-  if(document&&document.createElement&&document.head&&baseUrl){
-    var reservationsVisual=document.createElement('link');
-    reservationsVisual.rel='stylesheet';
-    reservationsVisual.href=new URL('modules/reservations/reservations-visual-source-v2.css?rev=reference-source-v2',baseUrl).href;
-    reservationsVisual.setAttribute('data-reservations-visual-source','v2');
-    document.head.appendChild(reservationsVisual);
+  function appendStylesheet(path,marker,value){
+    if(!document||!document.createElement||!document.head||!baseUrl)return;
+    var link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href=new URL(path,baseUrl).href;
+    if(marker)link.setAttribute(marker,value||'');
+    document.head.appendChild(link);
+  }
+
+  /* Presentation layers intentionally load after document CSS. */
+  appendStylesheet('platform-shell-reference-v3.css?rev=approved-reference-v3','data-platform-shell-reference','v3');
+  appendStylesheet('modules/reservations/reservations-visual-source-v2.css?rev=reference-source-v2','data-reservations-visual-source','v2');
+
+  function composeReferenceTopbar(){
+    if(!document||!document.querySelector)return;
+    var topbar=document.querySelector('.platform-topbar');
+    if(!topbar||topbar.querySelector('[data-platform-reference-header]'))return;
+
+    var brand=document.createElement('div');
+    brand.className='platform-topbar-reference-brand';
+    brand.setAttribute('data-platform-reference-header','brand');
+    brand.innerHTML='<img src="assets/make-a-difference-logo.png" alt=""><div class="platform-topbar-reference-brand-copy"><strong>منظومة الإدارة المتكاملة</strong><small>Integrated Management Platform</small></div>';
+
+    var search=document.createElement('label');
+    search.className='platform-topbar-reference-search';
+    search.setAttribute('data-platform-reference-header','search');
+    search.innerHTML='<span data-app-icon="search"></span><input type="text" readonly aria-label="البحث العام — قريبًا" placeholder="بحث بالاسم أو رقم الحجز أو الهاتف أو البريد ...">';
+
+    var actions=document.createElement('div');
+    actions.className='platform-topbar-reference-actions';
+    actions.setAttribute('data-platform-reference-header','actions');
+    actions.innerHTML='<button type="button" disabled aria-label="إضافة سريعة — قريبًا"><b>＋</b><span>إضافة سريعة</span></button><button type="button" disabled aria-label="التنبيهات — قريبًا">♧</button><button type="button" disabled aria-label="الرسائل — قريبًا">✉</button>';
+
+    topbar.appendChild(brand);
+    topbar.appendChild(search);
+    topbar.appendChild(actions);
+  }
+
+  if(document){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',composeReferenceTopbar,{once:true});
+    else composeReferenceTopbar();
   }
 
   function requireBase(){
