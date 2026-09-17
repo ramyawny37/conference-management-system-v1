@@ -25,10 +25,10 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-density-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-density-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-density-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-density-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-fidelity-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-fidelity-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-fidelity-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-fidelity-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
@@ -91,14 +91,15 @@ test('prototype styling is scoped, reusable, responsive, and free of override ha
   assert.doesNotMatch(css,/\.canonical-platform-main/);
   assert.match(css,/\.rvp-hero\{min-width:0;min-height:140px/);
   assert.match(css,/\.rvp-hero\{[^}]*grid-template-columns:minmax\(0,30fr\) minmax\(0,39fr\) minmax\(0,31fr\)/);
-  assert.match(css,/\.rvp-metrics\{height:88px;[^}]*grid-template-columns:repeat\(7/);
-  assert.match(css,/\.rvp-metrics article\{[^}]*padding:7px 8px/);
-  assert.match(css,/\.rvp-actions\{height:56px;[^}]*padding:5px/);
-  assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:212px/);
+  assert.match(css,/\.rvp-metrics\{height:72px;[^}]*grid-template-columns:repeat\(7/);
+  assert.match(css,/\.rvp-metrics article\{[^}]*padding:5px 7px/);
+  assert.match(css,/\.rvp-actions\{height:48px;[^}]*padding:4px/);
+  assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:184px/);
+  assert.match(css,/\.rvp-ring\{width:88px;height:88px/);
   assert.match(css,/\.rvp-operations\{height:360px/);
-  assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-metrics\{height:auto;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
-  assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-actions\{height:auto;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
-  assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-insights\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css,/@media\(max-width:1499px\) and \(min-width:1041px\)[\s\S]*\.rvp-metrics\{height:auto;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
+  assert.match(css,/@media\(max-width:1499px\) and \(min-width:1041px\)[\s\S]*\.rvp-actions\{height:auto;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
+  assert.match(css,/@media\(max-width:1499px\) and \(min-width:1041px\)[\s\S]*\.rvp-insights\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/grid-template-areas:"list list" "side schedule"/);
   assert.doesNotMatch(css,/height:clamp\(198px|height:clamp\(300px|--canonical-sidebar-width:288px|right:336px|margin-right:336px/);
   assert.doesNotMatch(css,/Final consolidation|Round 4/);
