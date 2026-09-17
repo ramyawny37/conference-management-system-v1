@@ -31,7 +31,7 @@ test('the document exposes exactly one canonical shell, sidebar, header, and wor
 });
 
 test('the canonical shell is the only active global shell stylesheet',()=>{
-  const canonicalAsset='canonical-platform-shell.css?rev=reservations-prototype-shell-v1';
+  const canonicalAsset='canonical-platform-shell.css?rev=reservations-unified-shell-v2';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
@@ -42,10 +42,10 @@ test('the canonical shell is the only active global shell stylesheet',()=>{
   assert.ok(html.indexOf('modules/reservations/reservations-module.css')<html.indexOf(canonicalAsset));
   assert.doesNotMatch(css,/!important/);
   assert.doesNotMatch(css,/(^|\n)\.reference-|#reservationsWorkspace|#warehouseWorkspace/);
-  assert.match(css,/\[data-reservations-module-root\] \.reference-hero\{min-height:140px/);
-  assert.match(css,/\[data-reservations-module-root\] \.reference-stats\{min-height:104px;grid-template-columns:repeat\(7/);
-  assert.match(css,/\[data-reservations-module-root\] \.reference-insights\{min-height:254px/);
-  assert.match(css,/\[data-reservations-module-root\] \.reference-lower-grid\{min-height:364px/);
+  assert.match(css,/\[data-active-platform-module="reservations"\]\{--canonical-sidebar-width:228px;--canonical-header-height:72px;--canonical-shell-gutter:24px\}/);
+  assert.match(css,/\[data-active-platform-module="reservations"\] \.canonical-platform-header\{top:24px;right:276px;left:24px;height:72px/);
+  assert.match(css,/\[data-active-platform-module="reservations"\] \.canonical-platform-workspace-host\{margin-right:276px;margin-left:24px;padding-top:96px\}/);
+  assert.doesNotMatch(css,/\[data-reservations-module-root\] \.reference-(?:hero|stats|actions|insights|lower-grid)/);
 });
 
 test('shared tokens remain the global source and the shell owns only local layout variables',()=>{
@@ -75,6 +75,12 @@ test('Reservations is real module-owned markup within the shared workspace',()=>
   assert.doesNotMatch(reservationsCss,/\.reference-dashboard\.reference-dashboard/);
   assert.doesNotMatch(reservationsCss,/min-height:124px/);
   assert.match(reservationsCss,/\.reference-dashboard\{/);
+  assert.match(reservationsCss,/\.reference-hero\{min-height:122px/);
+  assert.match(reservationsCss,/\.reference-stats\{height:66px;[^}]*grid-template-columns:repeat\(7/);
+  assert.match(reservationsCss,/\.reference-insights>\.reference-panel\{height:166px/);
+  assert.match(reservationsCss,/\.reference-ring\{[^}]*width:80px;height:80px/);
+  assert.match(reservationsCss,/\.reference-lower-grid\{[^}]*grid-template-areas:"bookings tools";align-items:start/);
+  assert.doesNotMatch(reservations,/سيتم ربط الصفوف ببيانات الحجوزات بعد اعتماد الشكل/);
 });
 
 test('module workspaces do not reintroduce a second brand, topbar, or account shell',()=>{
