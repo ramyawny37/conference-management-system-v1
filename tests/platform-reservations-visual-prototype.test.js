@@ -25,10 +25,10 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round3-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round3-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round3-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round3-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-final-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-final-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-final-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-final-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
@@ -71,8 +71,10 @@ test('prototype styling is scoped, reusable, responsive, and free of override ha
   assert.match(css,/--rvp-primary:#0a6fff/);
   assert.match(css,/--canonical-sidebar-width:288px/);
   assert.match(css,/--canonical-header-height:72px/);
-  assert.match(css,/\.canonical-platform-workspace-host\{[^}]*margin-inline-end:336px/);
+  assert.match(css,/\.canonical-platform-workspace-host\{width:calc\(100% - 360px\);max-width:calc\(100% - 360px\);[^}]*margin-inline-end:336px/);
+  assert.match(css,/\.canonical-platform-workspace,[^}]*#reservations-prototypeWorkspace\{width:100%;max-width:100%;min-width:0\}/);
   assert.match(css,/\.canonical-platform-header\{top:24px;right:336px;left:24px/);
+  assert.match(css,/\.rvp-sidebar-brand img\{filter:none;border-radius:50%;background:#fff\}/);
   assert.doesNotMatch(css,/\.canonical-platform-main/);
   assert.match(css,/\.rvp-hero\{min-width:0;min-height:140px/);
   assert.match(css,/\.rvp-hero\{[^}]*grid-template-columns:minmax\(0,30fr\) minmax\(0,39fr\) minmax\(0,31fr\)/);
