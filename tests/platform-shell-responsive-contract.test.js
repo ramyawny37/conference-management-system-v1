@@ -31,7 +31,7 @@ test('the document exposes exactly one canonical shell, sidebar, header, and wor
 });
 
 test('the canonical shell is the only active global shell stylesheet',()=>{
-  const canonicalAsset='canonical-platform-shell.css?rev=reservations-visual-round1-v1';
+  const canonicalAsset='canonical-platform-shell.css?rev=reservations-prototype-shell-v1';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
@@ -89,6 +89,6 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'reservations-visual-round1-cache-v1'/);
+  assert.match(worker,/\? 'reservations-prototype-cache-v1'/);
   assert.match(worker,/: 'production-3-5-0-config-isolation-v1'/);
 });
