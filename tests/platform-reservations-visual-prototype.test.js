@@ -25,10 +25,10 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round2-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round2-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round2-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round2-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
@@ -40,7 +40,12 @@ test('prototype mounts complete mock reservations surfaces and remains interacti
   assert.strictEqual(container.querySelectorAll('[data-booking-row]').length,6);
   assert.ok(container.querySelector('.rvp-hero'));
   assert.strictEqual(container.querySelectorAll('.rvp-metrics article').length,7);
+  assert.strictEqual(container.querySelectorAll('.rvp-actions>button').length,8);
   assert.strictEqual(container.querySelectorAll('.rvp-insights>.rvp-panel').length,5);
+  assert.strictEqual(container.querySelectorAll('.rvp-table-tabs>button').length,5);
+  assert.ok(container.querySelector('.rvp-quick-search'));
+  assert.ok(container.querySelector('.rvp-tools'));
+  assert.ok(container.querySelector('.rvp-schedule'));
   assert.ok(container.querySelector('[data-details-overlay]'));
   assert.ok(container.querySelector('[data-form-overlay]'));
   for(const state of ['loading','empty','no-results','error'])assert.ok(container.querySelector(`[data-state-surface="${state}"]`));
@@ -63,14 +68,19 @@ test('prototype mounts complete mock reservations surfaces and remains interacti
 
 test('prototype styling is scoped, reusable, responsive, and free of override hacks',()=>{
   assert.match(css,/\[data-reservations-prototype-root\]\{/);
-  assert.match(css,/--rvp-primary:#0a6cff/);
+  assert.match(css,/--rvp-primary:#0a6fff/);
+  assert.match(css,/--canonical-sidebar-width:288px/);
+  assert.match(css,/--canonical-header-height:72px/);
   assert.match(css,/\.rvp-hero\{min-height:140px/);
-  assert.match(css,/\.rvp-metrics\{[^}]*grid-template-columns:repeat\(7/);
+  assert.match(css,/\.rvp-metrics\{height:104px;[^}]*grid-template-columns:repeat\(7/);
+  assert.match(css,/\.rvp-actions\{height:64px;[^}]*grid-template-columns:repeat\(8/);
+  assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:240px/);
+  assert.match(css,/\.rvp-operations\{height:360px/);
   assert.match(css,/@media\(max-width:1360px\)/);
   assert.match(css,/@media\(max-width:1040px\)/);
   assert.match(css,/@media\(max-width:820px\)/);
   assert.match(css,/@media\(max-width:520px\)/);
-  assert.match(css,/@media\(max-width:820px\)[\s\S]*\.rvp-table-wrap\{display:none\}[\s\S]*\.rvp-mobile-list\{display:grid/);
+  assert.match(css,/@media\(max-width:820px\)[\s\S]*\.rvp-table-wrap\{display:none\}[\s\S]*\.rvp-mobile-list\{[^}]*display:grid/);
   assert.doesNotMatch(css,/!important/);
   assert.doesNotMatch(css,/platform-shell-v2|#reservationsWorkspace/);
 });

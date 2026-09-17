@@ -14,14 +14,14 @@
   ]);
 
   function bookingRows(items){
-    return items.map(function(item){
+    return items.map(function(item,index){
       return '<tr data-booking-row="'+item.id+'">'+
-        '<td><strong class="rvp-reference">'+item.id+'</strong></td>'+
-        '<td><span class="rvp-person"><span class="rvp-avatar">'+item.name.charAt(0)+'</span><span><strong>'+item.name+'</strong><small>'+item.phone+'</small></span></span></td>'+
-        '<td>'+item.type+'</td><td>'+item.date+'</td><td>'+item.amount+'</td>'+
+        '<td><strong class="rvp-reference">#'+(1026-index)+'</strong></td>'+
+        '<td><span class="rvp-person"><span class="rvp-avatar">'+item.name.charAt(0)+'</span><span><strong>'+item.name+'</strong><small>'+item.id+'</small></span></span></td>'+
+        '<td>'+item.type+'</td>'+
         '<td><span class="rvp-badge rvp-badge--'+item.status+'">'+item.statusLabel+'</span></td>'+
-        '<td><span class="rvp-attendance rvp-attendance--'+item.attendance+'"><i></i>'+item.attendanceLabel+'</span></td>'+
-        '<td><button class="rvp-icon-button" type="button" data-open-details="'+item.id+'" aria-label="عرض تفاصيل '+item.name+'">•••</button></td></tr>';
+        '<td>'+item.amount+'</td><td>'+item.date+'</td>'+
+        '<td><span class="rvp-row-actions"><button type="button" aria-label="تعديل">✎</button><button type="button" aria-label="رسالة">▣</button><button class="rvp-icon-button" type="button" data-open-details="'+item.id+'" aria-label="عرض تفاصيل '+item.name+'">•••</button></span></td></tr>';
     }).join('');
   }
 
@@ -33,35 +33,35 @@
 
   function shell(){
     return '<section class="rvp-workspace" data-reservations-prototype-root data-prototype-state="populated">'+
-      '<div class="rvp-context"><div><span class="rvp-context__eyebrow">نموذج بصري · بيانات تجريبية</span><h1>إدارة الحجوزات</h1></div><div class="rvp-context__actions"><a class="rvp-button rvp-button--ghost" href="#/reservations">العودة للنظام الفعلي</a><button class="rvp-button rvp-button--primary" type="button" data-open-form>+ حجز جديد</button></div></div>'+
       '<div class="rvp-dashboard">'+
-        '<section class="rvp-hero"><div class="rvp-hero__welcome"><span>مرحبًا بك</span><h2>مركز تشغيل الحجوزات</h2><p>نظرة يومية واضحة على التسجيل والسداد والحضور في مكان واحد.</p></div><div class="rvp-event"><div class="rvp-event__art">2026</div><div><span class="rvp-badge rvp-badge--active">نشط</span><h3>مؤتمر الشباب 2026</h3><p>15–20 سبتمبر · قاعة النيل</p><button type="button" class="rvp-button rvp-button--primary">فتح المؤتمر ←</button></div></div><blockquote>« تشغيل أسرع · متابعة أوضح · تجربة أفضل »</blockquote></section>'+
+        '<section class="rvp-hero"><div class="rvp-hero__welcome"><span>مرحبًا بك</span><h1>منصة الإدارة المتكاملة</h1><p>كل ما تحتاجه لتنظيم مؤتمرات ناجحة في مكان واحد</p></div><div class="rvp-event"><div class="rvp-event__art" role="img" aria-label="صورة مؤتمر الشباب"></div><div class="rvp-event__copy"><span class="rvp-badge rvp-badge--active">نشط</span><h2>مؤتمر الشباب 2026</h2><p>▣ 15 – 20 سبتمبر 2026</p><p>⌖ قاعة النيل - القاهرة</p><button type="button" class="rvp-button rvp-button--primary">فتح المؤتمر ←</button></div></div><div class="rvp-hero__statement"><p>« تنظيم أفضل · خدمة أسرع · تجربة أمتع »</p><span class="rvp-trend" aria-hidden="true">↗</span></div></section>'+
         '<section class="rvp-metrics" aria-label="ملخص الحجوزات">'+
-          '<article><span class="rvp-metric-icon rvp-tone-blue">♙</span><div><strong>337</strong><span>إجمالي الحجوزات</span><small class="rvp-up">↑ 12%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-green">✓</span><div><strong>268</strong><span>حجوزات مؤكدة</span><small class="rvp-up">↑ 8%</small></div></article>'+
+          '<article><span class="rvp-metric-icon rvp-tone-blue">♙</span><div><strong>337</strong><span>إجمالي المشاركين</span><small class="rvp-up">↑ 12%</small></div></article>'+
+          '<article><span class="rvp-metric-icon rvp-tone-green">✓</span><div><strong>268</strong><span>تم تسجيلهم</span><small class="rvp-up">↑ 8%</small></div></article>'+
           '<article><span class="rvp-metric-icon rvp-tone-orange">◷</span><div><strong>69</strong><span>قيد التأكيد</span><small class="rvp-down">↓ 5%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-red">×</span><div><strong>12</strong><span>ملغاة</span><small class="rvp-down">↓ 2%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-purple">▣</span><div><strong>156</strong><span>تم الحضور</span><small>من 182 متوقعًا</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-cyan">◉</span><div><strong>26</strong><span>لم يسجل الحضور</span><small>تحتاج متابعة</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-gold">▤</span><div><strong>493,450</strong><span>إجمالي المدفوعات</span><small class="rvp-up">↑ 18%</small></div></article>'+
+          '<article><span class="rvp-metric-icon rvp-tone-red">×</span><div><strong>12</strong><span>معلق / مشكلة</span><small class="rvp-down">↓ 2%</small></div></article>'+
+          '<article><span class="rvp-metric-icon rvp-tone-purple">▣</span><div><strong>156</strong><span>غرف محجوزة</span><small class="rvp-up">↑ 85%</small></div></article>'+
+          '<article><span class="rvp-metric-icon rvp-tone-cyan">♜</span><div><strong>320</strong><span>وجبات مؤكدة</span><small class="rvp-up">↑ 75%</small></div></article>'+
+          '<article><span class="rvp-metric-icon rvp-tone-gold">▤</span><div><strong>493,450 <em>ج.م</em></strong><span>إجمالي المدفوعات</span><small class="rvp-up">↑ 18%</small></div></article>'+
         '</section>'+
-        '<nav class="rvp-actions" aria-label="إجراءات سريعة"><button type="button" data-open-form><span class="rvp-tone-blue">＋</span>تسجيل حجز</button><button type="button"><span class="rvp-tone-green">✓</span>تسجيل حضور</button><button type="button"><span class="rvp-tone-purple">▦</span>استلام سداد</button><button type="button"><span class="rvp-tone-orange">▤</span>إصدار إيصال</button><button type="button"><span class="rvp-tone-cyan">⌕</span>البحث السريع</button><button type="button"><span>•••</span>المزيد</button></nav>'+
+        '<nav class="rvp-actions" aria-label="إجراءات سريعة"><button type="button" data-open-form><span class="rvp-tone-blue">♙</span>تسجيل مشارك</button><button type="button"><span class="rvp-tone-green">▰</span>حجز غرفة</button><button type="button"><span class="rvp-tone-purple">▦</span>تسجيل حضور</button><button type="button"><span class="rvp-tone-orange">▤</span>استلام سداد</button><button type="button"><span class="rvp-tone-blue">⌕</span>البحث السريع</button><button type="button"><span class="rvp-tone-red">▧</span>إصدار شهادة</button><button type="button"><span class="rvp-tone-blue">▣</span>إضافة ملاحظة</button><button type="button"><span>•••</span>المزيد</button></nav>'+
         '<section class="rvp-insights">'+
-          '<article class="rvp-panel rvp-alerts"><header><h3>إجراءات عاجلة</h3><span>6</span></header><ul><li><i class="rvp-dot rvp-red"></i><span>حجوزات تحتاج تأكيد</span><strong>4</strong></li><li><i class="rvp-dot rvp-orange"></i><span>مدفوعات غير مكتملة</span><strong>2</strong></li><li><i class="rvp-dot rvp-purple"></i><span>تصحيحات حضور</span><strong>1</strong></li></ul><button type="button" class="rvp-link">عرض كل التنبيهات ←</button></article>'+
-          '<article class="rvp-panel"><header><h3>معدل الإشغال</h3><span>الغرف</span></header><div class="rvp-ring" style="--progress:68%;--ring:#0a6cff"><strong>68%</strong><small>من الإجمالي</small></div><div class="rvp-legend"><span><i class="rvp-blue"></i>محجوزة <b>156</b></span><span><i class="rvp-cyan"></i>متاحة <b>74</b></span><span><i class="rvp-gray"></i>صيانة <b>8</b></span></div></article>'+
-          '<article class="rvp-panel"><header><h3>حالة التسجيل</h3><span>اليوم</span></header><div class="rvp-ring" style="--progress:88%;--ring:#00c853"><strong>88%</strong><small>مكتمل</small></div><div class="rvp-legend"><span><i class="rvp-green"></i>مؤكد <b>268</b></span><span><i class="rvp-orange"></i>قيد التأكيد <b>69</b></span><span><i class="rvp-red"></i>مرفوض <b>12</b></span></div></article>'+
-          '<article class="rvp-panel"><header><h3>حالة السداد</h3><span>ج.م</span></header><div class="rvp-ring" style="--progress:76%;--ring:#00bcd4"><strong>76%</strong><small>تم تحصيلها</small></div><div class="rvp-legend"><span><i class="rvp-cyan"></i>مدفوع <b>493,450</b></span><span><i class="rvp-blue"></i>متبقي <b>155,200</b></span><span><i class="rvp-orange"></i>متأخر <b>28,600</b></span></div></article>'+
-          '<article class="rvp-panel rvp-chart"><header><h3>الحضور خلال الأيام</h3><button type="button">هذا الأسبوع⌄</button></header><div class="rvp-bars"><span style="--height:38%"><b>120</b><i></i><small>السبت</small></span><span style="--height:72%"><b>280</b><i></i><small>الأربعاء</small></span><span style="--height:88%"><b>310</b><i></i><small>الخميس</small></span><span style="--height:68%"><b>275</b><i></i><small>الجمعة</small></span><span style="--height:54%"><b>200</b><i></i><small>الثلاثاء</small></span></div></article>'+
+          '<article class="rvp-panel rvp-alerts"><header><h3>إجراءات عاجلة</h3><span>●</span></header><ul><li><i class="rvp-dot rvp-red"></i><span>حجوزات تحتاج تأكيد</span><strong>4</strong></li><li><i class="rvp-dot rvp-orange"></i><span>مدفوعات غير مكتملة</span><strong>2</strong></li><li><i class="rvp-dot rvp-orange"></i><span>طلبات خاصة جديدة</span><strong>3</strong></li><li><i class="rvp-dot rvp-red"></i><span>مشاكل في الحضور</span><strong>1</strong></li><li><i class="rvp-dot rvp-purple"></i><span>رسائل غير مقروءة</span><strong>5</strong></li></ul><button type="button" class="rvp-link">عرض كل التنبيهات ←</button></article>'+
+          '<article class="rvp-panel rvp-ring-panel"><header><h3>معدل الإشغال</h3><span>▦</span></header><div class="rvp-ring-layout"><div class="rvp-ring" style="--progress:68%;--ring:#0a6fff"><strong>68%</strong><small>من الإجمالي</small></div><div class="rvp-legend"><span><i class="rvp-blue"></i>محجوزة <b>156</b></span><span><i class="rvp-cyan"></i>متاحة <b>74</b></span><span><i class="rvp-red"></i>صيانة <b>8</b></span></div></div><button type="button" class="rvp-panel-action">إدارة الغرف ←</button></article>'+
+          '<article class="rvp-panel rvp-ring-panel"><header><h3>حالة التسجيل</h3><span>♙</span></header><div class="rvp-ring-layout"><div class="rvp-ring" style="--progress:88%;--ring:#00c853"><strong>88%</strong><small>مكتمل</small></div><div class="rvp-legend"><span><i class="rvp-green"></i>مؤكد <b>268</b></span><span><i class="rvp-orange"></i>قيد التأكيد <b>69</b></span><span><i class="rvp-red"></i>مرفوض <b>12</b></span></div></div><button type="button" class="rvp-panel-action">إدارة التسجيل ←</button></article>'+
+          '<article class="rvp-panel rvp-ring-panel"><header><h3>حالة السداد</h3><span>▣</span></header><div class="rvp-ring-layout"><div class="rvp-ring" style="--progress:76%;--ring:#00bcd4"><strong>76%</strong><small>تم التحصيل</small></div><div class="rvp-legend"><span><i class="rvp-cyan"></i>مدفوع <b>493,450</b></span><span><i class="rvp-blue"></i>متبقي <b>155,200</b></span><span><i class="rvp-orange"></i>متأخر <b>28,600</b></span></div></div><button type="button" class="rvp-panel-action">متابعة المدفوعات ←</button></article>'+
+          '<article class="rvp-panel rvp-chart"><header><h3>الحضور خلال الأيام</h3><button type="button">هذا الأسبوع⌄</button></header><div class="rvp-bars"><span style="--height:38%"><b>120</b><i></i><small>السبت</small></span><span style="--height:72%"><b>280</b><i></i><small>الأربعاء</small></span><span style="--height:88%"><b>310</b><i></i><small>الخميس</small></span><span style="--height:68%"><b>275</b><i></i><small>الجمعة</small></span><span style="--height:54%"><b>200</b><i></i><small>الثلاثاء</small></span></div><button type="button" class="rvp-panel-action">عرض التفاصيل ←</button></article>'+
         '</section>'+
         '<section class="rvp-operations">'+
-          '<article class="rvp-panel rvp-list-panel"><header class="rvp-list-heading"><div><h3>قائمة الحجوزات</h3><p>متابعة عمليات الحجز والسداد والحضور</p></div><div class="rvp-view-switch" aria-label="حالة العرض"><button type="button" data-view-state="populated" class="is-active">ممتلئ</button><button type="button" data-view-state="loading">تحميل</button><button type="button" data-view-state="empty">فارغ</button><button type="button" data-view-state="error">خطأ</button></div></header>'+filterBar()+'<div class="rvp-table-wrap"><table><thead><tr><th>المرجع</th><th>الاسم وبيانات الاتصال</th><th>نوع الحجز</th><th>التاريخ</th><th>القيمة</th><th>الحالة</th><th>الحضور</th><th>إجراء</th></tr></thead><tbody data-booking-rows>'+bookingRows(mockBookings)+'</tbody></table></div><div class="rvp-mobile-list" data-mobile-bookings>'+mobileCards(mockBookings)+'</div>'+stateSurfaces()+'<footer><span>عرض 1–6 من 337 حجزًا</span><div><button type="button" disabled>السابق</button><button type="button" class="is-active">1</button><button type="button">2</button><button type="button">3</button><button type="button">التالي</button></div></footer></article>'+
-          '<aside class="rvp-side-stack"><article class="rvp-panel rvp-schedule"><header><h3>جدول اليوم</h3><span>الأحد 15 سبتمبر</span></header><ol><li><time>08:00</time><span>استقبال المشاركين</span></li><li><time>10:00</time><span>الجلسة الافتتاحية</span></li><li><time>12:30</time><span>استراحة وغداء</span></li><li><time>14:00</time><span>ورش العمل</span></li><li><time>18:00</time><span>المساء الترفيهي</span></li></ol></article><article class="rvp-panel rvp-tools"><header><h3>أدوات سريعة</h3></header><div><button type="button">طباعة قائمة</button><button type="button">تصدير تقرير</button><button type="button">استيراد بيانات</button><button type="button">إرسال رسالة</button></div></article></aside>'+
+          '<aside class="rvp-side-stack rvp-side-stack--right"><article class="rvp-panel rvp-quick-search"><header><h3>بحث سريع</h3><span>♙</span></header>'+filterBar()+'</article><article class="rvp-panel rvp-tools"><header><h3>أدوات سريعة</h3></header><div><button type="button"><i>♙</i>طباعة شهادة</button><button type="button"><i>↧</i>تصدير تقرير</button><button type="button"><i>↥</i>استيراد بيانات</button><button type="button"><i>▣</i>إرسال رسالة</button><button type="button"><i>↪</i>تحويل حجز</button><button type="button"><i>×</i>إلغاء حجز</button></div></article></aside>'+
+          '<article class="rvp-panel rvp-list-panel"><div class="rvp-table-tabs"><button type="button" class="is-active">أحدث الحجوزات</button><button type="button">أحدث التسجيلات</button><button type="button">المدفوعات الأخيرة</button><button type="button">الملاحظات</button><button type="button">المهام</button><span class="rvp-view-switch" aria-label="حالة العرض"><button type="button" data-view-state="populated" class="is-active">●</button><button type="button" data-view-state="loading">◌</button><button type="button" data-view-state="empty">□</button><button type="button" data-view-state="error">!</button></span></div><div class="rvp-table-wrap"><table><thead><tr><th>#</th><th>الاسم</th><th>نوع الحجز</th><th>الحالة</th><th>المبلغ</th><th>تاريخ الحجز</th><th>إجراءات</th></tr></thead><tbody data-booking-rows>'+bookingRows(mockBookings)+'</tbody></table></div><div class="rvp-mobile-list" data-mobile-bookings>'+mobileCards(mockBookings)+'</div>'+stateSurfaces()+'<footer><button type="button" class="rvp-link-button">عرض جميع الحجوزات ←</button><span>6 من 337</span></footer></article>'+
+          '<aside class="rvp-panel rvp-schedule"><header><h3>جدول اليوم</h3><span>الأحد 15 سبتمبر 2026</span></header><ol><li><time>08:00</time><span>استقبال المشاركين</span></li><li><time>10:00</time><span>الجلسة الافتتاحية</span></li><li><time>12:30</time><span>استراحة وغداء</span></li><li><time>14:00</time><span>ورش العمل</span></li><li><time>18:00</time><span>المساء الترفيهي</span></li></ol><button type="button" class="rvp-panel-action">عرض الجدول الكامل ←</button></aside>'+
         '</section>'+
       '</div>'+detailsDrawer()+formDialog()+'</section>';
   }
 
   function filterBar(){
-    return '<div class="rvp-filters"><label class="rvp-search"><span>⌕</span><input type="search" data-search placeholder="ابحث بالاسم أو رقم الحجز أو الهاتف..." aria-label="البحث في الحجوزات"></label><select data-status-filter aria-label="تصفية حسب الحالة"><option value="">كل الحالات</option><option value="confirmed">مؤكد</option><option value="pending">قيد التأكيد</option><option value="waiting">قائمة انتظار</option><option value="cancelled">ملغي</option></select><select data-type-filter aria-label="تصفية حسب نوع الحجز"><option value="">كل أنواع الحجز</option><option>غرفة مزدوجة</option><option>غرفة فردية</option><option>غرفة ثلاثية</option><option>بدون غرفة</option></select><button class="rvp-button rvp-button--soft" type="button" data-reset-filters>مسح الفلاتر</button><span class="rvp-active-filter" data-filter-summary hidden></span></div>';
+    return '<div class="rvp-filters"><label class="rvp-search"><span>⌕</span><input type="search" data-search placeholder="الاسم أو رقم الحجز أو الهاتف..." aria-label="البحث في الحجوزات"></label><div class="rvp-filter-chips"><button type="button">مشارك</button><button type="button">حجز</button><button type="button">دفعة</button><button type="button">غرفة</button></div><select data-status-filter aria-label="تصفية حسب الحالة"><option value="">كل الحالات</option><option value="confirmed">مؤكد</option><option value="pending">قيد التأكيد</option><option value="waiting">قائمة انتظار</option><option value="cancelled">ملغي</option></select><select data-type-filter aria-label="تصفية حسب نوع الحجز"><option value="">كل أنواع الحجز</option><option>غرفة مزدوجة</option><option>غرفة فردية</option><option>غرفة ثلاثية</option><option>بدون غرفة</option></select><button class="rvp-button rvp-button--primary" type="button">⌕ بحث</button><button class="rvp-reset" type="button" data-reset-filters>مسح الفلاتر</button><span class="rvp-active-filter" data-filter-summary hidden></span></div>';
   }
 
   function stateSurfaces(){
@@ -110,7 +110,7 @@
   function resetFilters(){root.querySelector('[data-search]').value='';root.querySelector('[data-status-filter]').value='';root.querySelector('[data-type-filter]').value='';applyFilters();}
   function handleClick(event){
     var trigger=event.target.closest('[data-open-details],[data-close-details],[data-open-form],[data-close-form],[data-view-state],[data-reset-filters],[data-form-state],[data-mock-correction]');
-    if(!trigger||!root.contains(trigger))return;
+    if(!trigger||(!root.contains(trigger)&&!trigger.closest('[data-rvp-shell-header]')))return;
     if(trigger.hasAttribute('data-open-details'))openDetails(trigger.getAttribute('data-open-details'));
     else if(trigger.hasAttribute('data-close-details'))setHidden(root.querySelector('[data-details-overlay]'),true);
     else if(trigger.hasAttribute('data-open-form'))openForm();
@@ -122,17 +122,36 @@
   }
   function handleInput(event){if(event.target&&event.target.matches('[data-search]'))applyFilters();}
   function handleChange(event){if(event.target&&event.target.matches('[data-status-filter],[data-type-filter]'))applyFilters();}
+  function prototypeHeader(){
+    return '<div class="rvp-shell-header" data-rvp-shell-header><div class="rvp-header-account"><span class="rvp-header-avatar">D</span><span><strong>dev-owner-test@example.com</strong><small>صاحب الحساب</small></span></div><div class="rvp-header-utilities"><button type="button" aria-label="الرسائل">✉</button><button type="button" aria-label="الإشعارات" class="rvp-notification">♧<b>3</b></button><button type="button" class="rvp-quick-add" data-open-form>＋ <span>إضافة سريع</span></button><label><input type="search" placeholder="ابحث بالاسم أو رقم الحجز أو الهاتف أو البريد ..."><span>⌕</span></label></div><div class="rvp-header-brand"><img src="assets/make-a-difference-logo.png" alt=""><span><strong>منظومة الإدارة المتكاملة</strong><small lang="en" dir="ltr">Integrated Management Platform</small></span></div></div>';
+  }
+  function prototypeSidebar(){
+    var items=[['⌂','الرئيسية'],['▤','المؤتمرات'],['□','الحجوزات'],['◇','المخازن'],['♜','المطاعم'],['▰','النقل'],['▥','المالية'],['▧','التقارير'],['♙','المستخدمين'],['⚙','الإعدادات']];
+    return '<div class="rvp-shell-sidebar" data-rvp-shell-sidebar><div class="rvp-sidebar-brand"><img src="assets/make-a-difference-logo.png" alt=""><span><strong>منظومة الإدارة المتكاملة</strong><small lang="en" dir="ltr">Integrated Management Platform</small></span></div><nav>'+items.map(function(item,index){return '<button type="button"'+(index===0?' class="is-active"':'')+(index>2?' disabled aria-disabled="true"':'')+'><i>'+item[0]+'</i><span>'+item[1]+'</span></button>';}).join('')+'</nav><article class="rvp-promo"><span>معًا</span><strong>نصنع فرقًا</strong><i aria-hidden="true">▲</i></article><footer><span><i></i>متصل</span><b>v 3.5.0</b></footer></div>';
+  }
+  function mountShellChrome(){
+    var header=global.document.querySelector('[data-canonical-platform-header]');
+    var sidebar=global.document.querySelector('[data-canonical-platform-sidebar]');
+    if(header&&!header.querySelector('[data-rvp-shell-header]'))header.insertAdjacentHTML('beforeend',prototypeHeader());
+    if(sidebar&&!sidebar.querySelector('[data-rvp-shell-sidebar]'))sidebar.insertAdjacentHTML('beforeend',prototypeSidebar());
+  }
+  function unmountShellChrome(){
+    global.document.querySelectorAll('[data-rvp-shell-header],[data-rvp-shell-sidebar]').forEach(function(element){element.remove();});
+  }
   function mount(context){
     if(!context||!(context.container instanceof global.HTMLElement))throw new Error('PLATFORM_MODULE_CONTAINER_REQUIRED');
     if(root&&root!==context.container)unmount();
     root=context.container;
     root.innerHTML=shell();
+    mountShellChrome();
     on(root,'click',handleClick);
+    var shellHeader=global.document.querySelector('[data-rvp-shell-header]');
+    if(shellHeader)on(shellHeader,'click',handleClick);
     on(root,'input',handleInput);
     on(root,'change',handleChange);
     return true;
   }
-  function unmount(){listeners.splice(0).forEach(function(remove){remove();});if(root)root.innerHTML='';root=null;return true;}
+  function unmount(){listeners.splice(0).forEach(function(remove){remove();});unmountShellChrome();if(root)root.innerHTML='';root=null;return true;}
 
   var moduleDefinition=Object.freeze({id:MODULE_ID,mount:mount,unmount:unmount,reconcileRoute:function(context){return root?true:mount(context);}});
   if(!global.PlatformIntegration||typeof global.PlatformIntegration.registerModule!=='function')throw new Error('PLATFORM_MODULE_REGISTRY_REQUIRED');
