@@ -25,10 +25,10 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round2-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round2-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round2-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round2-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round3-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round3-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-round3-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-round3-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
@@ -71,12 +71,16 @@ test('prototype styling is scoped, reusable, responsive, and free of override ha
   assert.match(css,/--rvp-primary:#0a6fff/);
   assert.match(css,/--canonical-sidebar-width:288px/);
   assert.match(css,/--canonical-header-height:72px/);
-  assert.match(css,/\.rvp-hero\{min-height:140px/);
+  assert.match(css,/\.canonical-platform-workspace-host\{[^}]*margin-inline-end:336px/);
+  assert.match(css,/\.canonical-platform-header\{top:24px;right:336px;left:24px/);
+  assert.doesNotMatch(css,/\.canonical-platform-main/);
+  assert.match(css,/\.rvp-hero\{min-width:0;min-height:140px/);
+  assert.match(css,/\.rvp-hero\{[^}]*grid-template-columns:minmax\(0,30fr\) minmax\(0,39fr\) minmax\(0,31fr\)/);
   assert.match(css,/\.rvp-metrics\{height:104px;[^}]*grid-template-columns:repeat\(7/);
   assert.match(css,/\.rvp-actions\{height:64px;[^}]*grid-template-columns:repeat\(8/);
   assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:240px/);
   assert.match(css,/\.rvp-operations\{height:360px/);
-  assert.match(css,/@media\(max-width:1360px\)/);
+  assert.match(css,/@media\(max-width:1500px\) and \(min-width:1041px\)[\s\S]*\.rvp-insights\{grid-template-columns:minmax\(0,.75fr\) repeat\(3,minmax\(0,1fr\)\) minmax\(0,1.28fr\)/);
   assert.match(css,/@media\(max-width:1040px\)/);
   assert.match(css,/@media\(max-width:820px\)/);
   assert.match(css,/@media\(max-width:520px\)/);
