@@ -25,10 +25,10 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-responsive-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-responsive-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-responsive-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-responsive-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-density-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-density-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-density-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-density-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
@@ -82,24 +82,25 @@ test('prototype mounts complete mock reservations surfaces and remains interacti
 test('prototype styling is scoped, reusable, responsive, and free of override hacks',()=>{
   assert.match(css,/\[data-reservations-prototype-root\]\{/);
   assert.match(css,/--rvp-primary:#0a6fff/);
-  assert.match(css,/--canonical-sidebar-width:288px/);
+  assert.match(css,/--canonical-sidebar-width:228px/);
   assert.match(css,/--canonical-header-height:72px/);
-  assert.match(css,/\.canonical-platform-workspace-host\{width:calc\(100% - 360px\);max-width:calc\(100% - 360px\);[^}]*margin-right:336px;margin-left:24px/);
+  assert.match(css,/\.canonical-platform-workspace-host\{width:calc\(100% - 300px\);max-width:calc\(100% - 300px\);[^}]*margin-right:276px;margin-left:24px/);
   assert.match(css,/\.canonical-platform-workspace,[^}]*#reservations-prototypeWorkspace\{width:100%;max-width:100%;min-width:0\}/);
-  assert.match(css,/\.canonical-platform-header\{top:24px;right:336px;left:24px/);
+  assert.match(css,/\.canonical-platform-header\{top:24px;right:276px;left:24px/);
   assert.match(css,/\.rvp-sidebar-brand img\{filter:none;border-radius:50%;background:#fff\}/);
   assert.doesNotMatch(css,/\.canonical-platform-main/);
   assert.match(css,/\.rvp-hero\{min-width:0;min-height:140px/);
   assert.match(css,/\.rvp-hero\{[^}]*grid-template-columns:minmax\(0,30fr\) minmax\(0,39fr\) minmax\(0,31fr\)/);
-  assert.match(css,/\.rvp-metrics\{height:104px;[^}]*grid-template-columns:repeat\(7/);
-  assert.match(css,/\.rvp-actions\{height:64px;[^}]*grid-template-columns:repeat\(8/);
-  assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:240px/);
+  assert.match(css,/\.rvp-metrics\{height:88px;[^}]*grid-template-columns:repeat\(7/);
+  assert.match(css,/\.rvp-metrics article\{[^}]*padding:7px 8px/);
+  assert.match(css,/\.rvp-actions\{height:56px;[^}]*padding:5px/);
+  assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:212px/);
   assert.match(css,/\.rvp-operations\{height:360px/);
   assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-metrics\{height:auto;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
   assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-actions\{height:auto;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
   assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-insights\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/grid-template-areas:"list list" "side schedule"/);
-  assert.doesNotMatch(css,/height:clamp\(198px|height:clamp\(300px|font-size:8px\}\.rvp-sidebar-brand/);
+  assert.doesNotMatch(css,/height:clamp\(198px|height:clamp\(300px|--canonical-sidebar-width:288px|right:336px|margin-right:336px/);
   assert.doesNotMatch(css,/Final consolidation|Round 4/);
   assert.match(css,/@media\(max-width:1040px\)/);
   assert.match(css,/@media\(max-width:820px\)/);
