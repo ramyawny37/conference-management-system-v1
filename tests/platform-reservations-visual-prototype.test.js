@@ -25,10 +25,10 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-consolidated-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-consolidated-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-consolidated-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-consolidated-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-geometry-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-geometry-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-geometry-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-geometry-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
@@ -95,7 +95,10 @@ test('prototype styling is scoped, reusable, responsive, and free of override ha
   assert.match(css,/\.rvp-actions\{height:64px;[^}]*grid-template-columns:repeat\(8/);
   assert.match(css,/\.rvp-alerts,\.rvp-ring-panel,\.rvp-chart\{height:240px/);
   assert.match(css,/\.rvp-operations\{height:360px/);
-  assert.match(css,/@media\(max-width:1500px\) and \(min-width:1041px\)[\s\S]*\.rvp-insights\{grid-template-columns:minmax\(0,.75fr\) repeat\(3,minmax\(0,1fr\)\) minmax\(0,1.28fr\)/);
+  assert.match(css,/@media\(max-width:1800px\) and \(min-width:1041px\)[\s\S]*\.rvp-insights\{grid-template-columns:minmax\(0,.75fr\) repeat\(3,minmax\(0,1fr\)\) minmax\(0,1.28fr\)/);
+  assert.match(css,/\.rvp-hero\{min-height:clamp\(116px,calc\(10vw - 33px\),140px\)/);
+  assert.match(css,/\.rvp-operations\{height:clamp\(300px,calc\(25vw - 72px\),360px\)/);
+  assert.doesNotMatch(css,/Final consolidation|Round 4/);
   assert.match(css,/@media\(max-width:1040px\)/);
   assert.match(css,/@media\(max-width:820px\)/);
   assert.match(css,/@media\(max-width:520px\)/);
