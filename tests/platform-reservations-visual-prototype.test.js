@@ -25,13 +25,26 @@ function mountPrototype(){
 
 test('prototype is an isolated canonical module route with cached assets',()=>{
   assert.match(html,/id="reservations-prototypeWorkspace"/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-final-v1/);
-  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-final-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-final-v1/);
-  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-final-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-consolidated-v1/);
+  assert.match(html,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-consolidated-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.css\?rev=reservations-prototype-consolidated-v1/);
+  assert.match(worker,/modules\/reservations\/reservations-visual-prototype\.js\?rev=reservations-prototype-consolidated-v1/);
   assert.match(source,/id:MODULE_ID/);
   assert.match(source,/MODULE_ID='reservations-prototype'/);
   assert.doesNotMatch(source,/invokeProtected|createClient|fetch\(|XMLHttpRequest|PlatformReservationsRuntime/);
+});
+
+test('prototype presentation renders replaceable view-model data and optional details',()=>{
+  const {dom,container}=mountPrototype();
+  assert.match(source,/var mockViewModel=Object\.freeze/);
+  assert.match(source,/shell\(mockViewModel\)/);
+  assert.match(source,/metricCards\(viewModel\.metrics\)/);
+  assert.ok(dom.window.ReservationsVisualPrototype.mockViewModel);
+  assert.strictEqual(dom.window.ReservationsVisualPrototype.mockViewModel.bookings.length,6);
+  const secondDetail=container.querySelectorAll('[data-open-details]')[3];
+  secondDetail.click();
+  assert.strictEqual(container.querySelector('[data-detail-email]').textContent,'—');
+  assert.strictEqual(container.querySelector('[data-detail-notes-section]').hidden,true);
 });
 
 test('prototype mounts complete mock reservations surfaces and remains interactive locally',()=>{

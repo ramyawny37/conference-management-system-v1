@@ -4,23 +4,41 @@
   var MODULE_ID='reservations-prototype';
   var root=null;
   var listeners=[];
-  var mockBookings=Object.freeze([
-    Object.freeze({id:'RV-1026',name:'أحمد محمد',phone:'010 2456 8891',type:'غرفة مزدوجة',date:'15 سبتمبر 2026',status:'confirmed',statusLabel:'مؤكد',attendance:'attended',attendanceLabel:'حضر',amount:'2,500 ج.م'}),
-    Object.freeze({id:'RV-1025',name:'سارة علي',phone:'011 7832 1140',type:'غرفة فردية',date:'15 سبتمبر 2026',status:'pending',statusLabel:'قيد التأكيد',attendance:'pending',attendanceLabel:'لم يسجل',amount:'1,800 ج.م'}),
-    Object.freeze({id:'RV-1024',name:'خالد نبيل',phone:'012 9941 0223',type:'بدون غرفة',date:'14 سبتمبر 2026',status:'paid',statusLabel:'مدفوع',attendance:'attended',attendanceLabel:'حضر',amount:'1,200 ج.م'}),
-    Object.freeze({id:'RV-1023',name:'منى يوسف',phone:'010 6678 2031',type:'غرفة ثلاثية',date:'14 سبتمبر 2026',status:'cancelled',statusLabel:'ملغي',attendance:'absent',attendanceLabel:'غائب',amount:'2,700 ج.م'}),
-    Object.freeze({id:'RV-1022',name:'إياد حياة',phone:'015 4002 1862',type:'بدون غرفة',date:'14 سبتمبر 2026',status:'confirmed',statusLabel:'مؤكد',attendance:'corrected',attendanceLabel:'تم التصحيح',amount:'1,200 ج.م'}),
-    Object.freeze({id:'RV-1021',name:'مريم فؤاد',phone:'010 3320 6714',type:'غرفة مزدوجة',date:'13 سبتمبر 2026',status:'waiting',statusLabel:'قائمة انتظار',attendance:'pending',attendanceLabel:'لم يسجل',amount:'2,500 ج.م'})
-  ]);
+  var mockViewModel=Object.freeze({
+    context:Object.freeze({title:'مؤتمر الشباب 2026',status:'نشط',period:'15 – 20 سبتمبر 2026',location:'قاعة النيل - القاهرة'}),
+    metrics:Object.freeze([
+      Object.freeze({tone:'blue',icon:'♙',value:'337',label:'إجمالي المشاركين',trend:'↑ 12%',trendDirection:'up'}),
+      Object.freeze({tone:'green',icon:'✓',value:'268',label:'تم تسجيلهم',trend:'↑ 8%',trendDirection:'up'}),
+      Object.freeze({tone:'orange',icon:'◷',value:'69',label:'قيد التأكيد',trend:'↓ 5%',trendDirection:'down'}),
+      Object.freeze({tone:'red',icon:'×',value:'12',label:'معلق / مشكلة',trend:'↓ 2%',trendDirection:'down'}),
+      Object.freeze({tone:'purple',icon:'▣',value:'156',label:'غرف محجوزة',trend:'↑ 85%',trendDirection:'up'}),
+      Object.freeze({tone:'cyan',icon:'♜',value:'320',label:'وجبات مؤكدة',trend:'↑ 75%',trendDirection:'up'}),
+      Object.freeze({tone:'gold',icon:'▤',value:'493,450',unit:'ج.م',label:'إجمالي المدفوعات',trend:'↑ 18%',trendDirection:'up'})
+    ]),
+    bookings:Object.freeze([
+      Object.freeze({id:'RV-1026',name:'أحمد محمد',phone:'010 2456 8891',email:'ahmed@example.test',location:'القاهرة',type:'غرفة مزدوجة',date:'15 سبتمبر 2026',status:'confirmed',statusLabel:'مؤكد',paymentLabel:'مدفوع جزئيًا',attendance:'attended',attendanceLabel:'حضر',amount:'2,500 ج.م',notes:'يفضل غرفة قريبة من المصعد. تم تأكيد بيانات الوصول هاتفيًا.'}),
+      Object.freeze({id:'RV-1025',name:'سارة علي',phone:'011 7832 1140',email:'',location:'',type:'غرفة فردية',date:'15 سبتمبر 2026',status:'pending',statusLabel:'قيد التأكيد',paymentLabel:'غير مكتمل',attendance:'pending',attendanceLabel:'لم يسجل',amount:'1,800 ج.م',notes:''}),
+      Object.freeze({id:'RV-1024',name:'خالد نبيل',phone:'012 9941 0223',email:'',location:'',type:'بدون غرفة',date:'14 سبتمبر 2026',status:'paid',statusLabel:'مدفوع',paymentLabel:'مدفوع',attendance:'attended',attendanceLabel:'حضر',amount:'1,200 ج.م',notes:''}),
+      Object.freeze({id:'RV-1023',name:'منى يوسف',phone:'010 6678 2031',email:'',location:'',type:'غرفة ثلاثية',date:'14 سبتمبر 2026',status:'cancelled',statusLabel:'ملغي',paymentLabel:'—',attendance:'absent',attendanceLabel:'غائب',amount:'2,700 ج.م',notes:''}),
+      Object.freeze({id:'RV-1022',name:'إياد حياة',phone:'015 4002 1862',email:'',location:'',type:'بدون غرفة',date:'14 سبتمبر 2026',status:'confirmed',statusLabel:'مؤكد',paymentLabel:'مدفوع',attendance:'corrected',attendanceLabel:'تم التصحيح',amount:'1,200 ج.م',notes:''}),
+      Object.freeze({id:'RV-1021',name:'مريم فؤاد',phone:'010 3320 6714',email:'',location:'',type:'غرفة مزدوجة',date:'13 سبتمبر 2026',status:'waiting',statusLabel:'قائمة انتظار',paymentLabel:'غير مكتمل',attendance:'pending',attendanceLabel:'لم يسجل',amount:'2,500 ج.م',notes:''})
+    ])
+  });
+
+  function metricCards(items){
+    return items.map(function(item){
+      return '<article><span class="rvp-metric-icon rvp-tone-'+item.tone+'">'+item.icon+'</span><div><strong title="'+item.value+(item.unit?' '+item.unit:'')+'">'+item.value+(item.unit?' <em>'+item.unit+'</em>':'')+'</strong><span>'+item.label+'</span><small class="rvp-'+item.trendDirection+'">'+item.trend+'</small></div></article>';
+    }).join('');
+  }
 
   function bookingRows(items){
     return items.map(function(item,index){
       return '<tr data-booking-row="'+item.id+'">'+
         '<td><strong class="rvp-reference">#'+(1026-index)+'</strong></td>'+
         '<td><span class="rvp-person"><span class="rvp-avatar">'+item.name.charAt(0)+'</span><span><strong>'+item.name+'</strong><small>'+item.id+'</small></span></span></td>'+
-        '<td>'+item.type+'</td>'+
+        '<td><span class="rvp-cell-primary">'+item.type+'</span><small class="rvp-cell-secondary">'+item.attendanceLabel+'</small></td>'+
         '<td><span class="rvp-badge rvp-badge--'+item.status+'">'+item.statusLabel+'</span></td>'+
-        '<td>'+item.amount+'</td><td>'+item.date+'</td>'+
+        '<td><span class="rvp-cell-primary">'+item.amount+'</span><small class="rvp-cell-secondary">'+item.paymentLabel+'</small></td><td>'+item.date+'</td>'+
         '<td><span class="rvp-row-actions"><button type="button" aria-label="تعديل">✎</button><button type="button" aria-label="رسالة">▣</button><button class="rvp-icon-button" type="button" data-open-details="'+item.id+'" aria-label="عرض تفاصيل '+item.name+'">•••</button></span></td></tr>';
     }).join('');
   }
@@ -31,19 +49,13 @@
     }).join('');
   }
 
-  function shell(){
+  function shell(viewModel){
+    var context=viewModel.context;
+    var bookings=viewModel.bookings;
     return '<section class="rvp-workspace" data-reservations-prototype-root data-prototype-state="populated">'+
       '<div class="rvp-dashboard">'+
-        '<section class="rvp-hero"><div class="rvp-hero__welcome"><span>مرحبًا بك</span><h1>منصة الإدارة المتكاملة</h1><p>كل ما تحتاجه لتنظيم مؤتمرات ناجحة في مكان واحد</p></div><div class="rvp-event"><div class="rvp-event__art" role="img" aria-label="صورة مؤتمر الشباب"></div><div class="rvp-event__copy"><span class="rvp-badge rvp-badge--active">نشط</span><h2>مؤتمر الشباب 2026</h2><p>▣ 15 – 20 سبتمبر 2026</p><p>⌖ قاعة النيل - القاهرة</p><button type="button" class="rvp-button rvp-button--primary">فتح المؤتمر ←</button></div></div><div class="rvp-hero__statement"><p>« تنظيم أفضل · خدمة أسرع · تجربة أمتع »</p><span class="rvp-trend" aria-hidden="true">↗</span></div></section>'+
-        '<section class="rvp-metrics" aria-label="ملخص الحجوزات">'+
-          '<article><span class="rvp-metric-icon rvp-tone-blue">♙</span><div><strong>337</strong><span>إجمالي المشاركين</span><small class="rvp-up">↑ 12%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-green">✓</span><div><strong>268</strong><span>تم تسجيلهم</span><small class="rvp-up">↑ 8%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-orange">◷</span><div><strong>69</strong><span>قيد التأكيد</span><small class="rvp-down">↓ 5%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-red">×</span><div><strong>12</strong><span>معلق / مشكلة</span><small class="rvp-down">↓ 2%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-purple">▣</span><div><strong>156</strong><span>غرف محجوزة</span><small class="rvp-up">↑ 85%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-cyan">♜</span><div><strong>320</strong><span>وجبات مؤكدة</span><small class="rvp-up">↑ 75%</small></div></article>'+
-          '<article><span class="rvp-metric-icon rvp-tone-gold">▤</span><div><strong>493,450 <em>ج.م</em></strong><span>إجمالي المدفوعات</span><small class="rvp-up">↑ 18%</small></div></article>'+
-        '</section>'+
+        '<section class="rvp-hero"><div class="rvp-hero__welcome"><span>مرحبًا بك</span><h1>منصة الإدارة المتكاملة</h1><p>كل ما تحتاجه لتنظيم مؤتمرات ناجحة في مكان واحد</p></div><div class="rvp-event"><div class="rvp-event__art" role="img" aria-label="صورة مؤتمر الشباب"></div><div class="rvp-event__copy"><span class="rvp-badge rvp-badge--active">'+context.status+'</span><h2 title="'+context.title+'">'+context.title+'</h2><p>▣ '+context.period+'</p><p>⌖ '+context.location+'</p><button type="button" class="rvp-button rvp-button--primary">فتح المؤتمر ←</button></div></div><div class="rvp-hero__statement"><p>« تنظيم أفضل · خدمة أسرع · تجربة أمتع »</p><span class="rvp-trend" aria-hidden="true">↗</span></div></section>'+
+        '<section class="rvp-metrics" aria-label="ملخص الحجوزات">'+metricCards(viewModel.metrics)+'</section>'+
         '<nav class="rvp-actions" aria-label="إجراءات سريعة"><button type="button" data-open-form><span class="rvp-tone-blue">♙</span>تسجيل مشارك</button><button type="button"><span class="rvp-tone-green">▰</span>حجز غرفة</button><button type="button"><span class="rvp-tone-purple">▦</span>تسجيل حضور</button><button type="button"><span class="rvp-tone-orange">▤</span>استلام سداد</button><button type="button"><span class="rvp-tone-blue">⌕</span>البحث السريع</button><button type="button"><span class="rvp-tone-red">▧</span>إصدار شهادة</button><button type="button"><span class="rvp-tone-blue">▣</span>إضافة ملاحظة</button><button type="button"><span>•••</span>المزيد</button></nav>'+
         '<section class="rvp-insights">'+
           '<article class="rvp-panel rvp-alerts"><header><h3>إجراءات عاجلة</h3><span>●</span></header><ul><li><i class="rvp-dot rvp-red"></i><span>حجوزات تحتاج تأكيد</span><strong>4</strong></li><li><i class="rvp-dot rvp-orange"></i><span>مدفوعات غير مكتملة</span><strong>2</strong></li><li><i class="rvp-dot rvp-orange"></i><span>طلبات خاصة جديدة</span><strong>3</strong></li><li><i class="rvp-dot rvp-red"></i><span>مشاكل في الحضور</span><strong>1</strong></li><li><i class="rvp-dot rvp-purple"></i><span>رسائل غير مقروءة</span><strong>5</strong></li></ul><button type="button" class="rvp-link">عرض كل التنبيهات ←</button></article>'+
@@ -54,7 +66,7 @@
         '</section>'+
         '<section class="rvp-operations">'+
           '<aside class="rvp-side-stack rvp-side-stack--right"><article class="rvp-panel rvp-quick-search"><header><h3>بحث سريع</h3><span>♙</span></header>'+filterBar()+'</article><article class="rvp-panel rvp-tools"><header><h3>أدوات سريعة</h3></header><div><button type="button"><i>♙</i>طباعة شهادة</button><button type="button"><i>↧</i>تصدير تقرير</button><button type="button"><i>↥</i>استيراد بيانات</button><button type="button"><i>▣</i>إرسال رسالة</button><button type="button"><i>↪</i>تحويل حجز</button><button type="button"><i>×</i>إلغاء حجز</button></div></article></aside>'+
-          '<article class="rvp-panel rvp-list-panel"><div class="rvp-table-tabs"><button type="button" class="is-active">أحدث الحجوزات</button><button type="button">أحدث التسجيلات</button><button type="button">المدفوعات الأخيرة</button><button type="button">الملاحظات</button><button type="button">المهام</button><span class="rvp-view-switch" aria-label="حالة العرض"><button type="button" data-view-state="populated" class="is-active">●</button><button type="button" data-view-state="loading">◌</button><button type="button" data-view-state="empty">□</button><button type="button" data-view-state="error">!</button></span></div><div class="rvp-table-wrap"><table><thead><tr><th>#</th><th>الاسم</th><th>نوع الحجز</th><th>الحالة</th><th>المبلغ</th><th>تاريخ الحجز</th><th>إجراءات</th></tr></thead><tbody data-booking-rows>'+bookingRows(mockBookings)+'</tbody></table></div><div class="rvp-mobile-list" data-mobile-bookings>'+mobileCards(mockBookings)+'</div>'+stateSurfaces()+'<footer><button type="button" class="rvp-link-button">عرض جميع الحجوزات ←</button><span>6 من 337</span></footer></article>'+
+          '<article class="rvp-panel rvp-list-panel"><div class="rvp-table-tabs"><button type="button" class="is-active">أحدث الحجوزات</button><button type="button">أحدث التسجيلات</button><button type="button">المدفوعات الأخيرة</button><button type="button">الملاحظات</button><button type="button">المهام</button><span class="rvp-view-switch" aria-label="حالة العرض"><button type="button" data-view-state="populated" class="is-active">●</button><button type="button" data-view-state="loading">◌</button><button type="button" data-view-state="empty">□</button><button type="button" data-view-state="error">!</button></span></div><div class="rvp-table-wrap"><table><thead><tr><th>#</th><th>الاسم</th><th>نوع الحجز</th><th>الحالة</th><th>المبلغ</th><th>تاريخ الحجز</th><th>إجراءات</th></tr></thead><tbody data-booking-rows>'+bookingRows(bookings)+'</tbody></table></div><div class="rvp-mobile-list" data-mobile-bookings>'+mobileCards(bookings)+'</div>'+stateSurfaces()+'<footer><button type="button" class="rvp-link-button">عرض جميع الحجوزات ←</button><span>'+bookings.length+' من 337</span></footer></article>'+
           '<aside class="rvp-panel rvp-schedule"><header><h3>جدول اليوم</h3><span>الأحد 15 سبتمبر 2026</span></header><ol><li><time>08:00</time><span>استقبال المشاركين</span></li><li><time>10:00</time><span>الجلسة الافتتاحية</span></li><li><time>12:30</time><span>استراحة وغداء</span></li><li><time>14:00</time><span>ورش العمل</span></li><li><time>18:00</time><span>المساء الترفيهي</span></li></ol><button type="button" class="rvp-panel-action">عرض الجدول الكامل ←</button></aside>'+
         '</section>'+
       '</div>'+detailsDrawer()+formDialog()+'</section>';
@@ -69,7 +81,7 @@
   }
 
   function detailsDrawer(){
-    return '<div class="rvp-overlay" data-details-overlay hidden><aside class="rvp-drawer" role="dialog" aria-modal="true" aria-labelledby="rvp-details-title"><header><div><span class="rvp-context__eyebrow">تفاصيل الحجز</span><h2 id="rvp-details-title">RV-1026</h2></div><button type="button" class="rvp-close" data-close-details aria-label="إغلاق">×</button></header><div class="rvp-drawer__body"><section class="rvp-profile"><span class="rvp-avatar rvp-avatar--large">أ</span><div><h3 data-detail-name>أحمد محمد</h3><p data-detail-phone>010 2456 8891</p></div><span class="rvp-badge rvp-badge--confirmed">مؤكد</span></section><section class="rvp-detail-grid"><div><span>نوع الحجز</span><strong data-detail-type>غرفة مزدوجة</strong></div><div><span>التاريخ</span><strong data-detail-date>15 سبتمبر 2026</strong></div><div><span>القيمة</span><strong data-detail-amount>2,500 ج.م</strong></div><div><span>حالة السداد</span><strong>مدفوع جزئيًا</strong></div></section><section class="rvp-detail-section"><h3>بيانات التواصل</h3><dl><div><dt>رقم الهاتف</dt><dd data-detail-contact>010 2456 8891</dd></div><div><dt>البريد الإلكتروني</dt><dd>ahmed@example.test</dd></div><div><dt>المحافظة</dt><dd>القاهرة</dd></div></dl></section><section class="rvp-detail-section"><div class="rvp-section-title"><h3>الحضور</h3><span class="rvp-badge rvp-badge--paid">تم الحضور</span></div><div class="rvp-attendance-box"><label><input type="radio" name="mock-attendance" checked> حضر</label><label><input type="radio" name="mock-attendance"> غائب</label><label>تاريخ الحضور<input type="date" value="2026-09-15"></label><label>ملاحظات<textarea rows="2">تم تسجيل الحضور عند البوابة الرئيسية.</textarea></label><button type="button" class="rvp-button rvp-button--soft" data-mock-correction>تسجيل تصحيح حضور</button><small data-correction-note hidden>تم عرض حالة التصحيح محليًا فقط.</small></div></section><section class="rvp-detail-section"><h3>ملاحظات الحجز</h3><p>يفضل غرفة قريبة من المصعد. تم تأكيد بيانات الوصول هاتفيًا.</p></section></div><footer><button type="button" class="rvp-button rvp-button--ghost" data-close-details>إغلاق</button><button type="button" class="rvp-button rvp-button--primary" data-open-form>تعديل الحجز</button></footer></aside></div>';
+    return '<div class="rvp-overlay" data-details-overlay hidden><aside class="rvp-drawer" role="dialog" aria-modal="true" aria-labelledby="rvp-details-title"><header><div><span class="rvp-context__eyebrow">تفاصيل الحجز</span><h2 id="rvp-details-title"></h2></div><button type="button" class="rvp-close" data-close-details aria-label="إغلاق">×</button></header><div class="rvp-drawer__body"><section class="rvp-profile"><span class="rvp-avatar rvp-avatar--large" data-detail-avatar></span><div><h3 data-detail-name></h3><p data-detail-phone></p></div><span class="rvp-badge" data-detail-status></span></section><section class="rvp-detail-grid"><div><span>نوع الحجز</span><strong data-detail-type></strong></div><div><span>التاريخ</span><strong data-detail-date></strong></div><div><span>القيمة</span><strong data-detail-amount></strong></div><div><span>حالة السداد</span><strong data-detail-payment></strong></div></section><section class="rvp-detail-section"><h3>بيانات التواصل</h3><dl><div><dt>رقم الهاتف</dt><dd data-detail-contact></dd></div><div><dt>البريد الإلكتروني</dt><dd data-detail-email></dd></div><div><dt>المحافظة</dt><dd data-detail-location></dd></div></dl></section><section class="rvp-detail-section"><div class="rvp-section-title"><h3>الحضور</h3><span class="rvp-badge rvp-badge--paid" data-detail-attendance></span></div><div class="rvp-attendance-box"><label><input type="radio" name="mock-attendance" checked> حضر</label><label><input type="radio" name="mock-attendance"> غائب</label><label>تاريخ الحضور<input type="date" value="2026-09-15"></label><label>ملاحظات<textarea rows="2">تم تسجيل الحضور عند البوابة الرئيسية.</textarea></label><button type="button" class="rvp-button rvp-button--soft" data-mock-correction>تسجيل تصحيح حضور</button><small data-correction-note hidden>تم عرض حالة التصحيح محليًا فقط.</small></div></section><section class="rvp-detail-section" data-detail-notes-section><h3>ملاحظات الحجز</h3><p data-detail-notes></p></section></div><footer><button type="button" class="rvp-button rvp-button--ghost" data-close-details>إغلاق</button><button type="button" class="rvp-button rvp-button--primary" data-open-form>تعديل الحجز</button></footer></aside></div>';
   }
 
   function formDialog(){
@@ -79,7 +91,7 @@
   function on(target,type,handler){target.addEventListener(type,handler);listeners.push(function(){target.removeEventListener(type,handler);});}
   function setHidden(element,hidden){if(element)element.hidden=hidden;}
   function openDetails(id){
-    var booking=mockBookings.find(function(item){return item.id===id;})||mockBookings[0];
+    var booking=mockViewModel.bookings.find(function(item){return item.id===id;})||mockViewModel.bookings[0];
     root.querySelector('#rvp-details-title').textContent=booking.id;
     root.querySelector('[data-detail-name]').textContent=booking.name;
     root.querySelector('[data-detail-phone]').textContent=booking.phone;
@@ -87,6 +99,15 @@
     root.querySelector('[data-detail-type]').textContent=booking.type;
     root.querySelector('[data-detail-date]').textContent=booking.date;
     root.querySelector('[data-detail-amount]').textContent=booking.amount;
+    root.querySelector('[data-detail-avatar]').textContent=booking.name.charAt(0);
+    root.querySelector('[data-detail-status]').textContent=booking.statusLabel;
+    root.querySelector('[data-detail-status]').className='rvp-badge rvp-badge--'+booking.status;
+    root.querySelector('[data-detail-payment]').textContent=booking.paymentLabel||'—';
+    root.querySelector('[data-detail-attendance]').textContent=booking.attendanceLabel||'—';
+    root.querySelector('[data-detail-email]').textContent=booking.email||'—';
+    root.querySelector('[data-detail-location]').textContent=booking.location||'—';
+    root.querySelector('[data-detail-notes]').textContent=booking.notes||'';
+    setHidden(root.querySelector('[data-detail-notes-section]'),!booking.notes);
     setHidden(root.querySelector('[data-details-overlay]'),false);
   }
   function openForm(){setHidden(root.querySelector('[data-details-overlay]'),true);setHidden(root.querySelector('[data-form-overlay]'),false);}
@@ -98,7 +119,7 @@
     var query=root.querySelector('[data-search]').value.trim().toLowerCase();
     var status=root.querySelector('[data-status-filter]').value;
     var type=root.querySelector('[data-type-filter]').value;
-    var matches=mockBookings.filter(function(item){return (!query||(item.name+' '+item.phone+' '+item.id).toLowerCase().includes(query))&&(!status||item.status===status)&&(!type||item.type===type);});
+    var matches=mockViewModel.bookings.filter(function(item){return (!query||(item.name+' '+item.phone+' '+item.id).toLowerCase().includes(query))&&(!status||item.status===status)&&(!type||item.type===type);});
     root.querySelector('[data-booking-rows]').innerHTML=bookingRows(matches);
     root.querySelector('[data-mobile-bookings]').innerHTML=mobileCards(matches);
     var summary=root.querySelector('[data-filter-summary]');
@@ -142,7 +163,7 @@
     if(!context||!(context.container instanceof global.HTMLElement))throw new Error('PLATFORM_MODULE_CONTAINER_REQUIRED');
     if(root&&root!==context.container)unmount();
     root=context.container;
-    root.innerHTML=shell();
+    root.innerHTML=shell(mockViewModel);
     mountShellChrome();
     on(root,'click',handleClick);
     var shellHeader=global.document.querySelector('[data-rvp-shell-header]');
@@ -155,6 +176,6 @@
 
   var moduleDefinition=Object.freeze({id:MODULE_ID,mount:mount,unmount:unmount,reconcileRoute:function(context){return root?true:mount(context);}});
   if(!global.PlatformIntegration||typeof global.PlatformIntegration.registerModule!=='function')throw new Error('PLATFORM_MODULE_REGISTRY_REQUIRED');
-  global.ReservationsVisualPrototype=Object.freeze({mockBookings:mockBookings,module:moduleDefinition});
+  global.ReservationsVisualPrototype=Object.freeze({mockViewModel:mockViewModel,mockBookings:mockViewModel.bookings,module:moduleDefinition});
   global.PlatformIntegration.registerModule(moduleDefinition);
 })(window);

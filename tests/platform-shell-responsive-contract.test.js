@@ -89,6 +89,6 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'reservations-prototype-final-cache-v1'/);
+  assert.match(worker,/\? 'reservations-prototype-consolidated-cache-v1'/);
   assert.match(worker,/: 'production-3-5-0-config-isolation-v1'/);
 });
