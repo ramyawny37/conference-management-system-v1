@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'reservations-prototype-fidelity-cache-v2'
+  ? 'reservations-reference-reconstruction-cache-v1'
   : 'production-3-5-0-config-isolation-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -15,8 +15,8 @@ const CORE_ASSETS = [
   './index.html',
   './shared-design-tokens.css?rev=platform-shell-phase2b-v1',
   './style.css?rev=item-unit-dialog-v1',
-  './canonical-platform-shell.css?rev=reservations-workspace-v5',
-  './modules/reservations/reservations-module.css?rev=reservations-workspace-v5',
+  './canonical-platform-shell.css?rev=reservations-workspace-v6',
+  './modules/reservations/reservations-module.css?rev=reservations-workspace-v6',
   './modules/reservations/reservations-visual-prototype.css?rev=reservations-prototype-fidelity-v2',
   './js/application-routing.js?rev=canonical-conference-routing-v1',
   './js/storage/environment-namespace.js',
@@ -43,7 +43,7 @@ const CORE_ASSETS = [
   './js/supabase/client.js?rev=phase1c-v1',
   './js/supabase/auth.js?rev=account-session-identity-v1',
   './js/platform-integration.js?rev=canonical-platform-foundation-v1',
-  './modules/reservations/reservations-module.js?rev=reservations-workspace-v5',
+  './modules/reservations/reservations-module.js?rev=reservations-workspace-v6',
   './modules/reservations/reservations-visual-prototype.js?rev=reservations-prototype-fidelity-v2',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',
   './js/sync/diagnostics-privacy-policy.js?rev=diagnostics-privacy-hardening-v1',
