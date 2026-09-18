@@ -275,6 +275,14 @@ function setCurrentConferenceById(id, options){
     return;
   }
 
+  var platformServices=window.PlatformIntegration&&
+    typeof window.PlatformIntegration.getModuleServices==='function'
+      ?window.PlatformIntegration.getModuleServices():null;
+  if(platformServices&&
+    typeof platformServices.setSelectedConferenceId==='function'){
+    platformServices.setSelectedConferenceId(currentAfterSync.id);
+  }
+
   var entry=prepareCanonicalConferenceApplicationEntry(options);
   var conferenceRoute=entry.route;
   var requestedTabId=entry.tabId;

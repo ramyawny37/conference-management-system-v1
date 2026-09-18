@@ -61,6 +61,7 @@ function commonOpenPath(env,appData,links){
     scriptSource.indexOf('function completeCurrentConference')
   );
   let current=null;
+  let selectedConferenceId='';
   let localAuthorizationAttempts=0;
   const authorization={
     canDisplay:id=>env.gate.canDisplay(id),
@@ -75,6 +76,16 @@ function commonOpenPath(env,appData,links){
     currentConferenceRuntimeAccessRoles:{},
     ConferenceActivationAuthorization:authorization,
     ConferenceLinkStore:links,
+    PlatformIntegration:{
+      getModuleServices(){
+        return {
+          setSelectedConferenceId(value){
+            selectedConferenceId=String(value||'');
+            return selectedConferenceId;
+          }
+        };
+      }
+    },
     setCurrentConference(value){current=value;},
     saveCurrentConferenceSelection(){return true;},
     syncCurrentConferenceRefs(){},
@@ -89,7 +100,8 @@ function commonOpenPath(env,appData,links){
   return {
     open:id=>sandbox.setCurrentConferenceById(id),
     localAuthorizationAttempts:()=>localAuthorizationAttempts,
-    current:()=>current
+    current:()=>current,
+    selectedConferenceId:()=>selectedConferenceId
   };
 }
 
@@ -223,6 +235,7 @@ test('common open path authorizes a creator-bound unlinked conference locally',(
   assert.equal(opener.open('local-new'),true);
   assert.equal(opener.localAuthorizationAttempts(),1);
   assert.equal(opener.current().id,'local-new');
+  assert.equal(opener.selectedConferenceId(),'local-new');
   assert.equal(env.gate.canDisplay('local-new'),true);
 });
 
@@ -240,6 +253,7 @@ test('common open path never reclassifies a linked conference as local-only',()=
   assert.equal(opener.open('cloud'),false);
   assert.equal(opener.localAuthorizationAttempts(),0);
   assert.equal(app.currentConferenceId,null);
+  assert.equal(opener.selectedConferenceId(),'');
 
   const cloudDecision=env.gate.authorizeCloud({
     localConferenceId:'cloud',remoteConferenceId:remote,
@@ -249,6 +263,21 @@ test('common open path never reclassifies a linked conference as local-only',()=
   assert.equal(opener.open('cloud'),true);
   assert.equal(opener.localAuthorizationAttempts(),0);
   assert.equal(opener.current().id,'cloud');
+  assert.equal(opener.selectedConferenceId(),'cloud');
+});
+
+test('Platform Conference context is published only after the post-sync identity check',()=>{
+  const selection=scriptSource.slice(
+    scriptSource.indexOf('function setCurrentConferenceById'),
+    scriptSource.indexOf('function completeCurrentConference')
+  );
+  const identityCheck=selection.indexOf('if(!currentAfterSync || currentAfterSync.id !== id)');
+  const contextPublish=selection.indexOf('platformServices.setSelectedConferenceId(currentAfterSync.id)');
+  const successfulEntry=selection.indexOf('prepareCanonicalConferenceApplicationEntry(options)');
+  assert.ok(identityCheck>=0);
+  assert.ok(contextPublish>identityCheck);
+  assert.ok(successfulEntry>contextPublish);
+  assert.doesNotMatch(selection,/appData\.conferences\s*\[\s*0\s*\]/);
 });
 
 test('startup card still enters through the centralized real open path',()=>{
