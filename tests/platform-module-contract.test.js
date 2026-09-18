@@ -106,11 +106,22 @@ test('Reservations global navigation and static bundle stay inside the unified P
   assert.match(index,/canonical-platform-nav[\s\S]*data-platform-module="reservations"/);
   assert.match(index,/class="canonical-platform-nav__item" data-platform-module="reservations"/);
   assert.match(index,/id="reservationsWorkspace"/);
-  assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=reservations-context-ux-v1/);
-  assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=reservations-context-ux-v1/);
-  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.js\?rev=reservations-context-ux-v1/);
-  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.css\?rev=reservations-context-ux-v1/);
+  assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=reservations-internal-modernization-v1/);
+  assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=reservations-internal-modernization-v1/);
+  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.js\?rev=reservations-internal-modernization-v1/);
+  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.css\?rev=reservations-internal-modernization-v1/);
   assert.ok(fs.existsSync('modules/reservations/reservations-module.js'));
   assert.ok(fs.existsSync('modules/reservations/reservations-module.css'));
   assert.doesNotMatch(fs.readFileSync('modules/reservations/reservations-module.js','utf8'),/supabase\.co|createClient\(|platform-device-session/);
+});
+
+test('Reservations sidebar is one accessible protected route group',()=>{
+  assert.match(index,/data-platform-nav-group="reservations"/);
+  assert.match(index,/data-platform-nav-toggle="reservations"[^>]*aria-expanded="false"[^>]*aria-controls="reservationsPlatformSubnav"/);
+  for(const route of ['/reservations','/reservations/bookings/new','/reservations/events','/reservations/participants','/reservations/attendance','/reservations/payments','/reservations/operations','/reservations/reports'])
+    assert.match(index,new RegExp(`data-platform-route="${route}"`));
+  assert.doesNotMatch(index,/data-platform-route="\/reservations\/reports\/print"/);
+  assert.match(source,/enterProtectedModule\('reservations',route,\{explicitModuleEntry:true\},true\)/);
+  assert.match(source,/route\|\|\('\/'\+id\)/);
+  assert.match(source,/aria-current','page'/);
 });

@@ -12,9 +12,9 @@
 <title>منظومة الإدارة المتكاملة</title>
 <link rel="stylesheet" href="shared-design-tokens.css?rev=platform-shell-phase2b-v1">
 <link rel="stylesheet" href="style.css?rev=item-unit-dialog-v1">
-<link rel="stylesheet" href="modules/reservations/reservations-module.css?rev=reservations-context-ux-v1">
+<link rel="stylesheet" href="modules/reservations/reservations-module.css?rev=reservations-internal-modernization-v1">
 <link rel="stylesheet" href="modules/reservations/reservations-visual-prototype.css?rev=reservations-prototype-fidelity-v2">
-<link rel="stylesheet" href="canonical-platform-shell.css?rev=reservations-unified-shell-v2">
+<link rel="stylesheet" href="canonical-platform-shell.css?rev=reservations-navigation-v1">
 </head>
 <body>
 
@@ -39,7 +39,22 @@
   <nav class="canonical-platform-nav">
     <button type="button" class="canonical-platform-nav__item" data-platform-home onclick="showPlatformModules()" aria-label="فتح الرئيسية"><span data-app-icon="home"></span><span>الرئيسية</span></button>
     <button type="button" class="canonical-platform-nav__item" data-platform-module="conference"><span data-app-icon="building"></span><span>المؤتمرات</span></button>
-    <button type="button" class="canonical-platform-nav__item" data-platform-module="reservations"><span data-app-icon="note"></span><span>الحجوزات</span></button>
+    <div class="canonical-platform-nav__group" data-platform-nav-group="reservations">
+      <div class="canonical-platform-nav__group-row">
+        <button type="button" class="canonical-platform-nav__item" data-platform-module="reservations"><span data-app-icon="note"></span><span>الحجوزات</span></button>
+        <button type="button" class="canonical-platform-nav__toggle" data-platform-nav-toggle="reservations" aria-expanded="false" aria-controls="reservationsPlatformSubnav" aria-label="إظهار روابط الحجوزات">⌄</button>
+      </div>
+      <div class="canonical-platform-subnav" id="reservationsPlatformSubnav" hidden>
+        <button type="button" data-platform-route="/reservations">لوحة الحجوزات</button>
+        <button type="button" data-platform-route="/reservations/bookings/new">تسجيل حجز جديد</button>
+        <button type="button" data-platform-route="/reservations/events">الفعاليات</button>
+        <button type="button" data-platform-route="/reservations/participants">المشتركون</button>
+        <button type="button" data-platform-route="/reservations/attendance">تسجيل الحضور</button>
+        <button type="button" data-platform-route="/reservations/payments">السداد</button>
+        <button type="button" data-platform-route="/reservations/operations">الاستعلام وإنهاء الإجراءات</button>
+        <button type="button" data-platform-route="/reservations/reports">التقارير</button>
+      </div>
+    </div>
     <button type="button" class="canonical-platform-nav__item" data-platform-module="warehouse"><span data-app-icon="boxes"></span><span>المخازن</span></button>
     <button type="button" class="canonical-platform-nav__item" disabled aria-disabled="true"><span data-app-icon="bed"></span><span>الإقامة</span><small>قريبًا</small></button>
     <button type="button" class="canonical-platform-nav__item" disabled aria-disabled="true"><span data-app-icon="note"></span><span>المطاعم</span><small>قريبًا</small></button>
@@ -534,7 +549,7 @@
 <script src="js/supabase/client.js?rev=phase1c-v1"></script>
 <script src="js/supabase/auth.js?rev=account-session-identity-v1"></script>
 <script src="js/platform-integration.js?rev=canonical-platform-foundation-v1"></script>
-<script src="modules/reservations/reservations-module.js?rev=reservations-context-ux-v1"></script>
+<script src="modules/reservations/reservations-module.js?rev=reservations-internal-modernization-v1"></script>
 <script src="modules/reservations/reservations-visual-prototype.js?rev=reservations-prototype-fidelity-v2"></script>
 <script src="js/supabase/system-access-service.js?rev=conference-create-authorization-v1"></script>
 <script src="js/sync/diagnostics-privacy-policy.js?rev=diagnostics-privacy-hardening-v1"></script>
