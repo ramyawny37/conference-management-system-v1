@@ -31,7 +31,7 @@ test('the document exposes exactly one canonical shell, sidebar, header, and wor
 });
 
 test('the canonical shell is the only active global shell stylesheet',()=>{
-  const canonicalAsset='canonical-platform-shell.css?rev=reservations-navigation-v1';
+  const canonicalAsset='canonical-platform-shell.css?rev=reservations-workspace-v2';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
@@ -42,9 +42,9 @@ test('the canonical shell is the only active global shell stylesheet',()=>{
   assert.ok(html.indexOf('modules/reservations/reservations-module.css')<html.indexOf(canonicalAsset));
   assert.doesNotMatch(css,/!important/);
   assert.doesNotMatch(css,/(^|\n)\.reference-|#reservationsWorkspace|#warehouseWorkspace/);
-  assert.match(css,/\[data-active-platform-module="reservations"\]\{--canonical-sidebar-width:228px;--canonical-header-height:72px;--canonical-shell-gutter:24px\}/);
-  assert.match(css,/\[data-active-platform-module="reservations"\] \.canonical-platform-header\{top:24px;right:276px;left:24px;height:72px/);
-  assert.match(css,/\[data-active-platform-module="reservations"\] \.canonical-platform-workspace-host\{margin-right:276px;margin-left:24px;padding-top:96px\}/);
+  assert.doesNotMatch(css,/\[data-active-platform-module="reservations"\]\{--canonical-sidebar-width:/);
+  assert.match(css,/\.canonical-platform-header\{[^}]*right:calc\(var\(--canonical-sidebar-width\) \+ 24px\)/);
+  assert.match(css,/\.canonical-platform-workspace-host,#applicationBody,#applicationTopbar\{margin-inline-end:calc\(var\(--canonical-sidebar-width\) \+ 24px\)/);
   assert.doesNotMatch(css,/\[data-reservations-module-root\] \.reference-(?:hero|stats|actions|insights|lower-grid)/);
 });
 

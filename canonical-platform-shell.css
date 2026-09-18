@@ -8,7 +8,7 @@
 .canonical-platform-nav__item{position:relative;width:100%;min-height:42px;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.78);font:700 12px inherit;text-align:right;cursor:pointer}
 .canonical-platform-nav__item:hover,.canonical-platform-nav__item:focus-visible{background:rgba(255,255,255,.1);color:#fff;outline:none}.canonical-platform-nav__item.active,[data-active-platform-module="home"] .canonical-platform-nav__item[data-platform-home],[data-active-platform-module="reservations"] .canonical-platform-nav__item[data-platform-module="reservations"],[data-active-platform-module="reservations-prototype"] .canonical-platform-nav__item[data-platform-module="reservations"],[data-active-platform-module="warehouse"] .canonical-platform-nav__item[data-platform-module="warehouse"],[data-active-platform-module="conference"] .canonical-platform-nav__item[data-platform-module="conference"]{background:rgba(255,255,255,.16);color:#fff}
 .canonical-platform-nav__item:disabled{cursor:not-allowed;opacity:.46}.canonical-platform-nav__item small{font-size:8px;font-weight:700}.canonical-platform-nav__item .app-icon{width:19px;height:19px}
-.canonical-platform-nav__group{display:grid;gap:3px}.canonical-platform-nav__group-row{position:relative;display:grid}.canonical-platform-nav__group-row .canonical-platform-nav__item{padding-left:36px}.canonical-platform-nav__toggle{position:absolute;left:5px;top:5px;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.72);font:900 18px/1 inherit;cursor:pointer;transition:transform .16s ease,background-color .16s ease}.canonical-platform-nav__toggle:hover,.canonical-platform-nav__toggle:focus-visible{background:rgba(255,255,255,.1);color:#fff;outline:none}.canonical-platform-nav__toggle[aria-expanded="true"]{transform:rotate(180deg)}.canonical-platform-subnav{display:grid;gap:2px;padding:2px 33px 5px 5px}.canonical-platform-subnav[hidden]{display:none}.canonical-platform-subnav button{min-height:34px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.68);font:700 10px inherit;text-align:right;cursor:pointer}.canonical-platform-subnav button:hover,.canonical-platform-subnav button:focus-visible{background:rgba(255,255,255,.09);color:#fff;outline:none}.canonical-platform-subnav button.active,.canonical-platform-subnav button[aria-current="page"]{background:rgba(10,108,255,.34);color:#fff}
+.canonical-platform-nav__group{display:grid;gap:3px}.canonical-platform-nav__group-row{position:relative;display:grid}.canonical-platform-nav__group-row .canonical-platform-nav__item{padding-left:36px}.canonical-platform-nav__toggle{position:absolute;left:5px;top:5px;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.72);font:900 18px/1 inherit;cursor:pointer;transition:transform .16s ease,background-color .16s ease}.canonical-platform-nav__toggle:hover,.canonical-platform-nav__toggle:focus-visible{background:rgba(255,255,255,.1);color:#fff;outline:none}.canonical-platform-nav__toggle[aria-expanded="true"]{transform:rotate(180deg)}.canonical-platform-subnav{display:grid;gap:2px;padding:2px 33px 5px 5px}.canonical-platform-subnav[hidden]{display:none}.canonical-platform-subnav button{min-height:38px;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.72);font:700 11px inherit;text-align:right;cursor:pointer}.canonical-platform-subnav button:hover,.canonical-platform-subnav button:focus-visible{background:rgba(255,255,255,.09);color:#fff;outline:none}.canonical-platform-subnav button.active,.canonical-platform-subnav button[aria-current="page"]{background:rgba(10,108,255,.34);color:#fff}
 .canonical-platform-header{position:fixed;z-index:70;top:12px;right:calc(var(--canonical-sidebar-width) + 24px);left:var(--canonical-shell-gutter);height:var(--canonical-header-height);display:flex;align-items:center;justify-content:space-between;gap:var(--platform-space-6);padding:10px 16px;border:1px solid var(--platform-v2-border);border-radius:var(--platform-radius-card);background:var(--platform-surface-near-solid);box-shadow:var(--platform-shadow-md);backdrop-filter:blur(10px)}
 .canonical-platform-header__toggle{display:none;width:40px;height:40px;place-items:center;border:1px solid var(--platform-v2-border);border-radius:10px;background:var(--platform-surface);color:var(--platform-v2-navy)}
 .canonical-platform-header__date{display:flex;align-items:center;gap:12px;min-width:0}.canonical-platform-header__date-copy{display:grid;gap:2px}.canonical-platform-header__date-copy strong{font-size:13px}.canonical-platform-header__date-copy small{color:var(--platform-text-muted);font-size:10px}.canonical-platform-header__time{padding-inline-start:12px;border-inline-start:1px solid var(--platform-v2-border);font-variant-numeric:tabular-nums}
@@ -21,15 +21,7 @@
 #applicationBody{width:auto;padding:16px 0 24px}
 .canonical-platform-shell.platform-navigation-open:after{content:"";position:fixed;z-index:75;inset:0;background:rgba(11,39,71,.42)}
 
-/* Reservations adopts the canonical 228px unified shell without forking its navigation. */
-.canonical-platform-shell[data-active-platform-module="reservations"]{--canonical-sidebar-width:228px;--canonical-header-height:72px;--canonical-shell-gutter:24px}
-.canonical-platform-shell[data-active-platform-module="reservations"] .canonical-platform-sidebar{inset:24px 24px 24px auto;border-radius:0}
-.canonical-platform-shell[data-active-platform-module="reservations"] .canonical-platform-header{top:24px;right:276px;left:24px;height:72px;border-radius:16px 16px 0 0}
-.canonical-platform-shell[data-active-platform-module="reservations"] .canonical-platform-workspace-host{margin-right:276px;margin-left:24px;padding-top:96px}
-[data-reservations-module-root]{--reservations-border:#dce7f2;min-width:0}
-[data-reservations-module-root] .platform-module-context{min-height:48px;margin-bottom:8px;padding:6px 12px;border:1px solid var(--reservations-border);border-radius:10px;background:rgba(255,255,255,.96);box-shadow:0 2px 8px rgba(15,23,42,.06)}
-[data-reservations-module-root] .platform-module-context__title{font-size:14px;line-height:1.35}
-[data-reservations-module-root] .platform-module-context__eyebrow{font-size:9px;letter-spacing:.02em}
+[data-reservations-module-root]{min-width:0}
 
 @media(max-width:900px){
   .canonical-platform-shell{--canonical-shell-gutter:12px}
@@ -38,21 +30,10 @@
   .canonical-platform-header{right:var(--canonical-shell-gutter)}
   .canonical-platform-header__toggle{display:grid}
   .canonical-platform-workspace-host,#applicationBody,#applicationTopbar{margin-inline:var(--canonical-shell-gutter)}
-  .canonical-platform-shell[data-active-platform-module="reservations"] .canonical-platform-sidebar{inset:12px 12px 12px auto;border-radius:var(--platform-radius-lg)}
-  .canonical-platform-shell[data-active-platform-module="reservations"] .canonical-platform-header{top:12px;right:12px;left:12px;border-radius:var(--platform-radius-card)}
-  .canonical-platform-shell[data-active-platform-module="reservations"] .canonical-platform-workspace-host{margin-inline:12px;padding-top:96px}
-}
-
-@media(max-width:820px){
-  [data-reservations-module-root] .platform-module-context{margin-bottom:10px}
 }
 
 @media(max-width:600px){
   .canonical-platform-header{height:58px;padding:8px 10px}.canonical-platform-header__date-copy small{display:none}.canonical-platform-header__account button{padding-inline:9px;font-size:11px}
   .canonical-platform-workspace-host{padding-top:78px;padding-bottom:12px}
   #applicationTopbar{margin-top:78px}
-}
-
-@media(max-width:520px){
-  [data-reservations-module-root] .platform-module-context{padding:8px 10px}
 }
