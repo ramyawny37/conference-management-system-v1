@@ -31,7 +31,7 @@ test('the document exposes exactly one canonical shell, sidebar, header, and wor
 });
 
 test('the canonical shell is the only active global shell stylesheet',()=>{
-  const canonicalAsset='canonical-platform-shell.css?rev=reservations-workspace-v2';
+  const canonicalAsset='canonical-platform-shell.css?rev=reservations-workspace-v3';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
@@ -44,7 +44,7 @@ test('the canonical shell is the only active global shell stylesheet',()=>{
   assert.doesNotMatch(css,/(^|\n)\.reference-|#reservationsWorkspace|#warehouseWorkspace/);
   assert.doesNotMatch(css,/\[data-active-platform-module="reservations"\]\{--canonical-sidebar-width:/);
   assert.match(css,/\.canonical-platform-header\{[^}]*right:calc\(var\(--canonical-sidebar-width\) \+ 24px\)/);
-  assert.match(css,/\.canonical-platform-workspace-host,#applicationBody,#applicationTopbar\{margin-inline-end:calc\(var\(--canonical-sidebar-width\) \+ 24px\)/);
+  assert.match(css,/\.canonical-platform-workspace-host,#applicationBody,#applicationTopbar\{margin-inline-start:calc\(var\(--canonical-sidebar-width\) \+ 24px\);margin-inline-end:var\(--canonical-shell-gutter\)\}/);
   assert.doesNotMatch(css,/\[data-reservations-module-root\] \.reference-(?:hero|stats|actions|insights|lower-grid)/);
 });
 
