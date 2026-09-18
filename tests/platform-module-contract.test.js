@@ -10,6 +10,7 @@ const worker=fs.readFileSync('service-worker.js','utf8');
 function runtime(initialRoute='/'){
   let route=initialRoute;
   const calls=[];
+  const dispatched=[];
   const listeners={};
   const classes=new Set();
   const elements={startupScreen:{classList:{add:value=>classes.add(value),remove:value=>classes.delete(value)}},conferenceWorkspace:{},warehouseWorkspace:{},reservationsWorkspace:{id:'reservationsWorkspace'}};
@@ -24,6 +25,8 @@ function runtime(initialRoute='/'){
       replaceState(_state,_title,value){calls.push(['replace',value]);route=value.split('#')[1];},
     },
     addEventListener(name,handler){listeners[name]=handler;},
+    CustomEvent:function(name,options){this.type=name;this.detail=options&&options.detail;},
+    dispatchEvent(event){dispatched.push(event);if(listeners[event.type])listeners[event.type](event);return true;},
     openConferenceWorkspace(){calls.push(['conference-open']);return true;},
     reconcileConferenceRoute(){calls.push(['conference-route',route]);return true;},
     openWarehouseWorkspace(options){calls.push(['warehouse',options]);return true;},
@@ -33,7 +36,7 @@ function runtime(initialRoute='/'){
     SyncSettingsUI:{signOut:()=>Promise.resolve(true)},
   };
   vm.runInNewContext(source,{window,Promise,Object,JSON,String,Error});
-  return {window,calls,listeners,classes,elements,setRoute:value=>{route=value;}};
+  return {window,calls,dispatched,listeners,classes,elements,setRoute:value=>{route=value;}};
 }
 
 test('built-in modules remain registered and open through the common contract',async()=>{
@@ -85,8 +88,12 @@ test('platform owns module Conference context and clears it on logout',async()=>
   assert.strictEqual(services.getSelectedConferenceId(),'');
   assert.strictEqual(services.setSelectedConferenceId('conference-a'),'conference-a');
   assert.strictEqual(services.getSelectedConferenceId(),'conference-a');
+  assert.deepStrictEqual(state.dispatched.map(event=>[event.type,event.detail&&event.detail.conferenceId]),[
+    ['platform-selected-conference-change','conference-a'],
+  ]);
   await state.window.PlatformIntegration.logout();
   assert.strictEqual(services.getSelectedConferenceId(),'');
+  assert.strictEqual(state.dispatched.at(-1).type,'platform-session-reset');
 });
 
 test('unknown modules fail closed and cannot be opened',()=>{
@@ -99,10 +106,10 @@ test('Reservations global navigation and static bundle stay inside the unified P
   assert.match(index,/canonical-platform-nav[\s\S]*data-platform-module="reservations"/);
   assert.match(index,/class="canonical-platform-nav__item" data-platform-module="reservations"/);
   assert.match(index,/id="reservationsWorkspace"/);
-  assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=reservations-visual-integration-v1/);
-  assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=reservations-visual-integration-v1/);
-  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.js\?rev=reservations-visual-integration-v1/);
-  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.css\?rev=reservations-visual-integration-v1/);
+  assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=reservations-context-ux-v1/);
+  assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=reservations-context-ux-v1/);
+  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.js\?rev=reservations-context-ux-v1/);
+  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.css\?rev=reservations-context-ux-v1/);
   assert.ok(fs.existsSync('modules/reservations/reservations-module.js'));
   assert.ok(fs.existsSync('modules/reservations/reservations-module.css'));
   assert.doesNotMatch(fs.readFileSync('modules/reservations/reservations-module.js','utf8'),/supabase\.co|createClient\(|platform-device-session/);
