@@ -87,6 +87,6 @@ test('route restores use PlatformIntegration and deterministic assets remain ali
   assert.match(worker,/\.\/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
   assert.match(index,/script\.js\?rev=platform-dashboard-v2-v5/);
   assert.match(worker,/\.\/script\.js\?rev=platform-dashboard-v2-v5/);
-  assert.match(index,/reservations-module\.js\?rev=reservations-final-ui-affordance-cleanup-v1/);
+  assert.match(index,/reservations-module\.js\?rev=reservations-internal-workspaces-root-reconstruction-v1/);
   assert.doesNotMatch(reservationsBundle,/check_module_access/);
 });
