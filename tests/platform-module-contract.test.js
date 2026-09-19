@@ -106,10 +106,10 @@ test('Reservations global navigation and static bundle stay inside the unified P
   assert.match(index,/canonical-platform-nav[\s\S]*data-platform-module="reservations"/);
   assert.match(index,/class="canonical-platform-nav__item" data-platform-module="reservations"/);
   assert.match(index,/id="reservationsWorkspace"/);
-  assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=reservations-workspaces-remediation-v1/);
-  assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=reservations-workspaces-remediation-v1/);
-  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.js\?rev=reservations-workspaces-remediation-v1/);
-  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.css\?rev=reservations-workspaces-remediation-v1/);
+  assert.match(index,/modules\/reservations\/reservations-module\.js\?rev=reservations-event-mutation-integrity-v1/);
+  assert.match(index,/modules\/reservations\/reservations-module\.css\?rev=reservations-event-mutation-integrity-v1/);
+  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.js\?rev=reservations-event-mutation-integrity-v1/);
+  assert.match(worker,/\.\/modules\/reservations\/reservations-module\.css\?rev=reservations-event-mutation-integrity-v1/);
   assert.ok(fs.existsSync('modules/reservations/reservations-module.js'));
   assert.ok(fs.existsSync('modules/reservations/reservations-module.css'));
   assert.doesNotMatch(fs.readFileSync('modules/reservations/reservations-module.js','utf8'),/supabase\.co|createClient\(|platform-device-session/);
