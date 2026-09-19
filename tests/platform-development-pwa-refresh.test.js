@@ -4,10 +4,24 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const worker=fs.readFileSync('service-worker.js','utf8');
+const pwa=fs.readFileSync('pwa.js','utf8');
 
-test('this release promptly activates in Development and Production',()=>{
-  assert.match(worker,/\.then\(\(\) => self\.skipWaiting\(\)\)/);
+test('updates wait for explicit acceptance in Development and Production',()=>{
+  assert.doesNotMatch(worker,/\.then\(\(\) => self\.skipWaiting\(\)\)/);
   assert.match(worker,/if \(event\.data\.action === 'skipWaiting'\)/);
+});
+
+test('the explicit update path prompts, activates, and reloads once',()=>{
+  assert.match(pwa,/registration\.waiting[\s\S]*showUpdateBar\(registration\.waiting\)/);
+  assert.match(pwa,/reg\.waiting\.postMessage\(\{ action: 'skipWaiting' \}\)/);
+  assert.match(pwa,/addEventListener\('controllerchange'[\s\S]*reloadTriggered = true[\s\S]*window\.location\.reload\(\)/);
+  assert.strictEqual((pwa.match(/window\.location\.reload\(\)/g)||[]).length,1);
+});
+
+test('first install can activate normally without a forced reload',()=>{
+  assert.match(worker,/\.then\(\(\) => self\.clients\.claim\(\)\)/);
+  assert.match(pwa,/newWorker\.state === 'installed' && navigator\.serviceWorker\.controller/);
+  assert.match(pwa,/if \(!updateInProgress \|\| reloadTriggered\) return/);
 });
 
 test('Development non-navigation assets are network-first with cache fallback',()=>{

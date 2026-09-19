@@ -17,7 +17,7 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
   assert(revisions,'missing environment-specific cache revisions');
   assert.strictEqual(
-    revisions[1],'reservations-reference-reconstruction-cache-v1'
+    revisions[1],'reservations-runtime-pwa-lifecycle-v1'
   );
   assert.strictEqual(revisions[2],'production-3-5-0-config-isolation-v1');
 
@@ -45,7 +45,8 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
 });
 
-test('this release activates promptly while retaining client claiming',()=>{
-  assert.match(worker,/\.then\(\(\) => self\.skipWaiting\(\)\)/);
+test('updates wait for acceptance while activation retains client claiming',()=>{
+  assert.doesNotMatch(worker,/\.then\(\(\) => self\.skipWaiting\(\)\)/);
+  assert.match(worker,/event\.waitUntil\(self\.skipWaiting\(\)\)/);
   assert.match(worker,/\.then\(\(\) => self\.clients\.claim\(\)\)/);
 });

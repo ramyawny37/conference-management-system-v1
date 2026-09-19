@@ -15,7 +15,7 @@ const mobileRoomInputRevision='anchored-glass-person-picker-v5';
 const appVersion='3.5.0';
 const shellRevision='development-3-4-0-platform-foundation-v1';
 const previousCacheRevision='development-3-4-0-platform-round3g3-v1';
-const cacheRevision='platform-dashboard-v2-v5';
+const cacheRevision='reservations-runtime-pwa-lifecycle-v1';
 const startupTransportRevision='project-device-storage-isolation-v1';
 const moduleRoutingRevision='warehouse-original-items-secure-restoration-v1';
 const priorAuthorizationCacheRevision='runtime-authorization-phase1-v1';
@@ -38,7 +38,7 @@ const legacyConferenceRevision='legacy-conference-preflight-v2';
 const privacyRevision='diagnostics-privacy-hardening-v1';
 const templateIsolationRevision='template-sync-isolation-v1';
 const startupRevision='pending-native-device-context-v1';
-const platformIntegrationRevision='platform-dashboard-v2-v5';
+const platformIntegrationRevision='canonical-platform-foundation-v1';
 const deviceOnboardingRevision='platform-first-login-coordinator-v1';
 const organizationTemplateRevision='shared-template-library-v1';
 const legacyTemplateAuthorizationRevision='legacy-template-adoption-authorization-v1';
@@ -321,6 +321,8 @@ assert(navigation.indexOf("fetch(request,{cache:'no-store'})")>=0,'navigation mu
 assert(navigation.indexOf('fetch(request')<navigation.indexOf('cache.match'),'navigation must be network-first');
 assert(worker.includes("event.data.action === 'skipWaiting'"));
 assert(worker.includes('event.waitUntil(self.skipWaiting())'));
+assert(!worker.includes('.then(() => self.skipWaiting())'),
+  'an installed update must wait for explicit user acceptance');
 assert(worker.includes('cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME'));
 assert(worker.includes('caches.delete(cacheName)'));
 assert.match(worker,/IS_DEVELOPMENT && requestUrl\.pathname === '\/manifest\.json'[\s\S]*JSON\.stringify\(\{[\s\S]*start_url: '\/'[\s\S]*status: 200/);
