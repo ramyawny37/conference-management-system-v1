@@ -12,16 +12,23 @@ test('updates wait for explicit acceptance in Development and Production',()=>{
 });
 
 test('the explicit update path prompts, activates, and reloads once',()=>{
-  assert.match(pwa,/registration\.waiting[\s\S]*showUpdateBar\(registration\.waiting\)/);
-  assert.match(pwa,/reg\.waiting\.postMessage\(\{ action: 'skipWaiting' \}\)/);
+  assert.match(pwa,/getActionableWaitingWorker\(registration\)/);
+  assert.match(pwa,/waitingWorker\.postMessage\(\{ action: 'skipWaiting' \}\)/);
   assert.match(pwa,/addEventListener\('controllerchange'[\s\S]*reloadTriggered = true[\s\S]*window\.location\.reload\(\)/);
   assert.strictEqual((pwa.match(/window\.location\.reload\(\)/g)||[]).length,1);
 });
 
 test('first install can activate normally without a forced reload',()=>{
   assert.match(worker,/\.then\(\(\) => self\.clients\.claim\(\)\)/);
-  assert.match(pwa,/newWorker\.state === 'installed' && navigator\.serviceWorker\.controller/);
+  assert.match(pwa,/return controller && worker && worker\.state === 'installed' \? worker : null/);
   assert.match(pwa,/if \(!updateInProgress \|\| reloadTriggered\) return/);
+});
+
+test('only the current registration waiting worker owns actionable update UI',()=>{
+  assert.doesNotMatch(pwa,/registration\.waiting \|\| newWorker/);
+  assert.match(pwa,/worker === getActionableWaitingWorker\(serviceWorkerRegistration\)/);
+  assert.match(pwa,/waitingWorker !== displayedUpdateWorker/);
+  assert.match(pwa,/observedUpdateWorkers\.has\(worker\)/);
 });
 
 test('Development non-navigation assets are network-first with cache fallback',()=>{

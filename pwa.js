@@ -15,6 +15,8 @@ let lastUpdateCheckAt = 0;
 let versionRequestWorker = null;
 let versionRequestPromise = null;
 let displayedUpdateWorker = null;
+let acceptedUpdateWorker = null;
+const observedUpdateWorkers = new WeakSet();
 const appShellRevision = window.APP_SHELL_REVISION || 'unknown';
 
 function requestWorkerDiagnostics(worker) {
@@ -103,6 +105,7 @@ function restoreUpdateUi(message) {
     updateTimeoutId = null;
   }
   updateInProgress = false;
+  acceptedUpdateWorker = null;
   if (updateButton) {
     updateButton.disabled = false;
     updateButton.textContent = originalUpdateButtonText;
@@ -119,12 +122,49 @@ function restoreUpdateUi(message) {
   }
 }
 
+function getActionableWaitingWorker(registration) {
+  const controller = navigator.serviceWorker && navigator.serviceWorker.controller;
+  const worker = registration && registration.waiting;
+  return controller && worker && worker.state === 'installed' ? worker : null;
+}
+
+function hideUpdateBar(preserveAcceptedUpdate) {
+  const updateBar = document.getElementById('update-bar');
+  displayedUpdateWorker = null;
+  versionRequestWorker = null;
+  versionRequestPromise = null;
+  if (updateBar) updateBar.classList.remove('show');
+  if (!preserveAcceptedUpdate) restoreUpdateUi();
+  refreshPwaUpdateDiagnostics();
+}
+
+function reconcileUpdateBar(registration) {
+  const worker = getActionableWaitingWorker(registration);
+  if (worker) {
+    observeUpdateWorker(worker, registration);
+    showUpdateBar(worker);
+    return worker;
+  }
+  const acceptedWorkerIsActivating = updateInProgress && acceptedUpdateWorker &&
+    (acceptedUpdateWorker.state === 'activating' || acceptedUpdateWorker.state === 'activated');
+  hideUpdateBar(acceptedWorkerIsActivating);
+  return null;
+}
+
+function observeUpdateWorker(worker, registration) {
+  if (!worker || observedUpdateWorkers.has(worker)) return;
+  observedUpdateWorkers.add(worker);
+  worker.addEventListener('statechange', () => {
+    Promise.resolve().then(() => reconcileUpdateBar(registration));
+  });
+}
+
 function checkForServiceWorkerUpdate() {
   if (!serviceWorkerRegistration) {
     return Promise.resolve();
   }
-  if (serviceWorkerRegistration.waiting) {
-    showUpdateBar(serviceWorkerRegistration.waiting);
+  if (getActionableWaitingWorker(serviceWorkerRegistration)) {
+    reconcileUpdateBar(serviceWorkerRegistration);
     return Promise.resolve();
   }
   if (!navigator.onLine || updateCheckInProgress) {
@@ -205,7 +245,7 @@ function getWorkerVersion(worker) {
 
 function showUpdateBar(worker) {
   const updateBar = document.getElementById('update-bar');
-  if (updateBar) {
+  if (updateBar && worker === getActionableWaitingWorker(serviceWorkerRegistration)) {
     updateBar.classList.add('show');
     if (!updateInProgress && updateMessage) {
       updateMessage.textContent = originalUpdateMessageText;
@@ -230,16 +270,14 @@ function showUpdateBar(worker) {
       updateButton.disabled = true;
       updateButton.textContent = 'جارٍ التحديث…';
 
-      const registrationPromise = serviceWorkerRegistration
-        ? Promise.resolve(serviceWorkerRegistration)
-        : navigator.serviceWorker.getRegistration();
-
-      registrationPromise.then(reg => {
-        if (!reg || !reg.waiting) {
-          restoreUpdateUi('لا يوجد تحديث جاهز الآن. يرجى المحاولة مرة أخرى.');
+      Promise.resolve(serviceWorkerRegistration).then(reg => {
+        const waitingWorker = getActionableWaitingWorker(reg);
+        if (!waitingWorker || waitingWorker !== displayedUpdateWorker) {
+          hideUpdateBar();
           return;
         }
-        reg.waiting.postMessage({ action: 'skipWaiting' });
+        acceptedUpdateWorker = waitingWorker;
+        waitingWorker.postMessage({ action: 'skipWaiting' });
         updateTimeoutId = setTimeout(() => {
           restoreUpdateUi('لم يكتمل التحديث. يرجى المحاولة مرة أخرى.');
         }, UPDATE_TIMEOUT_MS);
@@ -250,6 +288,7 @@ function showUpdateBar(worker) {
     document.getElementById('update-later').onclick = () => {
       if (updateInProgress) return;
       updateBar.classList.remove('show');
+      displayedUpdateWorker = null;
     };
   }
 }
@@ -262,20 +301,12 @@ if ('serviceWorker' in navigator) {
       serviceWorkerRegistration = registration;
       console.log('ServiceWorker registration successful with scope: ', registration.scope);
 
-      // Check if there's a waiting service worker to show the update bar immediately
-      if (registration.waiting && navigator.serviceWorker.controller) {
-        showUpdateBar(registration.waiting);
-      }
+      reconcileUpdateBar(registration);
 
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateBar(registration.waiting || newWorker);
-            }
-          });
-        }
+        observeUpdateWorker(newWorker, registration);
+        reconcileUpdateBar(registration);
       });
 
       checkForServiceWorkerUpdate();
@@ -287,6 +318,8 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!updateInProgress || reloadTriggered) return;
       reloadTriggered = true;
+      displayedUpdateWorker = null;
+      acceptedUpdateWorker = null;
       if (updateTimeoutId !== null) {
         clearTimeout(updateTimeoutId);
         updateTimeoutId = null;

@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'reservations-runtime-pwa-lifecycle-v1'
+  ? 'pwa-update-state-consistency-v1'
   : 'production-3-5-0-config-isolation-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -147,7 +147,7 @@ const CORE_ASSETS = [
   './js/warehouse/workspace.js?rev=item-unit-add-ui-v1',
   './script.js?rev=platform-dashboard-v2-v5',
   './version.js',
-  './pwa.js?rev=organization-membership-operation-key-v1',
+  './pwa.js?rev=pwa-update-state-consistency-v1',
   './libs/html2canvas.min.js',
   './assets/logo.jpg',
   './assets/make-a-difference-logo.png',
