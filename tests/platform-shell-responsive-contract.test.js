@@ -76,7 +76,7 @@ test('Reservations is real module-owned markup within the shared workspace',()=>
   assert.doesNotMatch(reservationsCss,/min-height:124px/);
   assert.match(reservationsCss,/\.reference-dashboard\{/);
   assert.match(reservationsCss,/\.reference-hero\{min-height:122px/);
-  assert.match(reservationsCss,/\.reference-stats\{height:66px;[^}]*grid-template-columns:repeat\(7/);
+  assert.match(reservationsCss,/\.reference-stats\{height:66px;[^}]*grid-template-columns:repeat\(5/);
   assert.match(reservationsCss,/\.reference-insights>\.reference-panel\{height:166px/);
   assert.match(reservationsCss,/\.reference-ring\{[^}]*width:80px;height:80px/);
   assert.match(reservationsCss,/\.reference-lower-grid\{[^}]*grid-template-areas:"bookings tools";align-items:start/);
@@ -95,6 +95,6 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'reservations-internal-workspaces-root-reconstruction-v1'/);
+  assert.match(worker,/\? 'reservations-canonical-workspace-reconstruction-v1'/);
   assert.match(worker,/: 'production-3-5-0-config-isolation-v1'/);
 });
