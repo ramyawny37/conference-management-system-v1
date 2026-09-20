@@ -8,7 +8,7 @@ const test=require('node:test');
 const vm=require('node:vm');
 const readiness=require('../tools/release-preflight/verify-promotion-readiness.cjs');
 const manifest=require('../tools/production-release/controlled-production-manifest.json');
-const incrementalPackage=require('../tools/production-release/controlled-production-incremental-3.5.0.json');
+const incrementalPackage=require('../tools/production-release/controlled-production-incremental-3.6.0.json');
 const root=path.resolve(__dirname,'..');
 const git=(args,options={})=>childProcess.execFileSync('git',args,{cwd:root,encoding:'utf8',...options}).trim();
 function candidateCommit(base,replacements={}){
@@ -27,7 +27,8 @@ function candidateCommit(base,replacements={}){
 const releaseBase=()=>candidateCommit(git(['rev-parse','HEAD']),{
   'tools/production-release/controlled-production-manifest.json':()=>fs.readFileSync(path.join(root,'tools/production-release/controlled-production-manifest.json'),'utf8'),
   'js/supabase/public-config.js':()=>fs.readFileSync(path.join(root,'js/supabase/public-config.js'),'utf8'),
-  'service-worker.js':()=>fs.readFileSync(path.join(root,'service-worker.js'),'utf8')
+  'service-worker.js':()=>fs.readFileSync(path.join(root,'service-worker.js'),'utf8'),
+  'version.js':()=>fs.readFileSync(path.join(root,'version.js'),'utf8')
 });
 const nextPatch=version=>{const parts=version.split('.').map(Number);return `${parts[0]}.${parts[1]}.${parts[2]+1}`;};
 function runtimeConfig(pathname){
@@ -65,14 +66,14 @@ test('controlled Production requirements include approved Reservations and Platf
   for(const name of ['20260908153405_reservations_v1_foundation.sql','20260909120555_production_validated_phase1c_variable_disambiguation.sql','20260912192000_platform_module_entry_access_gate.sql','20260913173000_module_permission_catalog_arabic_labels.sql'])assert.ok(manifest.releaseRequirements.requiredMigrationFiles.includes(`supabase/migrations/${name}`));
   assert.ok(manifest.releaseRequirements.developmentOnlyMigrationFiles.includes('supabase/migrations/20260913141000_platform_private_recovery_rls_hardening.sql'));
   assert.equal(manifest.releaseRequirements.requiredMigrationFiles.includes('supabase/migrations/20260913141000_platform_private_recovery_rls_hardening.sql'),false);
-  assert.equal(readiness.verifyManifest('HEAD'),undefined);
+  assert.equal(readiness.verifyManifest(),undefined);
 });
 test('controlled package separates bootstrap replay, established Production history, and future promotion',()=>{
   assert.deepEqual(manifest.packageModel.historicalBootstrapReplay,{entryCount:57,applyCount:43,supersededCount:14,terminalVersion:'20260907150000',executionSource:'entries'});
   assert.equal(manifest.packageModel.establishedProductionHistory.length,14);
   const incremental=manifest.packageModel.futureIncrementalPromotion;
-  assert.equal(incremental.releaseVersion,'3.5.0');
-  assert.equal(incremental.releaseSha,'bb30244f309d3724dc9a93a652fab20566284bfc');
+  assert.equal(incremental.releaseVersion,'3.6.0');
+  assert.equal(incremental.releaseSha,'3acec0f9f06dd4df7100310e0aa45939101beb36');
   assert.equal(incremental.entries.length,6);
   assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6]);
   assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,6);

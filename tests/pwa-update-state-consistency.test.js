@@ -29,7 +29,7 @@ function worker(state='installing') {
     postMessage(message,ports){
       messages.push(message);
       if(message.action==='getVersion'&&ports&&ports[0]) {
-        ports[0].onmessage({data:{action:'versionInfo',version:'3.5.0'}});
+        ports[0].onmessage({data:{action:'versionInfo',version:'3.6.0'}});
       }
       if(message.action==='getUpdateDiagnostics'&&ports&&ports[0]) {
         ports[0].onmessage({data:{action:'updateDiagnostics',cacheRevision:'test'}});

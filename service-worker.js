@@ -1,4 +1,4 @@
-const APP_VERSION = '3.5.0';
+const APP_VERSION = '3.6.0';
 const DEVELOPMENT_PROJECT_REF = 'gppwltrifgfxrkzvvxoe';
 const DEVELOPMENT_PATH = '/conference-management-system-development-preview/';
 const IS_DEVELOPMENT = self.location.pathname.indexOf(DEVELOPMENT_PATH) === 0;
@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-5-0-config-isolation-v1';
+  : 'production-3-6-0-release-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',

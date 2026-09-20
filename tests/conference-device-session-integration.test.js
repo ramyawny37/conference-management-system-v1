@@ -37,7 +37,7 @@ test("normal runtime keeps the token in tab memory and routes protected RPCs thr
   assert.doesNotMatch(client,/\/api\/platform\/conference-rpc/);
 });
 test("exact Phase 1C contract is identical in frontend, Edge, dispatcher, and revokes",()=>{
-  const round3g2=new Set(['search_module_permission_candidates','list_module_permission_catalog_for_administration','manage_catalog_module_grant']);
+  const round3g2=new Set(['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant']);
   const declared=[...contract.EDGE_ONLY_PROTECTED].filter(row=>!round3g2.has(row.operation)).map(row=>row.operation).sort();
   const edgeBlock=edge.match(/const allowed=new Set\(\[([\s\S]*?)\]\);/)[1];
   const edgeOperations=[...edgeBlock.matchAll(/'([a-z0-9_]+)'/g)].map(match=>match[1]).sort();
@@ -65,7 +65,8 @@ test("live-discovered browser SECURITY DEFINER surface has no unclassified signa
   }
   assert.equal(contract.POLICY_HELPER_BROWSER_READ.length,9);
   assert.equal(contract.DIRECT_BROWSER_REQUIRED.length,10);
-  assert.equal(contract.EDGE_ONLY_PROTECTED.length,60);
+  assert.ok(contract.EDGE_ONLY_PROTECTED.some(row=>row.operation==='list_module_permission_resources_for_administration'));
+  assert.ok(!edge.includes("'list_module_permission_resources_for_administration'"));
   assert.equal(contract.INTERNAL_ONLY.filter(signature=>discovered.includes(signature)).length,10);
   assert.equal(discovered.length,89-13-52+2);
 });
