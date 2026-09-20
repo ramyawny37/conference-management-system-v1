@@ -303,7 +303,7 @@ assert(worker.includes("'./"+adoptionUi+"'"));
 const platformDeviceAdministrationAsset='js/supabase/device-authorization-administration-service.js?rev=platform-privileged-device-admin-diagnostics-v1';
 assert(index.includes(platformDeviceAdministrationAsset),'index missing '+platformDeviceAdministrationAsset);
 assert(worker.includes("'./"+platformDeviceAdministrationAsset+"'"),'app shell missing '+platformDeviceAdministrationAsset);
-const multiDeviceAsset='js/sync/device-authorization-administration-ui.js?rev=startup-device-admin-lifecycle-v1';
+const multiDeviceAsset='js/sync/device-authorization-administration-ui.js?rev=startup-device-admin-lifecycle-v2';
 assert(index.includes(multiDeviceAsset),'index missing '+multiDeviceAsset);
 assert(worker.includes("'./"+multiDeviceAsset+"'"),'app shell missing '+multiDeviceAsset);
 [

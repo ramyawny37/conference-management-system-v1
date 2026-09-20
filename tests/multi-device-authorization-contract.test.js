@@ -36,5 +36,5 @@ devices.filter(function(device){return device.id==='windows';})[0].status='revok
 assert.deepStrictEqual(devices,[{id:'windows',status:'revoked'},{id:'iphone',status:'approved'}],'targeted revocation must preserve the iPhone');
 ['legacy_single_approved_index_removed','multi_device_approved_lookup_index_exists','approve_rpc_security_definer','approve_rpc_search_path_valid','legacy_existing_approved_rejection_removed','organization_manager_guard_present','authenticated_execute','anon_execute_denied'].forEach(function(field){assert.ok(verification.includes(field),field);});
 assert.doesNotMatch(verification,/^\s*(?:insert|update|delete|create|alter|drop|grant|revoke|truncate)\b/im);
-['js/sync/device-authorization-administration-ui.js?rev=startup-device-admin-lifecycle-v1'].forEach(function(asset){assert.ok(index.includes(asset),asset);assert.ok(worker.includes('./'+asset),asset);});
+['js/sync/device-authorization-administration-ui.js?rev=startup-device-admin-lifecycle-v2'].forEach(function(asset){assert.ok(index.includes(asset),asset);assert.ok(worker.includes('./'+asset),asset);});
 console.log('multi-device authorization contract tests: passed');
