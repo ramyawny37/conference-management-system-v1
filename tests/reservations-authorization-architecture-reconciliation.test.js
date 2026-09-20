@@ -9,6 +9,12 @@ const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.t
 const bundleSource=fs.readFileSync(
   '../reservation-management-system/src/features/reservations/components/new-booking-form.tsx','utf8'
 );
+const runtimeSource=fs.readFileSync(
+  '../reservation-management-system/src/features/reservations/reservations-runtime.tsx','utf8'
+);
+const moduleRootSource=fs.readFileSync(
+  '../reservation-management-system/src/features/reservations/components/module-root.tsx','utf8'
+);
 function body(name){
   const match=migration.match(new RegExp(`function ${name.replaceAll('.','\\.')}[\\s\\S]*?\\$\\$;`,'i'));
   assert.ok(match,`missing ${name}`);
@@ -45,7 +51,11 @@ test('booking creation context is minimal, capability filtered and shared by bot
 test('administrative reads do not inherit booking.create discovery authority',()=>{
   assert.match(migration,/p_operation in\('list_events','list_booking_types'\)[\s\S]*read_scoped/);
   assert.doesNotMatch(bundleSource,/\.listEvents\(\)|\.listBookingTypes\(/);
-  assert.match(bundleSource,/\.bookingCreationContext\(\)/);
+  assert.match(bundleSource,/useReservationsRuntime\(\)[\s\S]*runtime\.events/);
+  assert.doesNotMatch(bundleSource,/\.bookingCreationContext\(\)/);
+  assert.match(moduleRootSource,/<ReservationsRuntimeProvider>[\s\S]*<ReservationsModuleContent \/>/);
+  assert.match(runtimeSource,/reservationsBackend\.bookingCreationContext\(\)/);
+  assert.doesNotMatch(runtimeSource,/reservationsBackend\.(?:listEvents|listBookingTypes)\(/);
 });
 
 test('create Event has one capability and atomically grants only exact Event management',()=>{

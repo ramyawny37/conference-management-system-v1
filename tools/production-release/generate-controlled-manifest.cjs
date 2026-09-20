@@ -96,7 +96,7 @@ const releaseRequirements=Object.freeze({
     '20260909004500_phase1c_dispatch_context_reconciliation.sql',
     '20260913141000_platform_private_recovery_rls_hardening.sql'
   ].map(migration),
-  edge:{slug:'platform-device-operation',sourceFile:'supabase/functions/platform-device-operation/index.ts',sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),releaseSha:'3acec0f9f06dd4df7100310e0aa45939101beb36',currentProductionVersion:3,approvedDevelopmentVersion:16,verifyJwt:true,promotionRequired:true}
+  edge:{slug:'platform-device-operation',sourceFile:'supabase/functions/platform-device-operation/index.ts',sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),releaseSha:'86940e5b3cec10c9182b2a70136c323c2297aae0',currentProductionVersion:3,approvedDevelopmentVersion:16,verifyJwt:true,promotionRequired:true}
 });
 const establishedProductionHistory=[
   '20260908153405_reservations_v1_foundation.sql',
@@ -127,8 +127,17 @@ const incrementalMigrationNames=[
   '20260914151500_reservations_payment_history_relink_guard_fix.sql',
   '20260914151500_reservations_create_booking_conference_projection_fix.sql',
   '20260914152500_reservations_booking_projection_self_heal.sql',
-  '20260914164500_reservations_link_backfill_conference_people.sql'
+  '20260914164500_reservations_link_backfill_conference_people.sql',
+  '20260915190000_reservations_organization_booking_access_reconciliation.sql',
+  '20260915210000_reservations_booking_create_contract_cleanup.sql',
+  '20260915220000_reservations_authorization_architecture_reconciliation.sql',
+  '20260916120000_generic_module_permission_resource_administration.sql',
+  '20260920120000_reservations_report_event_authorization_scope.sql'
 ];
+const incrementalMigrationClassification=[
+  ...incrementalMigrationNames.map(name=>({sourceFile:migration(name),classification:'REQUIRED_FOR_3_6_RUNTIME'})),
+  {sourceFile:migration('20260915201500_reservations_booking_create_read_path_reconciliation.sql'),classification:'ALREADY_REPRESENTED_OR_SUPERSEDED',supersededBy:migration('20260915210000_reservations_booking_create_contract_cleanup.sql')}
+].sort((left,right)=>left.sourceFile.localeCompare(right.sourceFile));
 function incrementalEntry(name,index){
   const sourceFile=migration(name);
   const body=fs.readFileSync(path.join(root,sourceFile),'utf8');
@@ -140,7 +149,7 @@ function incrementalEntry(name,index){
     sourceSha256:sha(sourceFile),
     action:'APPLY_ONCE',
     executable:true,
-    idempotencyKey:`cms-production-3-6-0-3acec0f:${name.replace(/\.sql$/,'')}`,
+    idempotencyKey:`cms-production-3-6-0-86940e5:${name.replace(/\.sql$/,'')}`,
     transaction:{
       startsExplicitly:/^\s*begin\s*;/i.test(body),
       commitsExplicitly:/commit\s*;\s*$/i.test(body)
@@ -153,7 +162,7 @@ const edgeRelease={
   slug:'platform-device-operation',
   sourceFile:'supabase/functions/platform-device-operation/index.ts',
   sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),
-  releaseSha:'3acec0f9f06dd4df7100310e0aa45939101beb36',
+  releaseSha:'86940e5b3cec10c9182b2a70136c323c2297aae0',
   currentProductionVersion:3,
   approvedDevelopmentVersion:16,
   verifyJwt:true,
@@ -293,9 +302,10 @@ const packageModel=Object.freeze({
   establishedProductionHistory,
   futureIncrementalPromotion:{
     releaseVersion:'3.6.0',
-    releaseSha:'3acec0f9f06dd4df7100310e0aa45939101beb36',
-    packageId:'conference-controlled-production-3-6-0-3acec0f-v1',
+    releaseSha:'86940e5b3cec10c9182b2a70136c323c2297aae0',
+    packageId:'conference-controlled-production-3-6-0-86940e5-v1',
     entries:incrementalEntries,
+    migrationClassification:incrementalMigrationClassification,
     edgeRelease,
     executionPolicy:'Execute exactly these entries once in order after verification of establishedProductionHistory; establishedProductionHistory and historicalBootstrapReplay are verification-only for this incremental release and must never be replayed.'
   }
@@ -303,8 +313,8 @@ const packageModel=Object.freeze({
 const manifest={schemaVersion:3,packageId:'conference-controlled-production-fa7d7ba-v1',checkpointSha:'fa7d7ba81058190602bdd215e71006576a49a6ce',productionProjectRef:'mpezfbvcdfxpgflehuot',forbiddenProjectRefs:['gppwltrifgfxrkzvvxoe'],baseline:{version:'20260828150000',name:'production_webauthn_privileged_device_final_activation'},historyContract:{columns:['version','statements','name','created_by','idempotency_key','rollback'],primaryKey:'version',unique:'idempotency_key'},packageModel,executionOrder:entries.map(entry=>({version:entry.version,action:entry.action})),entries,releaseRequirements};
 const output=path.join(__dirname,'controlled-production-manifest.json');
 fs.writeFileSync(output,JSON.stringify(manifest,null,2)+'\n');
-const incrementalPackage={schemaVersion:1,packageId:packageModel.futureIncrementalPromotion.packageId,releaseVersion:'3.6.0',releaseSha:packageModel.futureIncrementalPromotion.releaseSha,productionProjectRef:manifest.productionProjectRef,forbiddenProjectRefs:manifest.forbiddenProjectRefs,establishedProductionHistoryVerification:establishedProductionHistory.map(entry=>({version:entry.version,name:entry.name,executable:false})),executionEntries:incrementalEntries,edgeRelease};
+const incrementalPackage={schemaVersion:1,packageId:packageModel.futureIncrementalPromotion.packageId,releaseVersion:'3.6.0',releaseSha:packageModel.futureIncrementalPromotion.releaseSha,productionProjectRef:manifest.productionProjectRef,forbiddenProjectRefs:manifest.forbiddenProjectRefs,establishedProductionHistoryVerification:establishedProductionHistory.map(entry=>({version:entry.version,name:entry.name,executable:false})),migrationClassification:incrementalMigrationClassification,executionEntries:incrementalEntries,edgeRelease};
 fs.writeFileSync(path.join(__dirname,'controlled-production-incremental-3.6.0.json'),JSON.stringify(incrementalPackage,null,2)+'\n');
 console.log(output);
 
-module.exports={apply,superseded,releaseRequirements,establishedProductionHistory,incrementalMigrationNames,incrementalEntries,edgeRelease,packageModel};
+module.exports={apply,superseded,releaseRequirements,establishedProductionHistory,incrementalMigrationNames,incrementalMigrationClassification,incrementalEntries,edgeRelease,packageModel};

@@ -73,11 +73,11 @@ test('controlled package separates bootstrap replay, established Production hist
   assert.equal(manifest.packageModel.establishedProductionHistory.length,14);
   const incremental=manifest.packageModel.futureIncrementalPromotion;
   assert.equal(incremental.releaseVersion,'3.6.0');
-  assert.equal(incremental.releaseSha,'3acec0f9f06dd4df7100310e0aa45939101beb36');
-  assert.equal(incremental.entries.length,6);
-  assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6]);
-  assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,6);
-  assert.equal(new Set(incremental.entries.map(entry=>entry.idempotencyKey)).size,6);
+  assert.equal(incremental.releaseSha,'86940e5b3cec10c9182b2a70136c323c2297aae0');
+  assert.equal(incremental.entries.length,11);
+  assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6,7,8,9,10,11]);
+  assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,11);
+  assert.equal(new Set(incremental.entries.map(entry=>entry.idempotencyKey)).size,11);
   for(const entry of incremental.entries){assert.equal(entry.executable,true);assert.equal(entry.action,'APPLY_ONCE');}
   assert.equal(incremental.edgeRelease.verifyJwt,true);
   assert.equal(incremental.edgeRelease.currentProductionVersion,3);
@@ -85,7 +85,13 @@ test('controlled package separates bootstrap replay, established Production hist
   assert.equal(incrementalPackage.productionProjectRef,'mpezfbvcdfxpgflehuot');
   assert.deepEqual(incrementalPackage.forbiddenProjectRefs,['gppwltrifgfxrkzvvxoe']);
   assert.deepEqual(incrementalPackage.executionEntries,incremental.entries);
-  assert.equal(incrementalPackage.executionEntries.length,6);
+  assert.equal(incrementalPackage.executionEntries.length,11);
+  assert.deepEqual(incrementalPackage.migrationClassification,incremental.migrationClassification);
+  assert.deepEqual(incremental.migrationClassification.filter(entry=>entry.classification==='ALREADY_REPRESENTED_OR_SUPERSEDED'),[{
+    sourceFile:'supabase/migrations/20260915201500_reservations_booking_create_read_path_reconciliation.sql',
+    classification:'ALREADY_REPRESENTED_OR_SUPERSEDED',
+    supersededBy:'supabase/migrations/20260915210000_reservations_booking_create_contract_cleanup.sql'
+  }]);
   assert.equal(incrementalPackage.establishedProductionHistoryVerification.every(entry=>entry.executable===false),true);
   for(const entry of manifest.packageModel.establishedProductionHistory){assert.equal(entry.executable,false);assert.equal(manifest.entries.some(controlled=>controlled.version===entry.version),false);}
   const recovery=manifest.packageModel.establishedProductionHistory.find(entry=>entry.version==='20260913141000');

@@ -10,6 +10,7 @@ const sandbox={window:{}};vm.runInNewContext(contractSource,sandbox);
 const contract=sandbox.window.ConferenceDeviceOperationContract;
 const unifiedEdge=fs.readFileSync("supabase/functions/platform-device-operation/index.ts","utf8");
 const deviceAdministration=fs.readFileSync("js/supabase/device-authorization-administration-service.js","utf8");
+const deviceAdministrationUi=fs.readFileSync("js/sync/device-authorization-administration-ui.js","utf8");
 test("dispatcher is service-role-only, verifies all authority dimensions, and derives the actor device",()=>{
   assert.match(migration,/auth\.role\(\) is distinct from 'service_role'/);
   assert.match(migration,/grant execute on function platform\.execute_conference_device_operation[^;]+to service_role/);
@@ -77,7 +78,11 @@ test("five former gateway operations have one Phase 1B/1C route and no gateway f
     assert.ok(unifiedEdge.includes("'"+operation+"'"),operation);
   }
   assert.match(deviceAdministration,/\.rpc\('list_pending_device_authorizations'/);
-  assert.match(deviceAdministration,/\.rpc\('approve_pending_device_authorization'/);
+  assert.doesNotMatch(deviceAdministration,/\.rpc\('approve_pending_device_authorization'/);
+  assert.match(deviceAdministration,/approveSystemOwnerPendingDevice:function\(input,options\)\{return mutateSystemOwnerPending\('approve',input,options\);\}/);
+  assert.doesNotMatch(deviceAdministration,/approvePlatformPendingDevice/);
+  assert.match(deviceAdministrationUi,/approveSystemOwnerPendingDevice\(\{targetUserId:targetUserId,deviceId:deviceId\}\)/);
+  assert.doesNotMatch(deviceAdministrationUi,/approvePlatformPendingDevice/);
   assert.doesNotMatch(deviceAdministration,/\/api\/platform\/device-authorizations|conference-rpc/);
   assert.equal(fs.existsSync('server/platform-gateway.cjs'),false);
   assert.equal(fs.existsSync('api/gateway.js'),false);
