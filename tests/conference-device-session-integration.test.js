@@ -65,7 +65,7 @@ test("live-discovered browser SECURITY DEFINER surface has no unclassified signa
     assert.ok(migration.includes(signature),"missing internal-only revoke: "+signature);
   }
   assert.equal(contract.POLICY_HELPER_BROWSER_READ.length,9);
-  assert.equal(contract.DIRECT_BROWSER_REQUIRED.length,10);
+  assert.equal(contract.DIRECT_BROWSER_REQUIRED.length,7);
   assert.ok(contract.EDGE_ONLY_PROTECTED.some(row=>row.operation==='list_module_permission_resources_for_administration'));
   assert.ok(!edge.includes("'list_module_permission_resources_for_administration'"));
   assert.equal(contract.INTERNAL_ONLY.filter(signature=>discovered.includes(signature)).length,10);

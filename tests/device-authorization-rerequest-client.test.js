@@ -17,8 +17,6 @@ const ids={
   user:'11111111-1111-4111-8111-111111111111',
   device:'22222222-2222-4222-8222-222222222222'
 };
-let sequence=0;
-let status='revoked';
 const calls=[];
 const storage={};
 const sandbox={
@@ -33,19 +31,9 @@ const sandbox={
       .test(String(value||''))},
   SupabaseAuth:{getSession:()=>({user:{id:ids.user}})},
   SupabaseDeviceIdentity:{getOrCreate:()=>({id:ids.device})},
-  crypto:{randomUUID:()=>{
-    sequence++;
-    return '33333333-3333-4333-8333-'+String(sequence).padStart(12,'0');
-  }},
+  PlatformDeviceEnrollment:{ensure:()=>Promise.resolve({status:'pending',data:{status:'pending',deviceId:ids.device}})},
   SupabaseClientLayer:{getClient:()=>({rpc:(name,args)=>{
     calls.push({name,args});
-    if(name==='get_my_device_authorization'){
-      return Promise.resolve({data:{deviceAuthorizationStatus:status}});
-    }
-    if(name==='request_current_device_authorization'){
-      status='pending';
-      return Promise.resolve({data:{status:'pending'}});
-    }
     return Promise.resolve({data:{accountStatus:'approved'}});
   }})}
 };
@@ -55,10 +43,10 @@ vm.runInNewContext(service,sandbox);
 
 (async function(){
   const before=await sandbox.CurrentDeviceAuthorizationService.getStatus();
-  assert.strictEqual(before.data.deviceAuthorizationStatus,'revoked');
+  assert.strictEqual(before.data.deviceAuthorizationStatus,'pending');
   assert.strictEqual(
     sandbox.CurrentDeviceAuthorizationService.getState().canRequestApproval,
-    true
+    false
   );
   const requested=await sandbox.CurrentDeviceAuthorizationService
     .requestAuthorization();
@@ -66,9 +54,7 @@ vm.runInNewContext(service,sandbox);
   assert.strictEqual(requested.status,'pending');
   const requestCalls=calls.filter(call=>
     call.name==='request_current_device_authorization');
-  assert.strictEqual(requestCalls.length,1);
-  assert.strictEqual(requestCalls[0].args.p_device_id,ids.device);
-  assert.ok(requestCalls[0].args.p_operation_id);
+  assert.strictEqual(requestCalls.length,0);
   assert.strictEqual(
     sandbox.CurrentDeviceAuthorizationService.getState()
       .currentDeviceAccessStatus,

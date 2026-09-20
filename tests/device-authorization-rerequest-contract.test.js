@@ -37,10 +37,10 @@ assert.match(migration,/The rollback intentionally restores behavior only/);
 assert.match(migration,/grant execute on function public\.request_current_device_authorization\(uuid, uuid\)[\s\S]*to authenticated/i);
 assert.doesNotMatch(migration,/grant execute[\s\S]*to (?:public|anon)\s*;/i);
 
-assert.match(service,/\['registered','revoked'\]/,
-  'diagnostic contract must expose re-request eligibility');
-assert.match(service,/clientScope\(\)/,
-  'request intent must be isolated by Supabase client scope');
+assert.doesNotMatch(service,/request_current_device_authorization|register_or_refresh_current_device/,
+  'active runtime must not re-enter legacy device authority');
+assert.match(service,/PlatformDeviceEnrollment/,
+  'active runtime must delegate to canonical Platform enrollment');
 assert.match(ui,/state\.status==='revoked'&&state\.accountStatus==='approved'/,
   'revoked device may request again only for an approved account');
 assert.match(ui,/طلب اعتماد الجهاز مرة أخرى/);

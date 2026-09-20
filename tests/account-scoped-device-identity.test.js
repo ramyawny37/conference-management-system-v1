@@ -11,12 +11,12 @@ sandbox.PlatformDeviceStorageNamespace={identityKey:userId=>'device-identity:gpp
 sandbox.SupabaseClientLayer={getClient:()=>({rpc:(name,args)=>{calls.push({name,args,userId:currentUser});if(name==='get_my_device_authorization')return Promise.resolve({data:{deviceAuthorizationStatus:currentUser===ids.owner&&args.p_device_id===ids.legacy?'approved':'not_registered'},error:null});if(name==='register_or_refresh_current_device')return Promise.resolve({data:{status:'registered'},error:null});if(name==='request_current_device_authorization')return Promise.resolve({data:{status:'pending'},error:null});return Promise.resolve({data:{},error:null});}})};sandbox.window=sandbox;
 vm.runInNewContext(identitySource,sandbox);vm.runInNewContext(serviceSource,sandbox);
 (async()=>{
-  let initialized=await sandbox.CurrentDeviceAuthorizationService.initializeIdentity();assert.strictEqual(initialized.status,'adopted');assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.legacy);
-  currentUser=ids.member;initialized=await sandbox.CurrentDeviceAuthorizationService.initializeIdentity();assert.strictEqual(initialized.status,'created');assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.memberDevice);assert.notStrictEqual(ids.memberDevice,ids.legacy);
-  const registered=await sandbox.CurrentDeviceAuthorizationService.registerCurrentDevice();assert.strictEqual(registered.ok,true);assert.strictEqual(calls.filter(call=>call.name==='register_or_refresh_current_device').pop().args.p_device_id,ids.memberDevice);
-  currentUser=ids.owner;await sandbox.CurrentDeviceAuthorizationService.initializeIdentity();assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.legacy);
-  const reconciled=sandbox.SupabaseDeviceIdentity.reconcileProvedIdentity({id:ids.memberDevice});assert.strictEqual(reconciled.success,true);assert.strictEqual(reconciled.status,'reconciled');assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.memberDevice);assert.strictEqual(JSON.parse(values['device-identity:gppwltrifgfxrkzvvxoe:'+ids.owner]).id,ids.memberDevice);
+  let initialized=await sandbox.CurrentDeviceAuthorizationService.initializeIdentity();assert.strictEqual(initialized.status,'created');assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.memberDevice);
+  sandbox.PlatformDeviceEnrollment={ensure:()=>Promise.resolve({status:'pending',data:{status:'pending',deviceId:ids.memberDevice}})};
+  currentUser=ids.member;initialized=await sandbox.CurrentDeviceAuthorizationService.initializeIdentity();assert.strictEqual(initialized.status,'created');assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.operation);assert.notStrictEqual(ids.operation,ids.legacy);
+  const registered=await sandbox.CurrentDeviceAuthorizationService.registerCurrentDevice();assert.strictEqual(registered.ok,true);assert.strictEqual(registered.data.deviceAuthorizationStatus,'pending');
+  currentUser=ids.owner;await sandbox.CurrentDeviceAuthorizationService.initializeIdentity();assert.strictEqual(sandbox.SupabaseDeviceIdentity.getOrCreate().id,ids.memberDevice);
   assert.ok(values['device-identity:gppwltrifgfxrkzvvxoe:'+ids.owner]);assert.ok(values['device-identity:gppwltrifgfxrkzvvxoe:'+ids.member]);assert.ok(values['dev:conference_manager_device_identity'],'legacy identity must not be deleted');
-  assert.strictEqual(calls.filter(call=>call.name==='get_my_device_authorization'&&call.userId===ids.member)[0].args.p_device_id,ids.legacy);
+  assert.strictEqual(calls.length,0,'canonical enrollment must not query or mutate legacy device authority');
   console.log('account-scoped device identity tests: passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

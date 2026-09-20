@@ -58,7 +58,7 @@ const CORE_ASSETS = [
   './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-enrollment.js?rev=pending-native-device-context-v1',
   './js/sync/device-authorization-operation-repository.js',
-  './js/supabase/current-device-authorization-service.js?rev=platform-authorization-readiness-v2',
+  './js/supabase/current-device-authorization-service.js?rev=canonical-platform-device-authority-v1',
   './js/supabase/device-authorization-administration-service.js?rev=platform-privileged-device-admin-diagnostics-v1',
   './js/sync/current-device-authorization-ui.js?rev=platform-first-login-coordinator-v1',
   './js/sync/device-reauthorization-flow.js?rev=device-reauthorization-flow-v1',

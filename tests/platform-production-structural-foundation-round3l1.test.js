@@ -133,7 +133,8 @@ test('27 legacy Platform registration is structural and fail closed',()=>{
 });
 test('28 active onboarding does not call the legacy Platform registration function',()=>{
   const service=fs.readFileSync('js/supabase/current-device-authorization-service.js','utf8');
-  assert.match(service,/register_or_refresh_current_device/);
+  assert.doesNotMatch(service,/register_or_refresh_current_device|request_current_device_authorization|get_my_device_authorization/);
+  assert.match(service,/PlatformDeviceEnrollment/);
   assert.doesNotMatch(service,/platform\.register_current_device|['"]register_current_device['"]/);
   assert.match(migrations.conference,/grant execute[^;]*platform\.register_current_device\(text,text,text\)/s);
 });

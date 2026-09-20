@@ -7,12 +7,12 @@ var repository=fs.readFileSync(path.join(root,'js/sync/device-authorization-oper
 var index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 var worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
 var ids={user:'11111111-1111-4111-8111-111111111111',device:'22222222-2222-4222-8222-222222222222',operation:'33333333-3333-4333-8333-333333333333'};
-var calls=[],store={},requestAttempts=0,awareFailure=false;var element={innerHTML:''};
-var sandbox={window:null,Promise:Promise,JSON:JSON,Object:Object,String:String,Array:Array,Date:Date,console:console,confirm:function(){return true;},localStorage:{getItem:function(k){return store[k]||null;},setItem:function(k,v){store[k]=v;}},crypto:{randomUUID:function(){return ids.operation;}},document:{getElementById:function(){return element;}},OrganizationAdministrationUtils:{isUuid:function(v){return /^[0-9a-f-]{36}$/i.test(v);}},SupabaseAuth:{initialize:function(){return Promise.resolve();},getSession:function(){return {user:{id:ids.user}};}},SystemAccessService:{getState:function(){return {}; }},SupabaseDeviceIdentity:{getOrCreate:function(){return {id:ids.device,deviceName:'Work',platform:'Test'};}},SupabaseClientLayer:{getClient:function(){return {rpc:function(name,args){calls.push({name:name,args:args});if(name==='get_my_device_authorization')return Promise.resolve({data:{deviceAuthorizationStatus:'registered'},error:null});if(name==='get_my_device_aware_system_access')return awareFailure?Promise.resolve({data:null,error:{code:'RPC_FAILED'}}):Promise.resolve({data:{accountStatus:'approved',deviceAuthorizationStatus:'registered',enforcementEnabled:false},error:null});if(name==='register_or_refresh_current_device')return Promise.resolve({data:{status:'registered'},error:null});requestAttempts++;return requestAttempts===1?Promise.reject(new Error('network')):Promise.resolve({data:{status:'pending'},error:null});}};}}};sandbox.window=sandbox;
+var calls=[],store={},awareFailure=false;var element={innerHTML:''};
+var sandbox={window:null,Promise:Promise,JSON:JSON,Object:Object,String:String,Array:Array,Date:Date,console:console,confirm:function(){return true;},localStorage:{getItem:function(k){return store[k]||null;},setItem:function(k,v){store[k]=v;}},crypto:{randomUUID:function(){return ids.operation;}},document:{getElementById:function(){return element;}},OrganizationAdministrationUtils:{isUuid:function(v){return /^[0-9a-f-]{36}$/i.test(v);}},SupabaseAuth:{initialize:function(){return Promise.resolve();},getSession:function(){return {user:{id:ids.user}};}},SystemAccessService:{getState:function(){return {}; }},SupabaseDeviceIdentity:{getOrCreate:function(){return {id:ids.device,deviceName:'Work',platform:'Test'};}},PlatformDeviceEnrollment:{ensure:function(){return Promise.resolve({status:'pending',data:{status:'pending',deviceId:ids.device}});}},SupabaseClientLayer:{getClient:function(){return {rpc:function(name,args){calls.push({name:name,args:args});if(name==='get_my_device_aware_system_access')return awareFailure?Promise.resolve({data:null,error:{code:'RPC_FAILED'}}):Promise.resolve({data:{accountStatus:'approved',deviceAuthorizationStatus:'pending',enforcementEnabled:false},error:null});return Promise.resolve({data:{},error:null});}};}}};sandbox.window=sandbox;
 vm.runInNewContext(repository,sandbox);vm.runInNewContext(service,sandbox);vm.runInNewContext(ui,sandbox);
 (async function(){
   await sandbox.CurrentDeviceAuthorizationUI.initialize();
-  assert.deepStrictEqual(calls.map(function(c){return c.name;}).sort(),['get_my_device_authorization','get_my_device_aware_system_access']);
+  assert.deepStrictEqual(calls.map(function(c){return c.name;}).sort(),['get_my_device_aware_system_access']);
   assert.strictEqual(calls.find(function(c){return c.name==='get_my_device_aware_system_access';}).args.p_device_id,ids.device);
   await sandbox.CurrentDeviceAuthorizationService.getDeviceAwareAccess();
   assert.strictEqual(sandbox.CurrentDeviceAuthorizationService.getLastDiagnostic().accountApproved,true);
@@ -23,12 +23,9 @@ vm.runInNewContext(repository,sandbox);vm.runInNewContext(service,sandbox);vm.ru
   awareFailure=false;
   assert.doesNotMatch(service+ui,/setInterval|setTimeout/,'Gate 2 status must not poll');
   await sandbox.CurrentDeviceAuthorizationUI.registerDevice();
-  assert.strictEqual(calls.filter(function(c){return c.name==='register_or_refresh_current_device';}).length,1);
-  var ambiguous=await sandbox.CurrentDeviceAuthorizationUI.requestAuthorization();assert.strictEqual(ambiguous.status,'ambiguous');
-  await sandbox.CurrentDeviceAuthorizationUI.requestAuthorization();
-  var requests=calls.filter(function(c){return c.name==='request_current_device_authorization';});
-  assert.strictEqual(requests.length,2);assert.strictEqual(requests[0].args.p_device_id,ids.device);
-  assert.strictEqual(requests[0].args.p_operation_id,ids.operation);assert.strictEqual(requests[1].args.p_operation_id,ids.operation);
+  assert.strictEqual(calls.filter(function(c){return c.name==='register_or_refresh_current_device';}).length,0);
+  var requested=await sandbox.CurrentDeviceAuthorizationUI.requestAuthorization();assert.strictEqual(requested.status,'pending');
+  assert.strictEqual(calls.filter(function(c){return c.name==='request_current_device_authorization';}).length,0);
   ['حالة اعتماد هذا الجهاز','غير مسجل','مسجل','بانتظار الموافقة','معتمد','مرفوض أو ملغى','تعذر التحقق','تحديث الحالة','لن يتم اعتماد الجهاز تلقائيًا.'].forEach(function(text){assert.ok(ui.includes(text),text);});
   ['js/sync/device-authorization-operation-repository.js','js/supabase/current-device-authorization-service.js','js/supabase/device-authorization-administration-service.js','js/sync/current-device-authorization-ui.js','js/sync/device-authorization-administration-ui.js'].forEach(function(file){assert.ok(index.includes(file));assert.ok(worker.includes('./'+file));});
   var cacheRevision=worker.match(
