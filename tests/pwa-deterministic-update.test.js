@@ -17,6 +17,7 @@ const shellRevision='development-3-4-0-platform-foundation-v1';
 const previousCacheRevision='development-3-4-0-platform-round3g3-v1';
 const cacheRevision='reservations-reference-locked-reconstruction-v5';
 const startupTransportRevision='project-device-storage-isolation-v1';
+const authBoundEdgeSessionRevision='auth-bound-edge-session-v1';
 const moduleRoutingRevision='warehouse-original-items-secure-restoration-v1';
 const priorAuthorizationCacheRevision='runtime-authorization-phase1-v1';
 const productionCacheRevision='production-3-6-0-release-v1';
@@ -212,8 +213,7 @@ assert(index.includes(readAsset));
 assert(worker.includes("'./"+readAsset+"'"));
 assert(index.includes('script.js?rev='+platformShellScriptRevision));
 assert(worker.includes("'./script.js?rev="+platformShellScriptRevision+"'"));
-[['js/platform-integration.js',platformIntegrationRevision],
- ['js/supabase/device-session.js',startupTransportRevision]].forEach(([asset,revision])=>{
+[['js/platform-integration.js',platformIntegrationRevision]].forEach(([asset,revision])=>{
   const versioned=asset+'?rev='+revision;
   assert(index.includes(versioned),'index missing '+versioned);
   assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
@@ -228,8 +228,11 @@ assert(!worker.includes("'./js/supabase/client.js?rev=phase1c-v1'"),'app shell r
   assert(index.includes(versioned),'index missing '+versioned);
   assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
 });
-assert(index.includes('js/supabase/device-enrollment.js?rev='+startupRevision));
-assert(worker.includes("'./js/supabase/device-enrollment.js?rev="+startupRevision+"'"));
+['js/supabase/device-session.js','js/supabase/device-enrollment.js'].forEach(asset=>{
+  const versioned=asset+'?rev='+authBoundEdgeSessionRevision;
+  assert(index.includes(versioned),'index missing '+versioned);
+  assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
+});
 [
   'js/sync/conference-permission-resolver.js',
   'core.js',

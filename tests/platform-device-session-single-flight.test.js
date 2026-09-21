@@ -16,7 +16,7 @@ function runtime(beginFlights,platformResponse){
   const calls=[];
   const record={state:'active',deviceId:'device-1',bindingId:'binding-1',
     publicKeyThumbprint:'thumbprint-1',privateKey:{}};
-  const client={functions:{invoke(name,request){
+  const client={auth:{getSession(){return Promise.resolve({data:{session:{access_token:'access-token',user:{id:'user-1'}}}});}},functions:{invoke(name,request){
     calls.push({name,body:request.body});
     if(name==='platform-device-operation')
       return Promise.resolve(platformResponse||{data:{ok:true,data:{operation:request.body.operation}}});
@@ -57,7 +57,7 @@ function successfulBegin(flight){
     signingPayload:'payload'}}});
 }
 
-async function drain(){for(let index=0;index<8;index+=1)await Promise.resolve();}
+async function drain(){for(let index=0;index<20;index+=1)await Promise.resolve();}
 function actionCount(calls,action){return calls.filter(call=>call.body.action===action).length;}
 
 test('five ensure callers share one establishment and later valid ensure only verifies',async()=>{
