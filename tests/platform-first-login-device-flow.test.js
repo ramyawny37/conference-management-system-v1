@@ -8,7 +8,7 @@ const test = require("node:test");
 const source = fs.readFileSync("js/sync/startup-access-gate.js", "utf8");
 const integrationSource = fs.readFileSync("js/platform-integration.js", "utf8");
 
-function harness({ authenticated = true, deviceStatus = "registered", accountStatus = "approved", publicDeviceStatus = deviceStatus, publicAccountStatus = "approved", deferAdoption = false, managedOrigin = true } = {}) {
+function harness({ authenticated = true, deviceStatus = "registered", accountStatus = "approved", publicDeviceStatus = deviceStatus, publicAccountStatus = "approved", deferAdoption = false, managedOrigin = true, nativeEnrollment = null } = {}) {
   const ids = ["startupAccessGate", "applicationTopbar", "applicationBody", "startupScreen", "globalConferenceHeader", "device_authorization_administration_root", "tab0", "tab1", "tab2", "tab3", "tab4", "tab5", "tab6"];
   const nodes = Object.fromEntries(ids.map((id) => [id, { style: {}, innerHTML: "" }]));
   const order = [];
@@ -20,6 +20,8 @@ function harness({ authenticated = true, deviceStatus = "registered", accountSta
   let deviceRpcCount = 0;
   let systemAccessReads = 0;
   let localFallbackReads = 0;
+  let enrollmentChecks = 0;
+  let explicitReEnrollments = 0;
   let currentDeviceStatus = publicDeviceStatus;
   let releaseAdoption;
   const adoptionWait = deferAdoption ? new Promise((resolve) => { releaseAdoption = resolve; }) : Promise.resolve();
@@ -74,6 +76,10 @@ function harness({ authenticated = true, deviceStatus = "registered", accountSta
     CurrentDeviceAuthorizationService: { getLastDiagnostic: () => ({}) },
     SyncSettingsUI: { signOut: () => {} },
   };
+  if(nativeEnrollment)window.PlatformDeviceEnrollment={
+    ensure:async()=>{enrollmentChecks+=1;if(nativeEnrollment.error)throw nativeEnrollment.error;return {status:deviceStatus};},
+    reEnrollRevoked:async()=>{explicitReEnrollments+=1;return {status:'pending'};}
+  };
   window.window = window;
   vm.runInNewContext(source, { window, Promise, Date, String, Array, Object, setTimeout: window.setTimeout });
   return {
@@ -84,6 +90,7 @@ function harness({ authenticated = true, deviceStatus = "registered", accountSta
     drainSignals: () => { while (queued.length) queued.shift()(); },
     releaseAdoption: () => releaseAdoption && releaseAdoption(),
     counts: () => ({ adoptionCount, requestCount, deviceRpcCount, localFallbackReads, systemAccessReads }),
+    enrollmentCounts: () => ({ enrollmentChecks, explicitReEnrollments }),
   };
 }
 
@@ -153,4 +160,35 @@ test("Platform pending and account-not-approved states remain blocked", async ()
   assert.equal((await accountPending.run()).status, "pending");
   assert.equal(accountPending.window.StartupAccessGate.getState().canonicalState, "ACCOUNT_NOT_APPROVED");
   assert.equal(accountPending.counts().deviceRpcCount, 0);
+});
+
+test("managed revoked missing-key state exposes re-enrollment only after the explicit action",async()=>{
+  const flow=harness({deviceStatus:"revoked",nativeEnrollment:{error:{code:"BOUND_PRIVATE_KEY_REQUIRED",status:"revoked"}}});
+  assert.equal((await flow.run()).status,"device_error");
+  assert.deepEqual(flow.enrollmentCounts(),{enrollmentChecks:1,explicitReEnrollments:0});
+  assert.ok(flow.nodes.startupAccessGate.innerHTML.includes("StartupAccessGate.reEnrollCurrentDevice()"));
+  assert.ok(flow.nodes.startupAccessGate.innerHTML.includes("إعادة تسجيل هذا الجهاز"));
+  await flow.window.StartupAccessGate.reEnrollCurrentDevice();
+  assert.equal(flow.enrollmentCounts().explicitReEnrollments,1);
+});
+
+test("managed revoked valid binding stays revoked without resetting identity",async()=>{
+  const flow=harness({deviceStatus:"revoked",nativeEnrollment:{}});
+  assert.equal((await flow.run()).status,"device");
+  assert.equal(flow.window.StartupAccessGate.getState().canonicalState,"DEVICE_REVOKED");
+  assert.deepEqual(flow.enrollmentCounts(),{enrollmentChecks:1,explicitReEnrollments:0});
+  assert.equal(flow.nodes.startupAccessGate.innerHTML.includes("StartupAccessGate.reEnrollCurrentDevice()"),false);
+});
+
+test("managed blocked, pending, and approved states never become re-enrollment eligible",async()=>{
+  const blocked=harness({deviceStatus:"blocked",nativeEnrollment:{error:{code:"BOUND_PRIVATE_KEY_REQUIRED",status:"revoked"}}});
+  assert.equal((await blocked.run()).status,"device");
+  assert.deepEqual(blocked.enrollmentCounts(),{enrollmentChecks:0,explicitReEnrollments:0});
+  assert.equal((await blocked.window.StartupAccessGate.reEnrollCurrentDevice()).status,"not_available");
+  const pending=harness({deviceStatus:"pending",nativeEnrollment:{}});
+  assert.equal((await pending.run()).status,"device");
+  assert.deepEqual(pending.enrollmentCounts(),{enrollmentChecks:0,explicitReEnrollments:0});
+  const approved=harness({deviceStatus:"approved",nativeEnrollment:{}});
+  assert.equal((await approved.run()).status,"allowed");
+  assert.deepEqual(approved.enrollmentCounts(),{enrollmentChecks:0,explicitReEnrollments:0});
 });

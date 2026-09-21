@@ -11,6 +11,7 @@
   function showStartupDenied(text,code){markSignUpStartupFailure({code:code||'STARTUP_ACCESS_FAILED'});return show('denied',text);}
   function refreshAccountLabel(){if(typeof global.updateLogoText==='function')global.updateLogoText();}
   function establishDeviceSession(){var service=global.PlatformDeviceSession;return service&&typeof service.ensureValid==='function'?service.ensureValid():Promise.resolve({valid:true,compatibility:true});}
+  function nativeEnrollmentFailure(error){if(error&&error.code==='BOUND_PRIVATE_KEY_REQUIRED'&&String(error.status||'')==='revoked'){deviceReEnrollmentAvailable=true;setCanonicalState('DEVICE_REVOKED');show('device_error','مفتاح اعتماد هذا الجهاز غير متاح. أعد تسجيل الجهاز لطلب اعتماد جديد.');return {status:'device_error'};}setCanonicalState('ERROR');show('device_error','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device_error'};}
   function accountIdentity(){var auth=global.SupabaseAuth;return auth&&typeof auth.getAccountIdentity==='function'?auth.getAccountIdentity():{authenticated:false,userId:'',displayName:'',email:'',label:''};}
   function setCanonicalState(value){canonicalState=value;var integration=global.PlatformIntegration;if(integration&&typeof integration.recordCanonicalState==='function')integration.recordCanonicalState(value);recordStage('canonical_state',value);return value;}
   function publicState(){return {allowed:allowed,authorizationPassed:authorizationPassed,applicationVisible:applicationVisible,pipelineState:pipelineState,gateState:currentGateKind,canonicalState:canonicalState,generation:generation,authView:authView,trace:runtimeTrace.slice()};}
@@ -66,7 +67,12 @@
         if(platformContext.accountStatus==='blocked'){setCanonicalState('ACCOUNT_NOT_APPROVED');return show('blocked','هذا الحساب محظور. راجع مسؤول النظام.');}
         if(platformContext.accountStatus!=='approved'){setCanonicalState('ERROR');return showStartupDenied('تعذر التحقق الآمن من صلاحية الحساب.','STARTUP_SYSTEM_ACCESS_FAILED');}
         if(platformContext.deviceStatus==='approved'){setCanonicalState('DEVICE_APPROVED');return allow();}
-        if(platformContext.deviceStatus==='revoked'||platformContext.deviceStatus==='blocked'){setCanonicalState('DEVICE_REVOKED');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};}
+        if(platformContext.deviceStatus==='blocked'){setCanonicalState('DEVICE_REVOKED');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};}
+        if(platformContext.deviceStatus==='revoked'){
+          var managedEnrollment=global.PlatformDeviceEnrollment;
+          if(!managedEnrollment||typeof managedEnrollment.ensure!=='function'){setCanonicalState('DEVICE_REVOKED');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};}
+          return managedEnrollment.ensure().then(function(){if(token!==generation)return {status:'stale'};setCanonicalState('DEVICE_REVOKED');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};},nativeEnrollmentFailure);
+        }
         if(platformContext.deviceStatus==='pending'){setCanonicalState('DEVICE_PENDING');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};}
         setCanonicalState('ERROR');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};
       }
@@ -80,7 +86,7 @@
         if(enrollment.status==='pending'){setCanonicalState('DEVICE_PENDING');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};}
         if(enrollment.status==='revoked'||enrollment.status==='blocked'){setCanonicalState('DEVICE_REVOKED');show('device','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device'};}
         setCanonicalState('ERROR');show('device_error','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device_error'};
-      },function(error){if(error&&error.code==='BOUND_PRIVATE_KEY_REQUIRED'&&String(error.status||'')==='revoked'){deviceReEnrollmentAvailable=true;setCanonicalState('DEVICE_REVOKED');show('device_error','مفتاح اعتماد هذا الجهاز غير متاح. أعد تسجيل الجهاز لطلب اعتماد جديد.');return {status:'device_error'};}setCanonicalState('ERROR');show('device_error','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device_error'};});
+      },nativeEnrollmentFailure);
       var deviceUi=global.CurrentDeviceAuthorizationUI;
       return Promise.resolve(deviceUi.initialize()).then(function(){
         if(token!==generation)return {status:'stale'};
