@@ -32,7 +32,7 @@ vm.runInNewContext(repository,sandbox);vm.runInNewContext(service,sandbox);vm.ru
     /const CACHE_REVISION = IS_DEVELOPMENT\s*\? '([^']+)'\s*:\s*'([^']+)';/);
   assert.ok(cacheRevision,'cache revision must remain environment-aware');
   assert.strictEqual(cacheRevision[1],'reservations-reference-locked-reconstruction-v5');
-  assert.strictEqual(cacheRevision[2],'production-3-6-0-release-v4');
+  assert.strictEqual(cacheRevision[2],'production-3-6-0-release-v5');
   assert.notStrictEqual(cacheRevision[1],cacheRevision[2]);
   assert.match(worker,/const CACHE_NAMESPACE = IS_DEVELOPMENT[\s\S]*\? 'cms:development:' \+ DEVELOPMENT_PROJECT_REF \+ ':'[\s\S]*:\s*'';/);
   assert.ok(ui.includes('طلب اعتماد الجهاز مرة أخرى'));
