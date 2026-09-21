@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-6-0-release-v1';
+  : 'production-3-6-0-release-v2';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -93,7 +93,7 @@ const CORE_ASSETS = [
   './js/sync/conference-membership-attempt-store.js',
   './js/sync/conference-members-service.js?rev=legacy-rpc-hardening-v1',
   './js/sync/conference-members-ui.js?rev=diagnostics-privacy-hardening-v1',
-  './js/sync/legacy-conference-organization-assignment-attempt-store.js?rev=legacy-conference-preflight-v2',
+  './js/sync/legacy-conference-organization-assignment-attempt-store.js',
   './js/supabase/legacy-conference-organization-assignment-service.js?rev=legacy-conference-preflight-v2',
   './js/sync/legacy-conference-organization-assignment-ui.js?rev=legacy-conference-preflight-v2',
   './js/sync/system-access-administration-attempt-store.js?rev=user-account-administration-v1',
@@ -253,7 +253,7 @@ self.addEventListener('fetch', event => {
         background_color: '#123E7A'
       }), {
         status: 200,
-        headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-store' }
+        headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control':'no-store' }
       }))
     );
     return;
