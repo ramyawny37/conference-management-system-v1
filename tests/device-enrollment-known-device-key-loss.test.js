@@ -5,15 +5,26 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const enrollment=fs.readFileSync('js/supabase/device-enrollment.js','utf8');
+const identity=fs.readFileSync('js/supabase/device-identity.js','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-enrollment/index.ts','utf8');
 
 test('known device without its bound private key fails closed before fresh enrollment',()=>{
   assert.match(enrollment,/getCurrent\(\{authenticatedUserId:auth\.userId\}\)/);
   assert.match(enrollment,/invoke\(\{action:'device-status',deviceId:identity\.id\}\)/);
-  assert.match(enrollment,/if\(status&&status\.known\)throw \{code:'BOUND_PRIVATE_KEY_REQUIRED'/);
-  const guard=enrollment.indexOf("if(status&&status.known)throw {code:'BOUND_PRIVATE_KEY_REQUIRED'");
+  assert.match(enrollment,/throw \{code:'BOUND_PRIVATE_KEY_REQUIRED'/);
+  const guard=enrollment.indexOf("throw {code:'BOUND_PRIVATE_KEY_REQUIRED'");
   const fresh=enrollment.indexOf('return adoptProvedLegacy().then(function(adopted){return adopted||enroll(auth);});',guard);
   assert.ok(guard>=0&&fresh>guard,'known-device guard must run before fresh enrollment');
+});
+
+test('revoked known device can re-enroll only on a later explicit retry',()=>{
+  assert.match(enrollment,/if\(String\(status\.status\|\|''\)==='revoked'\)reEnrollmentCandidate=/);
+  assert.match(enrollment,/if\(reEnrollmentCandidate&&reEnrollmentCandidate\.userId===auth\.userId\)return reEnroll\(auth\)/);
+  assert.match(enrollment,/current\.id!==reEnrollmentCandidate\.deviceId/);
+  assert.match(enrollment,/identity\.resetCurrent\(\{authenticatedUserId:auth\.userId\}\)/);
+  assert.match(identity,/function resetCurrent\(options\)/);
+  assert.match(identity,/storage\.removeItem\(key\)/);
+  assert.doesNotMatch(identity,/localStorage\.clear|\.clear\(\)/);
 });
 
 test('device-status lookup is authenticated and scoped to the current user and device',()=>{
@@ -22,7 +33,7 @@ test('device-status lookup is authenticated and scoped to the current user and d
   assert.match(edge,/data:\{known:!!row,status:row\?String\(row\.status\|\|'missing'\):'missing'/);
 });
 
-test('native enrollment remains the only path for an unknown device',()=>{
+test('native enrollment remains the only server enrollment path',()=>{
   assert.equal((edge.match(/action!=='enroll'/g)||[]).length,1);
   assert.equal((edge.match(/enroll_new_device_key/g)||[]).length,1);
   assert.doesNotMatch(enrollment,/binding_recovery|ownership_handoff|lost_private_key/);
