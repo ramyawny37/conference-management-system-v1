@@ -37,27 +37,18 @@ Deno.serve(async(request)=>{
     if(action==='rerequest'){
       const bindingId=String(body.bindingId||''),deviceId=String(body.deviceId||'');
       if(!/^[0-9a-f-]{36}$/i.test(bindingId)||!/^[0-9a-f-]{36}$/i.test(deviceId))throw new Error('DEVICE_REREQUEST_ARGUMENT_INVALID');
-      const bindingResult=await service.schema('platform').from('device_key_bindings')
-        .select('id,user_id,device_id,device_authorization_id,public_key_jwk,public_key_thumbprint,algorithm,lifecycle_status,revoked_at,retired_at')
-        .eq('id',bindingId).eq('user_id',userResult.data.user.id).eq('device_id',deviceId).limit(1);
-      if(bindingResult.error)throw new Error('DEVICE_REREQUEST_BINDING_LOOKUP_FAILED');
-      const binding=bindingResult.data&&bindingResult.data[0];
-      if(!binding||binding.lifecycle_status!=='active'||binding.revoked_at||binding.retired_at||binding.algorithm!=='ECDSA_P256_SHA256')throw new Error('DEVICE_REREQUEST_ACTIVE_BINDING_REQUIRED');
-      const authorizationResult=await service.schema('platform').from('user_device_authorizations')
-        .select('id,status').eq('id',binding.device_authorization_id).eq('user_id',userResult.data.user.id).eq('device_id',deviceId).limit(1);
-      if(authorizationResult.error)throw new Error('DEVICE_REREQUEST_AUTHORIZATION_LOOKUP_FAILED');
-      const authorizationRow=authorizationResult.data&&authorizationResult.data[0];
-      if(!authorizationRow||authorizationRow.status!=='revoked')throw new Error('DEVICE_REREQUEST_REVOKED_AUTHORIZATION_REQUIRED');
-      const deviceResult=await service.schema('platform').from('devices').select('id,lifecycle_status,retired_at,compromised_at').eq('id',deviceId).limit(1);
-      if(deviceResult.error)throw new Error('DEVICE_REREQUEST_DEVICE_LOOKUP_FAILED');
-      const device=deviceResult.data&&deviceResult.data[0];
-      if(!device||device.lifecycle_status!=='active'||device.retired_at||device.compromised_at)throw new Error('DEVICE_REREQUEST_ACTIVE_DEVICE_REQUIRED');
+      const contextResult=await service.schema('platform').rpc('get_device_key_rerequest_verification_context',{p_user_id:userResult.data.user.id,p_device_id:deviceId,p_binding_id:bindingId});
+      if(contextResult.error)throw new Error('DEVICE_REREQUEST_CONTEXT_LOOKUP_FAILED');
+      const context=contextResult.data;
+      if(!context||context.status==='missing'||context.bindingId!==bindingId||context.deviceId!==deviceId||context.bindingLifecycle!=='active'||context.bindingRevoked||context.bindingRetired||context.algorithm!=='ECDSA_P256_SHA256')throw new Error('DEVICE_REREQUEST_ACTIVE_BINDING_REQUIRED');
+      if(context.authorizationStatus!=='revoked')throw new Error('DEVICE_REREQUEST_REVOKED_AUTHORIZATION_REQUIRED');
+      if(context.deviceLifecycle!=='active'||context.deviceRetired||context.deviceCompromised)throw new Error('DEVICE_REREQUEST_ACTIVE_DEVICE_REQUIRED');
       const nonce=String(body.nonce||''),issuedAt=String(body.issuedAt||''),issued=Date.parse(issuedAt);
       if(!/^[A-Za-z0-9_-]{43}$/.test(nonce)||!Number.isFinite(issued)||Math.abs(Date.now()-issued)>120000)throw new Error('DEVICE_REREQUEST_CHALLENGE_INVALID');
-      const payload=['PLATFORM_NATIVE_DEVICE_REREQUEST','v1',userResult.data.user.id,deviceId,bindingId,binding.public_key_thumbprint,nonce,issuedAt].join('\n');
+      const payload=['PLATFORM_NATIVE_DEVICE_REREQUEST','v1',userResult.data.user.id,deviceId,bindingId,context.publicKeyThumbprint,nonce,issuedAt].join('\n');
       if(String(body.signingPayload||'')!==payload)throw new Error('DEVICE_REREQUEST_PAYLOAD_INVALID');
       const signature=bytes(body.signature);if(signature.length!==64)throw new Error('SIGNATURE_FORMAT_INVALID');
-      let key:CryptoKey;try{key=await crypto.subtle.importKey('jwk',binding.public_key_jwk as JsonWebKey,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);}catch{throw new Error('DEVICE_REREQUEST_KEY_IMPORT_FAILED');}
+      let key:CryptoKey;try{key=await crypto.subtle.importKey('jwk',context.publicKeyJwk as JsonWebKey,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);}catch{throw new Error('DEVICE_REREQUEST_KEY_IMPORT_FAILED');}
       let verified=false;try{verified=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,signature,encoder.encode(payload));}catch{throw new Error('DEVICE_REREQUEST_SIGNATURE_VERIFY_FAILED');}
       if(!verified)throw new Error('DEVICE_REREQUEST_SIGNATURE_INVALID');
       const result=await service.schema('platform').rpc('rerequest_revoked_device_key',{p_user_id:userResult.data.user.id,p_device_id:deviceId,p_binding_id:bindingId,p_nonce:nonce});
