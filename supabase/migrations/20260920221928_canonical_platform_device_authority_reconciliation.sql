@@ -673,9 +673,12 @@ alter table public.device_authorization_admin_operations
   add constraint device_authorization_admin_target_platform_device_fk
     foreign key(target_user_id_snapshot,device_id)
     references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
+  -- Historical member replacement provenance is preserved;
+  -- no backfill or reclassification is permitted. New and updated rows remain
+  -- prospectively enforced against canonical Platform authority.
   add constraint device_authorization_admin_replacement_platform_device_fk
     foreign key(target_user_id_snapshot,replacement_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict;
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid;
 alter table public.device_authorization_audit_log
   drop constraint device_authorization_audit_device_owner_fk,
   -- Historical member-device audit rows predate canonical Platform authority;

@@ -26,6 +26,7 @@ function candidateCommit(base,replacements={}){
 }
 const releaseBase=()=>candidateCommit(git(['rev-parse','HEAD']),{
   'tools/production-release/controlled-production-manifest.json':()=>fs.readFileSync(path.join(root,'tools/production-release/controlled-production-manifest.json'),'utf8'),
+  'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql':()=>fs.readFileSync(path.join(root,'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql'),'utf8'),
   'js/supabase/public-config.js':()=>fs.readFileSync(path.join(root,'js/supabase/public-config.js'),'utf8'),
   'service-worker.js':()=>fs.readFileSync(path.join(root,'service-worker.js'),'utf8'),
   'version.js':()=>fs.readFileSync(path.join(root,'version.js'),'utf8')
@@ -70,14 +71,14 @@ test('controlled Production requirements include approved Reservations and Platf
 });
 test('controlled package separates bootstrap replay, established Production history, and future promotion',()=>{
   assert.deepEqual(manifest.packageModel.historicalBootstrapReplay,{entryCount:57,applyCount:43,supersededCount:14,terminalVersion:'20260907150000',executionSource:'entries'});
-  assert.equal(manifest.packageModel.establishedProductionHistory.length,14);
+  assert.equal(manifest.packageModel.establishedProductionHistory.length,20);
   const incremental=manifest.packageModel.futureIncrementalPromotion;
   assert.equal(incremental.releaseVersion,'3.6.0');
   assert.equal(incremental.releaseSha,'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f');
-  assert.equal(incremental.entries.length,12);
-  assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6,7,8,9,10,11,12]);
-  assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,12);
-  assert.equal(new Set(incremental.entries.map(entry=>entry.idempotencyKey)).size,12);
+  assert.equal(incremental.entries.length,6);
+  assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6]);
+  assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,6);
+  assert.equal(new Set(incremental.entries.map(entry=>entry.idempotencyKey)).size,6);
   for(const entry of incremental.entries){assert.equal(entry.executable,true);assert.equal(entry.action,'APPLY_ONCE');}
   assert.equal(incremental.edgeRelease.verifyJwt,true);
   assert.equal(incremental.edgeRelease.currentProductionVersion,3);
@@ -86,11 +87,13 @@ test('controlled package separates bootstrap replay, established Production hist
   assert.equal(incrementalPackage.productionProjectRef,'mpezfbvcdfxpgflehuot');
   assert.deepEqual(incrementalPackage.forbiddenProjectRefs,['gppwltrifgfxrkzvvxoe']);
   assert.deepEqual(incrementalPackage.executionEntries,incremental.entries);
-  assert.equal(incrementalPackage.executionEntries.length,12);
+  assert.equal(incrementalPackage.executionEntries.length,6);
   const authority=incrementalPackage.executionEntries.at(-1);
   assert.equal(authority.sourceFile,'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql');
   assert.match(authority.preconditionSql,/device_security_credentials_authorization_fk/);
   assert.match(authority.verificationSql,/device_security_credentials_platform_authorization_fk/);
+  assert.match(authority.verificationSql,/device_authorization_admin_replacement_platform_device_fk' and not convalidated/);
+  assert.match(authority.verificationSql,/system_owner_credential_recovery_platform_device_fk' and convalidated/);
   assert.match(authority.rollbackPolicy,/STOP_ON_FAILURE_AT_TRANSACTION_BOUNDARY/);
   assert.deepEqual(incrementalPackage.migrationClassification,incremental.migrationClassification);
   assert.deepEqual(incremental.migrationClassification.filter(entry=>entry.classification==='ALREADY_REPRESENTED_OR_SUPERSEDED'),[{
@@ -103,6 +106,31 @@ test('controlled package separates bootstrap replay, established Production hist
   const recovery=manifest.packageModel.establishedProductionHistory.find(entry=>entry.version==='20260913141000');
   assert.equal(recovery.representation,'ESTABLISHED_PRODUCTION_CONDITIONAL_RECONCILIATION');
   assert.match(recovery.sourcePolicy,/Development body remains excluded and is not replayable/);
+  const productionApplied=[
+    ['reservations_standalone_event_conference_link','20260914174552'],
+    ['reservations_standalone_event_link_constraint_resolution_fix','20260914174615'],
+    ['reservations_payment_history_relink_guard_fix','20260914174644'],
+    ['reservations_create_booking_conference_projection_fix','20260914174659'],
+    ['reservations_booking_projection_self_heal','20260914174722'],
+    ['reservations_link_backfill_conference_people','20260914174748']
+  ];
+  for(const [name,productionVersion] of productionApplied){
+    const established=manifest.packageModel.establishedProductionHistory.find(entry=>entry.name===name);
+    assert.equal(established.version,productionVersion);
+    assert.equal(established.executable,false);
+    assert.match(established.sourceFile,new RegExp(`${name}\\.sql$`));
+    assert.equal(incremental.entries.some(entry=>entry.name===name),false);
+    const classification=incremental.migrationClassification.find(entry=>entry.sourceFile===established.sourceFile);
+    assert.deepEqual(classification,{sourceFile:established.sourceFile,classification:'ESTABLISHED_PRODUCTION_HISTORY',productionVersion,logicalSourceVersion:established.logicalSourceVersion,executable:false});
+  }
+  assert.deepEqual(incremental.entries.map(entry=>entry.name),[
+    'reservations_organization_booking_access_reconciliation',
+    'reservations_booking_create_contract_cleanup',
+    'reservations_authorization_architecture_reconciliation',
+    'generic_module_permission_resource_administration',
+    'reservations_report_event_authorization_scope',
+    'canonical_platform_device_authority_reconciliation'
+  ]);
 });
 test('canonical version markers remain internally consistent',()=>{
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');

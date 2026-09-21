@@ -121,13 +121,25 @@ establishedProductionHistory.splice(12,0,{
   logicalMigrationSource:'supabase/migrations/20260913141000_platform_private_recovery_rls_hardening.sql',
   sourcePolicy:'Production used the live Production-aware conditional reconciliation under this logical migration name; the Development body remains excluded and is not replayable.'
 });
+const productionAppliedIncrementalMigrations=[
+  ['20260914133000_reservations_standalone_event_conference_link.sql','20260914174552'],
+  ['20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql','20260914174615'],
+  ['20260914151500_reservations_payment_history_relink_guard_fix.sql','20260914174644'],
+  ['20260914151500_reservations_create_booking_conference_projection_fix.sql','20260914174659'],
+  ['20260914152500_reservations_booking_projection_self_heal.sql','20260914174722'],
+  ['20260914164500_reservations_link_backfill_conference_people.sql','20260914174748']
+].map(([name,productionVersion])=>({
+  version:productionVersion,
+  logicalSourceVersion:version(name),
+  name:name.replace(/^\d+_|\.sql$/g,''),
+  representation:'ESTABLISHED_PRODUCTION_HISTORY_SOURCE',
+  sourceFile:migration(name),
+  sourceSha256:sha(migration(name)),
+  executable:false,
+  sourcePolicy:'Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed.'
+}));
+establishedProductionHistory.push(...productionAppliedIncrementalMigrations);
 const incrementalMigrationNames=[
-  '20260914133000_reservations_standalone_event_conference_link.sql',
-  '20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql',
-  '20260914151500_reservations_payment_history_relink_guard_fix.sql',
-  '20260914151500_reservations_create_booking_conference_projection_fix.sql',
-  '20260914152500_reservations_booking_projection_self_heal.sql',
-  '20260914164500_reservations_link_backfill_conference_people.sql',
   '20260915190000_reservations_organization_booking_access_reconciliation.sql',
   '20260915210000_reservations_booking_create_contract_cleanup.sql',
   '20260915220000_reservations_authorization_architecture_reconciliation.sql',
@@ -136,6 +148,7 @@ const incrementalMigrationNames=[
   '20260920221928_canonical_platform_device_authority_reconciliation.sql'
 ];
 const incrementalMigrationClassification=[
+  ...productionAppliedIncrementalMigrations.map(entry=>({sourceFile:entry.sourceFile,classification:'ESTABLISHED_PRODUCTION_HISTORY',productionVersion:entry.version,logicalSourceVersion:entry.logicalSourceVersion,executable:false})),
   ...incrementalMigrationNames.map(name=>({sourceFile:migration(name),classification:'REQUIRED_FOR_3_6_RUNTIME'})),
   {sourceFile:migration('20260915201500_reservations_booking_create_read_path_reconciliation.sql'),classification:'ALREADY_REPRESENTED_OR_SUPERSEDED',supersededBy:migration('20260915210000_reservations_booking_create_contract_cleanup.sql')}
 ].sort((left,right)=>left.sourceFile.localeCompare(right.sourceFile));
@@ -159,7 +172,7 @@ function incrementalEntry(name,index){
   };
   if(name==='20260920221928_canonical_platform_device_authority_reconciliation.sql'){
     entry.preconditionSql="select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is null and exists(select 1 from pg_constraint where conname='device_security_credentials_authorization_fk'))::text";
-    entry.verificationSql="select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is not null and exists(select 1 from pg_constraint where conname='device_security_credentials_platform_authorization_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='system_owner_credential_recovery_platform_device_fk' and convalidated) and not has_function_privilege('authenticated','public.register_or_refresh_current_device(uuid,text,text)','EXECUTE') and not has_function_privilege('authenticated','public.request_current_device_authorization(uuid,uuid)','EXECUTE'))::text";
+    entry.verificationSql="select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is not null and exists(select 1 from pg_constraint where conname='device_security_credentials_platform_authorization_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='device_authorization_admin_replacement_platform_device_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='system_owner_credential_recovery_platform_device_fk' and convalidated) and not has_function_privilege('authenticated','public.register_or_refresh_current_device(uuid,text,text)','EXECUTE') and not has_function_privilege('authenticated','public.request_current_device_authorization(uuid,uuid)','EXECUTE'))::text";
     entry.rollbackPolicy='STOP_ON_FAILURE_AT_TRANSACTION_BOUNDARY; no automatic rollback after committed canonical authority use; require separately reviewed forward reconciliation.';
   }
   return entry;
@@ -320,8 +333,8 @@ const packageModel=Object.freeze({
 const manifest={schemaVersion:3,packageId:'conference-controlled-production-fa7d7ba-v1',checkpointSha:'fa7d7ba81058190602bdd215e71006576a49a6ce',productionProjectRef:'mpezfbvcdfxpgflehuot',forbiddenProjectRefs:['gppwltrifgfxrkzvvxoe'],baseline:{version:'20260828150000',name:'production_webauthn_privileged_device_final_activation'},historyContract:{columns:['version','statements','name','created_by','idempotency_key','rollback'],primaryKey:'version',unique:'idempotency_key'},packageModel,executionOrder:entries.map(entry=>({version:entry.version,action:entry.action})),entries,releaseRequirements};
 const output=path.join(__dirname,'controlled-production-manifest.json');
 fs.writeFileSync(output,JSON.stringify(manifest,null,2)+'\n');
-const incrementalPackage={schemaVersion:1,packageId:packageModel.futureIncrementalPromotion.packageId,releaseVersion:'3.6.0',releaseSha:packageModel.futureIncrementalPromotion.releaseSha,productionProjectRef:manifest.productionProjectRef,forbiddenProjectRefs:manifest.forbiddenProjectRefs,establishedProductionHistoryVerification:establishedProductionHistory.map(entry=>({version:entry.version,name:entry.name,executable:false})),migrationClassification:incrementalMigrationClassification,executionEntries:incrementalEntries,edgeRelease};
+const incrementalPackage={schemaVersion:1,packageId:packageModel.futureIncrementalPromotion.packageId,releaseVersion:'3.6.0',releaseSha:packageModel.futureIncrementalPromotion.releaseSha,productionProjectRef:manifest.productionProjectRef,forbiddenProjectRefs:manifest.forbiddenProjectRefs,establishedProductionHistoryVerification:establishedProductionHistory.map(entry=>({...entry,executable:false})),migrationClassification:incrementalMigrationClassification,executionEntries:incrementalEntries,edgeRelease};
 fs.writeFileSync(path.join(__dirname,'controlled-production-incremental-3.6.0.json'),JSON.stringify(incrementalPackage,null,2)+'\n');
 console.log(output);
 
-module.exports={apply,superseded,releaseRequirements,establishedProductionHistory,incrementalMigrationNames,incrementalMigrationClassification,incrementalEntries,edgeRelease,packageModel};
+module.exports={apply,superseded,releaseRequirements,establishedProductionHistory,productionAppliedIncrementalMigrations,incrementalMigrationNames,incrementalMigrationClassification,incrementalEntries,edgeRelease,packageModel};

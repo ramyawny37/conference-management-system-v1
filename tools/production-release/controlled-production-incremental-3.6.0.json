@@ -11,98 +11,218 @@
     {
       "version": "20260908153405",
       "name": "reservations_v1_foundation",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260908153405_reservations_v1_foundation.sql",
+      "sourceSha256": "0c08242bf3ec9f1b0b96e6954362d83a3521c0a56b341d9e5f81ee43e6e5da75",
       "executable": false
     },
     {
       "version": "20260908153406",
       "name": "reservations_v1_protected_dispatcher",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260908153406_reservations_v1_protected_dispatcher.sql",
+      "sourceSha256": "071ddad845accbe4aae1d7859c8f24ab0066141c8aeb4d4c78c7be8eee159964",
       "executable": false
     },
     {
       "version": "20260908171814",
       "name": "reservations_event_booking_domain_reconciliation",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260908171814_reservations_event_booking_domain_reconciliation.sql",
+      "sourceSha256": "4829513d030098d4aa12a9b33a4021276f6d4bd16d534ab85acce0c7d2f0b9f8",
       "executable": false
     },
     {
       "version": "20260908171822",
       "name": "reservations_event_booking_dispatcher",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260908171822_reservations_event_booking_dispatcher.sql",
+      "sourceSha256": "7f927323a21f3fbf4ef93fa2d0d809ea12e964dc5d2b7a9b596afab573866c2f",
       "executable": false
     },
     {
       "version": "20260909120000",
       "name": "reservations_platform_tenant_boundary_reconciliation",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260909120000_reservations_platform_tenant_boundary_reconciliation.sql",
+      "sourceSha256": "766caccf0158f8222eb3a2a9330411972917f658aeb801e242d018fc57c9517e",
       "executable": false
     },
     {
       "version": "20260909120555",
       "name": "production_validated_phase1c_variable_disambiguation",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260909120555_production_validated_phase1c_variable_disambiguation.sql",
+      "sourceSha256": "8680e5ff0f56205372bff3a787e35065c903175a538524606b70d0b7088e5664",
       "executable": false
     },
     {
       "version": "20260909160000",
       "name": "reservations_conference_lifecycle_round1",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260909160000_reservations_conference_lifecycle_round1.sql",
+      "sourceSha256": "46ef6b90d041dc62b0c6dd16696247bf5c6fbc97e9da106b838f75ee07fb8959",
       "executable": false
     },
     {
       "version": "20260910120000",
       "name": "reservations_conference_scope_reconciliation",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260910120000_reservations_conference_scope_reconciliation.sql",
+      "sourceSha256": "543d2112f9d719034764171b1f99097d48771cdab3b5b1ac5a2254f3f5ef1bcf",
       "executable": false
     },
     {
       "version": "20260910150000",
       "name": "reservations_legacy_organization_scope_retirement",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260910150000_reservations_legacy_organization_scope_retirement.sql",
+      "sourceSha256": "b7321a958faed3ad7b203425d422eee5d6e146a8a7468edeb0205fa85ab08bec",
       "executable": false
     },
     {
       "version": "20260910160000",
       "name": "reservations_report_booking_pagination",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260910160000_reservations_report_booking_pagination.sql",
+      "sourceSha256": "d93c8e5b374b7635178ab87726716f9c07925f00e7bf215620752f67840268e1",
       "executable": false
     },
     {
       "version": "20260911120000",
       "name": "reservations_scope_partition_integrity",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql",
+      "sourceSha256": "2fb61289c7ae1db5f0bcd7bf3d4d27406085b6663ca59ee048b330291ca54b11",
       "executable": false
     },
     {
       "version": "20260912192000",
       "name": "platform_module_entry_access_gate",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260912192000_platform_module_entry_access_gate.sql",
+      "sourceSha256": "5b31a9b964d743749fbf0ca897a9eff8c8caef86450777b348863b97ed81b01c",
       "executable": false
     },
     {
       "version": "20260913141000",
       "name": "platform_private_recovery_rls_hardening",
-      "executable": false
+      "representation": "ESTABLISHED_PRODUCTION_CONDITIONAL_RECONCILIATION",
+      "executable": false,
+      "logicalMigrationSource": "supabase/migrations/20260913141000_platform_private_recovery_rls_hardening.sql",
+      "sourcePolicy": "Production used the live Production-aware conditional reconciliation under this logical migration name; the Development body remains excluded and is not replayable."
     },
     {
       "version": "20260913173000",
       "name": "module_permission_catalog_arabic_labels",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260913173000_module_permission_catalog_arabic_labels.sql",
+      "sourceSha256": "b3ed96d185c66db5104261321cdb2295eb568d4f9c69e5189cade8b5087ab221",
       "executable": false
+    },
+    {
+      "version": "20260914174552",
+      "logicalSourceVersion": "20260914133000",
+      "name": "reservations_standalone_event_conference_link",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260914133000_reservations_standalone_event_conference_link.sql",
+      "sourceSha256": "f189547a66fcd82f81c6a8cbd248b49865d52949afe3e86c8d8ddeadee718f1a",
+      "executable": false,
+      "sourcePolicy": "Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed."
+    },
+    {
+      "version": "20260914174615",
+      "logicalSourceVersion": "20260914150000",
+      "name": "reservations_standalone_event_link_constraint_resolution_fix",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql",
+      "sourceSha256": "58f1803e8e5eea7b372b75eb0a83673474d313cdd182cc8dce05d317c86cab8a",
+      "executable": false,
+      "sourcePolicy": "Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed."
+    },
+    {
+      "version": "20260914174644",
+      "logicalSourceVersion": "20260914151500",
+      "name": "reservations_payment_history_relink_guard_fix",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260914151500_reservations_payment_history_relink_guard_fix.sql",
+      "sourceSha256": "02fc41a1885ca54055251333ab5768ea84e2794f11ebc9622fd9d3fd1000b227",
+      "executable": false,
+      "sourcePolicy": "Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed."
+    },
+    {
+      "version": "20260914174659",
+      "logicalSourceVersion": "20260914151500",
+      "name": "reservations_create_booking_conference_projection_fix",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260914151500_reservations_create_booking_conference_projection_fix.sql",
+      "sourceSha256": "2fef0cc1fa8319602bc82366d19094c51ddf061f4eb53b0ca500352f1894ddd1",
+      "executable": false,
+      "sourcePolicy": "Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed."
+    },
+    {
+      "version": "20260914174722",
+      "logicalSourceVersion": "20260914152500",
+      "name": "reservations_booking_projection_self_heal",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260914152500_reservations_booking_projection_self_heal.sql",
+      "sourceSha256": "25ee009f351be248badda9a6d6df0a4baea28d75d50582d3f162ae81be26966f",
+      "executable": false,
+      "sourcePolicy": "Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed."
+    },
+    {
+      "version": "20260914174748",
+      "logicalSourceVersion": "20260914164500",
+      "name": "reservations_link_backfill_conference_people",
+      "representation": "ESTABLISHED_PRODUCTION_HISTORY_SOURCE",
+      "sourceFile": "supabase/migrations/20260914164500_reservations_link_backfill_conference_people.sql",
+      "sourceSha256": "b9236078eb4f9f2d27a8a74007af80feb3f1d829eb0c669a791dc8cd7adcee86",
+      "executable": false,
+      "sourcePolicy": "Production history records this logical migration under its actual apply-time version; canonical source provenance is verification-only and must not be replayed."
     }
   ],
   "migrationClassification": [
     {
       "sourceFile": "supabase/migrations/20260914133000_reservations_standalone_event_conference_link.sql",
-      "classification": "REQUIRED_FOR_3_6_RUNTIME"
+      "classification": "ESTABLISHED_PRODUCTION_HISTORY",
+      "productionVersion": "20260914174552",
+      "logicalSourceVersion": "20260914133000",
+      "executable": false
     },
     {
       "sourceFile": "supabase/migrations/20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql",
-      "classification": "REQUIRED_FOR_3_6_RUNTIME"
+      "classification": "ESTABLISHED_PRODUCTION_HISTORY",
+      "productionVersion": "20260914174615",
+      "logicalSourceVersion": "20260914150000",
+      "executable": false
     },
     {
       "sourceFile": "supabase/migrations/20260914151500_reservations_create_booking_conference_projection_fix.sql",
-      "classification": "REQUIRED_FOR_3_6_RUNTIME"
+      "classification": "ESTABLISHED_PRODUCTION_HISTORY",
+      "productionVersion": "20260914174659",
+      "logicalSourceVersion": "20260914151500",
+      "executable": false
     },
     {
       "sourceFile": "supabase/migrations/20260914151500_reservations_payment_history_relink_guard_fix.sql",
-      "classification": "REQUIRED_FOR_3_6_RUNTIME"
+      "classification": "ESTABLISHED_PRODUCTION_HISTORY",
+      "productionVersion": "20260914174644",
+      "logicalSourceVersion": "20260914151500",
+      "executable": false
     },
     {
       "sourceFile": "supabase/migrations/20260914152500_reservations_booking_projection_self_heal.sql",
-      "classification": "REQUIRED_FOR_3_6_RUNTIME"
+      "classification": "ESTABLISHED_PRODUCTION_HISTORY",
+      "productionVersion": "20260914174722",
+      "logicalSourceVersion": "20260914152500",
+      "executable": false
     },
     {
       "sourceFile": "supabase/migrations/20260914164500_reservations_link_backfill_conference_people.sql",
-      "classification": "REQUIRED_FOR_3_6_RUNTIME"
+      "classification": "ESTABLISHED_PRODUCTION_HISTORY",
+      "productionVersion": "20260914174748",
+      "logicalSourceVersion": "20260914164500",
+      "executable": false
     },
     {
       "sourceFile": "supabase/migrations/20260915190000_reservations_organization_booking_access_reconciliation.sql",
@@ -137,96 +257,6 @@
   "executionEntries": [
     {
       "order": 1,
-      "version": "20260914133000",
-      "name": "reservations_standalone_event_conference_link",
-      "sourceFile": "supabase/migrations/20260914133000_reservations_standalone_event_conference_link.sql",
-      "sourceSha256": "f189547a66fcd82f81c6a8cbd248b49865d52949afe3e86c8d8ddeadee718f1a",
-      "action": "APPLY_ONCE",
-      "executable": true,
-      "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914133000_reservations_standalone_event_conference_link",
-      "transaction": {
-        "startsExplicitly": true,
-        "commitsExplicitly": true
-      },
-      "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
-    },
-    {
-      "order": 2,
-      "version": "20260914150000",
-      "name": "reservations_standalone_event_link_constraint_resolution_fix",
-      "sourceFile": "supabase/migrations/20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql",
-      "sourceSha256": "58f1803e8e5eea7b372b75eb0a83673474d313cdd182cc8dce05d317c86cab8a",
-      "action": "APPLY_ONCE",
-      "executable": true,
-      "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914150000_reservations_standalone_event_link_constraint_resolution_fix",
-      "transaction": {
-        "startsExplicitly": true,
-        "commitsExplicitly": true
-      },
-      "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
-    },
-    {
-      "order": 3,
-      "version": "20260914151500",
-      "name": "reservations_payment_history_relink_guard_fix",
-      "sourceFile": "supabase/migrations/20260914151500_reservations_payment_history_relink_guard_fix.sql",
-      "sourceSha256": "02fc41a1885ca54055251333ab5768ea84e2794f11ebc9622fd9d3fd1000b227",
-      "action": "APPLY_ONCE",
-      "executable": true,
-      "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914151500_reservations_payment_history_relink_guard_fix",
-      "transaction": {
-        "startsExplicitly": true,
-        "commitsExplicitly": true
-      },
-      "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
-    },
-    {
-      "order": 4,
-      "version": "20260914151500",
-      "name": "reservations_create_booking_conference_projection_fix",
-      "sourceFile": "supabase/migrations/20260914151500_reservations_create_booking_conference_projection_fix.sql",
-      "sourceSha256": "2fef0cc1fa8319602bc82366d19094c51ddf061f4eb53b0ca500352f1894ddd1",
-      "action": "APPLY_ONCE",
-      "executable": true,
-      "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914151500_reservations_create_booking_conference_projection_fix",
-      "transaction": {
-        "startsExplicitly": true,
-        "commitsExplicitly": true
-      },
-      "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
-    },
-    {
-      "order": 5,
-      "version": "20260914152500",
-      "name": "reservations_booking_projection_self_heal",
-      "sourceFile": "supabase/migrations/20260914152500_reservations_booking_projection_self_heal.sql",
-      "sourceSha256": "25ee009f351be248badda9a6d6df0a4baea28d75d50582d3f162ae81be26966f",
-      "action": "APPLY_ONCE",
-      "executable": true,
-      "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914152500_reservations_booking_projection_self_heal",
-      "transaction": {
-        "startsExplicitly": true,
-        "commitsExplicitly": true
-      },
-      "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
-    },
-    {
-      "order": 6,
-      "version": "20260914164500",
-      "name": "reservations_link_backfill_conference_people",
-      "sourceFile": "supabase/migrations/20260914164500_reservations_link_backfill_conference_people.sql",
-      "sourceSha256": "b9236078eb4f9f2d27a8a74007af80feb3f1d829eb0c669a791dc8cd7adcee86",
-      "action": "APPLY_ONCE",
-      "executable": true,
-      "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914164500_reservations_link_backfill_conference_people",
-      "transaction": {
-        "startsExplicitly": true,
-        "commitsExplicitly": true
-      },
-      "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
-    },
-    {
-      "order": 7,
       "version": "20260915190000",
       "name": "reservations_organization_booking_access_reconciliation",
       "sourceFile": "supabase/migrations/20260915190000_reservations_organization_booking_access_reconciliation.sql",
@@ -241,7 +271,7 @@
       "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
     },
     {
-      "order": 8,
+      "order": 2,
       "version": "20260915210000",
       "name": "reservations_booking_create_contract_cleanup",
       "sourceFile": "supabase/migrations/20260915210000_reservations_booking_create_contract_cleanup.sql",
@@ -256,7 +286,7 @@
       "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
     },
     {
-      "order": 9,
+      "order": 3,
       "version": "20260915220000",
       "name": "reservations_authorization_architecture_reconciliation",
       "sourceFile": "supabase/migrations/20260915220000_reservations_authorization_architecture_reconciliation.sql",
@@ -271,7 +301,7 @@
       "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
     },
     {
-      "order": 10,
+      "order": 4,
       "version": "20260916120000",
       "name": "generic_module_permission_resource_administration",
       "sourceFile": "supabase/migrations/20260916120000_generic_module_permission_resource_administration.sql",
@@ -286,7 +316,7 @@
       "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
     },
     {
-      "order": 11,
+      "order": 5,
       "version": "20260920120000",
       "name": "reservations_report_event_authorization_scope",
       "sourceFile": "supabase/migrations/20260920120000_reservations_report_event_authorization_scope.sql",
@@ -301,11 +331,11 @@
       "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
     },
     {
-      "order": 12,
+      "order": 6,
       "version": "20260920221928",
       "name": "canonical_platform_device_authority_reconciliation",
       "sourceFile": "supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql",
-      "sourceSha256": "3bdbc685cc4ecfad9fa50940147d3502ccc2b28cd4ac561118ab6816d3ae96d6",
+      "sourceSha256": "a157a931616a332ca9364efa94b72993f95e5a499a9a90d867c61f9f44a950d8",
       "action": "APPLY_ONCE",
       "executable": true,
       "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260920221928_canonical_platform_device_authority_reconciliation",
@@ -315,7 +345,7 @@
       },
       "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key.",
       "preconditionSql": "select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is null and exists(select 1 from pg_constraint where conname='device_security_credentials_authorization_fk'))::text",
-      "verificationSql": "select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is not null and exists(select 1 from pg_constraint where conname='device_security_credentials_platform_authorization_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='system_owner_credential_recovery_platform_device_fk' and convalidated) and not has_function_privilege('authenticated','public.register_or_refresh_current_device(uuid,text,text)','EXECUTE') and not has_function_privilege('authenticated','public.request_current_device_authorization(uuid,uuid)','EXECUTE'))::text",
+      "verificationSql": "select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is not null and exists(select 1 from pg_constraint where conname='device_security_credentials_platform_authorization_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='device_authorization_admin_replacement_platform_device_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='system_owner_credential_recovery_platform_device_fk' and convalidated) and not has_function_privilege('authenticated','public.register_or_refresh_current_device(uuid,text,text)','EXECUTE') and not has_function_privilege('authenticated','public.request_current_device_authorization(uuid,uuid)','EXECUTE'))::text",
       "rollbackPolicy": "STOP_ON_FAILURE_AT_TRANSACTION_BOUNDARY; no automatic rollback after committed canonical authority use; require separately reviewed forward reconciliation."
     }
   ],

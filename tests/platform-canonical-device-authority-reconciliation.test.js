@@ -105,6 +105,7 @@ test('historical privileged provenance is prospectively enforced without validat
     'system_owner_credential_bootstrap_platform_device_fk',
     'device_authorization_admin_actor_platform_device_fk',
     'device_authorization_admin_target_platform_device_fk',
+    'device_authorization_admin_replacement_platform_device_fk',
     'device_authorization_audit_platform_device_owner_fk'
   ];
   for(const name of prospective){
@@ -119,14 +120,14 @@ test('historical privileged provenance is prospectively enforced without validat
     'system_owner_device_operations_replacement_platform_authorization_fk',
     'privileged_device_audit_replaced_platform_authorization_fk',
     'privileged_device_audit_replacement_platform_authorization_fk',
-    'system_owner_credential_recovery_platform_device_fk',
-    'device_authorization_admin_replacement_platform_device_fk'
+    'system_owner_credential_recovery_platform_device_fk'
   ]){
     const declaration=migration.match(new RegExp(`add constraint ${name}[\\s\\S]*?(?=,\\n\\s*(?:--|add constraint)|;)`,'i'))?.[0]||'';
     assert.doesNotMatch(declaration,/not valid/i,name);
   }
-  assert.doesNotMatch(migration,/validate\s+constraint\s+(?:device_security_credentials_platform_authorization_fk|device_possession_challenges_(?:actor|target)_platform_authorization_fk|system_owner_device_operations_(?:actor|target)_platform_authorization_fk|privileged_device_audit_(?:actor|target)_platform_authorization_fk|system_owner_credential_bootstrap_platform_device_fk|device_authorization_admin_(?:actor|target)_platform_device_fk|device_authorization_audit_platform_device_owner_fk)/i);
+  assert.doesNotMatch(migration,/validate\s+constraint\s+(?:device_security_credentials_platform_authorization_fk|device_possession_challenges_(?:actor|target)_platform_authorization_fk|system_owner_device_operations_(?:actor|target)_platform_authorization_fk|privileged_device_audit_(?:actor|target)_platform_authorization_fk|system_owner_credential_bootstrap_platform_device_fk|device_authorization_admin_(?:actor|target|replacement)_platform_device_fk|device_authorization_audit_platform_device_owner_fk)/i);
   assert.doesNotMatch(migration,/insert\s+into\s+platform\.user_device_authorizations/i);
+  assert.match(migration,/Historical member replacement provenance is preserved;[\s\S]*?no backfill or reclassification is permitted[\s\S]*?prospectively enforced/i);
 });
 
 test('historical provenance never substitutes for current canonical authorization',()=>{
