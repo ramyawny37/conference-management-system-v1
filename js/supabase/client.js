@@ -51,8 +51,9 @@
       if(!shouldUseDeviceSessionRpc(name))return directRpc(name,args,options);
       if(!global.PlatformDeviceSession||typeof global.PlatformDeviceSession.invokeProtected!=='function')return Promise.resolve({data:null,error:{code:'DEVICE_SESSION_RUNTIME_REQUIRED'}});
       var protectedArgs=Object.assign({},args||{});
+      // Actor identity is exclusively server-derived from the Platform device
+      // session. p_device_id remains an operation target where the contract uses it.
       delete protectedArgs.p_actor_device_id;
-      if(String(name||'')!=='approve_pending_device_authorization')delete protectedArgs.p_device_id;
       return global.PlatformDeviceSession.invokeProtected(String(name||''),protectedArgs)
         .then(function(data){return {data:data,error:null};})
         .catch(function(error){return {data:null,error:{code:String(error&&error.code||error&&error.message||'CONFERENCE_DEVICE_OPERATION_DENIED')}};});

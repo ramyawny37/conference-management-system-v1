@@ -34,8 +34,25 @@ test("normal runtime keeps the token in tab memory and routes protected RPCs thr
   assert.match(session,/platform-device-operation/);
   assert.doesNotMatch(session,/localStorage|sessionStorage|document\.cookie|BroadcastChannel/);
   assert.match(client,/delete protectedArgs\.p_actor_device_id/);
-  assert.match(client,/delete protectedArgs\.p_device_id/);
+  assert.doesNotMatch(client,/delete protectedArgs\.p_device_id/);
   assert.doesNotMatch(client,/\/api\/platform\/conference-rpc/);
+});
+test("protected member-device targets survive while actor-device overrides are stripped",async()=>{
+  const calls=[];
+  const rawClient={rpc:function(){throw new Error('PROTECTED_RPC_MUST_NOT_BE_DIRECT');},auth:{}};
+  const runtime={window:null,console,JSON,Promise,Object,String,Array,Error};
+  runtime.window={atob:()=>'',supabase:{createClient:()=>rawClient},SUPABASE_RUNTIME_CONFIG:{url:'https://example.supabase.co',publishableKey:'sb_publishable_test'},PlatformDeviceSession:{invokeProtected:function(name,args){calls.push({name,args});return Promise.resolve({status:'success'});}}};
+  vm.runInNewContext(contractSource,runtime);
+  vm.runInNewContext(client,runtime);
+  const protectedClient=runtime.window.SupabaseClientLayer.getClient();
+  for(const name of ['approve_member_device','reject_member_pending_device','revoke_member_device']){
+    await protectedClient.rpc(name,{p_actor_device_id:'actor-override',p_organization_id:'organization',p_target_user_id:'target-user',p_device_id:'target-device',p_operation_id:'operation'});
+  }
+  assert.equal(calls.length,3);
+  for(const call of calls){
+    assert.equal(call.args.p_device_id,'target-device',call.name);
+    assert.equal(Object.prototype.hasOwnProperty.call(call.args,'p_actor_device_id'),false,call.name);
+  }
 });
 test("exact Phase 1C contract is identical in frontend, Edge, dispatcher, and revokes",()=>{
   const round3g2=new Set(['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant']);

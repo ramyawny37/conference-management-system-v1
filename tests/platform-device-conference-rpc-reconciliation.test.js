@@ -37,12 +37,16 @@ assert.equal(platformGuard(Object.assign({},approved,{requestDeviceId:null})),fa
   assert.equal(calls[0].kind,'device-session');
   assert.equal(calls[0].name,'device_guarded_list_my_organizations');
   assert.equal(Object.prototype.hasOwnProperty.call(calls[0].args,'p_actor_device_id'),false);
-  await client.rpc('approve_pending_device_authorization',{p_actor_device_id:'ignored',p_authorization_id:'authorization',p_device_id:'target-device',p_reason:'reason'});
-  assert.equal(calls[1].kind,'device-session');
-  assert.equal(calls[1].name,'approve_pending_device_authorization');
-  assert.equal(calls[1].args.p_device_id,'target-device');
-  assert.equal(Object.prototype.hasOwnProperty.call(calls[1].args,'p_actor_device_id'),false);
+  const protectedOperations=['approve_member_device','reject_member_pending_device','revoke_member_device','approve_pending_device_authorization'];
+  for(const name of protectedOperations){
+    await client.rpc(name,{p_actor_device_id:'ignored',p_organization_id:'organization',p_target_user_id:'target-user',p_authorization_id:'authorization',p_device_id:'target-device',p_operation_id:'operation',p_reason:'reason'});
+    const call=calls.at(-1);
+    assert.equal(call.kind,'device-session');
+    assert.equal(call.name,name);
+    for(const key of ['p_organization_id','p_target_user_id','p_device_id','p_operation_id'])assert.equal(call.args[key],key==='p_device_id'?'target-device':key==='p_operation_id'?'operation':key==='p_organization_id'?'organization':'target-user',name+' '+key);
+    assert.equal(Object.prototype.hasOwnProperty.call(call.args,'p_actor_device_id'),false,name);
+  }
   await client.rpc('get_first_system_bootstrap_status',{});
-  assert.equal(calls[2].kind,'direct');
+  assert.equal(calls.at(-1).kind,'direct');
   console.log('Platform device Conference RPC reconciliation contracts: passed');
 })().catch(function(error){console.error(error);process.exitCode=1;});

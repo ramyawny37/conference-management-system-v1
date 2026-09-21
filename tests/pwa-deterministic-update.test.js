@@ -218,6 +218,11 @@ assert(worker.includes("'./script.js?rev="+platformShellScriptRevision+"'"));
   assert(index.includes(versioned),'index missing '+versioned);
   assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
 });
+const platformClientAsset='js/supabase/client.js?rev=target-device-argument-preservation-v1';
+assert(index.includes(platformClientAsset),'index missing deterministic Platform client target-device revision');
+assert(worker.includes("'./"+platformClientAsset+"'"),'app shell missing deterministic Platform client target-device revision');
+assert(!index.includes('js/supabase/client.js?rev=phase1c-v1'),'index retains stale Platform client revision');
+assert(!worker.includes("'./js/supabase/client.js?rev=phase1c-v1'"),'app shell retains stale Platform client revision');
 ['js/supabase/device-storage-namespace.js','js/supabase/device-identity.js'].forEach(asset=>{
   const versioned=asset+'?rev='+startupTransportRevision;
   assert(index.includes(versioned),'index missing '+versioned);
