@@ -78,7 +78,7 @@ function harness({ authenticated = true, deviceStatus = "registered", accountSta
   };
   if(nativeEnrollment)window.PlatformDeviceEnrollment={
     ensure:async()=>{enrollmentChecks+=1;if(nativeEnrollment.error)throw nativeEnrollment.error;return {status:deviceStatus};},
-    reEnrollRevoked:async()=>{explicitReEnrollments+=1;return {status:'pending'};}
+    rerequestRevoked:async()=>{explicitReEnrollments+=1;return {status:'pending'};}
   };
   window.window = window;
   vm.runInNewContext(source, { window, Promise, Date, String, Array, Object, setTimeout: window.setTimeout });
@@ -162,22 +162,22 @@ test("Platform pending and account-not-approved states remain blocked", async ()
   assert.equal(accountPending.counts().deviceRpcCount, 0);
 });
 
-test("managed revoked missing-key state exposes re-enrollment only after the explicit action",async()=>{
+test("managed revoked missing-key state fails closed without a replacement enrollment action",async()=>{
   const flow=harness({deviceStatus:"revoked",nativeEnrollment:{error:{code:"BOUND_PRIVATE_KEY_REQUIRED",status:"revoked"}}});
   assert.equal((await flow.run()).status,"device_error");
   assert.deepEqual(flow.enrollmentCounts(),{enrollmentChecks:1,explicitReEnrollments:0});
-  assert.ok(flow.nodes.startupAccessGate.innerHTML.includes("StartupAccessGate.reEnrollCurrentDevice()"));
-  assert.ok(flow.nodes.startupAccessGate.innerHTML.includes("إعادة تسجيل هذا الجهاز"));
-  await flow.window.StartupAccessGate.reEnrollCurrentDevice();
-  assert.equal(flow.enrollmentCounts().explicitReEnrollments,1);
+  assert.equal(flow.nodes.startupAccessGate.innerHTML.includes("StartupAccessGate.reEnrollCurrentDevice()"),false);
+  assert.equal((await flow.window.StartupAccessGate.reEnrollCurrentDevice()).status,"not_available");
 });
 
-test("managed revoked valid binding stays revoked without resetting identity",async()=>{
+test("managed revoked valid binding exposes only the explicit same-key rerequest",async()=>{
   const flow=harness({deviceStatus:"revoked",nativeEnrollment:{}});
   assert.equal((await flow.run()).status,"device");
   assert.equal(flow.window.StartupAccessGate.getState().canonicalState,"DEVICE_REVOKED");
   assert.deepEqual(flow.enrollmentCounts(),{enrollmentChecks:1,explicitReEnrollments:0});
-  assert.equal(flow.nodes.startupAccessGate.innerHTML.includes("StartupAccessGate.reEnrollCurrentDevice()"),false);
+  assert.ok(flow.nodes.startupAccessGate.innerHTML.includes("StartupAccessGate.reEnrollCurrentDevice()"));
+  await flow.window.StartupAccessGate.reEnrollCurrentDevice();
+  assert.equal(flow.enrollmentCounts().explicitReEnrollments,1);
 });
 
 test("managed blocked, pending, and approved states never become re-enrollment eligible",async()=>{
