@@ -2,13 +2,16 @@
 
 const assert=require('node:assert/strict');
 const {execFileSync}=require('node:child_process');
+const fs=require('node:fs');
 const path=require('node:path');
 const test=require('node:test');
 
-const pgBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
-const psql=path.join(pgBin,'psql');
-const createdb=path.join(pgBin,'createdb');
-const dropdb=path.join(pgBin,'dropdb');
+const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
+const pgBin=process.env.PG_BIN || (fs.existsSync(postgresAppBin) ? postgresAppBin : '');
+const pgTool=(name)=>pgBin ? path.join(pgBin,name) : name;
+const psql=pgTool('psql');
+const createdb=pgTool('createdb');
+const dropdb=pgTool('dropdb');
 const database=`platform_provenance_${process.pid}_${Date.now()}`;
 
 function query(sql){
@@ -16,7 +19,7 @@ function query(sql){
 }
 
 test('PostgreSQL NOT VALID preserves history and enforces every prospective write',()=>{
-  assert.equal(require('node:fs').existsSync(psql),true,'local PostgreSQL client is required');
+  assert.doesNotThrow(()=>execFileSync(psql,['--version'],{encoding:'utf8',stdio:'pipe'}),'local PostgreSQL client is required');
   execFileSync(createdb,['-T','template0',database],{encoding:'utf8'});
   try{
     query(`
