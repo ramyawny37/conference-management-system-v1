@@ -147,8 +147,8 @@
     ],
     "futureIncrementalPromotion": {
       "releaseVersion": "3.6.0",
-      "releaseSha": "86940e5b3cec10c9182b2a70136c323c2297aae0",
-      "packageId": "conference-controlled-production-3-6-0-86940e5-v1",
+      "releaseSha": "ac8c6a083b254c0e01fb48daf3dc12047fe62d7f",
+      "packageId": "conference-controlled-production-3-6-0-ac8c6a0-v1",
       "entries": [
         {
           "order": 1,
@@ -158,7 +158,7 @@
           "sourceSha256": "f189547a66fcd82f81c6a8cbd248b49865d52949afe3e86c8d8ddeadee718f1a",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260914133000_reservations_standalone_event_conference_link",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914133000_reservations_standalone_event_conference_link",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -173,7 +173,7 @@
           "sourceSha256": "58f1803e8e5eea7b372b75eb0a83673474d313cdd182cc8dce05d317c86cab8a",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260914150000_reservations_standalone_event_link_constraint_resolution_fix",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914150000_reservations_standalone_event_link_constraint_resolution_fix",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -188,7 +188,7 @@
           "sourceSha256": "02fc41a1885ca54055251333ab5768ea84e2794f11ebc9622fd9d3fd1000b227",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260914151500_reservations_payment_history_relink_guard_fix",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914151500_reservations_payment_history_relink_guard_fix",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -203,7 +203,7 @@
           "sourceSha256": "2fef0cc1fa8319602bc82366d19094c51ddf061f4eb53b0ca500352f1894ddd1",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260914151500_reservations_create_booking_conference_projection_fix",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914151500_reservations_create_booking_conference_projection_fix",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -218,7 +218,7 @@
           "sourceSha256": "25ee009f351be248badda9a6d6df0a4baea28d75d50582d3f162ae81be26966f",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260914152500_reservations_booking_projection_self_heal",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914152500_reservations_booking_projection_self_heal",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -233,7 +233,7 @@
           "sourceSha256": "b9236078eb4f9f2d27a8a74007af80feb3f1d829eb0c669a791dc8cd7adcee86",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260914164500_reservations_link_backfill_conference_people",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260914164500_reservations_link_backfill_conference_people",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -248,7 +248,7 @@
           "sourceSha256": "cf3d5774c6026da719ef5417df895dda246f464774e480717b7269ccaf626592",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260915190000_reservations_organization_booking_access_reconciliation",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260915190000_reservations_organization_booking_access_reconciliation",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -263,7 +263,7 @@
           "sourceSha256": "744a2bc50da4c603d0a3aa8a3bb4f894e663c16715843176f87bfc2c4df3671a",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260915210000_reservations_booking_create_contract_cleanup",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260915210000_reservations_booking_create_contract_cleanup",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -278,7 +278,7 @@
           "sourceSha256": "f522a1c402242839ded9cdf361658817e15e1353cb152f56b926054e1e895d2b",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260915220000_reservations_authorization_architecture_reconciliation",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260915220000_reservations_authorization_architecture_reconciliation",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -293,7 +293,7 @@
           "sourceSha256": "c0990fa565ac3ebebb8c7d14889069db46d7e78b23c7615fa22579386324528f",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260916120000_generic_module_permission_resource_administration",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260916120000_generic_module_permission_resource_administration",
           "transaction": {
             "startsExplicitly": true,
             "commitsExplicitly": true
@@ -308,12 +308,30 @@
           "sourceSha256": "17edb217957e5519c3be36b538fe85230ca57ff54f86592e392cd0647fcf4e83",
           "action": "APPLY_ONCE",
           "executable": true,
-          "idempotencyKey": "cms-production-3-6-0-86940e5:20260920120000_reservations_report_event_authorization_scope",
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260920120000_reservations_report_event_authorization_scope",
           "transaction": {
             "startsExplicitly": false,
             "commitsExplicitly": false
           },
           "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key."
+        },
+        {
+          "order": 12,
+          "version": "20260920221928",
+          "name": "canonical_platform_device_authority_reconciliation",
+          "sourceFile": "supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql",
+          "sourceSha256": "3bdbc685cc4ecfad9fa50940147d3502ccc2b28cd4ac561118ab6816d3ae96d6",
+          "action": "APPLY_ONCE",
+          "executable": true,
+          "idempotencyKey": "cms-production-3-6-0-ac8c6a0:20260920221928_canonical_platform_device_authority_reconciliation",
+          "transaction": {
+            "startsExplicitly": true,
+            "commitsExplicitly": true
+          },
+          "executionPolicy": "Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key.",
+          "preconditionSql": "select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is null and exists(select 1 from pg_constraint where conname='device_security_credentials_authorization_fk'))::text",
+          "verificationSql": "select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is not null and exists(select 1 from pg_constraint where conname='device_security_credentials_platform_authorization_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='system_owner_credential_recovery_platform_device_fk' and convalidated) and not has_function_privilege('authenticated','public.register_or_refresh_current_device(uuid,text,text)','EXECUTE') and not has_function_privilege('authenticated','public.request_current_device_authorization(uuid,uuid)','EXECUTE'))::text",
+          "rollbackPolicy": "STOP_ON_FAILURE_AT_TRANSACTION_BOUNDARY; no automatic rollback after committed canonical authority use; require separately reviewed forward reconciliation."
         }
       ],
       "migrationClassification": [
@@ -365,17 +383,21 @@
         {
           "sourceFile": "supabase/migrations/20260920120000_reservations_report_event_authorization_scope.sql",
           "classification": "REQUIRED_FOR_3_6_RUNTIME"
+        },
+        {
+          "sourceFile": "supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql",
+          "classification": "REQUIRED_FOR_3_6_RUNTIME"
         }
       ],
       "edgeRelease": {
         "slug": "platform-device-operation",
         "sourceFile": "supabase/functions/platform-device-operation/index.ts",
         "sourceSha256": "4ae5bf3c9adfaede235d5b36bfd488773f31042be080e2dff5de5aab76778369",
-        "releaseSha": "86940e5b3cec10c9182b2a70136c323c2297aae0",
+        "releaseSha": "ac8c6a083b254c0e01fb48daf3dc12047fe62d7f",
         "currentProductionVersion": 3,
         "approvedDevelopmentVersion": 16,
         "verifyJwt": true,
-        "promotionRequired": true
+        "promotionRequired": false
       },
       "executionPolicy": "Execute exactly these entries once in order after verification of establishedProductionHistory; establishedProductionHistory and historicalBootstrapReplay are verification-only for this incremental release and must never be replayed."
     }
@@ -1884,11 +1906,11 @@
       "slug": "platform-device-operation",
       "sourceFile": "supabase/functions/platform-device-operation/index.ts",
       "sourceSha256": "4ae5bf3c9adfaede235d5b36bfd488773f31042be080e2dff5de5aab76778369",
-      "releaseSha": "86940e5b3cec10c9182b2a70136c323c2297aae0",
+      "releaseSha": "ac8c6a083b254c0e01fb48daf3dc12047fe62d7f",
       "currentProductionVersion": 3,
       "approvedDevelopmentVersion": 16,
       "verifyJwt": true,
-      "promotionRequired": true
+      "promotionRequired": false
     }
   }
 }

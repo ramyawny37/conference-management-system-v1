@@ -73,19 +73,25 @@ test('controlled package separates bootstrap replay, established Production hist
   assert.equal(manifest.packageModel.establishedProductionHistory.length,14);
   const incremental=manifest.packageModel.futureIncrementalPromotion;
   assert.equal(incremental.releaseVersion,'3.6.0');
-  assert.equal(incremental.releaseSha,'86940e5b3cec10c9182b2a70136c323c2297aae0');
-  assert.equal(incremental.entries.length,11);
-  assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6,7,8,9,10,11]);
-  assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,11);
-  assert.equal(new Set(incremental.entries.map(entry=>entry.idempotencyKey)).size,11);
+  assert.equal(incremental.releaseSha,'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f');
+  assert.equal(incremental.entries.length,12);
+  assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6,7,8,9,10,11,12]);
+  assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,12);
+  assert.equal(new Set(incremental.entries.map(entry=>entry.idempotencyKey)).size,12);
   for(const entry of incremental.entries){assert.equal(entry.executable,true);assert.equal(entry.action,'APPLY_ONCE');}
   assert.equal(incremental.edgeRelease.verifyJwt,true);
   assert.equal(incremental.edgeRelease.currentProductionVersion,3);
   assert.equal(incremental.edgeRelease.approvedDevelopmentVersion,16);
+  assert.equal(incremental.edgeRelease.promotionRequired,false);
   assert.equal(incrementalPackage.productionProjectRef,'mpezfbvcdfxpgflehuot');
   assert.deepEqual(incrementalPackage.forbiddenProjectRefs,['gppwltrifgfxrkzvvxoe']);
   assert.deepEqual(incrementalPackage.executionEntries,incremental.entries);
-  assert.equal(incrementalPackage.executionEntries.length,11);
+  assert.equal(incrementalPackage.executionEntries.length,12);
+  const authority=incrementalPackage.executionEntries.at(-1);
+  assert.equal(authority.sourceFile,'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql');
+  assert.match(authority.preconditionSql,/device_security_credentials_authorization_fk/);
+  assert.match(authority.verificationSql,/device_security_credentials_platform_authorization_fk/);
+  assert.match(authority.rollbackPolicy,/STOP_ON_FAILURE_AT_TRANSACTION_BOUNDARY/);
   assert.deepEqual(incrementalPackage.migrationClassification,incremental.migrationClassification);
   assert.deepEqual(incremental.migrationClassification.filter(entry=>entry.classification==='ALREADY_REPRESENTED_OR_SUPERSEDED'),[{
     sourceFile:'supabase/migrations/20260915201500_reservations_booking_create_read_path_reconciliation.sql',

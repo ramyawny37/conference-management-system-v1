@@ -96,7 +96,7 @@ const releaseRequirements=Object.freeze({
     '20260909004500_phase1c_dispatch_context_reconciliation.sql',
     '20260913141000_platform_private_recovery_rls_hardening.sql'
   ].map(migration),
-  edge:{slug:'platform-device-operation',sourceFile:'supabase/functions/platform-device-operation/index.ts',sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),releaseSha:'86940e5b3cec10c9182b2a70136c323c2297aae0',currentProductionVersion:3,approvedDevelopmentVersion:16,verifyJwt:true,promotionRequired:true}
+  edge:{slug:'platform-device-operation',sourceFile:'supabase/functions/platform-device-operation/index.ts',sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),releaseSha:'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f',currentProductionVersion:3,approvedDevelopmentVersion:16,verifyJwt:true,promotionRequired:false}
 });
 const establishedProductionHistory=[
   '20260908153405_reservations_v1_foundation.sql',
@@ -132,7 +132,8 @@ const incrementalMigrationNames=[
   '20260915210000_reservations_booking_create_contract_cleanup.sql',
   '20260915220000_reservations_authorization_architecture_reconciliation.sql',
   '20260916120000_generic_module_permission_resource_administration.sql',
-  '20260920120000_reservations_report_event_authorization_scope.sql'
+  '20260920120000_reservations_report_event_authorization_scope.sql',
+  '20260920221928_canonical_platform_device_authority_reconciliation.sql'
 ];
 const incrementalMigrationClassification=[
   ...incrementalMigrationNames.map(name=>({sourceFile:migration(name),classification:'REQUIRED_FOR_3_6_RUNTIME'})),
@@ -141,7 +142,7 @@ const incrementalMigrationClassification=[
 function incrementalEntry(name,index){
   const sourceFile=migration(name);
   const body=fs.readFileSync(path.join(root,sourceFile),'utf8');
-  return {
+  const entry={
     order:index+1,
     version:version(name),
     name:name.replace(/^\d+_|\.sql$/g,''),
@@ -149,24 +150,30 @@ function incrementalEntry(name,index){
     sourceSha256:sha(sourceFile),
     action:'APPLY_ONCE',
     executable:true,
-    idempotencyKey:`cms-production-3-6-0-86940e5:${name.replace(/\.sql$/,'')}`,
+    idempotencyKey:`cms-production-3-6-0-ac8c6a0:${name.replace(/\.sql$/,'')}`,
     transaction:{
       startsExplicitly:/^\s*begin\s*;/i.test(body),
       commitsExplicitly:/commit\s*;\s*$/i.test(body)
     },
     executionPolicy:'Exact canonical bytes; one ordered execution; refuse an existing logical migration name or idempotency key.'
   };
+  if(name==='20260920221928_canonical_platform_device_authority_reconciliation.sql'){
+    entry.preconditionSql="select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is null and exists(select 1 from pg_constraint where conname='device_security_credentials_authorization_fk'))::text";
+    entry.verificationSql="select (to_regprocedure('platform_private.require_canonical_device_authorization(uuid,uuid,boolean)') is not null and exists(select 1 from pg_constraint where conname='device_security_credentials_platform_authorization_fk' and not convalidated) and exists(select 1 from pg_constraint where conname='system_owner_credential_recovery_platform_device_fk' and convalidated) and not has_function_privilege('authenticated','public.register_or_refresh_current_device(uuid,text,text)','EXECUTE') and not has_function_privilege('authenticated','public.request_current_device_authorization(uuid,uuid)','EXECUTE'))::text";
+    entry.rollbackPolicy='STOP_ON_FAILURE_AT_TRANSACTION_BOUNDARY; no automatic rollback after committed canonical authority use; require separately reviewed forward reconciliation.';
+  }
+  return entry;
 }
 const incrementalEntries=incrementalMigrationNames.map(incrementalEntry);
 const edgeRelease={
   slug:'platform-device-operation',
   sourceFile:'supabase/functions/platform-device-operation/index.ts',
   sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),
-  releaseSha:'86940e5b3cec10c9182b2a70136c323c2297aae0',
+  releaseSha:'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f',
   currentProductionVersion:3,
   approvedDevelopmentVersion:16,
   verifyJwt:true,
-  promotionRequired:true
+  promotionRequired:false
 };
 function semanticExpression(name){
   const checks={
@@ -302,8 +309,8 @@ const packageModel=Object.freeze({
   establishedProductionHistory,
   futureIncrementalPromotion:{
     releaseVersion:'3.6.0',
-    releaseSha:'86940e5b3cec10c9182b2a70136c323c2297aae0',
-    packageId:'conference-controlled-production-3-6-0-86940e5-v1',
+    releaseSha:'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f',
+    packageId:'conference-controlled-production-3-6-0-ac8c6a0-v1',
     entries:incrementalEntries,
     migrationClassification:incrementalMigrationClassification,
     edgeRelease,
