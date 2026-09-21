@@ -92,3 +92,50 @@ test('obsolete legacy mutators are retired and active provenance accepts Platfor
   ]) assert.ok(migration.includes(constraint),constraint);
   assert.match(migration,/historical legacy provenance is preserved without being reclassified/i);
 });
+
+test('historical privileged provenance is prospectively enforced without validation or backfill',()=>{
+  const prospective=[
+    'device_security_credentials_platform_authorization_fk',
+    'device_possession_challenges_actor_platform_authorization_fk',
+    'device_possession_challenges_target_platform_authorization_fk',
+    'system_owner_device_operations_actor_platform_authorization_fk',
+    'system_owner_device_operations_target_platform_authorization_fk',
+    'privileged_device_audit_actor_platform_authorization_fk',
+    'privileged_device_audit_target_platform_authorization_fk',
+    'system_owner_credential_bootstrap_platform_device_fk',
+    'device_authorization_admin_actor_platform_device_fk',
+    'device_authorization_admin_target_platform_device_fk',
+    'device_authorization_audit_platform_device_owner_fk'
+  ];
+  for(const name of prospective){
+    const declaration=migration.match(new RegExp(`add constraint ${name}[\\s\\S]*?(?=,\\n\\s*(?:--|add constraint)|;)`,'i'))?.[0]||'';
+    assert.match(declaration,/references platform\.user_device_authorizations\(user_id,device_id\)/i,name);
+    assert.match(declaration,/on delete restrict not valid/i,name);
+  }
+  for(const name of [
+    'device_possession_challenges_replaced_platform_authorization_fk',
+    'device_possession_challenges_replacement_platform_authorization_fk',
+    'system_owner_device_operations_replaced_platform_authorization_fk',
+    'system_owner_device_operations_replacement_platform_authorization_fk',
+    'privileged_device_audit_replaced_platform_authorization_fk',
+    'privileged_device_audit_replacement_platform_authorization_fk',
+    'system_owner_credential_recovery_platform_device_fk',
+    'device_authorization_admin_replacement_platform_device_fk'
+  ]){
+    const declaration=migration.match(new RegExp(`add constraint ${name}[\\s\\S]*?(?=,\\n\\s*(?:--|add constraint)|;)`,'i'))?.[0]||'';
+    assert.doesNotMatch(declaration,/not valid/i,name);
+  }
+  assert.doesNotMatch(migration,/validate\s+constraint\s+(?:device_security_credentials_platform_authorization_fk|device_possession_challenges_(?:actor|target)_platform_authorization_fk|system_owner_device_operations_(?:actor|target)_platform_authorization_fk|privileged_device_audit_(?:actor|target)_platform_authorization_fk|system_owner_credential_bootstrap_platform_device_fk|device_authorization_admin_(?:actor|target)_platform_device_fk|device_authorization_audit_platform_device_owner_fk)/i);
+  assert.doesNotMatch(migration,/insert\s+into\s+platform\.user_device_authorizations/i);
+});
+
+test('historical provenance never substitutes for current canonical authorization',()=>{
+  const actor=migration.match(/create or replace function public\.require_system_owner_webauthn_actor[\s\S]*?end; \$\$;/i)?.[0]||'';
+  assert.match(actor,/require_canonical_device_authorization/i);
+  assert.ok(
+    actor.indexOf('require_canonical_device_authorization')<actor.indexOf('from public.device_security_credentials'),
+    'current canonical authorization must be established before historical credential lookup'
+  );
+  assert.doesNotMatch(actor,/device_authorization_(?:admin_operations|audit_log)/i);
+  assert.doesNotMatch(actor,/privileged_device_authorization_audit_log/i);
+});

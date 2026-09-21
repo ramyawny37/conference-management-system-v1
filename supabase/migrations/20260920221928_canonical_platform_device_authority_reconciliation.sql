@@ -50,24 +50,33 @@ $$;
 revoke all on function platform_private.is_canonical_platform_owner(uuid)
   from public,anon,authenticated,service_role;
 
--- Existing privileged history is already proven to have matching Platform
--- authorizations. Repoint future integrity without creating or mirroring rows.
+-- Privileged history predating canonical Platform authority remains truthful
+-- historical provenance. It must not be backfilled or reclassified. Each
+-- explicitly NOT VALID constraint below is prospective enforcement for new or
+-- changed rows; historical validation is intentionally deferred unless a
+-- separately reviewed archival reconciliation is designed.
 alter table public.device_security_credentials
   drop constraint device_security_credentials_authorization_fk,
+  -- Historical credentials predate canonical Platform authority; no backfill or
+  -- reclassification is permitted. Enforce prospectively without validation.
   add constraint device_security_credentials_platform_authorization_fk
     foreign key(user_id,device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict;
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid;
 alter table public.device_possession_challenges
   drop constraint device_possession_challenges_actor_authorization_fk,
   drop constraint device_possession_challenges_target_authorization_fk,
   drop constraint device_possession_challenges_replaced_authorization_fk,
   drop constraint device_possession_challenges_replacement_authorization_fk,
+  -- Historical actor challenges predate canonical Platform authority; no
+  -- backfill or reclassification is permitted. Enforce prospectively only.
   add constraint device_possession_challenges_actor_platform_authorization_fk
     foreign key(user_id,actor_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
+  -- Historical target challenges predate canonical Platform authority; no
+  -- backfill or reclassification is permitted. Enforce prospectively only.
   add constraint device_possession_challenges_target_platform_authorization_fk
     foreign key(target_user_id,target_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
   add constraint device_possession_challenges_replaced_platform_authorization_fk
     foreign key(target_user_id,replaced_device_id)
     references platform.user_device_authorizations(user_id,device_id) on delete restrict,
@@ -79,12 +88,16 @@ alter table public.system_owner_device_authorization_operations
   drop constraint system_owner_device_operations_target_authorization_fk,
   drop constraint system_owner_device_operations_replaced_authorization_fk,
   drop constraint system_owner_device_operations_replacement_authorization_fk,
+  -- Historical operation actors predate canonical Platform authority; no
+  -- backfill or reclassification is permitted. Enforce prospectively only.
   add constraint system_owner_device_operations_actor_platform_authorization_fk
     foreign key(actor_user_id_snapshot,actor_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
+  -- Historical operation targets predate canonical Platform authority; no
+  -- backfill or reclassification is permitted. Enforce prospectively only.
   add constraint system_owner_device_operations_target_platform_authorization_fk
     foreign key(target_user_id_snapshot,target_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
   add constraint system_owner_device_operations_replaced_platform_authorization_fk
     foreign key(target_user_id_snapshot,replaced_device_id)
     references platform.user_device_authorizations(user_id,device_id) on delete restrict,
@@ -96,12 +109,16 @@ alter table public.privileged_device_authorization_audit_log
   drop constraint privileged_device_audit_target_authorization_fk,
   drop constraint privileged_device_audit_replaced_authorization_fk,
   drop constraint privileged_device_audit_replacement_authorization_fk,
+  -- Historical audit actors predate canonical Platform authority; no backfill
+  -- or reclassification is permitted. Enforce prospectively only.
   add constraint privileged_device_audit_actor_platform_authorization_fk
     foreign key(actor_user_id_snapshot,actor_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
+  -- Historical audit targets predate canonical Platform authority; no backfill
+  -- or reclassification is permitted. Enforce prospectively only.
   add constraint privileged_device_audit_target_platform_authorization_fk
     foreign key(target_user_id_snapshot,target_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
   add constraint privileged_device_audit_replaced_platform_authorization_fk
     foreign key(target_user_id_snapshot,replaced_device_id)
     references platform.user_device_authorizations(user_id,device_id) on delete restrict,
@@ -110,9 +127,11 @@ alter table public.privileged_device_authorization_audit_log
     references platform.user_device_authorizations(user_id,device_id) on delete restrict;
 alter table public.system_owner_credential_bootstrap_authorizations
   drop constraint system_owner_credential_bootstrap_device_fk,
+  -- Historical bootstrap grants predate canonical Platform authority; no
+  -- backfill or reclassification is permitted. Enforce prospectively only.
   add constraint system_owner_credential_bootstrap_platform_device_fk
     foreign key(intended_user_id,intended_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict;
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid;
 alter table public.system_owner_credential_recovery_authorizations
   drop constraint system_owner_credential_recovery_device_fk,
   add constraint system_owner_credential_recovery_platform_device_fk
@@ -644,20 +663,26 @@ alter table public.device_authorization_admin_operations
   drop constraint device_authorization_admin_actor_device_fk,
   drop constraint device_authorization_admin_target_device_fk,
   drop constraint device_authorization_admin_replacement_device_fk,
+  -- Historical member-operation actors predate canonical Platform authority;
+  -- no backfill or reclassification is permitted. Enforce prospectively only.
   add constraint device_authorization_admin_actor_platform_device_fk
     foreign key(actor_user_id_snapshot,actor_device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
+  -- Historical member-operation targets predate canonical Platform authority;
+  -- no backfill or reclassification is permitted. Enforce prospectively only.
   add constraint device_authorization_admin_target_platform_device_fk
     foreign key(target_user_id_snapshot,device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict,
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid,
   add constraint device_authorization_admin_replacement_platform_device_fk
     foreign key(target_user_id_snapshot,replacement_device_id)
     references platform.user_device_authorizations(user_id,device_id) on delete restrict;
 alter table public.device_authorization_audit_log
   drop constraint device_authorization_audit_device_owner_fk,
+  -- Historical member-device audit rows predate canonical Platform authority;
+  -- no backfill or reclassification is permitted. Enforce prospectively only.
   add constraint device_authorization_audit_platform_device_owner_fk
     foreign key(target_user_id,device_id)
-    references platform.user_device_authorizations(user_id,device_id) on delete restrict;
+    references platform.user_device_authorizations(user_id,device_id) on delete restrict not valid;
 
 -- Active Conference, template, synchronization, and module-grant provenance
 -- must accept canonical-only Platform devices. These constraints are NOT VALID
@@ -887,18 +912,34 @@ end; $$;
 revoke all on function platform_private.apply_member_device_authorization(text,uuid,uuid,uuid,uuid,uuid,uuid)
   from public,anon,authenticated,service_role;
 
-create or replace function public.approve_member_device(uuid,uuid,uuid,uuid,uuid)
+create or replace function public.approve_member_device(
+  p_actor_device_id uuid,p_organization_id uuid,p_target_user_id uuid,
+  p_device_id uuid,p_operation_id uuid
+)
 returns jsonb language sql security definer set search_path='' as $$
-  select platform_private.apply_member_device_authorization('approve',$1,$2,$3,$4,null,$5); $$;
-create or replace function public.reject_member_pending_device(uuid,uuid,uuid,uuid,uuid)
+  select platform_private.apply_member_device_authorization('approve',p_actor_device_id,
+    p_organization_id,p_target_user_id,p_device_id,null,p_operation_id); $$;
+create or replace function public.reject_member_pending_device(
+  p_actor_device_id uuid,p_organization_id uuid,p_target_user_id uuid,
+  p_device_id uuid,p_operation_id uuid
+)
 returns jsonb language sql security definer set search_path='' as $$
-  select platform_private.apply_member_device_authorization('reject',$1,$2,$3,$4,null,$5); $$;
-create or replace function public.revoke_member_device(uuid,uuid,uuid,uuid,uuid)
+  select platform_private.apply_member_device_authorization('reject',p_actor_device_id,
+    p_organization_id,p_target_user_id,p_device_id,null,p_operation_id); $$;
+create or replace function public.revoke_member_device(
+  p_actor_device_id uuid,p_organization_id uuid,p_target_user_id uuid,
+  p_device_id uuid,p_operation_id uuid
+)
 returns jsonb language sql security definer set search_path='' as $$
-  select platform_private.apply_member_device_authorization('revoke',$1,$2,$3,$4,null,$5); $$;
-create or replace function public.replace_member_active_device(uuid,uuid,uuid,uuid,uuid,uuid)
+  select platform_private.apply_member_device_authorization('revoke',p_actor_device_id,
+    p_organization_id,p_target_user_id,p_device_id,null,p_operation_id); $$;
+create or replace function public.replace_member_active_device(
+  p_actor_device_id uuid,p_organization_id uuid,p_target_user_id uuid,
+  p_active_device_id uuid,p_replacement_device_id uuid,p_operation_id uuid
+)
 returns jsonb language sql security definer set search_path='' as $$
-  select platform_private.apply_member_device_authorization('replace',$1,$2,$3,$4,$5,$6); $$;
+  select platform_private.apply_member_device_authorization('replace',p_actor_device_id,
+    p_organization_id,p_target_user_id,p_active_device_id,p_replacement_device_id,p_operation_id); $$;
 
 revoke all on function public.list_member_device_authorizations(uuid,uuid,uuid) from public,anon;
 revoke all on function public.approve_member_device(uuid,uuid,uuid,uuid,uuid) from public,anon;
