@@ -96,7 +96,7 @@ const releaseRequirements=Object.freeze({
     '20260909004500_phase1c_dispatch_context_reconciliation.sql',
     '20260913141000_platform_private_recovery_rls_hardening.sql'
   ].map(migration),
-  edge:{slug:'platform-device-operation',sourceFile:'supabase/functions/platform-device-operation/index.ts',sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),releaseSha:'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f',currentProductionVersion:3,approvedDevelopmentVersion:16,verifyJwt:true,promotionRequired:false}
+  edge:{slug:'platform-device-operation',sourceFile:'supabase/functions/platform-device-operation/index.ts',sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),releaseSha:'9e35e7a5f0c4b36f529f481b5261814feea12ffb',currentProductionVersion:3,approvedDevelopmentVersion:16,verifyJwt:true,promotionRequired:false}
 });
 const establishedProductionHistory=[
   '20260908153405_reservations_v1_foundation.sql',
@@ -163,7 +163,7 @@ function incrementalEntry(name,index){
     sourceSha256:sha(sourceFile),
     action:'APPLY_ONCE',
     executable:true,
-    idempotencyKey:`cms-production-3-6-0-ac8c6a0:${name.replace(/\.sql$/,'')}`,
+    idempotencyKey:`cms-production-3-6-0-9e35e7a:${name.replace(/\.sql$/,'')}`,
     transaction:{
       startsExplicitly:/^\s*begin\s*;/i.test(body),
       commitsExplicitly:/commit\s*;\s*$/i.test(body)
@@ -182,7 +182,7 @@ const edgeRelease={
   slug:'platform-device-operation',
   sourceFile:'supabase/functions/platform-device-operation/index.ts',
   sourceSha256:sha('supabase/functions/platform-device-operation/index.ts'),
-  releaseSha:'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f',
+  releaseSha:'9e35e7a5f0c4b36f529f481b5261814feea12ffb',
   currentProductionVersion:3,
   approvedDevelopmentVersion:16,
   verifyJwt:true,
@@ -322,8 +322,8 @@ const packageModel=Object.freeze({
   establishedProductionHistory,
   futureIncrementalPromotion:{
     releaseVersion:'3.6.0',
-    releaseSha:'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f',
-    packageId:'conference-controlled-production-3-6-0-ac8c6a0-v1',
+    releaseSha:'9e35e7a5f0c4b36f529f481b5261814feea12ffb',
+    packageId:'conference-controlled-production-3-6-0-9e35e7a-v1',
     entries:incrementalEntries,
     migrationClassification:incrementalMigrationClassification,
     edgeRelease,

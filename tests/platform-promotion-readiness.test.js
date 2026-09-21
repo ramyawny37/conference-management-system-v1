@@ -74,7 +74,7 @@ test('controlled package separates bootstrap replay, established Production hist
   assert.equal(manifest.packageModel.establishedProductionHistory.length,20);
   const incremental=manifest.packageModel.futureIncrementalPromotion;
   assert.equal(incremental.releaseVersion,'3.6.0');
-  assert.equal(incremental.releaseSha,'ac8c6a083b254c0e01fb48daf3dc12047fe62d7f');
+  assert.equal(incremental.releaseSha,'9e35e7a5f0c4b36f529f481b5261814feea12ffb');
   assert.equal(incremental.entries.length,6);
   assert.deepEqual(incremental.entries.map(entry=>entry.order),[1,2,3,4,5,6]);
   assert.equal(new Set(incremental.entries.map(entry=>entry.sourceFile)).size,6);
