@@ -26,14 +26,23 @@ function functionBody(sql) {
   return tail.slice(0, end + 'end; $$;'.length);
 }
 
+function normalizeSqlWhitespace(sql) {
+  return sql
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim() !== '')
+    .join('\n')
+    .trim();
+}
+
 test('multi-device correction removes only the stale existing-approved-device approval guard', () => {
   const oldBody = functionBody(canonical);
   const newBody = functionBody(migration);
   assert.match(oldBody, staleSingleDeviceGuard);
   assert.doesNotMatch(newBody, staleSingleDeviceGuard);
 
-  const expected = oldBody.replace(staleSingleDeviceGuard, '').replace(/\n{3,}/g, '\n\n').trim();
-  const actual = newBody.replace(/\n{3,}/g, '\n\n').trim();
+  const expected = normalizeSqlWhitespace(oldBody.replace(staleSingleDeviceGuard, ''));
+  const actual = normalizeSqlWhitespace(newBody);
   assert.equal(actual, expected);
 });
 
