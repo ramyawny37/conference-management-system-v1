@@ -6,6 +6,7 @@ const test=require('node:test');
 
 const enrollment=fs.readFileSync('js/supabase/device-enrollment.js','utf8');
 const identity=fs.readFileSync('js/supabase/device-identity.js','utf8');
+const gate=fs.readFileSync('js/sync/startup-access-gate.js','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-enrollment/index.ts','utf8');
 
 test('known device without its bound private key fails closed before fresh enrollment',()=>{
@@ -17,14 +18,23 @@ test('known device without its bound private key fails closed before fresh enrol
   assert.ok(guard>=0&&fresh>guard,'known-device guard must run before fresh enrollment');
 });
 
-test('revoked known device can re-enroll only on a later explicit retry',()=>{
-  assert.match(enrollment,/if\(String\(status\.status\|\|''\)==='revoked'\)reEnrollmentCandidate=/);
-  assert.match(enrollment,/if\(reEnrollmentCandidate&&reEnrollmentCandidate\.userId===auth\.userId\)return reEnroll\(auth\)/);
-  assert.match(enrollment,/current\.id!==reEnrollmentCandidate\.deviceId/);
+test('revoked known device re-enrollment is an explicit user action, not an automatic retry',()=>{
+  assert.match(enrollment,/function reEnrollRevoked\(\)/);
+  assert.match(enrollment,/String\(status\.status\|\|''\)!=='revoked'/);
   assert.match(enrollment,/identity\.resetCurrent\(\{authenticatedUserId:auth\.userId\}\)/);
+  assert.match(enrollment,/reEnrollRevoked:reEnrollRevoked/);
+  assert.doesNotMatch(enrollment,/reEnrollmentCandidate/);
   assert.match(identity,/function resetCurrent\(options\)/);
   assert.match(identity,/storage\.removeItem\(key\)/);
   assert.doesNotMatch(identity,/localStorage\.clear|\.clear\(\)/);
+});
+
+test('startup gate offers explicit re-enrollment only for revoked missing-key state',()=>{
+  assert.match(gate,/error&&error\.code==='BOUND_PRIVATE_KEY_REQUIRED'&&String\(error\.status\|\|''\)==='revoked'/);
+  assert.match(gate,/StartupAccessGate\.reEnrollCurrentDevice\(\)/);
+  assert.match(gate,/enrollment\.reEnrollRevoked\(\)/);
+  assert.match(gate,/إعادة تسجيل هذا الجهاز/);
+  assert.match(gate,/مفتاح اعتماد هذا الجهاز غير متاح/);
 });
 
 test('device-status lookup is authenticated and scoped to the current user and device',()=>{
