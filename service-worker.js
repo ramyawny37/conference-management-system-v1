@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-6-0-release-v2';
+  : 'production-3-6-0-release-v3';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -84,7 +84,7 @@ const CORE_ASSETS = [
   './js/sync/template-diagnostic-export.js?rev=template-diagnostic-export-v1',
   './js/sync/sync-settings-ui.js?rev=platform-first-login-coordinator-v1',
   './js/supabase/first-system-bootstrap-service.js?rev=first-owner-bootstrap-hardening-v1',
-  './js/sync/startup-access-gate.js?rev=pending-native-device-context-v1',
+  './js/sync/startup-access-gate.js?rev=revoked-device-reenrollment-v2',
   './js/sync/link-status-diagnostic-store.js',
   './js/sync/conference-link-store.js',
   './js/sync/conference-permission-contract.js?rev=permission-contract-phase2a-v1',
