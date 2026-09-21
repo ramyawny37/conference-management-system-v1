@@ -26,6 +26,7 @@
   function getStorage(options){if(options&&options.storage)return options.storage;try{return global.localStorage||null;}catch(error){return null;}}
   function read(key,options){var storage=getStorage(options);if(!storage)return null;try{var value=JSON.parse(storage.getItem(key)||'null');return isValidIdentity(value)?value:null;}catch(error){return null;}}
   function write(key,identity,options){var storage=getStorage(options);if(!storage)return true;try{storage.setItem(key,JSON.stringify(identity));return true;}catch(error){return false;}}
+  function remove(key,options){var storage=getStorage(options);if(!storage)return true;try{storage.removeItem(key);return true;}catch(error){return false;}}
   function getCurrent(options){var currentUserId=userId(options);return currentUserId?memoryIdentities[currentUserId]||read(storageKey(currentUserId),options):null;}
   function getOrCreate(options){
     options=options&&typeof options==='object'?options:{};var currentUserId=userId(options);
@@ -70,6 +71,13 @@
     memoryIdentities[currentUserId]={id:identity.id,deviceName:String(deviceName||'').trim().slice(0,80),platform:identity.platform,createdAt:identity.createdAt};
     return write(storageKey(currentUserId),memoryIdentities[currentUserId],options)?{success:true,identity:memoryIdentities[currentUserId]}:{success:false,reason:'DEVICE_IDENTITY_STORAGE_FAILED'};
   }
+  function resetCurrent(options){
+    options=options&&typeof options==='object'?options:{};var currentUserId=userId(options);
+    if(!currentUserId)return {success:false,reason:'AUTH_REQUIRED'};
+    if(!remove(storageKey(currentUserId),options))return {success:false,reason:'DEVICE_IDENTITY_STORAGE_FAILED'};
+    delete memoryIdentities[currentUserId];
+    return {success:true,status:'reset'};
+  }
 
-  global.SupabaseDeviceIdentity=Object.freeze({getOrCreate:getOrCreate,getCurrent:getCurrent,setDeviceName:setDeviceName,getLegacyCandidate:getLegacyCandidate,adoptLegacyForCurrentUser:adoptLegacyForCurrentUser,reconcileProvedIdentity:reconcileProvedIdentity,getStorageKeyForUser:storageKey});
+  global.SupabaseDeviceIdentity=Object.freeze({getOrCreate:getOrCreate,getCurrent:getCurrent,setDeviceName:setDeviceName,getLegacyCandidate:getLegacyCandidate,adoptLegacyForCurrentUser:adoptLegacyForCurrentUser,reconcileProvedIdentity:reconcileProvedIdentity,resetCurrent:resetCurrent,getStorageKeyForUser:storageKey});
 })(window);
