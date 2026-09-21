@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-6-0-release-v3';
+  : 'production-3-6-0-release-v4';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -56,7 +56,7 @@ const CORE_ASSETS = [
   './js/supabase/organization-management-service.js?rev=admin-session-boundary-v1',
   './js/sync/organization-management-ui.js?rev=startup-device-admin-lifecycle-v1',
   './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
-  './js/supabase/device-enrollment.js?rev=auth-bound-edge-session-v1',
+  './js/supabase/device-enrollment.js?rev=canonical-revoked-rerequest-v1',
   './js/sync/device-authorization-operation-repository.js',
   './js/supabase/current-device-authorization-service.js?rev=canonical-platform-device-authority-v1',
   './js/supabase/device-authorization-administration-service.js?rev=platform-privileged-device-admin-diagnostics-v1',
@@ -84,7 +84,7 @@ const CORE_ASSETS = [
   './js/sync/template-diagnostic-export.js?rev=template-diagnostic-export-v1',
   './js/sync/sync-settings-ui.js?rev=platform-first-login-coordinator-v1',
   './js/supabase/first-system-bootstrap-service.js?rev=first-owner-bootstrap-hardening-v1',
-  './js/sync/startup-access-gate.js?rev=revoked-device-reenrollment-v2',
+  './js/sync/startup-access-gate.js?rev=canonical-revoked-rerequest-v1',
   './js/sync/link-status-diagnostic-store.js',
   './js/sync/conference-link-store.js',
   './js/sync/conference-permission-contract.js?rev=permission-contract-phase2a-v1',

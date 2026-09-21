@@ -18,9 +18,10 @@ const previousCacheRevision='development-3-4-0-platform-round3g3-v1';
 const cacheRevision='reservations-reference-locked-reconstruction-v5';
 const startupTransportRevision='project-device-storage-isolation-v1';
 const authBoundEdgeSessionRevision='auth-bound-edge-session-v1';
+const canonicalRevokedRerequestRevision='canonical-revoked-rerequest-v1';
 const moduleRoutingRevision='warehouse-original-items-secure-restoration-v1';
 const priorAuthorizationCacheRevision='runtime-authorization-phase1-v1';
-const productionCacheRevision='production-3-6-0-release-v3';
+const productionCacheRevision='production-3-6-0-release-v4';
 const productionShellRevision='production-3-6-0-release-v1';
 const accountIdentityRevision='account-session-identity-v1';
 const firstLoginCoordinatorRevision='platform-first-login-coordinator-v1';
@@ -38,7 +39,7 @@ const memberDiagnosticsRevision='repository-rejection-diagnostics-v1';
 const legacyConferenceRevision='legacy-conference-preflight-v2';
 const privacyRevision='diagnostics-privacy-hardening-v1';
 const templateIsolationRevision='template-sync-isolation-v1';
-const startupRevision='revoked-device-reenrollment-v2';
+const startupRevision=canonicalRevokedRerequestRevision;
 const platformIntegrationRevision='canonical-platform-foundation-v1';
 const deviceOnboardingRevision='platform-first-login-coordinator-v1';
 const organizationTemplateRevision='shared-template-library-v1';
@@ -228,11 +229,14 @@ assert(!worker.includes("'./js/supabase/client.js?rev=phase1c-v1'"),'app shell r
   assert(index.includes(versioned),'index missing '+versioned);
   assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
 });
-['js/supabase/device-session.js','js/supabase/device-enrollment.js'].forEach(asset=>{
+['js/supabase/device-session.js'].forEach(asset=>{
   const versioned=asset+'?rev='+authBoundEdgeSessionRevision;
   assert(index.includes(versioned),'index missing '+versioned);
   assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
 });
+const enrollmentAsset='js/supabase/device-enrollment.js?rev='+canonicalRevokedRerequestRevision;
+assert(index.includes(enrollmentAsset),'index missing '+enrollmentAsset);
+assert(worker.includes("'./"+enrollmentAsset+"'"),'app shell missing '+enrollmentAsset);
 [
   'js/sync/conference-permission-resolver.js',
   'core.js',
