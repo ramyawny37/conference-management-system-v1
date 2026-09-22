@@ -17,8 +17,6 @@
 .canonical-platform-workspace-host{width:auto;min-height:100svh;padding-top:calc(var(--canonical-header-height) + 24px);padding-bottom:24px;background:transparent}
 .canonical-platform-workspace{width:100%;min-width:0;max-width:1480px;margin-inline:auto}
 .canonical-platform-workspace>.conference-workspace{min-width:0}
-.canonical-platform-workspace-host.platform-reservations-active .canonical-platform-workspace>.conference-workspace:not(:has([data-reservations-module-root])){display:none}
-.canonical-platform-workspace-host.platform-conference-active .canonical-platform-workspace>.conference-workspace:has([data-reservations-module-root]),.canonical-platform-workspace-host.platform-warehouse-active .canonical-platform-workspace>.conference-workspace:has([data-reservations-module-root]){display:none}
 #applicationTopbar{position:relative;top:auto;width:auto;margin-top:calc(var(--canonical-header-height) + 24px);border:1px solid var(--platform-v2-border);border-radius:var(--platform-radius-md);background:var(--platform-surface);box-shadow:var(--platform-shadow-sm)}
 #applicationBody{width:auto;padding:16px 0 24px}
 .canonical-platform-shell.platform-navigation-open:after{content:"";position:fixed;z-index:75;inset:0;background:rgba(11,39,71,.42)}
