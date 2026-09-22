@@ -26,6 +26,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --legacy-peer-deps
+      - name: Start local PostgreSQL required by platform tests
+        run: |
+          sudo systemctl start postgresql
+          for i in {1..30}; do
+            if sudo -u postgres pg_isready >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          sudo -u postgres pg_isready
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'postgres';"
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE runner LOGIN CREATEDB;" || true
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE runner CREATEDB;"
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "GRANT postgres TO runner;" || true
       - name: Focused route accessibility regression
         run: node --test tests/platform-reservations-route-accessibility.test.js
       - name: Full platform check
