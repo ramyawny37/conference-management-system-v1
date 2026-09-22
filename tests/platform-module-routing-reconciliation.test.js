@@ -133,7 +133,7 @@ test('generic module routes receive their container and unmount when switching m
   assert.strictEqual(state.window.PlatformIntegration.openModule('unknown'),false);
 });
 
-test('leaving an internal Conference tab hands all legacy Conference surfaces to the peer module',async()=>{
+test('leaving an internal Conference tab switches workspaces while preserving the shared shell',async()=>{
   const state=integrationRuntime('/conference/app/settings',{conferenceInternal:true});
   state.window.PlatformIntegration.registerModule({id:'reservations',mount(){return true;}});
   state.window.PlatformIntegration.reconcileRoute();
@@ -144,8 +144,8 @@ test('leaving an internal Conference tab hands all legacy Conference surfaces to
   assert.strictEqual(state.window.PlatformIntegration.getActiveModuleId(),'reservations');
   assert.strictEqual(state.elements.conferenceWorkspace.hidden,true);
   assert.strictEqual(state.elements.reservationsWorkspace.hidden,false);
-  assert.strictEqual(state.elements.applicationTopbar.style.display,'none');
-  assert.strictEqual(state.elements.applicationBody.style.display,'none');
+  assert.strictEqual(state.elements.applicationTopbar.style.display,'block');
+  assert.strictEqual(state.elements.applicationBody.style.display,'block');
 });
 
 function warehouseRuntime(route){
