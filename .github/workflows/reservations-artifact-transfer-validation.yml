@@ -6,7 +6,7 @@ on:
     paths:
       - .github/workflows/reservations-artifact-transfer-validation.yml
       - js/reservations-route-accessibility.js
-      - tests/reservations-route-accessibility.test.js
+      - tests/platform-reservations-route-accessibility.test.js
   workflow_dispatch:
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Focused route accessibility regression
-        run: node --test tests/reservations-route-accessibility.test.js
+        run: node --test tests/platform-reservations-route-accessibility.test.js
       - name: Full platform check
         run: npm run check
       - name: Diff integrity
