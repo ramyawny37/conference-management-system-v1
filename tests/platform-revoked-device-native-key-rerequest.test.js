@@ -33,10 +33,10 @@ test('backend replay protection, audit, result, and privileges are narrow',()=>{
 });
 
 test('Edge rerequest authenticates exact stored binding, authorization, and device',()=>{
-  assert.match(rerequestEdge,/\.eq\('id',bindingId\)\.eq\('user_id',userResult\.data\.user\.id\)\.eq\('device_id',deviceId\)/);
-  assert.match(rerequestEdge,/binding\.lifecycle_status!=='active'/);
-  assert.match(rerequestEdge,/authorizationRow\.status!=='revoked'/);
-  assert.match(rerequestEdge,/device\.lifecycle_status!=='active'/);
+  assert.match(rerequestEdge,/rpc\('get_device_key_rerequest_verification_context',\{p_user_id:userResult\.data\.user\.id,p_device_id:deviceId,p_binding_id:bindingId\}\)/);
+  assert.match(rerequestEdge,/context\.bindingId!==bindingId[\s\S]*context\.deviceId!==deviceId[\s\S]*context\.bindingLifecycle!=='active'[\s\S]*context\.bindingRevoked[\s\S]*context\.bindingRetired/);
+  assert.match(rerequestEdge,/context\.authorizationStatus!=='revoked'/);
+  assert.match(rerequestEdge,/context\.deviceLifecycle!=='active'[\s\S]*context\.deviceRetired[\s\S]*context\.deviceCompromised/);
   assert.match(rerequestEdge,/rerequest_revoked_device_key/);
 });
 
@@ -49,7 +49,7 @@ test('Edge verifies freshness, canonical domain-separated payload, and signature
 });
 
 test('browser cannot substitute an alternate public key for the stored binding key',()=>{
-  assert.match(rerequestEdge,/importKey\('jwk',binding\.public_key_jwk/);
+  assert.match(rerequestEdge,/importKey\('jwk',context\.publicKeyJwk/);
   assert.doesNotMatch(rerequestEdge,/body\.publicKeyJwk|body\.public_key_jwk/);
 });
 
