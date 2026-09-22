@@ -20,6 +20,8 @@ function integrationRuntime(initialRoute,options={}){
   const shellClasses=classList();
   const elements={
     startupScreen:{classList:shellClasses},
+    applicationTopbar:{style:{display:options.conferenceInternal?'block':'none'}},
+    applicationBody:{style:{display:options.conferenceInternal?'block':'none'}},
     conferenceWorkspace:{id:'conferenceWorkspace'},
     warehouseWorkspace:{id:'warehouseWorkspace'},
     reservationsWorkspace:{id:'reservationsWorkspace'}
@@ -129,6 +131,21 @@ test('generic module routes receive their container and unmount when switching m
   assert.deepStrictEqual(lifecycle,[['mount','reservationsWorkspace'],['unmount','warehouse']]);
   assert.strictEqual(state.shellClasses.values.has('platform-reservations-active'),false);
   assert.strictEqual(state.window.PlatformIntegration.openModule('unknown'),false);
+});
+
+test('leaving an internal Conference tab hands all legacy Conference surfaces to the peer module',async()=>{
+  const state=integrationRuntime('/conference/app/settings',{conferenceInternal:true});
+  state.window.PlatformIntegration.registerModule({id:'reservations',mount(){return true;}});
+  state.window.PlatformIntegration.reconcileRoute();
+  assert.strictEqual(state.elements.applicationTopbar.style.display,'block');
+  assert.strictEqual(state.elements.applicationBody.style.display,'block');
+  state.setRoute('/reservations/bookings/new');
+  await state.listeners.hashchange();
+  assert.strictEqual(state.window.PlatformIntegration.getActiveModuleId(),'reservations');
+  assert.strictEqual(state.elements.conferenceWorkspace.hidden,true);
+  assert.strictEqual(state.elements.reservationsWorkspace.hidden,false);
+  assert.strictEqual(state.elements.applicationTopbar.style.display,'none');
+  assert.strictEqual(state.elements.applicationBody.style.display,'none');
 });
 
 function warehouseRuntime(route){
