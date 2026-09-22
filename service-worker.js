@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-6-0-release-v5';
+  : 'production-3-6-0-platform-handoff-cache-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -253,7 +253,7 @@ self.addEventListener('fetch', event => {
         background_color: '#123E7A'
       }), {
         status: 200,
-        headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-store' }
+        headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control':'no-store' }
       }))
     );
     return;
