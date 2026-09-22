@@ -37,8 +37,8 @@ jobs:
           done
           sudo -u postgres pg_isready
           sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'postgres';"
-          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE runner LOGIN CREATEDB;" || true
-          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE runner CREATEDB;"
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE runner LOGIN CREATEDB CREATEROLE;" || true
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE runner CREATEDB CREATEROLE;"
           sudo -u postgres psql -v ON_ERROR_STOP=1 -c "GRANT postgres TO runner;" || true
       - name: Focused route accessibility regression
         run: node --test tests/platform-reservations-route-accessibility.test.js
