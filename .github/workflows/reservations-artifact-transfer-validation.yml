@@ -69,4 +69,4 @@ jobs:
           done
           node --test "${tests[@]}"
       - name: Diff integrity
-        run: git diff --check develop...HEAD
+        run: git diff --check origin/develop...HEAD
