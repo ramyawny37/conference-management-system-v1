@@ -367,7 +367,6 @@
     var acquireArgs={
       p_conference_id:conferenceId,
       p_section:section,
-      p_device_id:context.deviceId,
       p_lock_token:lockToken,
       p_ttl_seconds:ttl
     };
@@ -427,7 +426,6 @@
     var renewArgs={
       p_conference_id:conferenceId,
       p_section:section,
-      p_device_id:context.deviceId,
       p_lock_token:token,
       p_ttl_seconds:ttl
     };
@@ -464,7 +462,6 @@
     var releaseArgs={
       p_conference_id:conferenceId,
       p_section:section,
-      p_device_id:context.deviceId,
       p_lock_token:token
     };
     if(section==='conference')delete releaseArgs.p_section;
@@ -492,8 +489,7 @@
     }
     var statusArgs={
       p_conference_id:conferenceId,
-      p_section:section,
-      p_device_id:context.deviceId
+      p_section:section
     };
     if(section==='conference')delete statusArgs.p_section;
     return runRpc(section==='conference'?'get_conference_lock':'get_conference_section_lock',statusArgs,conferenceId,section,[
