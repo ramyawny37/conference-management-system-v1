@@ -1,26 +1,64 @@
 -- Extend the existing protected participant/booking mutation without changing
 -- its device-session, permission, idempotency, or optimistic-lock boundary.
-alter function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
-  rename to execute_device_operation_before_participant_booking_type_edit;
-
-create function platform.execute_device_operation(
-  p_user_id uuid,
-  p_session_id uuid,
-  p_token_hash bytea,
-  p_module text,
-  p_operation text,
-  p_args jsonb
+create or replace function platform.execute_device_operation(
+  p_user_id uuid,p_session_id uuid,p_token_hash bytea,
+  p_module text,p_operation text,p_args jsonb
 )
 returns jsonb
 language plpgsql
 security definer
-set search_path='pg_catalog','public','platform','platform_private','reservations','reservations_private'
+set search_path='pg_catalog','public','platform','platform_private'
 as $$
-declare
-  v_session platform_private.device_sessions%rowtype;
+declare session platform_private.device_sessions%rowtype;
 begin
-  if p_module<>'reservations' or p_operation<>'update_participant_booking' then
-    return platform.execute_device_operation_before_participant_booking_type_edit(
+  if p_module='reservations' and p_operation='update_participant_booking' then
+    if coalesce(auth.jwt()->>'role','')<>'service_role' then
+      raise exception 'PLATFORM_OPERATION_BACKEND_REQUIRED' using errcode='42501';
+    end if;
+    if p_args is null or jsonb_typeof(p_args)<>'object'
+       or p_args ?| array['organization_id','p_organization_id','scope_partition_id','p_scope_partition_id','device_id','p_device_id','actor_user_id','p_actor_user_id','actor_device_id','p_actor_device_id','p_conference_person_id','conference_person_id'] then
+      raise exception 'PLATFORM_OPERATION_ARGUMENT_INVALID' using errcode='22023';
+    end if;
+    perform platform_private.require_exact_jsonb_keys(p_args,array[
+      'p_operation_id','p_booking_id','p_expected_revision','p_booking_type_id',
+      'p_full_name','p_phone','p_age','p_church','p_governorate',
+      'p_city_or_village','p_service_sector','p_service_sector_other','p_notes'
+    ]);
+
+    select item.* into session
+    from platform_private.device_sessions item
+    join platform.device_key_bindings binding on binding.id=item.binding_id
+    join platform.user_device_authorizations device_authorization on device_authorization.id=item.device_authorization_id
+    join platform.devices device on device.id=item.device_id
+    join platform.profiles profile on profile.user_id=item.user_id
+    where item.id=p_session_id and item.user_id=p_user_id and item.token_hash=p_token_hash
+      and item.purpose='PLATFORM_DEVICE_SESSION' and item.revoked_at is null
+      and item.expires_at>statement_timestamp()
+      and binding.user_id=item.user_id and binding.device_id=item.device_id
+      and binding.device_authorization_id=item.device_authorization_id
+      and binding.public_key_thumbprint=item.public_key_thumbprint
+      and binding.algorithm='ECDSA_P256_SHA256' and binding.lifecycle_status='active'
+      and binding.revoked_at is null and binding.retired_at is null
+      and device_authorization.user_id=item.user_id and device_authorization.device_id=item.device_id
+      and device_authorization.status='approved' and device_authorization.revoked_at is null
+      and device.lifecycle_status='active' and device.retired_at is null
+      and device.compromised_at is null and profile.account_status='approved';
+    if not found then
+      raise exception 'DEVICE_SESSION_INVALID' using errcode='42501';
+    end if;
+
+    perform set_config('request.jwt.claims',jsonb_build_object('sub',p_user_id,'role','service_role')::text,true);
+    perform set_config('platform.phase1c_context',jsonb_build_object(
+      'purpose','PLATFORM_DEVICE_SESSION_DISPATCH','session_id',session.id,
+      'user_id',session.user_id,'device_id',session.device_id,
+      'authorization_id',session.device_authorization_id,'binding_id',session.binding_id,
+      'token_hash',encode(p_token_hash,'hex')
+    )::text,true);
+    return reservations_private.mutate_scoped(session.device_id,p_operation,p_args);
+  end if;
+
+  if p_module<>'conference' or p_operation<>'list_module_permission_resources_for_administration' then
+    return platform.execute_device_operation_pre_generic_permission_resource_administration(
       p_user_id,p_session_id,p_token_hash,p_module,p_operation,p_args
     );
   end if;
@@ -28,200 +66,151 @@ begin
     raise exception 'PLATFORM_OPERATION_BACKEND_REQUIRED' using errcode='42501';
   end if;
   if p_args is null or jsonb_typeof(p_args)<>'object'
-     or p_args ?| array[
-       'organization_id','p_organization_id','scope_partition_id',
-       'p_scope_partition_id','device_id','p_device_id','actor_user_id',
-       'p_actor_user_id','actor_device_id','p_actor_device_id',
-       'p_conference_person_id','conference_person_id'
-     ] then
+     or p_args ?| array['organization_id','p_organization_id','scope_partition_id','p_scope_partition_id','device_id','p_device_id','actor_user_id','p_actor_user_id','actor_device_id','p_actor_device_id'] then
     raise exception 'PLATFORM_OPERATION_ARGUMENT_INVALID' using errcode='22023';
   end if;
-  perform platform_private.require_exact_jsonb_keys(p_args,array[
-    'p_operation_id','p_booking_id','p_expected_revision','p_booking_type_id',
-    'p_full_name','p_phone','p_age','p_church','p_governorate',
-    'p_city_or_village','p_service_sector','p_service_sector_other','p_notes'
-  ]);
 
-  select s.* into v_session
-  from platform_private.device_sessions s
-  join platform.device_key_bindings b on b.id=s.binding_id
-  join platform.user_device_authorizations a on a.id=s.device_authorization_id
-  join platform.devices d on d.id=s.device_id
-  join platform.profiles p on p.user_id=s.user_id
-  where s.id=p_session_id and s.user_id=p_user_id
-    and s.token_hash=p_token_hash
-    and s.purpose='PLATFORM_DEVICE_SESSION'
-    and s.revoked_at is null and s.expires_at>statement_timestamp()
-    and b.user_id=s.user_id and b.device_id=s.device_id
-    and b.device_authorization_id=s.device_authorization_id
-    and b.public_key_thumbprint=s.public_key_thumbprint
-    and b.algorithm='ECDSA_P256_SHA256'
-    and b.lifecycle_status='active' and b.revoked_at is null
-    and b.retired_at is null
-    and a.user_id=s.user_id and a.device_id=s.device_id
-    and a.status='approved' and a.revoked_at is null
-    and d.lifecycle_status='active' and d.retired_at is null
-    and d.compromised_at is null and p.account_status='approved';
+  select item.* into session
+  from platform_private.device_sessions item
+  join platform.device_key_bindings binding on binding.id=item.binding_id
+  join platform.user_device_authorizations device_authorization on device_authorization.id=item.device_authorization_id
+  join platform.devices device on device.id=item.device_id
+  join platform.profiles profile on profile.user_id=item.user_id
+  where item.id=p_session_id and item.user_id=p_user_id and item.token_hash=p_token_hash
+    and item.purpose='PLATFORM_DEVICE_SESSION' and item.revoked_at is null
+    and item.expires_at>statement_timestamp()
+    and binding.user_id=item.user_id and binding.device_id=item.device_id
+    and binding.device_authorization_id=item.device_authorization_id
+    and binding.public_key_thumbprint=item.public_key_thumbprint
+    and binding.algorithm='ECDSA_P256_SHA256' and binding.lifecycle_status='active'
+    and binding.revoked_at is null and binding.retired_at is null
+    and device_authorization.user_id=item.user_id and device_authorization.device_id=item.device_id
+    and device_authorization.status='approved' and device_authorization.revoked_at is null
+    and device.lifecycle_status='active' and device.retired_at is null
+    and device.compromised_at is null and profile.account_status='approved';
   if not found then
     raise exception 'DEVICE_SESSION_INVALID' using errcode='42501';
   end if;
 
-  perform set_config(
-    'request.jwt.claims',
-    jsonb_build_object('sub',p_user_id,'role','service_role')::text,true
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',p_user_id,'role','service_role')::text,true);
+  perform set_config('platform.phase1c_context',jsonb_build_object(
+    'purpose','PLATFORM_DEVICE_SESSION_DISPATCH','session_id',session.id,
+    'user_id',session.user_id,'device_id',session.device_id,
+    'authorization_id',session.device_authorization_id,'binding_id',session.binding_id,
+    'token_hash',encode(p_token_hash,'hex')
+  )::text,true);
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_module_key','p_resource_type']);
+  return public.list_module_permission_resources_for_administration(
+    session.device_id,p_args->>'p_module_key',p_args->>'p_resource_type'
   );
-  perform set_config(
-    'platform.phase1c_context',
-    jsonb_build_object(
-      'purpose','PLATFORM_DEVICE_SESSION_DISPATCH',
-      'session_id',v_session.id,
-      'user_id',v_session.user_id,
-      'device_id',v_session.device_id,
-      'authorization_id',v_session.device_authorization_id,
-      'binding_id',v_session.binding_id,
-      'token_hash',encode(p_token_hash,'hex')
-    )::text,true
-  );
-  return reservations_private.mutate_scoped(
-    v_session.device_id,p_operation,p_args
-  );
-end $$;
+end;
+$$;
 
-revoke all on function
-  platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
-from public,anon,authenticated;
-grant execute on function
-  platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
-to service_role;
-
-alter function reservations_private.mutate_scoped(uuid,text,jsonb)
-  rename to mutate_scoped_before_participant_booking_type_edit;
-
-create function reservations_private.mutate_scoped(
-  p_device_id uuid,
-  p_operation text,
-  p_args jsonb
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path=''
-as $$
-declare
-  v_context jsonb;
-  v_replay jsonb;
-  v_result jsonb;
-  v_booking reservations.bookings%rowtype;
-  v_type reservations.booking_types%rowtype;
-  v_actor uuid;
-  v_revision bigint;
-  v_operation_id uuid:=(p_args->>'p_operation_id')::uuid;
+revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  from public,anon,authenticated,service_role;
+grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  to service_role;
+create or replace function reservations_private.mutate_scoped(p_device_id uuid,p_operation text,p_args jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare v_context jsonb; v_replay jsonb; v_result jsonb; v_event reservations.events%rowtype; v_period reservations.event_periods%rowtype; v_type reservations.booking_types%rowtype; v_booking reservations.bookings%rowtype; v_payment reservations.payments%rowtype; v_operation reservations.operations%rowtype; v_id uuid; v_revision bigint; v_actor uuid; v_partition uuid; v_number text; v_operation_id uuid:=(p_args->>'p_operation_id')::uuid; v_count integer;
 begin
-  if p_operation<>'update_participant_booking' then
-    return reservations_private.mutate_scoped_before_participant_booking_type_edit(
-      p_device_id,p_operation,p_args
-    );
+ if p_args is null or jsonb_typeof(p_args)<>'object' or p_args ?| array['organization_id','p_organization_id','scope_partition_id','p_scope_partition_id','device_id','p_device_id','actor_user_id','p_actor_user_id','actor_device_id','p_actor_device_id'] then raise exception 'RESERVATIONS_SCOPE_OVERRIDE_DENIED' using errcode='42501'; end if;
+ if p_operation='delete_event' and v_operation_id is not null then
+  select * into v_operation from reservations.operations where operation_id=v_operation_id;
+  if found then
+   v_context:=public.require_effective_module_permission(p_device_id,'reservations','reservations.event.manage',null,null)||jsonb_build_object('scopePartitionId',v_operation.scope_partition_id,'organizationId',v_operation.organization_id);
+   return reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args);
   end if;
-
-  if p_args is null or jsonb_typeof(p_args)<>'object' or p_args ?| array[
-    'organization_id','p_organization_id','scope_partition_id',
-    'p_scope_partition_id','device_id','p_device_id','actor_user_id',
-    'p_actor_user_id','actor_device_id','p_actor_device_id'
-  ] then
-    raise exception 'RESERVATIONS_SCOPE_OVERRIDE_DENIED' using errcode='42501';
+ end if;
+ if p_operation='delete_event_period' and v_operation_id is not null then
+  select * into v_operation from reservations.operations where operation_id=v_operation_id;
+  if found then
+   v_context:=public.require_effective_module_permission(p_device_id,'reservations','reservations.event.manage',null,null)||jsonb_build_object('scopePartitionId',v_operation.scope_partition_id,'organizationId',v_operation.organization_id);
+   return reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args);
   end if;
-
-  perform platform_private.require_exact_jsonb_keys(p_args,array[
-    'p_operation_id','p_booking_id','p_expected_revision','p_booking_type_id',
-    'p_full_name','p_phone','p_age','p_church','p_governorate',
-    'p_city_or_village','p_service_sector','p_service_sector_other','p_notes'
-  ]);
-  v_context:=reservations_private.resolve_booking_scope(
-    p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.booking.update'
-  );
-  v_actor:=(v_context->>'actorUserId')::uuid;
-  v_replay:=reservations_private.begin_operation(
-    v_operation_id,v_context,p_operation,p_args
-  );
-  if v_replay is not null then return v_replay; end if;
-
-  select * into v_booking
-  from reservations.bookings
-  where id=(v_context->>'bookingId')::uuid
-    and event_id=(v_context->>'eventId')::uuid
-    and scope_partition_id=(v_context->>'scopePartitionId')::uuid
-    and organization_id is not distinct from
-      nullif(v_context->>'organizationId','')::uuid
-  for update;
-  if not found then
-    raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002';
+ end if;
+ if p_operation='delete_booking' and v_operation_id is not null then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_expected_revision']);
+  select * into v_operation from reservations.operations where operation_id=v_operation_id;
+  if found then
+   v_context:=public.require_effective_module_permission(p_device_id,'reservations','reservations.booking.delete',null,null)||jsonb_build_object('scopePartitionId',v_operation.scope_partition_id,'organizationId',v_operation.organization_id);
+   return reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args);
   end if;
-  if v_booking.revision<>(p_args->>'p_expected_revision')::bigint then
-    raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001';
-  end if;
-
-  select * into v_type
-  from reservations.booking_types
-  where id=(p_args->>'p_booking_type_id')::uuid
-    and event_id=v_booking.event_id
-    and scope_partition_id=v_booking.scope_partition_id
-    and organization_id is not distinct from v_booking.organization_id
-  for key share;
-  if not found then
-    raise exception 'RESERVATIONS_BOOKING_TYPE_EVENT_MISMATCH'
-      using errcode='22023';
-  end if;
-  if v_type.id<>v_booking.booking_type_id and not v_type.active then
-    raise exception 'RESERVATIONS_BOOKING_TYPE_INACTIVE' using errcode='22023';
-  end if;
-
-  update reservations.participants
-  set full_name=btrim(p_args->>'p_full_name'),
-      phone=btrim(p_args->>'p_phone'),
-      age=(p_args->>'p_age')::integer,
-      church=coalesce(p_args->>'p_church',''),
-      governorate=btrim(p_args->>'p_governorate'),
-      city_or_village=coalesce(p_args->>'p_city_or_village',''),
-      service_sector=p_args->>'p_service_sector',
-      service_sector_other=nullif(btrim(p_args->>'p_service_sector_other'),''),
-      notes=nullif(p_args->>'p_notes',''),
-      revision=revision+1,
-      updated_at=statement_timestamp(),
-      updated_by=v_actor
-  where id=v_booking.participant_id
-    and scope_partition_id=v_booking.scope_partition_id
-    and organization_id is not distinct from v_booking.organization_id;
-  if not found then
-    raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002';
-  end if;
-
-  update reservations.bookings
-  set booking_type_id=v_type.id,
-      booking_type_name_snapshot=v_type.name,
-      price_snapshot=v_type.price,
-      notes=nullif(p_args->>'p_notes',''),
-      revision=revision+1,
-      updated_at=statement_timestamp(),
-      updated_by=v_actor
-  where id=v_booking.id
-    and event_id=v_booking.event_id
-    and scope_partition_id=v_booking.scope_partition_id
-    and organization_id is not distinct from v_booking.organization_id
-  returning revision into v_revision;
-
-  v_result:=jsonb_build_object(
-    'bookingId',v_booking.id,
-    'bookingTypeId',v_type.id,
-    'revision',v_revision
-  );
-  perform reservations_private.audit(
-    v_context,'booking.updated','booking',v_booking.id,v_operation_id,
-    to_jsonb(v_booking),v_result
-  );
-  return reservations_private.complete_operation(
-    v_operation_id,v_context,p_operation,p_args,v_result
-  );
+ end if;
+ if p_operation='create_event' then
+  if p_args->>'p_scope_type'='standalone' then
+   return reservations_private.create_standalone_event_scoped(p_device_id,p_args-'p_scope_type');
+  elsif p_args->>'p_scope_type'<>'conference' or (p_args->>'p_conference_id')::uuid is null then raise exception 'RESERVATIONS_CREATE_EVENT_SCOPE_INVALID' using errcode='22023'; end if;
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_scope_type','p_conference_id','p_name','p_start_date','p_end_date','p_location','p_capacity','p_status','p_notes']);
+  v_context:=reservations_private.conference_context(p_device_id,(p_args->>'p_conference_id')::uuid,'reservations.event.manage'); v_actor:=(v_context->>'actorUserId')::uuid; v_partition:=(v_context->>'scopePartitionId')::uuid;
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,'create_event',p_args); if v_replay is not null then return v_replay; end if;
+  insert into reservations.events(scope_type,scope_partition_id,organization_id,conference_id,name,start_date,end_date,location,capacity,status,notes,created_by,updated_by) values('conference',v_partition,(v_context->>'organizationId')::uuid,(p_args->>'p_conference_id')::uuid,btrim(p_args->>'p_name'),(p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date,coalesce(p_args->>'p_location',''),(p_args->>'p_capacity')::integer,p_args->>'p_status',coalesce(p_args->>'p_notes',''),v_actor,v_actor) returning id,revision into v_id,v_revision;
+  v_result:=jsonb_build_object('eventId',v_id,'revision',v_revision,'scopeType','conference','scopePartitionId',v_partition); perform reservations_private.audit(v_context||jsonb_build_object('scopeType','conference','scopePartitionId',v_partition),'event.created','event',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,'create_event',p_args,v_result);
+ end if;
+ if p_operation='update_event' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_expected_revision','p_name','p_start_date','p_end_date','p_location','p_capacity','p_status','p_notes']); v_context:=reservations_private.resolve_event_scope(p_device_id,(p_args->>'p_event_id')::uuid,'reservations.event.manage');
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_event from reservations.events where id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for update; if v_event.revision<>(p_args->>'p_expected_revision')::bigint then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if;
+  update reservations.events set name=btrim(p_args->>'p_name'),start_date=(p_args->>'p_start_date')::date,end_date=(p_args->>'p_end_date')::date,location=coalesce(p_args->>'p_location',''),capacity=(p_args->>'p_capacity')::integer,status=p_args->>'p_status',notes=coalesce(p_args->>'p_notes',''),revision=revision+1,updated_at=statement_timestamp(),updated_by=(v_context->>'actorUserId')::uuid where id=v_event.id returning revision into v_revision; if exists(select 1 from reservations.event_periods where event_id=v_event.id and (starts_on<(p_args->>'p_start_date')::date or ends_on>(p_args->>'p_end_date')::date)) then raise exception 'RESERVATIONS_EVENT_PERIOD_OUT_OF_RANGE' using errcode='22023'; end if; v_result:=jsonb_build_object('eventId',v_event.id,'revision',v_revision); perform reservations_private.audit(v_context,'event.updated','event',v_event.id,v_operation_id,to_jsonb(v_event),v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='delete_event' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_expected_revision']); v_context:=reservations_private.resolve_event_scope(p_device_id,(p_args->>'p_event_id')::uuid,'reservations.event.manage'); v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_event from reservations.events where id=(v_context->>'eventId')::uuid for update; if v_event.revision<>(p_args->>'p_expected_revision')::bigint then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if; if exists(select 1 from reservations.bookings where event_id=v_event.id and scope_partition_id=v_event.scope_partition_id) then raise exception 'RESERVATIONS_EVENT_HAS_DEPENDENCIES' using errcode='55000'; end if; delete from reservations.event_periods where event_id=v_event.id and scope_partition_id=v_event.scope_partition_id; delete from reservations.booking_types where event_id=v_event.id and scope_partition_id=v_event.scope_partition_id; delete from reservations.events where id=v_event.id; v_result:=jsonb_build_object('eventId',v_event.id,'deleted',true); perform reservations_private.audit(v_context,'event.deleted','event',v_event.id,v_operation_id,to_jsonb(v_event),null); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='create_event_period' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_kind','p_starts_on','p_ends_on','p_display_order']); v_context:=reservations_private.resolve_event_scope(p_device_id,(p_args->>'p_event_id')::uuid,'reservations.event.manage'); v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_event from reservations.events where id=(v_context->>'eventId')::uuid for key share; if p_args->>'p_kind' not in ('conference','caravans') or (p_args->>'p_starts_on')::date<v_event.start_date or (p_args->>'p_ends_on')::date>v_event.end_date then raise exception 'RESERVATIONS_EVENT_PERIOD_OUT_OF_RANGE' using errcode='22023'; end if; insert into reservations.event_periods(scope_partition_id,organization_id,event_id,kind,starts_on,ends_on,display_order,created_by,updated_by) values(v_event.scope_partition_id,v_event.organization_id,v_event.id,p_args->>'p_kind',(p_args->>'p_starts_on')::date,(p_args->>'p_ends_on')::date,(p_args->>'p_display_order')::integer,(v_context->>'actorUserId')::uuid,(v_context->>'actorUserId')::uuid) returning id,revision into v_id,v_revision; v_result:=jsonb_build_object('periodId',v_id,'revision',v_revision); perform reservations_private.audit(v_context,'event_period.created','event_period',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation in ('update_event_period','delete_event_period') then
+  perform platform_private.require_exact_jsonb_keys(p_args,case when p_operation='update_event_period' then array['p_operation_id','p_period_id','p_expected_revision','p_kind','p_starts_on','p_ends_on','p_display_order'] else array['p_operation_id','p_period_id','p_expected_revision'] end); v_context:=reservations_private.resolve_event_period_scope(p_device_id,(p_args->>'p_period_id')::uuid,'reservations.event.manage'); v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_period from reservations.event_periods where id=(v_context->>'periodId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for update; if v_period.revision<>(p_args->>'p_expected_revision')::bigint then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if; if p_operation='delete_event_period' then delete from reservations.event_periods where id=v_period.id; v_result:=jsonb_build_object('periodId',v_period.id,'deleted',true); else select * into v_event from reservations.events where id=v_period.event_id; if p_args->>'p_kind' not in ('conference','caravans') or (p_args->>'p_starts_on')::date<v_event.start_date or (p_args->>'p_ends_on')::date>v_event.end_date then raise exception 'RESERVATIONS_EVENT_PERIOD_OUT_OF_RANGE' using errcode='22023'; end if; update reservations.event_periods set kind=p_args->>'p_kind',starts_on=(p_args->>'p_starts_on')::date,ends_on=(p_args->>'p_ends_on')::date,display_order=(p_args->>'p_display_order')::integer,revision=revision+1,updated_at=statement_timestamp(),updated_by=(v_context->>'actorUserId')::uuid where id=v_period.id returning revision into v_revision; v_result:=jsonb_build_object('periodId',v_period.id,'revision',v_revision); end if; perform reservations_private.audit(v_context,'event_period.'||case when p_operation='delete_event_period' then 'deleted' else 'updated' end,'event_period',v_period.id,v_operation_id,to_jsonb(v_period),v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='create_booking_type' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_name','p_code','p_price','p_active','p_display_order','p_eligible_attendance_segments']); v_context:=reservations_private.resolve_event_scope(p_device_id,(p_args->>'p_event_id')::uuid,'reservations.event.manage'); v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_event from reservations.events where id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for key share; insert into reservations.booking_types(scope_partition_id,organization_id,event_id,name,code,price,active,display_order,eligible_attendance_segments,created_by,updated_by) values(v_event.scope_partition_id,v_event.organization_id,v_event.id,btrim(p_args->>'p_name'),btrim(p_args->>'p_code'),(p_args->>'p_price')::numeric,(p_args->>'p_active')::boolean,(p_args->>'p_display_order')::integer,coalesce((select array_agg(value) from jsonb_array_elements_text(p_args->'p_eligible_attendance_segments') s(value)),'{}'::text[]),(v_context->>'actorUserId')::uuid,(v_context->>'actorUserId')::uuid) returning id,revision into v_id,v_revision; v_result:=jsonb_build_object('bookingTypeId',v_id,'revision',v_revision); perform reservations_private.audit(v_context,'booking_type.created','booking_type',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='update_booking_type' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_type_id','p_expected_revision','p_name','p_code','p_price','p_active','p_display_order','p_eligible_attendance_segments']); v_context:=reservations_private.resolve_booking_type_scope(p_device_id,(p_args->>'p_booking_type_id')::uuid,'reservations.event.manage'); v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_type from reservations.booking_types where id=(v_context->>'bookingTypeId')::uuid and event_id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for update; if not found then raise exception 'RESERVATIONS_BOOKING_TYPE_NOT_FOUND' using errcode='P0002'; end if; if v_type.revision<>(p_args->>'p_expected_revision')::bigint then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if;
+  update reservations.booking_types set name=btrim(p_args->>'p_name'),code=btrim(p_args->>'p_code'),price=(p_args->>'p_price')::numeric,active=(p_args->>'p_active')::boolean,display_order=(p_args->>'p_display_order')::integer,eligible_attendance_segments=coalesce((select array_agg(value) from jsonb_array_elements_text(p_args->'p_eligible_attendance_segments') s(value)),'{}'::text[]),revision=revision+1,updated_at=statement_timestamp(),updated_by=(v_context->>'actorUserId')::uuid where id=v_type.id and event_id=v_type.event_id and scope_partition_id=v_type.scope_partition_id returning revision into v_revision; v_result:=jsonb_build_object('bookingTypeId',v_type.id,'revision',v_revision); perform reservations_private.audit(v_context,'booking_type.updated','booking_type',v_type.id,v_operation_id,to_jsonb(v_type),v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='create_booking' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_booking_type_id','p_full_name','p_phone','p_age','p_church','p_governorate','p_city_or_village','p_service_sector','p_service_sector_other','p_notes']); v_context:=reservations_private.resolve_event_scope(p_device_id,(p_args->>'p_event_id')::uuid,'reservations.booking.create'); v_actor:=(v_context->>'actorUserId')::uuid;
+  select * into v_event from reservations.events where id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for update; if not found or v_event.status in('closed','full') then raise exception 'RESERVATIONS_EVENT_NOT_ACCEPTING_BOOKINGS' using errcode='22023'; end if; select * into v_type from reservations.booking_types where id=(p_args->>'p_booking_type_id')::uuid and event_id=v_event.id and scope_partition_id=v_event.scope_partition_id for key share; if not found or not v_type.active then raise exception 'RESERVATIONS_BOOKING_TYPE_INACTIVE' using errcode='22023'; end if; select count(*) into v_count from reservations.bookings where event_id=v_event.id and scope_partition_id=v_event.scope_partition_id; if v_event.capacity is not null and v_count>=v_event.capacity then raise exception 'RESERVATIONS_EVENT_CAPACITY_REACHED' using errcode='22023'; end if;
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; v_number:=reservations_private.allocate_booking_number(v_event.scope_partition_id,extract(year from v_event.start_date)::integer); perform set_config('reservations.scope_partition_id',v_event.scope_partition_id::text,true); insert into reservations.participants(scope_partition_id,organization_id,full_name,phone,age,church,governorate,city_or_village,service_sector,service_sector_other,notes,created_by,updated_by) values(v_event.scope_partition_id,v_event.organization_id,btrim(p_args->>'p_full_name'),btrim(p_args->>'p_phone'),(p_args->>'p_age')::integer,coalesce(p_args->>'p_church',''),btrim(p_args->>'p_governorate'),coalesce(p_args->>'p_city_or_village',''),p_args->>'p_service_sector',nullif(btrim(p_args->>'p_service_sector_other'),''),nullif(p_args->>'p_notes',''),v_actor,v_actor) returning id into v_id; insert into reservations.bookings(scope_partition_id,organization_id,booking_number,participant_id,event_id,booking_type_id,booking_type_name_snapshot,price_snapshot,attendance_segments_snapshot,notes,created_by,updated_by) values(v_event.scope_partition_id,v_event.organization_id,v_number,v_id,v_event.id,v_type.id,v_type.name,v_type.price,v_type.eligible_attendance_segments,nullif(p_args->>'p_notes',''),v_actor,v_actor) returning id,revision into v_booking.id,v_revision; insert into reservations.operational_reviews(scope_partition_id,organization_id,booking_id,created_by,updated_by) values(v_event.scope_partition_id,v_event.organization_id,v_booking.id,v_actor,v_actor); v_result:=jsonb_build_object('participantId',v_id,'bookingId',v_booking.id,'bookingNumber',v_number,'revision',v_revision); perform reservations_private.audit(v_context,'booking.created','booking',v_booking.id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='update_participant_booking' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_expected_revision','p_booking_type_id','p_full_name','p_phone','p_age','p_church','p_governorate','p_city_or_village','p_service_sector','p_service_sector_other','p_notes']); v_context:=reservations_private.resolve_booking_scope(p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.booking.update'); v_actor:=(v_context->>'actorUserId')::uuid;
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_booking from reservations.bookings where id=(v_context->>'bookingId')::uuid and event_id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid and organization_id is not distinct from nullif(v_context->>'organizationId','')::uuid for update; if not found then raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002'; end if; if v_booking.revision<>(p_args->>'p_expected_revision')::bigint then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if;
+  select * into v_type from reservations.booking_types where id=(p_args->>'p_booking_type_id')::uuid and event_id=v_booking.event_id and scope_partition_id=v_booking.scope_partition_id and organization_id is not distinct from v_booking.organization_id for key share; if not found then raise exception 'RESERVATIONS_BOOKING_TYPE_EVENT_MISMATCH' using errcode='22023'; end if; if v_type.id<>v_booking.booking_type_id and not v_type.active then raise exception 'RESERVATIONS_BOOKING_TYPE_INACTIVE' using errcode='22023'; end if;
+  update reservations.participants set full_name=btrim(p_args->>'p_full_name'),phone=btrim(p_args->>'p_phone'),age=(p_args->>'p_age')::integer,church=coalesce(p_args->>'p_church',''),governorate=btrim(p_args->>'p_governorate'),city_or_village=coalesce(p_args->>'p_city_or_village',''),service_sector=p_args->>'p_service_sector',service_sector_other=nullif(btrim(p_args->>'p_service_sector_other'),''),notes=nullif(p_args->>'p_notes',''),revision=revision+1,updated_at=statement_timestamp(),updated_by=v_actor where id=v_booking.participant_id and scope_partition_id=v_booking.scope_partition_id and organization_id is not distinct from v_booking.organization_id; if not found then raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002'; end if; update reservations.bookings set booking_type_id=v_type.id,booking_type_name_snapshot=v_type.name,price_snapshot=v_type.price,notes=nullif(p_args->>'p_notes',''),revision=revision+1,updated_at=statement_timestamp(),updated_by=v_actor where id=v_booking.id and event_id=v_booking.event_id and scope_partition_id=v_booking.scope_partition_id and organization_id is not distinct from v_booking.organization_id returning revision into v_revision; v_result:=jsonb_build_object('bookingId',v_booking.id,'bookingTypeId',v_type.id,'revision',v_revision); perform reservations_private.audit(v_context,'booking.updated','booking',v_booking.id,v_operation_id,to_jsonb(v_booking),v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='delete_booking' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_expected_revision']); v_context:=reservations_private.resolve_booking_scope(p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.booking.delete');
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_booking from reservations.bookings where id=(v_context->>'bookingId')::uuid and event_id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for update; if not found then raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002'; end if; if v_booking.revision<>(p_args->>'p_expected_revision')::bigint then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if;
+  if exists(select 1 from reservations.conference_person_links where booking_id=v_booking.id) then raise exception 'RESERVATIONS_CONFERENCE_PERSON_MANUAL_ACTION_REQUIRED' using errcode='55000'; end if; if exists(select 1 from reservations.payments where booking_id=v_booking.id and scope_partition_id=v_booking.scope_partition_id) or exists(select 1 from reservations.attendance_records where booking_id=v_booking.id and scope_partition_id=v_booking.scope_partition_id) then raise exception 'RESERVATIONS_BOOKING_HAS_HISTORY' using errcode='55000'; end if;
+  delete from reservations.bookings where id=v_booking.id and event_id=v_booking.event_id and scope_partition_id=v_booking.scope_partition_id and organization_id is not distinct from v_booking.organization_id; v_result:=jsonb_build_object('bookingId',v_booking.id,'deleted',true); perform reservations_private.audit(v_context,'booking.deleted','booking',v_booking.id,v_operation_id,to_jsonb(v_booking),null); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='record_payment' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_amount','p_payment_date','p_payment_method','p_payment_method_other','p_reference','p_notes']); v_context:=reservations_private.resolve_booking_scope(p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.payment.record'); v_actor:=(v_context->>'actorUserId')::uuid;
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_booking from reservations.bookings where id=(v_context->>'bookingId')::uuid and event_id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid for key share; if not found then raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002'; end if;
+  insert into reservations.payments(scope_partition_id,organization_id,booking_id,amount,payment_date,payment_method,payment_method_other,reference,notes,created_by,created_by_device_id) values(v_booking.scope_partition_id,v_booking.organization_id,v_booking.id,(p_args->>'p_amount')::numeric,(p_args->>'p_payment_date')::date,p_args->>'p_payment_method',nullif(btrim(p_args->>'p_payment_method_other'),''),nullif(p_args->>'p_reference',''),nullif(p_args->>'p_notes',''),v_actor,p_device_id) returning id into v_id; v_result:=jsonb_build_object('paymentId',v_id,'status','active'); perform reservations_private.audit(v_context,'payment.recorded','payment',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='void_payment' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_payment_id','p_void_reason']); v_context:=reservations_private.resolve_payment_scope(p_device_id,(p_args->>'p_payment_id')::uuid,'reservations.payment.void'); v_actor:=(v_context->>'actorUserId')::uuid;
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; select * into v_payment from reservations.payments where id=(v_context->>'paymentId')::uuid and booking_id=(v_context->>'bookingId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid and organization_id is not distinct from nullif(v_context->>'organizationId','')::uuid for update; if not found then raise exception 'RESERVATIONS_PAYMENT_NOT_FOUND' using errcode='P0002'; end if; if v_payment.status<>'active' or nullif(btrim(p_args->>'p_void_reason'),'') is null then raise exception 'RESERVATIONS_PAYMENT_VOID_INVALID' using errcode='22023'; end if;
+  update reservations.payments set status='voided',voided_at=statement_timestamp(),void_reason=btrim(p_args->>'p_void_reason'),voided_by=v_actor,voided_by_device_id=p_device_id where id=v_payment.id and booking_id=v_payment.booking_id and scope_partition_id=v_payment.scope_partition_id and organization_id is not distinct from v_payment.organization_id; v_result:=jsonb_build_object('paymentId',v_payment.id,'status','voided'); perform reservations_private.audit(v_context,'payment.voided','payment',v_payment.id,v_operation_id,to_jsonb(v_payment),v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='update_attendance' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_segment','p_attended','p_attendance_date','p_notes']); v_context:=reservations_private.resolve_booking_scope(p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.attendance.manage'); v_actor:=(v_context->>'actorUserId')::uuid;
+  select * into v_booking from reservations.bookings where id=(v_context->>'bookingId')::uuid and event_id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid and organization_id is not distinct from nullif(v_context->>'organizationId','')::uuid for key share; if not found then raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002'; end if; if cardinality(v_booking.attendance_segments_snapshot)=0 then raise exception 'RESERVATIONS_ATTENDANCE_NOT_APPLICABLE' using errcode='22023'; end if; if not (p_args->>'p_segment'=any(v_booking.attendance_segments_snapshot)) then raise exception 'RESERVATIONS_ATTENDANCE_SEGMENT_INELIGIBLE' using errcode='22023'; end if;
+  v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; insert into reservations.attendance_records(scope_partition_id,organization_id,booking_id,segment,attended,attendance_date,notes,created_by,updated_by) values(v_booking.scope_partition_id,v_booking.organization_id,v_booking.id,p_args->>'p_segment',(p_args->>'p_attended')::boolean,case when (p_args->>'p_attended')::boolean then coalesce((p_args->>'p_attendance_date')::date,current_date) end,nullif(p_args->>'p_notes',''),v_actor,v_actor) on conflict(booking_id,segment) do update set attended=excluded.attended,attendance_date=excluded.attendance_date,notes=excluded.notes,revision=reservations.attendance_records.revision+1,updated_at=statement_timestamp(),updated_by=v_actor returning id,revision into v_id,v_revision; v_result:=jsonb_build_object('attendanceId',v_id,'revision',v_revision,'attended',(p_args->>'p_attended')::boolean); perform reservations_private.audit(v_context,'attendance.corrected','attendance',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='update_operational_review' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_expected_revision','p_review_status']); v_context:=reservations_private.resolve_booking_scope(p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.operations.manage'); v_actor:=(v_context->>'actorUserId')::uuid;
+  select o.id,o.revision into v_id,v_revision from reservations.operational_reviews o where o.booking_id=(v_context->>'bookingId')::uuid and o.scope_partition_id=(v_context->>'scopePartitionId')::uuid and o.organization_id is not distinct from nullif(v_context->>'organizationId','')::uuid for update; if not found then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if; v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if;
+  update reservations.operational_reviews o set review_status=p_args->>'p_review_status',reviewed_at=case when p_args->>'p_review_status'='completed' then statement_timestamp() end,reviewed_by=case when p_args->>'p_review_status'='completed' then v_actor end,reviewed_by_device_id=case when p_args->>'p_review_status'='completed' then p_device_id end,revision=o.revision+1,updated_at=statement_timestamp(),updated_by=v_actor where o.id=v_id and o.booking_id=(v_context->>'bookingId')::uuid and o.scope_partition_id=(v_context->>'scopePartitionId')::uuid and o.organization_id is not distinct from nullif(v_context->>'organizationId','')::uuid and o.revision=(p_args->>'p_expected_revision')::bigint returning o.id,o.revision into v_id,v_revision; if not found then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if; v_result:=jsonb_build_object('operationalReviewId',v_id,'revision',v_revision,'status',p_args->>'p_review_status'); perform reservations_private.audit(v_context,'operational_review.updated','operational_review',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ if p_operation='reorder_event_periods' then
+  perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_period_ids']); v_context:=reservations_private.resolve_event_scope(p_device_id,(p_args->>'p_event_id')::uuid,'reservations.event.manage'); v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if; if jsonb_typeof(p_args->'p_period_ids')<>'array' or (select count(*) from jsonb_array_elements_text(p_args->'p_period_ids'))<>(select count(*) from reservations.event_periods where event_id=(v_context->>'eventId')::uuid and scope_partition_id=(v_context->>'scopePartitionId')::uuid) or (select count(distinct value) from jsonb_array_elements_text(p_args->'p_period_ids') s(value))<>(select count(*) from jsonb_array_elements_text(p_args->'p_period_ids')) or exists(select 1 from jsonb_array_elements_text(p_args->'p_period_ids') x left join reservations.event_periods p on p.id=x::uuid and p.event_id=(v_context->>'eventId')::uuid and p.scope_partition_id=(v_context->>'scopePartitionId')::uuid where p.id is null) then raise exception 'RESERVATIONS_PERIOD_ORDER_INVALID' using errcode='22023'; end if; update reservations.event_periods p set display_order=x.ordinality-1,revision=p.revision+1,updated_at=statement_timestamp(),updated_by=(v_context->>'actorUserId')::uuid from jsonb_array_elements_text(p_args->'p_period_ids') with ordinality x(id,ordinality) where p.id=x.id::uuid and p.event_id=(v_context->>'eventId')::uuid and p.scope_partition_id=(v_context->>'scopePartitionId')::uuid; v_result:=jsonb_build_object('eventId',(v_context->>'eventId')::uuid,'reordered',true); perform reservations_private.audit(v_context,'event_periods.reordered','event',(v_context->>'eventId')::uuid,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
+ end if;
+ raise exception 'RESERVATIONS_SCOPED_OPERATION_NOT_IMPLEMENTED' using errcode='0A000';
 end $$;
+
 
 revoke all on function
   reservations_private.mutate_scoped(uuid,text,jsonb)
