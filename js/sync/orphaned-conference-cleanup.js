@@ -94,9 +94,21 @@
     if(namespace().environment==='development'){
       return outcome(false,'development_environment_blocked');
     }
-    if(!id||!conference(d.appData,id))return outcome(false,'local_conference_missing');
+    if(!id)return outcome(false,'local_conference_missing');
+    var localConference=conference(d.appData,id);
     var link=d.links&&typeof d.links.get==='function'
       ?d.links.get(id,options&&options.linkOptions):null;
+    var lifecycleRecord=lifecycle(d.appData,id);
+    if(!localConference){
+      if(!link&&lifecycleRecord){
+        return outcome(true,'lifecycle_residue_confirmed',{
+          localConferenceId:id,
+          remoteConferenceId:null,
+          reason:'local_conference_missing_lifecycle_remains'
+        });
+      }
+      return outcome(false,'local_conference_missing');
+    }
     var proof=confirmedMissingCloud(id,link,d);
     if(proof){
       return outcome(true,proof.mode==='unpublished'
@@ -171,12 +183,6 @@
     }
     return next;
   }
-  function requestPromise(request){
-    return new Promise(function(resolve,reject){
-      request.onsuccess=function(){resolve(request.result);};
-      request.onerror=function(){reject(request.error||new Error('INDEXEDDB_REQUEST_FAILED'));};
-    });
-  }
   function deleteMatching(store,ids){
     return new Promise(function(resolve,reject){
       var count=0;
@@ -230,7 +236,7 @@
       return Promise.reject(new Error('INDEXEDDB_UNAVAILABLE'));
     }
     var names=CLEANUP_STORES.slice();
-    var ids=[localId,remoteId];
+    var ids=[localId,remoteId].filter(Boolean);
     return d.db.runTransaction(names,'readwrite',function(stores){
       var tasks=[];
       names.forEach(function(name){
@@ -272,7 +278,7 @@
   function cleanLocalStorage(d,localId,remoteId){
     var target=d.storage;
     if(!target)throw new Error('LOCAL_STORAGE_UNAVAILABLE');
-    var ids=[localId,remoteId];
+    var ids=[localId,remoteId].filter(Boolean);
     var changed=[];
     SCOPED_STORAGE_KEYS.forEach(function(baseName){
       var name=key(baseName);
@@ -330,8 +336,9 @@
     var initial=dependencies(options);
     var existingLink=initial.links&&typeof initial.links.get==='function'
       ?initial.links.get(requestedId,options.linkOptions):null;
+    var lifecycleResidue=lifecycle(initial.appData,requestedId);
     if(namespace().environment!=='development'&&requestedId&&
-      !conference(initial.appData,requestedId)&&!existingLink){
+      !conference(initial.appData,requestedId)&&!existingLink&&!lifecycleResidue){
       return Promise.resolve(outcome(true,'already_clean',{
         localConferenceId:requestedId
       }));
@@ -352,6 +359,7 @@
       if(d.links&&typeof d.links.get==='function'&&d.links.get(localId)){
         throw new Error('CONFERENCE_LINK_STILL_PRESENT');
       }
+      if(lifecycle(next,localId))throw new Error('CONFERENCE_LIFECYCLE_STILL_PRESENT');
       if(!verifyProtected(before,d))throw new Error('PROTECTED_STATE_CHANGED');
       return outcome(true,'local_orphan_removed',{
         localConferenceId:localId,
