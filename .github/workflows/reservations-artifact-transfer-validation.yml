@@ -1,0 +1,72 @@
+name: Reservations Platform Accessibility Validation
+
+on:
+  push:
+    branches: [work/reservations-route-accessibility]
+    paths:
+      - .github/workflows/reservations-artifact-transfer-validation.yml
+      - js/reservations-route-accessibility.js
+      - tests/platform-reservations-route-accessibility.test.js
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/reservations-route-accessibility
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - name: Start local PostgreSQL required by platform tests
+        run: |
+          sudo systemctl start postgresql
+          for i in {1..30}; do
+            if sudo -u postgres pg_isready >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          sudo -u postgres pg_isready
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'postgres';"
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE runner LOGIN CREATEDB CREATEROLE;" || true
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE runner CREATEDB CREATEROLE;"
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "GRANT postgres TO runner;" || true
+      - name: Focused route accessibility regression
+        run: node --test tests/platform-reservations-route-accessibility.test.js
+      - name: Prove revoked-device rehearsal failure is inherited from develop
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_file="tests/platform-revoked-device-native-key-rerequest-postgres.test.js"
+          set +e
+          node --test "$test_file" > /tmp/head-baseline.log 2>&1
+          head_rc=$?
+          git worktree add --detach /tmp/develop-baseline origin/develop
+          (cd /tmp/develop-baseline && node --test "$test_file") > /tmp/develop-baseline.log 2>&1
+          develop_rc=$?
+          set -e
+          cat /tmp/head-baseline.log
+          cat /tmp/develop-baseline.log
+          test "$head_rc" -ne 0
+          test "$develop_rc" -ne 0
+          grep -F "device_authorization_rerequest_nonces" /tmp/head-baseline.log
+          grep -F "device_authorization_rerequest_nonces" /tmp/develop-baseline.log
+      - name: Platform suite excluding verified develop baseline defect
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline="tests/platform-revoked-device-native-key-rerequest-postgres.test.js"
+          tests=()
+          for test_file in tests/platform-*.test.js; do
+            if [[ "$test_file" != "$baseline" ]]; then tests+=("$test_file"); fi
+          done
+          node --test "${tests[@]}"
+      - name: Diff integrity
+        run: git diff --check origin/develop...HEAD
