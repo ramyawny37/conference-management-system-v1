@@ -13,6 +13,7 @@ const dropdb=path.join(pgBin,'dropdb');
 const database=`reservations_b01_${process.pid}_${Date.now()}`;
 const migration=path.resolve(__dirname,'../supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql');
 const bookingTypeEditMigration=path.resolve(__dirname,'../supabase/migrations/20260924223000_reservations_participant_booking_type_edit.sql');
+const bookingTypeCanonicalizationMigration=path.resolve(__dirname,'../supabase/migrations/20260925120000_reservations_participant_booking_type_edit_canonicalization.sql');
 const device='11111111-1111-1111-1111-111111111111';
 const platformUser='22222222-2222-2222-2222-222222222222';
 const platformSession='aaaaaaaa-1111-2222-3333-444444444444';
@@ -91,6 +92,35 @@ begin
 end $$;
 `;
 
+const latestDispatcherFixture=`
+alter function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  rename to execute_device_operation_pre_generic_permission_resource_administration;
+create function public.list_module_permission_resources_for_administration(uuid,text,text)
+returns jsonb language sql stable security definer set search_path='pg_catalog','public'
+as 'select jsonb_build_object(''moduleKey'',$2,''resourceType'',$3)';
+create function platform.execute_device_operation(
+  p_user_id uuid,p_session_id uuid,p_token_hash bytea,
+  p_module text,p_operation text,p_args jsonb
+)
+returns jsonb language plpgsql security definer
+set search_path='pg_catalog','public','platform','platform_private'
+as $$
+begin
+  if p_module<>'conference' or p_operation<>'list_module_permission_resources_for_administration' then
+    return platform.execute_device_operation_pre_generic_permission_resource_administration(
+      p_user_id,p_session_id,p_token_hash,p_module,p_operation,p_args
+    );
+  end if;
+  return public.list_module_permission_resources_for_administration(
+    '${device}',p_args->>'p_module_key',p_args->>'p_resource_type'
+  );
+end $$;
+revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  from public,anon,authenticated,service_role;
+grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  to service_role;
+`;
+
 function run(args,input){return execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-Atq','-d',database,...args],{encoding:'utf8',input}).trim();}
 function query(sql){return run(['-c',sql]);}
 function invoke(operationId,extra={}){
@@ -116,7 +146,15 @@ test('isolated PostgreSQL executes standalone create idempotently and atomically
  try {
   run([],fixture);
   execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',migration],{encoding:'utf8'});
+  run([],latestDispatcherFixture);
   execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',bookingTypeEditMigration],{encoding:'utf8'});
+  execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',bookingTypeCanonicalizationMigration],{encoding:'utf8'});
+
+  assert.equal(query("select to_regprocedure('platform.execute_device_operation_before_participant_booking_type_edit(uuid,uuid,bytea,text,text,jsonb)') is null and to_regprocedure('reservations_private.mutate_scoped_before_participant_booking_type_edit(uuid,text,jsonb)') is null"),'t');
+  assert.equal(query("select prosecdef and proconfig=array['search_path=pg_catalog, public, platform, platform_private'] from pg_proc where oid='platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)'::regprocedure"),'t');
+  assert.equal(query("select has_function_privilege('service_role','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute') and not has_function_privilege('anon','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute') and not has_function_privilege('authenticated','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute')"),'t');
+  assert.equal(query("select prosecdef and proconfig is not null and proconfig[1] like 'search_path=%' from pg_proc where oid='reservations_private.mutate_scoped(uuid,text,jsonb)'::regprocedure"),'t');
+  assert.deepEqual(JSON.parse(query(`with claims as materialized(select set_config('request.jwt.claims','{"sub":"${platformUser}","role":"service_role"}',true)) select platform.execute_device_operation('${platformUser}','${platformSession}',extensions.digest('${platformToken}'::bytea,'sha256'),'conference','list_module_permission_resources_for_administration','{"p_module_key":"reservations","p_resource_type":"event"}'::jsonb) from claims`)),{moduleKey:'reservations',resourceType:'event'});
 
   assert.equal(query("select is_nullable from information_schema.columns where table_schema='reservations' and table_name='events' and column_name='conference_id'"),'YES');
   assert.throws(()=>query("insert into reservations.events(scope_type,scope_partition_id,organization_id,conference_id,name,start_date,end_date,created_by,updated_by) values('conference','10101010-1111-2222-3333-444444444444','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',null,'Invalid Conference Scope','2026-10-10','2026-10-12','22222222-2222-2222-2222-222222222222','22222222-2222-2222-2222-222222222222')"),/RESERVATIONS_CONFERENCE_REQUIRED/);
