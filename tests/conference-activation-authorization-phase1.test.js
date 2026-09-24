@@ -27,6 +27,19 @@ var linkStore={get:function(id){return links[id]||null;}};
   var deniedPersistence=gate.preparePersistedAppData({currentConferenceId:null,conferences:data.conferences});
   assert.strictEqual(deniedPersistence.currentConferenceId,'cloud');
   assert.strictEqual(deniedPersistence.conferences[0].name,'ميمي ورامي');
+  var stalePersistence=gate.preparePersistedAppData({
+    currentConferenceId:'missing',conferences:data.conferences
+  });
+  assert.strictEqual(stalePersistence.currentConferenceId,null,
+    'a missing current conference is never persisted');
+  gate.capturePersistedCandidate('deleted','indexeddb');
+  var deletedPersistence=gate.preparePersistedAppData({
+    currentConferenceId:null,conferences:data.conferences
+  });
+  assert.strictEqual(deletedPersistence.currentConferenceId,null,
+    'a deleted persisted candidate is never restored');
+  assert.strictEqual(gate.forgetConference('deleted'),true);
+  assert.strictEqual(gate.getPersistedCandidate(),'');
 
   gate.capturePersistedCandidate('legacy','localStorage');
   var legacy=await gate.reconcileStartup({appData:data,persistedCandidate:'legacy',discovered:[],links:linkStore});

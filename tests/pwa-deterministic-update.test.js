@@ -21,14 +21,14 @@ const authBoundEdgeSessionRevision='auth-bound-edge-session-v1';
 const canonicalRevokedRerequestRevision='revoked-rerequest-error-code-v1';
 const moduleRoutingRevision='warehouse-original-items-secure-restoration-v1';
 const priorAuthorizationCacheRevision='runtime-authorization-phase1-v1';
-const productionCacheRevision='production-3-6-0-conference-open-lock-delivery-v1';
+const productionCacheRevision='production-3-6-0-conference-state-invariants-v1';
 const productionShellRevision='production-3-6-0-release-v1';
 const accountIdentityRevision='account-session-identity-v1';
 const firstLoginCoordinatorRevision='platform-first-login-coordinator-v1';
 const stateAssetRevision='managed-platform-startup-gate-v1';
 const persistenceArbitrationRevision='develop-cross-store-arbitration-v1';
 const permissionRuntimeRevision='development-3-4-0-platform-foundation-v1';
-const platformShellScriptRevision='platform-dashboard-v2-v5';
+const platformShellScriptRevision='conference-state-invariants-v1';
 const testTemplateCleanupRevision='test-house-template-cleanup-v1';
 const templateDiagnosticRevision='template-diagnostic-export-v1';
 const partialTemplateCleanupRevision='partial-template-state-cleanup-v1';
@@ -133,11 +133,13 @@ assert(worker.includes("'./"+cleanupAsset+"'"));
 });
 const orphanCleanupRevision='lifecycle-residue-cleanup-v1';
 const lockRevision='session-derived-device-lock-v1';
-const discoveredOpenRevision='lifecycle-residue-open-recovery-v1';
+const discoveredOpenRevision='canonical-repository-open-v1';
+const conferenceStateRevision='conference-state-invariants-v1';
 [
   ['js/sync/orphaned-conference-cleanup.js',orphanCleanupRevision],
   ['js/sync/conference-locks.js',lockRevision],
-  ['js/sync/discovered-conference-open-service.js',discoveredOpenRevision]
+  ['js/sync/discovered-conference-open-service.js',discoveredOpenRevision],
+  ['js/storage/conference-repository.js',conferenceStateRevision]
 ].forEach(([asset,revision])=>{
   const versioned=asset+'?rev='+revision;
   assert(index.includes(versioned),'index missing '+versioned);
@@ -146,7 +148,8 @@ const discoveredOpenRevision='lifecycle-residue-open-recovery-v1';
 [
   'orphaned-conference-cleanup.js?rev=orphaned-local-cleanup-v2',
   'conference-locks.js?rev=conference-lock-release-diagnostics-v1',
-  'discovered-conference-open-service.js?rev=repository-rejection-diagnostics-v1'
+  'discovered-conference-open-service.js?rev=repository-rejection-diagnostics-v1',
+  'discovered-conference-open-service.js?rev=lifecycle-residue-open-recovery-v1'
 ].forEach(asset=>{
   assert(!index.includes(asset),'index retains superseded '+asset);
   assert(!worker.includes(asset),'app shell retains superseded '+asset);
@@ -257,7 +260,6 @@ assert(index.includes(enrollmentAsset),'index missing '+enrollmentAsset);
 assert(worker.includes("'./"+enrollmentAsset+"'"),'app shell missing '+enrollmentAsset);
 [
   'js/sync/conference-permission-resolver.js',
-  'core.js',
   'js/conference/accounts.js'
 ].forEach(asset=>{
   const versioned=asset+'?rev='+permissionRuntimeRevision;
@@ -265,10 +267,21 @@ assert(worker.includes("'./"+enrollmentAsset+"'"),'app shell missing '+enrollmen
   assert(worker.includes("'./"+versioned+"'"),'app shell missing Phase 2B runtime asset '+versioned);
 });
 {
-  const activationAsset='js/sync/conference-activation-authorization.js?rev=runtime-authorization-phase1-v1';
+  const coreAsset='core.js?rev='+conferenceStateRevision;
+  assert(index.includes(coreAsset),'index missing canonical conference-state core asset');
+  assert(worker.includes("'./"+coreAsset+"'"),'app shell missing canonical conference-state core asset');
+}
+{
+  const activationAsset='js/sync/conference-activation-authorization.js?rev=conference-state-invariants-v1';
   assert(index.includes(activationAsset),'index missing Phase 1 activation authorization asset');
   assert(worker.includes("'./"+activationAsset+"'"),'app shell missing Phase 1 activation authorization asset');
 }
+assert.strictEqual((index.match(
+  /js\/sync\/orphaned-conference-cleanup\.js\?rev=/g
+)||[]).length,1,'production index must load one orphan cleanup implementation');
+assert.strictEqual((worker.match(
+  /\.\/js\/sync\/orphaned-conference-cleanup\.js\?rev=/g
+)||[]).length,1,'service worker must precache one orphan cleanup implementation');
 const xlsxAsset='libs/xlsx.full.min.js';
 assert(fs.existsSync(path.join(root,xlsxAsset)),'local XLSX runtime asset missing');
 assert(index.includes('<script src="'+xlsxAsset+'"></script>'),'index missing local XLSX runtime');

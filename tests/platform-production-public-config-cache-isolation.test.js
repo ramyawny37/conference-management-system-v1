@@ -20,7 +20,7 @@ test('Production public config is isolated from stale Development caches',()=>{
     revisions[1],'reservations-reference-locked-reconstruction-v5'
   );
   assert.strictEqual(revisions[2],
-    'production-3-6-0-conference-open-lock-delivery-v1');
+    'production-3-6-0-conference-state-invariants-v1');
 
   assert.match(publicConfig,/mpezfbvcdfxpgflehuot/);
   assert.match(publicConfig,/gppwltrifgfxrkzvvxoe/);

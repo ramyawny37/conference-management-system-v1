@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-6-0-conference-open-lock-delivery-v1';
+  : 'production-3-6-0-conference-state-invariants-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -24,7 +24,7 @@ const CORE_ASSETS = [
   './js/storage/local-persistence-arbitration.js?rev=develop-cross-store-arbitration-v1',
   './js/storage/indexeddb.js?rev=develop-cross-store-arbitration-v1',
   './js/storage/storage-repository.js?rev=develop-cross-store-arbitration-v1',
-  './js/storage/conference-repository.js',
+  './js/storage/conference-repository.js?rev=conference-state-invariants-v1',
   './js/storage/conference-publishing-engine.js?rev=organization-membership-operation-key-v1',
   './js/storage/conference-publish-recovery.js?rev=organization-membership-operation-key-v1',
   './js/storage/conference-publish-manager.js',
@@ -89,7 +89,7 @@ const CORE_ASSETS = [
   './js/sync/conference-link-store.js',
   './js/sync/conference-permission-contract.js?rev=permission-contract-phase2a-v1',
   './js/sync/conference-permission-resolver.js?rev=development-3-4-0-platform-foundation-v1',
-  './js/sync/conference-activation-authorization.js?rev=runtime-authorization-phase1-v1',
+  './js/sync/conference-activation-authorization.js?rev=conference-state-invariants-v1',
   './js/sync/conference-membership-attempt-store.js',
   './js/sync/conference-members-service.js?rev=legacy-rpc-hardening-v1',
   './js/sync/conference-members-ui.js?rev=diagnostics-privacy-hardening-v1',
@@ -122,14 +122,14 @@ const CORE_ASSETS = [
   './js/sync/conference-operational-ui.js',
   './js/sync/automatic-queue-runner.js?rev=template-sync-isolation-v1',
   './js/sync/automatic-conference-linking.js?rev=realtime-refresh-completion-v1',
-  './js/sync/discovered-conference-open-service.js?rev=lifecycle-residue-open-recovery-v1',
+  './js/sync/discovered-conference-open-service.js?rev=canonical-repository-open-v1',
   './js/sync/member-runtime-diagnostics.js?rev=repository-rejection-diagnostics-v1',
   './js/sync/automatic-sync-orchestrator.js?rev=realtime-reconnect-catchup-v1',
   './js/sync/wrong-remote-binding-repair-store.js?rev=wrong-remote-binding-repair-v1',
   './js/sync/wrong-remote-binding-repair-service.js?rev=wrong-remote-binding-repair-v1',
   './js/sync/wrong-remote-binding-repair-ui.js?rev=diagnostics-privacy-hardening-v1',
   './utils.js',
-  './core.js?rev=development-3-4-0-platform-foundation-v1',
+  './core.js?rev=conference-state-invariants-v1',
   './people.js?rev=canonical-conference-schema-v1',
   './houses.js?rev=template-floor-conference-sync-v1',
   './transport.js',
@@ -145,7 +145,7 @@ const CORE_ASSETS = [
   './js/warehouse/party-management.js?rev=warehouse-party-management-v1',
   './js/warehouse/remaining-operations.js?rev=adjustment-conversion-ux-v1',
   './js/warehouse/workspace.js?rev=item-unit-add-ui-v1',
-  './script.js?rev=platform-dashboard-v2-v5',
+  './script.js?rev=conference-state-invariants-v1',
   './version.js',
   './pwa.js?rev=pwa-update-state-consistency-v1',
   './libs/html2canvas.min.js',

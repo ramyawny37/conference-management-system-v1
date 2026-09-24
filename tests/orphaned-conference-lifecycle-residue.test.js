@@ -82,5 +82,19 @@ function emptyStore(){
   assert.strictEqual(second.status,'already_clean');
   assert.strictEqual(stopCount,1);
 
+  const replacementId='4c0d6322-7b4d-4f0b-a831-c51e01fa4d70';
+  sandbox.appData={currentConferenceId:null,conferences:[{
+    id:OTHER,name:'Preserved after hydration replacement'
+  }],conferenceLifecycle:{records:{
+    [OTHER]:{localLifecycle:'active',cloudLifecycle:'cloud_linked'},
+    [replacementId]:{localLifecycle:'active',cloudLifecycle:'unpublished'}
+  }}};
+  const replacementInspection=sandbox.OrphanedConferenceCleanup.inspect(
+    replacementId
+  );
+  assert.strictEqual(replacementInspection.status,
+    'lifecycle_residue_confirmed',
+    'cleanup resolves the current global appData after hydration replacement');
+
   console.log('orphaned conference lifecycle residue cleanup test passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

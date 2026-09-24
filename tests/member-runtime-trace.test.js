@@ -5,14 +5,14 @@ const vm=require('vm');
 
 const root=path.join(__dirname,'..');
 const marker='canonical-conference-schema-v1';
-const coreAssetMarker='development-3-4-0-platform-foundation-v1';
+const coreAssetMarker='conference-state-invariants-v1';
 const cacheMarker='production-integrated-3-3-0-main-6d0c1e1-develop-80653ca-v1';
 const memberDiagnosticsAssetMarker='repository-rejection-diagnostics-v1';
-const shellMarker='production-3-6-0-conference-open-lock-delivery-v1';
+const shellMarker='production-3-6-0-conference-state-invariants-v1';
 const developmentCacheMarker='reservations-reference-locked-reconstruction-v5';
 const houseMarker='template-floor-conference-sync-v1';
 const accountIdentityMarker='platform-first-login-coordinator-v1';
-const scriptMarker='platform-dashboard-v2-v5';
+const scriptMarker='conference-state-invariants-v1';
 const realtimeMarker='template-sync-isolation-v1';
 const source=fs.readFileSync(path.join(
   root,'js/sync/member-runtime-diagnostics.js'),'utf8');

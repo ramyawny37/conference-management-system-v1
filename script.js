@@ -210,8 +210,12 @@ function restoreArchive(id){
   restored.name = restored.name + ' (مستعاد)';
   restored.createdAt = new Date().toISOString();
   restored.updatedAt = restored.createdAt;
-  appData.conferences.push(restored);
   normalizeConference(restored);
+  if(!window.ConferenceRepository||
+    typeof window.ConferenceRepository.addLocalConference!=='function')return false;
+  var added=window.ConferenceRepository.addLocalConference(appData,restored);
+  if(!added||added.ok!==true)return false;
+  appData=added.data;
   if(window.ConferenceActivationAuthorization){
     window.ConferenceActivationAuthorization.capturePersistedCandidate(
       restored.id,'archive');
@@ -328,17 +332,26 @@ function deleteCurrentConference(){
   var displayName = current.name || ((current.conf || {}).name) || 'المؤتمر';
   if(!confirm('هل أنت متأكد من حذف المؤتمر "'+displayName+'"؟ سيتم حذف جميع بياناته المرتبطة نهائيًا.')) return;
 
-  var conferences = appData.conferences || [];
-  var removedIndex = -1;
-  for (var i = 0; i < conferences.length; i++) {
-    if (conferences[i].id === current.id) {
-      removedIndex = i;
-      break;
-    }
+  var repository=window.ConferenceRepository;
+  if(!repository||typeof repository.removeLocalConference!=='function')return false;
+  var previousAppData=appData;
+  var removed=repository.removeLocalConference(appData,current.id);
+  if(!removed||removed.ok!==true)return false;
+  var linkStore=window.ConferenceLinkStore;
+  var previousLink=linkStore&&typeof linkStore.get==='function'
+    ?linkStore.get(current.id):null;
+  if(previousLink&&(!linkStore||typeof linkStore.remove!=='function'||
+    !linkStore.remove(current.id).ok))return false;
+  if(window.ConferenceEditLockManager&&
+    typeof window.ConferenceEditLockManager.endAccommodationEdit==='function'){
+    Promise.resolve(window.ConferenceEditLockManager.endAccommodationEdit())
+      .catch(function(){});
   }
-  if (removedIndex === -1) return;
-
-  conferences.splice(removedIndex, 1);
+  var activation=window.ConferenceActivationAuthorization;
+  if(activation&&typeof activation.forgetConference==='function'){
+    activation.forgetConference(current.id);
+  }
+  appData=removed.data;
 
   if (appData.trash && Array.isArray(appData.trash.rooms)) {
     appData.trash.rooms = appData.trash.rooms.filter(function(item) {
@@ -347,8 +360,16 @@ function deleteCurrentConference(){
     });
   }
 
-  appData.currentConferenceId = null;
-  if(!save())return false;
+  if(!save()){
+    appData=previousAppData;
+    if(previousLink&&linkStore&&typeof linkStore.save==='function'){
+      linkStore.save(previousLink);
+    }
+    if(activation&&typeof activation.capturePersistedCandidate==='function'){
+      activation.capturePersistedCandidate(current.id,'delete_rollback');
+    }
+    return false;
+  }
   showSelectConferenceModal();
   showToast('🗑️ تم حذف المؤتمر');
   return true;
@@ -1101,7 +1122,7 @@ function selectImportedConference(candidates){
 function importSingleConferenceData(importedData){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   var importedConference=createConferenceFromObject(importedData);
-  var previousConferences=deepClone(appData.conferences||[]);
+  var previousAppData=deepClone(appData);
   var previousCurrentConferenceId=appData.currentConferenceId;
   var existingIndex=-1;
   (appData.conferences||[]).some(function(conference,index){
@@ -1119,18 +1140,36 @@ function importSingleConferenceData(importedData){
     );
     if(duplicateChoice===null||duplicateChoice==='3')return false;
     if(duplicateChoice==='1'){
-      appData.conferences[existingIndex]=importedConference;
+      var replaced=window.ConferenceRepository&&
+        typeof window.ConferenceRepository.replaceLocalConference==='function'
+          ?window.ConferenceRepository.replaceLocalConference(
+            appData,importedConference
+          ):null;
+      if(!replaced||replaced.ok!==true)return false;
+      appData=replaced.data;
     }else if(duplicateChoice==='2'){
       importedConference.id=uid();
       importedConference.name=(importedConference.name||(importedConference.conf&&importedConference.conf.name)||'المؤتمر')+' - نسخة مستوردة';
       if(importedConference.conf)importedConference.conf.name=importedConference.name;
-      appData.conferences.push(importedConference);
+      var duplicateAdded=window.ConferenceRepository&&
+        typeof window.ConferenceRepository.addLocalConference==='function'
+          ?window.ConferenceRepository.addLocalConference(
+            appData,importedConference
+          ):null;
+      if(!duplicateAdded||duplicateAdded.ok!==true)return false;
+      appData=duplicateAdded.data;
     }else{
       alert('اختيار غير صالح. لم يتم استيراد المؤتمر.');
       return false;
     }
   }else{
-    appData.conferences.push(importedConference);
+    var imported=window.ConferenceRepository&&
+      typeof window.ConferenceRepository.addLocalConference==='function'
+        ?window.ConferenceRepository.addLocalConference(
+          appData,importedConference
+        ):null;
+    if(!imported||imported.ok!==true)return false;
+    appData=imported.data;
   }
 
   if(window.ConferenceActivationAuthorization){
@@ -1141,8 +1180,7 @@ function importSingleConferenceData(importedData){
   }
   appData.currentConferenceId=null;
   if(!save()){
-    appData.conferences=previousConferences;
-    appData.currentConferenceId=previousCurrentConferenceId;
+    appData=previousAppData;
     if(window.ConferenceActivationAuthorization){
       window.ConferenceActivationAuthorization.capturePersistedCandidate(
         previousCurrentConferenceId,'import_rollback');
