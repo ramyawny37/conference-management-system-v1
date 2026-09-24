@@ -410,6 +410,70 @@
       candidate,[]);
   }
 
+  function removeLocalConference(appData,localConferenceId){
+    if(!plainObject(appData)||!Array.isArray(appData.conferences)||
+      !validId(localConferenceId)){
+      return outcome(false,'invalid_input',null,[
+        issue('LOCAL_CONFERENCE_INVALID','conference')
+      ]);
+    }
+    var idsResult=conferenceIds(appData);
+    if(!idsResult.ok)return idsResult;
+    if(idsResult.data.indexOf(localConferenceId)<0){
+      return outcome(false,'conference_not_found',null,[]);
+    }
+    var currentValidation=validateRepositoryState(
+      appData.conferenceLifecycle,idsResult.data
+    );
+    if(!currentValidation.ok)return currentValidation;
+    var candidate;
+    try{candidate=clone(appData);}
+    catch(error){
+      return outcome(false,'clone_failed',null,[
+        issue('APP_DATA_CLONE_FAILED','appData')
+      ]);
+    }
+    candidate.conferences=candidate.conferences.filter(function(item){
+      return !item||item.id!==localConferenceId;
+    });
+    delete candidate.conferenceLifecycle.records[localConferenceId];
+    if(candidate.currentConferenceId===localConferenceId){
+      candidate.currentConferenceId=null;
+    }
+    var nextValidation=validateRepositoryState(
+      candidate.conferenceLifecycle,
+      candidate.conferences.map(function(item){return item.id;})
+    );
+    if(!nextValidation.ok)return nextValidation;
+    return outcome(true,'local_conference_removed',candidate,[]);
+  }
+
+  function replaceLocalConference(appData,conference){
+    if(!plainObject(appData)||!Array.isArray(appData.conferences)||
+      !plainObject(conference)||!validId(conference.id)){
+      return outcome(false,'invalid_input',null,[
+        issue('LOCAL_CONFERENCE_INVALID','conference')
+      ]);
+    }
+    var idsResult=conferenceIds(appData);
+    if(!idsResult.ok)return idsResult;
+    var index=idsResult.data.indexOf(conference.id);
+    if(index<0)return outcome(false,'conference_not_found',null,[]);
+    var currentValidation=validateRepositoryState(
+      appData.conferenceLifecycle,idsResult.data
+    );
+    if(!currentValidation.ok)return currentValidation;
+    var candidate;
+    try{candidate=clone(appData);}
+    catch(error){
+      return outcome(false,'clone_failed',null,[
+        issue('APP_DATA_CLONE_FAILED','appData')
+      ]);
+    }
+    candidate.conferences[index]=clone(conference);
+    return outcome(true,'local_conference_replaced',candidate,[]);
+  }
+
   function getContract(){
     return {
       schemaVersion:SCHEMA_VERSION,
@@ -429,6 +493,8 @@
     prepareAppData:prepareAppData,
     getLifecycle:getLifecycle,
     recordLocalChange:recordLocalChange,
-    addLocalConference:addLocalConference
+    addLocalConference:addLocalConference,
+    removeLocalConference:removeLocalConference,
+    replaceLocalConference:replaceLocalConference
   });
 })(window);

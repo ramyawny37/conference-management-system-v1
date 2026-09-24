@@ -1689,8 +1689,15 @@ function applyTemplate(id){
   newConf.createdAt = new Date().toISOString();
   newConf.updatedAt = newConf.createdAt;
   delete newConf.peopleDb;
-  appData.conferences.push(newConf);
   normalizeConference(newConf);
+  if(!window.ConferenceRepository||
+    typeof window.ConferenceRepository.addLocalConference!=='function')return false;
+  var added=window.ConferenceRepository.addLocalConference(appData,newConf);
+  if(!added||added.ok!==true)return false;
+  appData=added.data;
+  newConf=appData.conferences.filter(function(item){
+    return item&&item.id===newConf.id;
+  })[0];
   appData.currentConferenceId = newConf.id;
   setCurrentConference(newConf);
   if(!save()) return false;

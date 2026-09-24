@@ -161,7 +161,6 @@
       queue:options.queue||global.OfflineSyncQueue,
       storage:options.storage||global.StorageRepository,
       repository:options.repository||global.ConferenceRepository,
-      orphanCleanup:options.orphanCleanup||global.OrphanedConferenceCleanup,
       publishing:options.publishing||global.ConferencePublishingEngine,
       recovery:options.recovery||global.ConferencePublishRecovery,
       remoteUpdates:options.remoteUpdateStore||global.RemoteUpdateStore,
@@ -180,66 +179,6 @@
   }
   function backupOptions(options){
     return {storage:options&&options.localStorage};
-  }
-  function repositoryConferenceIds(data){
-    return (data&&Array.isArray(data.conferences)?data.conferences:[])
-      .map(function(item){return String(item&&item.id||'');})
-      .filter(function(id){return !!id;});
-  }
-  function lifecycleResidueIds(validation){
-    var issues=validation&&Array.isArray(validation.issues)
-      ?validation.issues:[];
-    if(!issues.length||issues.some(function(item){
-      return String(item&&item.code||'')!=='ORPHAN_LIFECYCLE_RECORD';
-    }))return [];
-    var ids=[];
-    issues.forEach(function(item){
-      var match=String(item&&item.path||'').match(
-        /^conferenceLifecycle\.records\.([^.]+)$/
-      );
-      if(match&&ids.indexOf(match[1])<0)ids.push(match[1]);
-    });
-    return ids.length===issues.length?ids:[];
-  }
-  function recoverLifecycleResidue(d,data,ctx){
-    if(ctx.repositoryRecoveryAttempted||!d.repository||
-      typeof d.repository.validateRepositoryState!=='function'||
-      !d.orphanCleanup||typeof d.orphanCleanup.inspect!=='function'||
-      typeof d.orphanCleanup.cleanup!=='function')return Promise.resolve(null);
-    var validation=d.repository.validateRepositoryState(
-      data&&data.conferenceLifecycle,
-      repositoryConferenceIds(data)
-    );
-    if(!validation||validation.ok)return Promise.resolve(null);
-    var ids=lifecycleResidueIds(validation);
-    if(!ids.length)return Promise.resolve(null);
-    var cleanupOptions={appData:data};
-    var allConfirmed=ids.every(function(id){
-      var inspected=d.orphanCleanup.inspect(id,cleanupOptions);
-      return inspected&&inspected.ok===true&&
-        inspected.status==='lifecycle_residue_confirmed';
-    });
-    if(!allConfirmed)return Promise.resolve(null);
-    ctx.repositoryRecoveryAttempted=true;
-    return ids.reduce(function(chain,id){
-      return chain.then(function(){
-        return d.orphanCleanup.cleanup(id,cleanupOptions);
-      }).then(function(cleaned){
-        if(!cleaned||cleaned.ok!==true||
-          ['local_orphan_removed','already_clean'].indexOf(cleaned.status)<0){
-          throw new Error('LIFECYCLE_RESIDUE_CLEANUP_FAILED');
-        }
-      });
-    },Promise.resolve()).then(function(){
-      d.applyData(cleanupOptions.appData);
-      diagnostic('local_repository','lifecycle_residue_cleaned',{
-        count:ids.length
-      });
-      return result(true,'lifecycle_residue_cleaned',{count:ids.length});
-    }).catch(function(){
-      return result(false,'local_repository_rejected',
-        repositoryRejectionDetails(d.repository,validation));
-    });
   }
   function restoreIsolationPending(d,options){
     if(!d.backup)return false;
@@ -1195,13 +1134,6 @@
       if(restoreIsolationPending(d,ctx.options)){
         return result(false,'restore_isolated');
       }
-      return recoverLifecycleResidue(d,stored,ctx).then(function(recovered){
-        if(recovered&&!recovered.ok)return recovered;
-        if(recovered){
-          return runTransaction(ctx).then(function(finalResult){
-            return {repositoryRecoveryFinal:true,result:finalResult};
-          });
-        }
       var previous=copy(stored||d.getData());
       var recovery=exactRecovery(previous,remoteId,account);
       if(recovery&&recovery.foreign)return result(false,'foreign_recovery');
@@ -1389,9 +1321,6 @@
         });
       });
     }).then(function(prepared){
-      if(prepared&&prepared.repositoryRecoveryFinal===true){
-        return prepared.result;
-      }
       if(prepared&&prepared.ok===false)return prepared;
       if(ctx.refreshOnly===true){
         if(prepared&&prepared.noop===true){
@@ -1539,7 +1468,6 @@
           localConferenceId:prepared.localId,remoteConferenceId:remoteId,
           role:ctx.role,revision:prepared.link.knownRevision
         });
-      });
       });
     });
   }

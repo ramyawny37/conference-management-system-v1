@@ -347,15 +347,13 @@ function environment(settings={}){
       }}
   }});
   const residueResult=await residue.api.open(residue.remoteId);
-  assert.strictEqual(residueResult.status,'opened',JSON.stringify({
-    result:residueResult,events:residue.events,stored:residue.stored()
-  }));
-  assert.strictEqual(residue.cleanupCalls(),1,
-    'confirmed lifecycle residue is cleaned exactly once');
+  assert.strictEqual(residueResult.status,'local_repository_rejected');
+  assert.strictEqual(residue.cleanupCalls(),0,
+    'discovered open does not own repository cleanup');
   assert(residue.stored().conferences.some(item=>item.id==='valid-local'),
-    'the real local conference survives recovery');
-  assert.strictEqual(residue.stored().conferenceLifecycle.records[residueId],
-    undefined);
+    'the real local conference remains untouched');
+  assert(residue.stored().conferenceLifecycle.records[residueId],
+    'historical residue remains owned by the canonical cleanup service');
 
   const ambiguousResidue=environment({cached:false,lifecycleResidue:true,
     ambiguousResidue:true,appData:{conferences:[],currentConferenceId:null,
@@ -370,6 +368,13 @@ function environment(settings={}){
     'ambiguous residue is never cleaned');
   assert(ambiguousResidue.stored().conferenceLifecycle.records[residueId],
     'ambiguous residue remains untouched');
+
+  const cleanRepository=environment();
+  assert.strictEqual((await cleanRepository.api.open(
+    cleanRepository.remoteId
+  )).status,'opened');
+  assert.strictEqual(cleanRepository.cleanupCalls(),0,
+    'clean materialization never invokes orphan cleanup');
 
   const repeated=environment();
   const one=repeated.api.open(repeated.remoteId);

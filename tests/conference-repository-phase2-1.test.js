@@ -242,6 +242,34 @@ var orphanResult=repository.prepareAppData(orphaned);
 assert.strictEqual(orphanResult.ok,false);
 assert.strictEqual(hasIssue(orphanResult,'ORPHAN_LIFECYCLE_RECORD'),true);
 
+var removable=plain(classified.data);
+removable.currentConferenceId='local-1';
+var removed=repository.removeLocalConference(removable,'local-1');
+assert.strictEqual(removed.ok,true);
+assert.strictEqual(removed.status,'local_conference_removed');
+assert.deepStrictEqual(removed.data.conferences.map(function(item){
+  return item.id;
+}),['local-2']);
+assert.strictEqual(removed.data.conferenceLifecycle.records['local-1'],undefined);
+assert.ok(removed.data.conferenceLifecycle.records['local-2']);
+assert.strictEqual(removed.data.currentConferenceId,null);
+assert.strictEqual(removable.conferences.length,2,
+  'repository removal is pure until its result is committed');
+assert.strictEqual(repository.removeLocalConference(orphaned,'local-1').ok,false,
+  'removal never bypasses repository validation');
+var replacement=conference('local-1');
+replacement.name='Replacement';
+var replaced=repository.replaceLocalConference(removable,replacement);
+assert.strictEqual(replaced.ok,true);
+assert.strictEqual(replaced.status,'local_conference_replaced');
+assert.strictEqual(replaced.data.conferences[0].name,'Replacement');
+assert.strictEqual(
+  replaced.data.conferenceLifecycle.records['local-1'].localContentVersion,
+  removable.conferenceLifecycle.records['local-1'].localContentVersion
+);
+assert.strictEqual(repository.replaceLocalConference(orphaned,replacement).ok,
+  false,'replacement never bypasses repository validation');
+
 assert.strictEqual(storageReads,0);
 
 var indexSource=fs.readFileSync(path.join(root,'index.html'),'utf8');
@@ -256,6 +284,7 @@ assert.ok(
   indexSource.indexOf('js/storage/conference-repository.js')<
   indexSource.indexOf('js/storage/full-backup.js')
 );
-assert.match(workerSource,/js\/storage\/conference-repository\.js/);
+assert.match(workerSource,
+  /js\/storage\/conference-repository\.js\?rev=conference-state-invariants-v1/);
 
 console.log('conference repository phase 2.1 tests: passed');
