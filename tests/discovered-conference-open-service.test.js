@@ -12,6 +12,7 @@ function environment(settings={}){
   let stored=clone(settings.appData||{conferences:[],currentConferenceId:null});
   let memory=clone(stored);
   let activated=0,downloads=0,inspects=0,configured=0,deactivations=0;
+  let cleanupCalls=0;
   let cloudAuthorizations=0;
   const activationOptions=[];
   let manualRelinkChecks=[];
@@ -102,6 +103,23 @@ function environment(settings={}){
         return settings.manualRelink===true;
       }
     },
+    OrphanedConferenceCleanup:{
+      inspect(id){
+        return settings.ambiguousResidue
+          ?{ok:false,status:'orphan_status_not_confirmed'}
+          :{ok:true,status:'lifecycle_residue_confirmed',
+            data:{localConferenceId:id}};
+      },
+      cleanup(id,options){
+        cleanupCalls++;
+        const next=clone(options.appData);
+        delete next.conferenceLifecycle.records[id];
+        options.appData=next;
+        stored=clone(next);
+        sandbox.appData=clone(next);
+        return Promise.resolve({ok:true,status:'local_orphan_removed'});
+      }
+    },
     OfflineSyncQueue:{coalesceSnapshotOperation:()=>{forbidden.queue++;}},
     ConferencePublishingEngine:{publish:()=>{forbidden.publication++;}},
     SupabaseRpc:{rpc:()=>{forbidden.rpc++;}},
@@ -130,9 +148,24 @@ function environment(settings={}){
     },
     ConferenceRepository:{
       getContract(){return {schemaVersion:settings.repositoryVersion||1};},
+      validateRepositoryState(repository,conferenceIds){
+        if(!settings.lifecycleResidue)return {ok:true,status:'valid_repository'};
+        const expected=new Set(conferenceIds||[]);
+        const orphan=Object.keys(repository&&repository.records||{})
+          .filter(id=>!expected.has(id));
+        return orphan.length?{ok:false,status:'invalid_repository',issues:
+          orphan.map(id=>({code:'ORPHAN_LIFECYCLE_RECORD',
+            path:'conferenceLifecycle.records.'+id}))
+        }:{ok:true,status:'valid_repository'};
+      },
       addLocalConference(data,conference){
       if(settings.repositoryRejection){
         return clone(settings.repositoryRejection);
+      }
+      if(settings.lifecycleResidue){
+        const checked=this.validateRepositoryState(data.conferenceLifecycle,
+          (data.conferences||[]).map(item=>item.id));
+        if(!checked.ok)return checked;
       }
       const next=clone(data);
       next.conferences=(next.conferences||[]).concat([clone(conference)]);
@@ -200,6 +233,7 @@ function environment(settings={}){
     activationOptions:()=>clone(activationOptions),
     cloudAuthorizations:()=>cloudAuthorizations,
     downloads:()=>downloads,inspects:()=>inspects,
+    cleanupCalls:()=>cleanupCalls,
     deactivations:()=>deactivations,
     realtimePipeline:()=>clone(realtimePipeline),
     manualRelinkChecks:()=>manualRelinkChecks.slice(),
@@ -297,6 +331,45 @@ function environment(settings={}){
   assert.deepStrictEqual(rejected.forbidden(),{
     queue:0,publication:0,rpc:0
   });
+
+  const residueId='4c0d6322-7b4d-4f0b-a831-c51e01fa4d79';
+  const residue=environment({cached:false,lifecycleResidue:true,appData:{
+    conferences:[{id:'valid-local',name:'Existing',status:'active',
+      peopleDb:{people:[]},houses:[],transports:[],activityLog:[]}],
+    currentConferenceId:null,conferenceLifecycle:{schemaVersion:1,
+      records:{
+        'valid-local':{localConferenceId:'valid-local',localLifecycle:'active',
+          cloudLifecycle:'unpublished',localContentVersion:0,
+          publishMetadata:null},
+        [residueId]:{localConferenceId:residueId,localLifecycle:'active',
+          cloudLifecycle:'unpublished',localContentVersion:0,
+          publishMetadata:null}
+      }}
+  }});
+  const residueResult=await residue.api.open(residue.remoteId);
+  assert.strictEqual(residueResult.status,'opened',JSON.stringify({
+    result:residueResult,events:residue.events,stored:residue.stored()
+  }));
+  assert.strictEqual(residue.cleanupCalls(),1,
+    'confirmed lifecycle residue is cleaned exactly once');
+  assert(residue.stored().conferences.some(item=>item.id==='valid-local'),
+    'the real local conference survives recovery');
+  assert.strictEqual(residue.stored().conferenceLifecycle.records[residueId],
+    undefined);
+
+  const ambiguousResidue=environment({cached:false,lifecycleResidue:true,
+    ambiguousResidue:true,appData:{conferences:[],currentConferenceId:null,
+      conferenceLifecycle:{schemaVersion:1,records:{
+        [residueId]:{localConferenceId:residueId}
+      }}}});
+  const ambiguousResult=await ambiguousResidue.api.open(
+    ambiguousResidue.remoteId
+  );
+  assert.strictEqual(ambiguousResult.status,'local_repository_rejected');
+  assert.strictEqual(ambiguousResidue.cleanupCalls(),0,
+    'ambiguous residue is never cleaned');
+  assert(ambiguousResidue.stored().conferenceLifecycle.records[residueId],
+    'ambiguous residue remains untouched');
 
   const repeated=environment();
   const one=repeated.api.open(repeated.remoteId);

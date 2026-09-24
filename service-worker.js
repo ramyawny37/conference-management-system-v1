@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'reservations-reference-locked-reconstruction-v5'
-  : 'production-3-6-0-release-v6';
+  : 'production-3-6-0-conference-open-lock-delivery-v1';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
@@ -72,12 +72,12 @@ const CORE_ASSETS = [
   './js/sync/partial-template-state-cleanup.js?rev=partial-template-state-cleanup-v1',
   './js/sync/rejected-shared-template-cleanup.js?rev=rejected-shared-template-cleanup-v1',
   './js/sync/local-template-copy-cleanup.js?rev=shared-template-copy-guard-v1',
-  './js/sync/legacy-template-adoption-ui.js?rev=legacy-conference-preflight-v2',
+  './js/sync/legacy-template-adoption-ui.js?rev=legacy-template-adoption-authorization-v1',
   './js/sync/sync-processor.js?rev=startup-queue-recovery-v1',
   './js/sync/realtime.js',
   './js/sync/conflict-resolution.js',
   './js/sync/conflict-executor.js?rev=conference-snapshot-device-guard-v1',
-  './js/sync/conference-locks.js?rev=conference-lock-release-diagnostics-v1',
+  './js/sync/conference-locks.js?rev=session-derived-device-lock-v1',
   './js/sync/conference-edit-lock-manager.js?rev=section-accommodation-edit-lock-v1',
   './js/sync/offline-first-integration.js?rev=revision-publish-1',
   './js/sync/device-rescue-export.js?rev=diagnostics-privacy-hardening-v1',
@@ -118,11 +118,11 @@ const CORE_ASSETS = [
   './js/sync/conference-sync-state-resolver.js?rev=phase-5',
   './js/sync/conference-queue-integration.js?rev=queue-legacy-compat-v1',
   './js/sync/conference-realtime-manager.js?rev=template-sync-isolation-v1',
-  './js/sync/orphaned-conference-cleanup.js?rev=orphaned-local-cleanup-v2',
+  './js/sync/orphaned-conference-cleanup.js?rev=lifecycle-residue-cleanup-v1',
   './js/sync/conference-operational-ui.js',
   './js/sync/automatic-queue-runner.js?rev=template-sync-isolation-v1',
   './js/sync/automatic-conference-linking.js?rev=realtime-refresh-completion-v1',
-  './js/sync/discovered-conference-open-service.js?rev=repository-rejection-diagnostics-v1',
+  './js/sync/discovered-conference-open-service.js?rev=lifecycle-residue-open-recovery-v1',
   './js/sync/member-runtime-diagnostics.js?rev=repository-rejection-diagnostics-v1',
   './js/sync/automatic-sync-orchestrator.js?rev=realtime-reconnect-catchup-v1',
   './js/sync/wrong-remote-binding-repair-store.js?rev=wrong-remote-binding-repair-v1',

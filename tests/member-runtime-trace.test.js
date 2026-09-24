@@ -8,7 +8,7 @@ const marker='canonical-conference-schema-v1';
 const coreAssetMarker='development-3-4-0-platform-foundation-v1';
 const cacheMarker='production-integrated-3-3-0-main-6d0c1e1-develop-80653ca-v1';
 const memberDiagnosticsAssetMarker='repository-rejection-diagnostics-v1';
-const shellMarker='production-3-6-0-release-v1';
+const shellMarker='production-3-6-0-conference-open-lock-delivery-v1';
 const developmentCacheMarker='reservations-reference-locked-reconstruction-v5';
 const houseMarker='template-floor-conference-sync-v1';
 const accountIdentityMarker='platform-first-login-coordinator-v1';
@@ -114,7 +114,7 @@ assert.match(worker,new RegExp(
   'js/sync/member-runtime-diagnostics.js?rev='+memberDiagnosticsAssetMarker,
   'js/sync/conference-realtime-manager.js?rev='+realtimeMarker,
   'js/sync/automatic-sync-orchestrator.js?rev=realtime-reconnect-catchup-v1',
-  'js/sync/conference-locks.js?rev=conference-lock-release-diagnostics-v1',
+  'js/sync/conference-locks.js?rev=session-derived-device-lock-v1',
   'core.js?rev='+coreAssetMarker,
   'people.js?rev='+marker,
   'houses.js?rev='+houseMarker,
