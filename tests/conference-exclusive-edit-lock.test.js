@@ -56,6 +56,30 @@ function lockServer(){
   await b.api.beginAccommodationEdit();assert.strictEqual(b.api.getState().canWrite,true,'second device acquires after release');
   server.advance(121000);await b.api.renew();assert.strictEqual(b.api.getState().canWrite,false,'expired lock blocks next write');
 
+  const ttlServer=lockServer(),ttlA=device('A',ttlServer),ttlB=device('B',ttlServer);
+  await ttlA.api.beginAccommodationEdit();
+  assert.strictEqual((await ttlB.api.beginAccommodationEdit()).status,'locked',
+    'device B is blocked while device A owns the lock');
+  ttlServer.advance(121000);
+  await ttlB.api.beginAccommodationEdit();
+  assert.strictEqual(ttlB.api.getState().canWrite,true,
+    'device B acquires after device A disappears and the TTL expires');
+
+  const normalized=device('A',{
+    acquire:()=>Promise.resolve({ok:true,status:'locked',data:{owned:true,
+      section:'accommodation',lockToken:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      expiresAt:new Date(Date.now()+120000).toISOString()}}),
+    renew:()=>Promise.resolve({ok:false,status:'not_owned'}),
+    release:()=>Promise.resolve({ok:true,status:'released'}),
+    status:()=>Promise.resolve({ok:true,status:'locked'}),
+    owned:()=>null
+  });
+  const normalizedResult=await normalized.api.beginAccommodationEdit();
+  assert.strictEqual(normalizedResult.status,'locked');
+  assert.strictEqual(normalized.api.getState().status,'editing');
+  assert.strictEqual(normalized.api.getState().canWrite,true,
+    'a valid owned locked response cannot become LOCK_REQUEST_FAILED');
+
   let resolveLate;const lateServer=lockServer();lateServer.acquire=()=>new Promise(r=>{resolveLate=r;});
   const late=device('A',lateServer);const pending=late.api.beginAccommodationEdit();late.setCurrent('local-b');const ending=late.api.endAccommodationEdit();
   resolveLate({ok:true,status:'acquired',data:{owned:true,section:'accommodation',expiresAt:new Date(Date.now()+120000).toISOString()}});

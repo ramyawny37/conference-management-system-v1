@@ -21,7 +21,7 @@ const authBoundEdgeSessionRevision='auth-bound-edge-session-v1';
 const canonicalRevokedRerequestRevision='revoked-rerequest-error-code-v1';
 const moduleRoutingRevision='warehouse-original-items-secure-restoration-v1';
 const priorAuthorizationCacheRevision='runtime-authorization-phase1-v1';
-const productionCacheRevision='production-3-6-0-release-v5';
+const productionCacheRevision='production-3-6-0-conference-open-lock-delivery-v1';
 const productionShellRevision='production-3-6-0-release-v1';
 const accountIdentityRevision='account-session-identity-v1';
 const firstLoginCoordinatorRevision='platform-first-login-coordinator-v1';
@@ -131,8 +131,26 @@ assert(worker.includes("'./"+cleanupAsset+"'"));
   assert(index.includes(versioned),'index missing '+versioned);
   assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
 });
-assert(index.includes('js/sync/orphaned-conference-cleanup.js?rev=orphaned-local-cleanup-v2'));
-assert(worker.includes("'./js/sync/orphaned-conference-cleanup.js?rev=orphaned-local-cleanup-v2'"));
+const orphanCleanupRevision='lifecycle-residue-cleanup-v1';
+const lockRevision='session-derived-device-lock-v1';
+const discoveredOpenRevision='lifecycle-residue-open-recovery-v1';
+[
+  ['js/sync/orphaned-conference-cleanup.js',orphanCleanupRevision],
+  ['js/sync/conference-locks.js',lockRevision],
+  ['js/sync/discovered-conference-open-service.js',discoveredOpenRevision]
+].forEach(([asset,revision])=>{
+  const versioned=asset+'?rev='+revision;
+  assert(index.includes(versioned),'index missing '+versioned);
+  assert(worker.includes("'./"+versioned+"'"),'app shell missing '+versioned);
+});
+[
+  'orphaned-conference-cleanup.js?rev=orphaned-local-cleanup-v2',
+  'conference-locks.js?rev=conference-lock-release-diagnostics-v1',
+  'discovered-conference-open-service.js?rev=repository-rejection-diagnostics-v1'
+].forEach(asset=>{
+  assert(!index.includes(asset),'index retains superseded '+asset);
+  assert(!worker.includes(asset),'app shell retains superseded '+asset);
+});
 [
   'js/sync/conference-members-service.js',
   'js/sync/realtime-locks-ui.js'
