@@ -13,6 +13,7 @@ const dropdb=path.join(pgBin,'dropdb');
 const database=`reservations_b01_${process.pid}_${Date.now()}`;
 const migration=path.resolve(__dirname,'../supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql');
 const bookingTypeEditMigration=path.resolve(__dirname,'../supabase/migrations/20260924223000_reservations_participant_booking_type_edit.sql');
+const capabilityDispatchMigration=path.resolve(__dirname,'../supabase/migrations/20260925143000_reservations_effective_capability_dispatch_reconciliation.sql');
 const device='11111111-1111-1111-1111-111111111111';
 const platformUser='22222222-2222-2222-2222-222222222222';
 const platformSession='aaaaaaaa-1111-2222-3333-444444444444';
@@ -147,9 +148,12 @@ test('isolated PostgreSQL executes standalone create idempotently and atomically
   execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',migration],{encoding:'utf8'});
   run([],latestDispatcherFixture);
   execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',bookingTypeEditMigration],{encoding:'utf8'});
+  execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',capabilityDispatchMigration],{encoding:'utf8'});
 
   assert.equal(query("select to_regprocedure('platform.execute_device_operation_before_participant_booking_type_edit(uuid,uuid,bytea,text,text,jsonb)') is null and to_regprocedure('reservations_private.mutate_scoped_before_participant_booking_type_edit(uuid,text,jsonb)') is null"),'t');
   assert.equal(query("select prosecdef and proconfig=array['search_path=pg_catalog, public, platform, platform_private'] from pg_proc where oid='platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)'::regprocedure"),'t');
+  assert.equal(query("select position('get_effective_capabilities' in prosrc)>0 and position('return reservations.read(session.device_id,p_operation,p_args)' in prosrc)>0 from pg_proc where oid='platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)'::regprocedure"),'t');
+  assert.equal(query("select count(*)=0 from pg_proc where proname like '%effective_capability_dispatch%'"),'t');
   assert.equal(query("select has_function_privilege('service_role','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute') and not has_function_privilege('anon','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute') and not has_function_privilege('authenticated','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute')"),'t');
   assert.equal(query("select prosecdef and proconfig is not null and proconfig[1] like 'search_path=%' from pg_proc where oid='reservations_private.mutate_scoped(uuid,text,jsonb)'::regprocedure"),'t');
   assert.deepEqual(JSON.parse(query(`with claims as materialized(select set_config('request.jwt.claims','{"sub":"${platformUser}","role":"service_role"}',true)) select platform.execute_device_operation('${platformUser}','${platformSession}',extensions.digest('${platformToken}'::bytea,'sha256'),'conference','list_module_permission_resources_for_administration','{"p_module_key":"reservations","p_resource_type":"event"}'::jsonb) from claims`)),{moduleKey:'reservations',resourceType:'event'});
