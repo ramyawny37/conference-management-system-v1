@@ -12,6 +12,8 @@ const createdb=path.join(pgBin,'createdb');
 const dropdb=path.join(pgBin,'dropdb');
 const database=`reservations_b01_${process.pid}_${Date.now()}`;
 const migration=path.resolve(__dirname,'../supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql');
+const bookingTypeEditMigration=path.resolve(__dirname,'../supabase/migrations/20260924223000_reservations_participant_booking_type_edit.sql');
+const capabilityDispatchMigration=path.resolve(__dirname,'../supabase/migrations/20260925143000_reservations_effective_capability_dispatch_reconciliation.sql');
 const device='11111111-1111-1111-1111-111111111111';
 const platformUser='22222222-2222-2222-2222-222222222222';
 const platformSession='aaaaaaaa-1111-2222-3333-444444444444';
@@ -90,6 +92,35 @@ begin
 end $$;
 `;
 
+const latestDispatcherFixture=`
+alter function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  rename to execute_device_operation_pre_generic_permission_resource_administration;
+create function public.list_module_permission_resources_for_administration(uuid,text,text)
+returns jsonb language sql stable security definer set search_path='pg_catalog','public'
+as 'select jsonb_build_object(''moduleKey'',$2,''resourceType'',$3)';
+create function platform.execute_device_operation(
+  p_user_id uuid,p_session_id uuid,p_token_hash bytea,
+  p_module text,p_operation text,p_args jsonb
+)
+returns jsonb language plpgsql security definer
+set search_path='pg_catalog','public','platform','platform_private'
+as $$
+begin
+  if p_module<>'conference' or p_operation<>'list_module_permission_resources_for_administration' then
+    return platform.execute_device_operation_pre_generic_permission_resource_administration(
+      p_user_id,p_session_id,p_token_hash,p_module,p_operation,p_args
+    );
+  end if;
+  return public.list_module_permission_resources_for_administration(
+    '${device}',p_args->>'p_module_key',p_args->>'p_resource_type'
+  );
+end $$;
+revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  from public,anon,authenticated,service_role;
+grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
+  to service_role;
+`;
+
 function run(args,input){return execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-Atq','-d',database,...args],{encoding:'utf8',input}).trim();}
 function query(sql){return run(['-c',sql]);}
 function invoke(operationId,extra={}){
@@ -115,6 +146,17 @@ test('isolated PostgreSQL executes standalone create idempotently and atomically
  try {
   run([],fixture);
   execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',migration],{encoding:'utf8'});
+  run([],latestDispatcherFixture);
+  execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',bookingTypeEditMigration],{encoding:'utf8'});
+  execFileSync(psql,['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',capabilityDispatchMigration],{encoding:'utf8'});
+
+  assert.equal(query("select to_regprocedure('platform.execute_device_operation_before_participant_booking_type_edit(uuid,uuid,bytea,text,text,jsonb)') is null and to_regprocedure('reservations_private.mutate_scoped_before_participant_booking_type_edit(uuid,text,jsonb)') is null"),'t');
+  assert.equal(query("select prosecdef and proconfig=array['search_path=pg_catalog, public, platform, platform_private'] from pg_proc where oid='platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)'::regprocedure"),'t');
+  assert.equal(query("select position('get_effective_capabilities' in prosrc)>0 and position('return reservations.read(session.device_id,p_operation,p_args)' in prosrc)>0 from pg_proc where oid='platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)'::regprocedure"),'t');
+  assert.equal(query("select count(*)=0 from pg_proc where proname like '%effective_capability_dispatch%'"),'t');
+  assert.equal(query("select has_function_privilege('service_role','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute') and not has_function_privilege('anon','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute') and not has_function_privilege('authenticated','platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)','execute')"),'t');
+  assert.equal(query("select prosecdef and proconfig is not null and proconfig[1] like 'search_path=%' from pg_proc where oid='reservations_private.mutate_scoped(uuid,text,jsonb)'::regprocedure"),'t');
+  assert.deepEqual(JSON.parse(query(`with claims as materialized(select set_config('request.jwt.claims','{"sub":"${platformUser}","role":"service_role"}',true)) select platform.execute_device_operation('${platformUser}','${platformSession}',extensions.digest('${platformToken}'::bytea,'sha256'),'conference','list_module_permission_resources_for_administration','{"p_module_key":"reservations","p_resource_type":"event"}'::jsonb) from claims`)),{moduleKey:'reservations',resourceType:'event'});
 
   assert.equal(query("select is_nullable from information_schema.columns where table_schema='reservations' and table_name='events' and column_name='conference_id'"),'YES');
   assert.throws(()=>query("insert into reservations.events(scope_type,scope_partition_id,organization_id,conference_id,name,start_date,end_date,created_by,updated_by) values('conference','10101010-1111-2222-3333-444444444444','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',null,'Invalid Conference Scope','2026-10-10','2026-10-12','22222222-2222-2222-2222-222222222222','22222222-2222-2222-2222-222222222222')"),/RESERVATIONS_CONFERENCE_REQUIRED/);
@@ -694,16 +736,20 @@ test('isolated PostgreSQL executes standalone create idempotently and atomically
   assert.throws(()=>createBookingScoped('44444444-4444-4444-4444-444444444444',priceOverrideOperation,{...standaloneBookingArgs,p_price:1}),/PLATFORM_OPERATION_ARGUMENT_INVALID/); assert.equal(bookingMutationState(standaloneBookingPartition,priceOverrideOperation),beforePriceOverride);
   assert.equal(query(`select count(*)=1 from reservations.bookings where id='${conferenceBooking.bookingId}' and scope_partition_id='${conferenceBookingPartition}' and organization_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' and booking_number='RES-2026-0001'`),'t');
 
-  const participantBookingArgs=(bookingId,fullName)=>({p_booking_id:bookingId,p_expected_revision:1,p_full_name:fullName,p_phone:'01011112222',p_age:31,p_church:'Updated Church',p_governorate:'Giza',p_city_or_village:'Dokki',p_service_sector:'other',p_service_sector_other:'Updated Sector',p_notes:'updated participant booking'});
+  const participantBookingArgs=(bookingId,bookingTypeId,fullName)=>({p_booking_id:bookingId,p_expected_revision:1,p_booking_type_id:bookingTypeId,p_full_name:fullName,p_phone:'01011112222',p_age:31,p_church:'Updated Church',p_governorate:'Giza',p_city_or_village:'Dokki',p_service_sector:'other',p_service_sector_other:'Updated Sector',p_notes:'updated participant booking'});
   const participantBookingState=(bookingId,operationId)=>query(`select jsonb_build_object('booking',(select to_jsonb(x) from (select id,event_id,participant_id,booking_type_id,booking_number,booking_type_name_snapshot,price_snapshot,attendance_segments_snapshot,scope_partition_id,organization_id,notes,revision,updated_by from reservations.bookings where id='${bookingId}') x),'participant',(select to_jsonb(x) from (select id,scope_partition_id,organization_id,full_name,phone,age,church,governorate,city_or_village,service_sector,service_sector_other,notes,revision,updated_by from reservations.participants where id=(select participant_id from reservations.bookings where id='${bookingId}')) x),'operation',(select count(*) from reservations.operations where operation_id='${operationId}'),'audit',(select count(*) from platform.audit_events where operation_id='${operationId}'::uuid))`);
   const participantBookingRows=(bookingId)=>query(`select jsonb_build_object('booking',(select to_jsonb(x) from (select id,event_id,participant_id,booking_type_id,booking_number,booking_type_name_snapshot,price_snapshot,attendance_segments_snapshot,scope_partition_id,organization_id,notes,revision,updated_by from reservations.bookings where id='${bookingId}') x),'participant',(select to_jsonb(x) from (select id,scope_partition_id,organization_id,full_name,phone,age,church,governorate,city_or_village,service_sector,service_sector_other,notes,revision,updated_by from reservations.participants where id=(select participant_id from reservations.bookings where id='${bookingId}')) x))`);
+  const conferenceAlternativeType=query(`insert into reservations.booking_types(organization_id,event_id,name,code,price,active,display_order,eligible_attendance_segments,created_by,updated_by) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','${conferencePeriodEvent}','Conference Alternative','CONF-ALT',175,true,10,'{conference}','22222222-2222-2222-2222-222222222222','22222222-2222-2222-2222-222222222222') returning id`);
+  const conferenceInactiveType=query(`insert into reservations.booking_types(organization_id,event_id,name,code,price,active,display_order,eligible_attendance_segments,created_by,updated_by) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','${conferencePeriodEvent}','Conference Inactive','CONF-INACTIVE',200,false,11,'{conference}','22222222-2222-2222-2222-222222222222','22222222-2222-2222-2222-222222222222') returning id`);
   const conferenceParticipantUpdateOperation='15000000-2222-3333-4444-555555555555';
-  const conferenceParticipantUpdateArgs=participantBookingArgs(conferenceBooking.bookingId,'Updated Conference Participant');
+  const conferenceParticipantUpdateArgs=participantBookingArgs(conferenceBooking.bookingId,conferenceAlternativeType,'Updated Conference Participant');
+  const conferencePaymentsBeforeTypeEdit=query(`select coalesce(jsonb_agg(to_jsonb(p) order by p.id),'[]') from reservations.payments p where p.booking_id='${conferenceBooking.bookingId}'`);
   const standaloneBeforeConferenceUpdate=participantBookingRows(standaloneBooking.bookingId);
   const conferenceParticipantUpdated=updateParticipantBookingScoped(device,conferenceParticipantUpdateOperation,conferenceParticipantUpdateArgs);
-  assert.deepEqual(conferenceParticipantUpdated,{bookingId:conferenceBooking.bookingId,revision:2});
+  assert.deepEqual(conferenceParticipantUpdated,{bookingId:conferenceBooking.bookingId,bookingTypeId:conferenceAlternativeType,revision:2});
   assert.equal(query(`select full_name='Updated Conference Participant' and phone='01011112222' and age=31 and church='Updated Church' and governorate='Giza' and city_or_village='Dokki' and service_sector='other' and service_sector_other='Updated Sector' and notes='updated participant booking' and revision=2 and id='${conferenceBooking.participantId}'::uuid and scope_partition_id='${conferenceBookingPartition}'::uuid and organization_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid from reservations.participants where id='${conferenceBooking.participantId}'`),'t');
-  assert.equal(query(`select revision=2 and notes='updated participant booking' and event_id='${conferencePeriodEvent}'::uuid and participant_id='${conferenceBooking.participantId}'::uuid and booking_type_id='${conferenceBookingType.bookingTypeId}'::uuid and booking_number='RES-2026-0001' and booking_type_name_snapshot='Conference Type' and price_snapshot=100 and attendance_segments_snapshot=array['conference'] and scope_partition_id='${conferenceBookingPartition}'::uuid and organization_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid from reservations.bookings where id='${conferenceBooking.bookingId}'`),'t');
+  assert.equal(query(`select revision=2 and notes='updated participant booking' and event_id='${conferencePeriodEvent}'::uuid and participant_id='${conferenceBooking.participantId}'::uuid and booking_type_id='${conferenceAlternativeType}'::uuid and booking_number='RES-2026-0001' and booking_type_name_snapshot='Conference Alternative' and price_snapshot=175 and attendance_segments_snapshot=array['conference'] and scope_partition_id='${conferenceBookingPartition}'::uuid and organization_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid from reservations.bookings where id='${conferenceBooking.bookingId}'`),'t');
+  assert.equal(query(`select coalesce(jsonb_agg(to_jsonb(p) order by p.id),'[]') from reservations.payments p where p.booking_id='${conferenceBooking.bookingId}'`),conferencePaymentsBeforeTypeEdit);
   assert.equal(query(`select name='Conference Period Event' and scope_partition_id='${conferenceBookingPartition}'::uuid and organization_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid from reservations.events where id='${conferencePeriodEvent}'`),'t'); assert.equal(query(`select name='Conference Type' and event_id='${conferencePeriodEvent}'::uuid and scope_partition_id='${conferenceBookingPartition}'::uuid from reservations.booking_types where id='${conferenceBookingType.bookingTypeId}'`),'t');
   assert.equal(query(`select scope_type='reservations' and scope_id='${conferenceBookingPartition}'::uuid and metadata->>'reservationsScopeType'='conference' and metadata->>'organizationId'='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' and metadata->>'conferenceId'='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' from platform.audit_events where operation_id='${conferenceParticipantUpdateOperation}'::uuid`),'t');
   const conferenceAfterParticipantUpdate=participantBookingState(conferenceBooking.bookingId,conferenceParticipantUpdateOperation);
@@ -711,13 +757,16 @@ test('isolated PostgreSQL executes standalone create idempotently and atomically
   assert.throws(()=>updateParticipantBookingScoped(device,conferenceParticipantUpdateOperation,{...conferenceParticipantUpdateArgs,p_phone:'01099999999'}),/RESERVATIONS_OPERATION_IDEMPOTENCY_CONFLICT/);
   assert.throws(()=>updateParticipantBookingScoped('44444444-4444-4444-4444-444444444444','15111111-2222-3333-4444-555555555555',{...conferenceParticipantUpdateArgs,p_expected_revision:2}),/RESERVATIONS_CONFERENCE_ACCESS_REQUIRED/);
   assert.throws(()=>updateParticipantBookingScoped(device,'15222222-2222-3333-4444-555555555555',conferenceParticipantUpdateArgs),/RESERVATIONS_REVISION_CONFLICT/);
+  assert.throws(()=>updateParticipantBookingScoped(device,'15222222-2222-3333-4444-555555555556',{...conferenceParticipantUpdateArgs,p_expected_revision:2,p_booking_type_id:conferenceInactiveType}),/RESERVATIONS_BOOKING_TYPE_INACTIVE/);
+  assert.throws(()=>updateParticipantBookingScoped(device,'15222222-2222-3333-4444-555555555557',{...conferenceParticipantUpdateArgs,p_expected_revision:2,p_booking_type_id:sameCodeOtherBookingType.bookingTypeId}),/RESERVATIONS_BOOKING_TYPE_EVENT_MISMATCH/);
   assert.equal(participantBookingState(conferenceBooking.bookingId,conferenceParticipantUpdateOperation),conferenceAfterParticipantUpdate); assert.equal(participantBookingRows(standaloneBooking.bookingId),standaloneBeforeConferenceUpdate);
 
   const standaloneParticipantUpdateOperation='15333333-2222-3333-4444-555555555555';
-  const standaloneParticipantUpdateArgs=participantBookingArgs(standaloneBooking.bookingId,'Updated Standalone Participant');
+  query(`update reservations.booking_types set active=false where id='${standaloneBookingType.bookingTypeId}'`);
+  const standaloneParticipantUpdateArgs=participantBookingArgs(standaloneBooking.bookingId,standaloneBookingType.bookingTypeId,'Updated Standalone Participant');
   const conferenceBeforeStandaloneUpdate=participantBookingRows(conferenceBooking.bookingId);
   const standaloneParticipantUpdated=updateParticipantBookingScoped('44444444-4444-4444-4444-444444444444',standaloneParticipantUpdateOperation,standaloneParticipantUpdateArgs);
-  assert.deepEqual(standaloneParticipantUpdated,{bookingId:standaloneBooking.bookingId,revision:2});
+  assert.deepEqual(standaloneParticipantUpdated,{bookingId:standaloneBooking.bookingId,bookingTypeId:standaloneBookingType.bookingTypeId,revision:2});
   assert.equal(query(`select id='${standaloneBooking.participantId}'::uuid and scope_partition_id='${standaloneBookingPartition}'::uuid and organization_id is null and full_name='Updated Standalone Participant' and phone='01011112222' and age=31 and revision=2 and updated_by='55555555-5555-5555-5555-555555555555'::uuid from reservations.participants where id='${standaloneBooking.participantId}'`),'t');
   assert.equal(query(`select revision=2 and event_id='${standaloneBookingTypeEvent}'::uuid and participant_id='${standaloneBooking.participantId}'::uuid and booking_type_id='${standaloneBookingType.bookingTypeId}'::uuid and booking_number='RES-2026-0001' and booking_type_name_snapshot='Standalone Type' and price_snapshot=100 and attendance_segments_snapshot='{}'::text[] and scope_partition_id='${standaloneBookingPartition}'::uuid and organization_id is null from reservations.bookings where id='${standaloneBooking.bookingId}'`),'t');
   assert.equal(query(`select scope_type='reservations' and scope_id='${standaloneBookingPartition}'::uuid and metadata->>'reservationsScopeType'='standalone' and not(metadata ? 'organizationId') and not(metadata ? 'conferenceId') from platform.audit_events where operation_id='${standaloneParticipantUpdateOperation}'::uuid`),'t');
@@ -786,7 +835,7 @@ test('isolated PostgreSQL executes standalone create idempotently and atomically
   assert.deepEqual(conferenceTypeUpdated,{bookingTypeId:conferenceBookingType.bookingTypeId,revision:2});
   assert.equal(query(`select revision=2 and name='Updated Conference Type' and code='CONF-UPDATED' and price=125 and not active and display_order=3 and eligible_attendance_segments=array['conference','caravans'] and event_id='${conferencePeriodEvent}'::uuid and scope_partition_id=(select scope_partition_id from reservations.events where id='${conferencePeriodEvent}') and organization_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid from reservations.booking_types where id='${conferenceBookingType.bookingTypeId}'`),'t');
   assert.equal(query(`select event_id||':'||scope_partition_id||':'||organization_id from reservations.booking_types where id='${conferenceBookingType.bookingTypeId}'`),conferenceTypeRoot);
-  assert.equal(query(`select price_snapshot=100 and attendance_segments_snapshot=array['conference'] from reservations.bookings where id='${conferenceBooking.bookingId}'`),'t');
+  assert.equal(query(`select booking_type_id='${conferenceAlternativeType}'::uuid and price_snapshot=175 and attendance_segments_snapshot=array['conference'] from reservations.bookings where id='${conferenceBooking.bookingId}'`),'t');
   assert.equal(count('operations','11111111-2222-3333-4444-555555555555'),1); assert.equal(query(`select scope_type='reservations' and scope_id=(select scope_partition_id from reservations.events where id='${conferencePeriodEvent}') and metadata->>'reservationsScopeType'='conference' and metadata->>'organizationId'='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' and metadata->>'conferenceId'='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' from platform.audit_events where operation_id='11111111-2222-3333-4444-555555555555'::uuid`),'t');
   const conferenceAfterUpdate=bookingTypeState(conferenceBookingType.bookingTypeId);
   assert.deepEqual(updateBookingTypeScoped(device,'11111111-2222-3333-4444-555555555555',conferenceTypeUpdateArgs),conferenceTypeUpdated);
