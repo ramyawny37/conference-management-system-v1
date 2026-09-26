@@ -31,7 +31,7 @@ vm.runInNewContext(repository,sandbox);vm.runInNewContext(service,sandbox);vm.ru
   var cacheRevision=worker.match(
     /const CACHE_REVISION = IS_DEVELOPMENT\s*\? '([^']+)'\s*:\s*'([^']+)';/);
   assert.ok(cacheRevision,'cache revision must remain environment-aware');
-  assert.strictEqual(cacheRevision[1],'reservations-participant-edit-catalog-v1');
+  assert.strictEqual(cacheRevision[1],'reservations-root-boundary-v1');
   assert.strictEqual(cacheRevision[2],
     'production-3-6-0-conference-open-lock-delivery-v1');
   assert.notStrictEqual(cacheRevision[1],cacheRevision[2]);
