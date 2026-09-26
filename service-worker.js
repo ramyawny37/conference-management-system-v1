@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'reservations-participant-edit-catalog-v1'
+  ? 'reservations-root-boundary-v1'
   : 'production-3-6-0-release-v6';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -43,7 +43,7 @@ const CORE_ASSETS = [
   './js/supabase/client.js?rev=target-device-argument-preservation-v1',
   './js/supabase/auth.js?rev=account-session-identity-v1',
   './js/platform-integration.js?rev=canonical-platform-foundation-v1',
-  './modules/reservations/reservations-module.js?rev=participant-edit-catalog-v1',
+  './modules/reservations/reservations-module.js?rev=reservations-root-boundary-v1',
   './modules/reservations/reservations-visual-prototype.js?rev=reservations-prototype-fidelity-v2',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',
   './js/sync/diagnostics-privacy-policy.js?rev=diagnostics-privacy-hardening-v1',
@@ -72,7 +72,7 @@ const CORE_ASSETS = [
   './js/sync/partial-template-state-cleanup.js?rev=partial-template-state-cleanup-v1',
   './js/sync/rejected-shared-template-cleanup.js?rev=rejected-shared-template-cleanup-v1',
   './js/sync/local-template-copy-cleanup.js?rev=shared-template-copy-guard-v1',
-  './js/sync/legacy-template-adoption-ui.js?rev=legacy-conference-preflight-v2',
+  './js/sync/legacy-template-adoption-ui.js?rev=legacy-template-adoption-authorization-v1',
   './js/sync/sync-processor.js?rev=startup-queue-recovery-v1',
   './js/sync/realtime.js',
   './js/sync/conflict-resolution.js',
