@@ -34,7 +34,7 @@ test('migration is narrowly scoped and preserves immutable history contracts',()
   assert.ok(sql.indexOf('end $$;')<sql.search(/update\s+reservations/i));
   const active=fs.readFileSync(path.join(root,'supabase/migrations/20260924223000_reservations_participant_booking_type_edit.sql'),'utf8');
   assert.match(active,/where id=v_booking.participant_id and scope_partition_id=v_booking.scope_partition_id and organization_id is not distinct from v_booking.organization_id/);
-  assert.doesNotMatch(sql,/set\s+(?:id|scope_partition_id|revision|updated_at|updated_by)\s*=/i);
+  assert.doesNotMatch(sql,/set\s+(?:id|scope_partition_id|booking_number|revision|updated_at|updated_by)\s*=/i);
   assert.doesNotMatch(sql,/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   for(const table of ['bookings','participants','booking_types']) {
     assert.match(sql,new RegExp(`update\\s+reservations\\.${table}\\b`,'i'));
@@ -61,6 +61,15 @@ test('isolated reconciliation and active booking/participant ownership predicate
       create table reservations.bookings(id uuid primary key,organization_id uuid,event_id uuid not null,participant_id uuid not null,booking_type_id uuid not null,scope_partition_id uuid not null,booking_number text,price_snapshot numeric,notes text,revision bigint,updated_at timestamptz,updated_by uuid);
       create table reservations.operational_reviews(id uuid primary key,organization_id uuid,booking_id uuid not null,scope_partition_id uuid not null,review_status text,revision bigint,updated_at timestamptz,updated_by uuid);
       create table reservations.payments(id uuid primary key,organization_id uuid,booking_id uuid not null,scope_partition_id uuid not null,amount numeric,status text,history jsonb);
+      alter table reservations.bookings
+        add constraint "Historical Number Key" unique(organization_id,booking_number),
+        add constraint canonical_partition_number unique(scope_partition_id,booking_number),
+        add constraint preserved_partition_id unique(scope_partition_id,id),
+        add constraint preserved_organization_id unique(organization_id,id),
+        add constraint preserved_three_column_key unique(organization_id,booking_number,id),
+        add constraint preserved_event_fk foreign key(event_id) references reservations.events(id);
+      alter table reservations.payments add constraint preserved_payment_booking_fk
+        foreign key(booking_id) references reservations.bookings(id);
       insert into reservations.events values
         ('10000000-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001'),
         ('20000000-0000-0000-0000-000000000002','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','10000000-0000-0000-0000-000000000001'),
@@ -82,6 +91,14 @@ test('isolated reconciliation and active booking/participant ownership predicate
         ('15000000-0000-0000-0000-000000000001',null,'14000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','pending',17,'2026-01-09','cccccccc-cccc-cccc-cccc-cccccccccccc');
       insert into reservations.payments values
         ('16000000-0000-0000-0000-000000000001',null,'14000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',75,'active','{"source":"legacy"}');
+      insert into reservations.events values
+        ('50000000-0000-0000-0000-000000000005','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','50000000-0000-0000-0000-000000000005');
+      insert into reservations.booking_types values
+        ('52000000-0000-0000-0000-000000000005',null,'50000000-0000-0000-0000-000000000005','50000000-0000-0000-0000-000000000005','Other partition',125,3,'2026-01-02','cccccccc-cccc-cccc-cccc-cccccccccccc');
+      insert into reservations.participants values
+        ('53000000-0000-0000-0000-000000000005',null,'50000000-0000-0000-0000-000000000005','Other partition person',4,'2026-01-05','cccccccc-cccc-cccc-cccc-cccccccccccc');
+      insert into reservations.bookings values
+        ('54000000-0000-0000-0000-000000000005',null,'50000000-0000-0000-0000-000000000005','53000000-0000-0000-0000-000000000005','52000000-0000-0000-0000-000000000005','50000000-0000-0000-0000-000000000005','RES-2026-0001',125,'other partition note',8,'2026-01-07','cccccccc-cccc-cccc-cccc-cccccccccccc');
       create table reservations.test_before_rows as select
         (select to_jsonb(x) from reservations.event_periods x where id='11000000-0000-0000-0000-000000000001') period,
         (select to_jsonb(x)-'organization_id' from reservations.booking_types x where id='12000000-0000-0000-0000-000000000001') booking_type,
@@ -90,6 +107,22 @@ test('isolated reconciliation and active booking/participant ownership predicate
         (select to_jsonb(x) from reservations.operational_reviews x where id='15000000-0000-0000-0000-000000000001') review,
         (select to_jsonb(x) from reservations.payments x where id='16000000-0000-0000-0000-000000000001') payment;
     `);
+    const constraintKeys=()=>JSON.parse(query(`select coalesce(jsonb_agg(jsonb_build_object(
+      'oid',c.oid,'table',c.conrelid::regclass::text,'name',c.conname,'type',c.contype,
+      'definition',pg_get_constraintdef(c.oid),
+      'columns',array(select a.attname::text from unnest(c.conkey) k(attnum)
+        join pg_attribute a on a.attrelid=c.conrelid and a.attnum=k.attnum order by a.attname::text)
+      ) order by c.oid),'[]'::jsonb)
+      from pg_constraint c where c.connamespace='reservations'::regnamespace`));
+    const isNumberKey=(c,column)=>c.table==='reservations.bookings'&&c.type==='u'
+      &&JSON.stringify(c.columns)===JSON.stringify(['booking_number',column]);
+    const constraintsBefore=constraintKeys();
+    assert.equal(constraintsBefore.filter(c=>isNumberKey(c,'organization_id')).length,1);
+    assert.equal(constraintsBefore.filter(c=>isNumberKey(c,'scope_partition_id')).length,1);
+    const bookingRowsBefore=query(`select jsonb_agg(to_jsonb(b)-'organization_id' order by id) from reservations.bookings b`);
+    assert.throws(()=>query(`update reservations.bookings b set organization_id=e.organization_id
+      from reservations.events e where e.id=b.event_id and b.organization_id is null and e.organization_id is not null`),/duplicate key value violates unique constraint "Historical Number Key"/);
+    assert.equal(query(`select count(*) from reservations.bookings where booking_number='RES-2026-0001' and organization_id is null`),'2');
     const excludedSnapshot=()=>query(`select jsonb_build_object(
       'unusedType',(select to_jsonb(x) from reservations.booking_types x where id='12000000-0000-0000-0000-000000000099'),
       'events',(select jsonb_agg(to_jsonb(x) order by id) from reservations.events x),
@@ -106,6 +139,18 @@ test('isolated reconciliation and active booking/participant ownership predicate
         and b.organization_id is not distinct from 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid)`;
     assert.equal(query(ownershipPredicate),'f','active booking/participant ownership predicate reproduction before repair');
     applyMigration();
+    const constraintsAfter=constraintKeys();
+    assert.equal(constraintsAfter.filter(c=>isNumberKey(c,'organization_id')).length,0);
+    assert.equal(constraintsAfter.filter(c=>isNumberKey(c,'scope_partition_id')).length,1);
+    assert.deepEqual(constraintsAfter,constraintsBefore.filter(c=>!isNumberKey(c,'organization_id')),
+      'every unrelated constraint, including primary/foreign keys, retains its OID and definition');
+    assert.equal(query(`select count(*)=2 and count(distinct scope_partition_id)=2
+      and bool_and(organization_id is not distinct from 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid)
+      from reservations.bookings where booking_number='RES-2026-0001'`),'t');
+    assert.equal(query(`select jsonb_agg(to_jsonb(b)-'organization_id' order by id) from reservations.bookings b`),bookingRowsBefore);
+    assert.equal(query(`select organization_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' from reservations.participants where id='53000000-0000-0000-0000-000000000005'`),'t');
+    assert.equal(query(`select organization_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' from reservations.booking_types where id='52000000-0000-0000-0000-000000000005'`),'t');
+    assert.throws(()=>query(`update reservations.bookings set scope_partition_id='10000000-0000-0000-0000-000000000001' where id='54000000-0000-0000-0000-000000000005'`),/duplicate key value violates unique constraint "canonical_partition_number"/);
     assert.equal(query(`select bool_and(organization_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') from (
       select organization_id from reservations.booking_types where id='12000000-0000-0000-0000-000000000001' union all
       select organization_id from reservations.participants where id='13000000-0000-0000-0000-000000000001' union all
@@ -127,6 +172,7 @@ test('isolated reconciliation and active booking/participant ownership predicate
 
     const versions=query(`select tableoid::regclass::text||':'||id||':'||xmin from reservations.bookings union all select tableoid::regclass::text||':'||id||':'||xmin from reservations.participants union all select tableoid::regclass::text||':'||id||':'||xmin from reservations.booking_types order by 1`);
     applyMigration();
+    assert.deepEqual(constraintKeys(),constraintsAfter);
     assert.equal(query(`select tableoid::regclass::text||':'||id||':'||xmin from reservations.bookings union all select tableoid::regclass::text||':'||id||':'||xmin from reservations.participants union all select tableoid::regclass::text||':'||id||':'||xmin from reservations.booking_types order by 1`),versions);
 
     query(`insert into reservations.participants values('23000000-0000-0000-0000-000000000009',null,'10000000-0000-0000-0000-000000000001','Ambiguous',1,now(),null);

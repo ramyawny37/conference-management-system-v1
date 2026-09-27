@@ -63,6 +63,29 @@ begin
   end if;
 end $$;
 
+-- Booking numbers are unique within a scope partition, not an Organization.
+-- Match the exact semantic key, regardless of its historical constraint name.
+do $$
+declare
+  v_constraint record;
+begin
+  for v_constraint in
+    select c.conname
+    from pg_catalog.pg_constraint c
+    where c.conrelid='reservations.bookings'::regclass
+      and c.contype='u'
+      and array(
+        select a.attname::text
+        from unnest(c.conkey) k(attnum)
+        join pg_catalog.pg_attribute a
+          on a.attrelid=c.conrelid and a.attnum=k.attnum
+        order by a.attname::text
+      )=array['booking_number','organization_id']::text[]
+  loop
+    execute format('alter table reservations.bookings drop constraint %I restrict',v_constraint.conname);
+  end loop;
+end $$;
+
 update reservations.booking_types d
 set organization_id=e.organization_id
 from reservations.bookings b
