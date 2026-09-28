@@ -38,7 +38,6 @@ schedule remain derived values and are not stored as database authority.
 The protected route is:
 
 `platform.execute_conference_device_operation`
-→ `platform.execute_conference_device_operation_phase1c_core`
 → `public.create_canonical_conference`
 
 The internal creation function has EXECUTE revoked from PUBLIC, `anon`,
@@ -58,16 +57,19 @@ actor, device authorization, operation UUID, module permission, authority
 source, grant identity, Conference identity, Organization business link, and
 initial canonical values. No audit identity comes from request data.
 
-The legacy owner-membership insert trigger is suppressed through a private,
-one-time database capability. Immediately before the canonical insert, the
-revoked internal function writes a capability bound to the current transaction,
-backend process, verified actor, and requested Conference UUID. The trigger
-atomically deletes that exact row to consume it. The capability table denies
-all access to PUBLIC, `anon`, `authenticated`, and `service_role`; known GUC,
-actor, device, and session values cannot establish or reproduce the capability.
-Canonical creation therefore does not bootstrap Conference membership and does
-not depend on Organization membership. Normal legacy inserts still execute the
-owner-membership bootstrap.
+P3B removes the global `conferences_add_owner_membership` trigger and its
+`add_conference_owner_membership` function. Canonical creation inserts only the
+Conference row and does not bootstrap Conference membership or depend on
+Organization membership. The surviving legacy Organization-aware creator now
+inserts its required owner membership explicitly in the same idempotent
+transaction. Its device, Organization membership, ledger, and replay behavior
+remain unchanged.
+
+The existing outer Phase1C Conference dispatcher now routes canonical create
+and core mutation operations through explicit branches after one verified
+session check. All unchanged legacy operations continue to the existing core.
+No migration-time function-definition inspection or string replacement is
+used, and no second dispatcher is introduced.
 
 ## Migration boundaries
 

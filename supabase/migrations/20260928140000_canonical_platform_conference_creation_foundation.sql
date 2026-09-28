@@ -7,13 +7,18 @@ do $$
 begin
   if to_regclass('public.conferences') is null
      or to_regclass('public.conference_creation_operations') is null
+     or to_regclass('public.conference_members') is null
      or to_regclass('public.organizations') is null
+     or to_regclass('public.system_user_access') is null
      or to_regclass('platform.audit_events') is null
      or to_regprocedure('public.require_effective_module_permission(uuid,text,text,text,text)') is null
      or to_regprocedure('platform_private.validated_phase1c_device_authorization(uuid,uuid)') is null
      or to_regprocedure('platform_private.phase1c_context_device_id()') is null
      or to_regprocedure('platform_private.require_exact_jsonb_keys(jsonb,text[],text[])') is null
+     or to_regprocedure('public.can_user_create_conferences(uuid)') is null
+     or to_regprocedure('public.create_organization_conference_idempotent(uuid,uuid,uuid,text,jsonb)') is null
      or to_regprocedure('platform.execute_conference_device_operation_phase1c_core(uuid,uuid,bytea,text,jsonb)') is null
+     or to_regprocedure('platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)') is null
      or to_regprocedure('public.add_conference_owner_membership()') is null then
     raise exception 'P3B_CANONICAL_CONFERENCE_FOUNDATION_REQUIRED' using errcode='55000';
   end if;
@@ -28,45 +33,55 @@ begin
   end if;
 end $$;
 
--- No existing context object proves call provenance to an INSERT trigger: the
--- Phase1C context is session state. Use a private one-time capability bound to
--- the current transaction, backend, actor, and new Conference. Only the
--- revoked canonical function can establish it and the trigger consumes it.
-create table platform_private.canonical_conference_create_capabilities(
-  transaction_id xid8 not null,
-  backend_pid integer not null,
-  actor_user_id uuid not null,
-  conference_id uuid not null,
-  primary key(transaction_id,backend_pid,actor_user_id,conference_id)
-);
-
-revoke all on table platform_private.canonical_conference_create_capabilities
-  from public,anon,authenticated,service_role;
-
--- The historical insert trigger still bootstraps owner membership unless it
--- atomically consumes the exact private capability created for this insert.
-create or replace function public.add_conference_owner_membership()
-returns trigger
-language plpgsql
-security definer
-set search_path=''
+-- Keep the surviving local/snapshot creator self-contained: it explicitly
+-- creates its temporary legacy owner membership in the same transaction.
+create or replace function public.create_organization_conference_idempotent(
+  p_operation_id uuid,p_requested_conference_id uuid,p_organization_id uuid,
+  p_name text,p_initial_metadata jsonb default '{}'::jsonb
+)
+returns jsonb language plpgsql security definer set search_path=''
 as $$
-declare
-  v_canonical_create boolean:=false;
+declare actor_id uuid:=auth.uid(); prior public.conference_creation_operations%rowtype;
+  normalized_name text:=btrim(coalesce(p_name,'')); access_status text;
 begin
-  delete from platform_private.canonical_conference_create_capabilities capability
-  where capability.transaction_id=pg_catalog.pg_current_xact_id()
-    and capability.backend_pid=pg_catalog.pg_backend_pid()
-    and capability.actor_user_id=new.owner_id
-    and capability.conference_id=new.id
-  returning true into v_canonical_create;
-  if v_canonical_create then
-    return new;
+  if actor_id is null then raise exception 'AUTH_REQUIRED' using errcode='42501'; end if;
+  if p_operation_id is null or p_requested_conference_id is null or p_organization_id is null
+    or normalized_name='' or length(normalized_name)>500
+    or jsonb_typeof(coalesce(p_initial_metadata,'{}'::jsonb))<>'object' then
+    raise exception 'INVALID_CONFERENCE_REQUEST' using errcode='22023';
   end if;
+  select account_status into access_status from public.system_user_access where user_id=actor_id;
+  if access_status<>'approved' or not public.can_user_create_conferences(actor_id) then
+    raise exception 'CONFERENCE_CREATION_NOT_ALLOWED' using errcode='42501';
+  end if;
+  if not exists(select 1 from public.organizations o where o.id=p_organization_id and o.status='active')
+    or not exists(select 1 from public.organization_members m where m.organization_id=p_organization_id and m.user_id=actor_id) then
+    raise exception 'ACTIVE_ORGANIZATION_MEMBERSHIP_REQUIRED' using errcode='42501';
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended(actor_id::text||':conference-create:'||p_operation_id::text,0));
+  select * into prior from public.conference_creation_operations where user_id=actor_id and operation_id=p_operation_id;
+  if found then
+    if prior.conference_id<>p_requested_conference_id then raise exception 'OPERATION_RESULT_MISMATCH' using errcode='22023'; end if;
+    return jsonb_build_object('status','duplicate','operationId',p_operation_id,'conferenceId',prior.conference_id,'created',false);
+  end if;
+  if exists(select 1 from public.conferences where id=p_requested_conference_id) then
+    raise exception 'CONFERENCE_ID_ALREADY_USED' using errcode='23505';
+  end if;
+  insert into public.conferences(id,name,owner_id,organization_id)
+  values(p_requested_conference_id,normalized_name,actor_id,p_organization_id);
   insert into public.conference_members(conference_id,user_id,role)
-  values(new.id,new.owner_id,'owner');
-  return new;
+  values(p_requested_conference_id,actor_id,'owner');
+  insert into public.conference_creation_operations(user_id,operation_id,conference_id,initial_metadata)
+  values(actor_id,p_operation_id,p_requested_conference_id,coalesce(p_initial_metadata,'{}'::jsonb));
+  return jsonb_build_object('status','created','operationId',p_operation_id,'conferenceId',p_requested_conference_id,'created',true);
 end $$;
+
+revoke all on function public.create_organization_conference_idempotent(
+  uuid,uuid,uuid,text,jsonb
+) from public,anon,authenticated,service_role;
+
+drop trigger conferences_add_owner_membership on public.conferences;
+drop function public.add_conference_owner_membership();
 
 create function public.create_canonical_conference(
   p_actor_device_id uuid,
@@ -145,12 +160,6 @@ begin
     raise exception 'CONFERENCE_ID_ALREADY_USED' using errcode='23505';
   end if;
 
-  insert into platform_private.canonical_conference_create_capabilities(
-    transaction_id,backend_pid,actor_user_id,conference_id
-  ) values(
-    pg_catalog.pg_current_xact_id(),pg_catalog.pg_backend_pid(),
-    v_actor,p_requested_conference_id
-  );
   insert into public.conferences(
     id,name,owner_id,organization_id,start_date,end_date,status,
     completed_at,revision,updated_by
@@ -195,34 +204,105 @@ revoke all on function public.create_canonical_conference(
   uuid,uuid,uuid,uuid,text,date,date
 ) from public,anon,authenticated,service_role;
 
--- Extend the reviewed verified-device Conference dispatcher with one isolated
--- canonical operation. Existing legacy cases remain unchanged.
-do $$
+-- Keep the existing Phase1C dispatcher as the single entry boundary. Route
+-- canonical handlers explicitly and delegate unchanged legacy operations to
+-- the reviewed core; future canonical branches require no function-text edit.
+create or replace function platform.execute_conference_device_operation(
+  p_user_id uuid,p_session_id uuid,p_token_hash bytea,p_operation text,p_args jsonb
+) returns jsonb language plpgsql security definer
+set search_path=''
+as $$
 declare
-  v_signature regprocedure:=
-    'platform.execute_conference_device_operation_phase1c_core(uuid,uuid,bytea,text,jsonb)'::regprocedure;
-  v_definition text;
-  v_marker text:='else raise exception ''CONFERENCE_OPERATION_NOT_ALLOWED'' using errcode=''42501'';';
-  v_branch text:='when ''create_canonical_conference'' then perform platform_private.require_exact_jsonb_keys(p_args,array[''p_operation_id'',''p_requested_conference_id'',''p_organization_id'',''p_name'',''p_start_date'',''p_end_date'']); v_result:=public.create_canonical_conference(v_session.device_id,(p_args->>''p_operation_id'')::uuid,(p_args->>''p_requested_conference_id'')::uuid,(p_args->>''p_organization_id'')::uuid,p_args->>''p_name'',(p_args->>''p_start_date'')::date,(p_args->>''p_end_date'')::date); ';
-  v_occurrences integer;
+  v_session platform_private.device_sessions%rowtype;
 begin
-  v_definition:=pg_get_functiondef(v_signature);
-  if position('when ''create_canonical_conference'' then' in v_definition)<>0 then
-    raise exception 'P3B_CANONICAL_CREATE_DISPATCH_ALREADY_EXISTS' using errcode='55000';
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'CONFERENCE_OPERATION_BACKEND_REQUIRED' using errcode='42501';
   end if;
-  v_occurrences:=(length(v_definition)-length(replace(v_definition,v_marker,'')))
-    / length(v_marker);
-  if v_occurrences<>1 then
-    raise exception 'P3B_CONFERENCE_DISPATCH_PRECONDITION_FAILED' using errcode='55000';
+  if p_user_id is null or p_session_id is null
+     or pg_catalog.octet_length(p_token_hash)<>32 then
+    raise exception 'DEVICE_SESSION_ARGUMENT_INVALID' using errcode='22023';
   end if;
-  execute replace(v_definition,v_marker,v_branch||v_marker);
-  v_definition:=pg_get_functiondef(v_signature);
-  if position('when ''create_canonical_conference'' then' in v_definition)=0
-     or position('public.create_canonical_conference(v_session.device_id' in v_definition)=0
-     or position('device_guarded_create_organization_conference_idempotent' in v_branch)<>0 then
-    raise exception 'P3B_CONFERENCE_DISPATCH_POSTCONDITION_FAILED' using errcode='55000';
+  select session.* into v_session
+  from platform_private.device_sessions session
+  join platform.device_key_bindings binding on binding.id=session.binding_id
+  join platform.user_device_authorizations device_authorization
+    on device_authorization.id=session.device_authorization_id
+  join platform.devices device on device.id=session.device_id
+  join platform.profiles profile on profile.user_id=session.user_id
+  where session.id=p_session_id and session.user_id=p_user_id
+    and session.token_hash=p_token_hash
+    and session.purpose='PLATFORM_DEVICE_SESSION'
+    and session.revoked_at is null
+    and session.expires_at>pg_catalog.statement_timestamp()
+    and binding.user_id=session.user_id and binding.device_id=session.device_id
+    and binding.device_authorization_id=session.device_authorization_id
+    and binding.public_key_thumbprint=session.public_key_thumbprint
+    and binding.algorithm='ECDSA_P256_SHA256'
+    and binding.lifecycle_status='active'
+    and binding.revoked_at is null and binding.retired_at is null
+    and device_authorization.user_id=session.user_id
+    and device_authorization.device_id=session.device_id
+    and device_authorization.status='approved'
+    and device_authorization.revoked_at is null
+    and device.lifecycle_status='active' and device.retired_at is null
+    and device.compromised_at is null and profile.account_status='approved';
+  if not found then
+    raise exception 'DEVICE_SESSION_INVALID' using errcode='42501';
   end if;
+  perform pg_catalog.set_config(
+    'platform.phase1c_context',pg_catalog.jsonb_build_object(
+      'purpose','PLATFORM_DEVICE_SESSION_DISPATCH','session_id',v_session.id,
+      'user_id',v_session.user_id,'device_id',v_session.device_id,
+      'authorization_id',v_session.device_authorization_id,
+      'binding_id',v_session.binding_id,
+      'token_hash',pg_catalog.encode(p_token_hash,'hex')
+    )::text,true
+  );
+  perform pg_catalog.set_config(
+    'request.jwt.claims',pg_catalog.jsonb_build_object(
+      'sub',p_user_id,'role','authenticated'
+    )::text,true
+  );
+
+  if p_operation='create_canonical_conference' then
+    perform platform_private.require_exact_jsonb_keys(
+      p_args,array[
+        'p_operation_id','p_requested_conference_id','p_organization_id',
+        'p_name','p_start_date','p_end_date'
+      ]
+    );
+    return public.create_canonical_conference(
+      v_session.device_id,(p_args->>'p_operation_id')::uuid,
+      (p_args->>'p_requested_conference_id')::uuid,
+      (p_args->>'p_organization_id')::uuid,p_args->>'p_name',
+      (p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date
+    );
+  elsif p_operation='mutate_conference_core' then
+    perform platform_private.require_exact_jsonb_keys(
+      p_args,array[
+        'p_conference_id','p_expected_revision','p_name','p_start_date',
+        'p_end_date','p_status'
+      ]
+    );
+    return public.mutate_conference_core(
+      v_session.device_id,(p_args->>'p_conference_id')::uuid,
+      (p_args->>'p_expected_revision')::bigint,p_args->>'p_name',
+      (p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date,
+      p_args->>'p_status'
+    );
+  end if;
+
+  return platform.execute_conference_device_operation_phase1c_core(
+    p_user_id,p_session_id,p_token_hash,p_operation,p_args
+  );
 end $$;
+
+revoke all on function platform.execute_conference_device_operation(
+  uuid,uuid,bytea,text,jsonb
+) from public,anon,authenticated,service_role;
+grant execute on function platform.execute_conference_device_operation(
+  uuid,uuid,bytea,text,jsonb
+) to service_role;
 
 comment on function public.create_canonical_conference(
   uuid,uuid,uuid,uuid,text,date,date

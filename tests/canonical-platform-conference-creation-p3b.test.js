@@ -24,15 +24,17 @@ test('P3B has one Platform-authorized server creation path',()=>{
   assert.match(creation[0],/validated_phase1c_device_authorization/);
   assert.doesNotMatch(creation[0],/organization_members|can_user_create_conferences|has_conference_role/);
   assert.doesNotMatch(creation[0],/device_guarded_create_organization_conference_idempotent/);
-  assert.match(sql,/platform\.execute_conference_device_operation_phase1c_core/);
-  assert.match(sql,/public\.create_canonical_conference\(v_session\.device_id/);
+  assert.match(sql,/create or replace function platform\.execute_conference_device_operation\(/);
+  assert.match(sql,/public\.create_canonical_conference\(\s*v_session\.device_id/);
   assert.doesNotMatch(sql,/create table\s+(?:public\.)?(?:conference_v2|conferences_v2|conference_people)/i);
-  assert.match(sql,/create table platform_private\.canonical_conference_create_capabilities/);
-  assert.doesNotMatch(sql,/platform\.canonical_conference_create_actor|set_config\([^)]*canonical_conference/i);
+  assert.match(sql,/drop trigger conferences_add_owner_membership on public\.conferences/);
+  assert.match(sql,/drop function public\.add_conference_owner_membership\(\)/);
+  assert.doesNotMatch(sql,/canonical_conference_create_capabilities|canonical_conference_create_actor/);
+  assert.doesNotMatch(sql,/pg_get_functiondef|execute replace\(/i);
 });
 
 test('canonical input and initial P3A values are server constrained',()=>{
-  assert.match(sql,/require_exact_jsonb_keys\(p_args,array\[''p_operation_id'',''p_requested_conference_id'',''p_organization_id'',''p_name'',''p_start_date'',''p_end_date''\]\)/);
+  assert.match(sql,/require_exact_jsonb_keys\([\s\S]*?'p_operation_id','p_requested_conference_id','p_organization_id',[\s\S]*?'p_name','p_start_date','p_end_date'/);
   assert.doesNotMatch(creation[0],/p_actor_user_id|p_device_authorization_id|p_status|p_revision|p_created_at|p_completed_at|p_permission/);
   assert.match(creation[0],/btrim\(coalesce\(p_name,''\)\)/);
   assert.match(creation[0],/p_end_date<p_start_date/);
@@ -60,6 +62,10 @@ test('legacy local publishing consumers and unrelated domains are outside P3B',(
   assert.doesNotMatch(sql,/\b(?:reservations|warehouse)\./i);
   assert.doesNotMatch(sql,/platform\.people|conference_people|conference_snapshots|sync_operations|sync_conflicts/i);
   assert.doesNotMatch(sql,/js\/|\.html|\.css/);
+  const legacy=sql.match(/create or replace function public\.create_organization_conference_idempotent\([\s\S]*?end \$\$;/i);
+  assert.ok(legacy);
+  assert.match(legacy[0],/insert into public\.conference_members\(conference_id,user_id,role\)/);
+  assert.match(legacy[0],/values\(p_requested_conference_id,actor_id,'owner'\)/);
 });
 
 const postgresBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
@@ -71,6 +77,8 @@ const authorization='30000000-0000-0000-0000-000000000001';
 const organization='40000000-0000-0000-0000-000000000001';
 const conference='50000000-0000-0000-0000-000000000001';
 const operation='60000000-0000-0000-0000-000000000001';
+const session='61000000-0000-0000-0000-000000000001';
+const binding='62000000-0000-0000-0000-000000000001';
 const cleanEnv={...Object.fromEntries(Object.entries(process.env)
   .filter(([key])=>!key.startsWith('PG'))),PGHOST:'/tmp',PGPORT:'5432',PGDATABASE:database};
 function command(name,args){
@@ -96,11 +104,18 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
       create extension if not exists pgcrypto;
       create schema auth; create schema platform; create schema platform_private;
       grant usage on schema public to authenticated;
-      grant usage on schema platform_private to authenticated;
+      create function auth.uid() returns uuid language sql stable as \$\$
+        select '${actor}'::uuid
+      \$\$;
+      create function auth.role() returns text language sql stable as \$\$
+        select 'service_role'::text
+      \$\$;
       create table auth.users(id uuid primary key);
       create table platform.profiles(user_id uuid primary key references auth.users(id),account_status text not null);
-      create table platform.devices(id uuid primary key,user_id uuid not null references platform.profiles(user_id));
-      create table platform.user_device_authorizations(id uuid primary key,user_id uuid not null references platform.profiles(user_id),device_id uuid not null references platform.devices(id),status text not null);
+      create table platform.devices(id uuid primary key,user_id uuid not null references platform.profiles(user_id),lifecycle_status text not null,retired_at timestamptz,compromised_at timestamptz);
+      create table platform.user_device_authorizations(id uuid primary key,user_id uuid not null references platform.profiles(user_id),device_id uuid not null references platform.devices(id),status text not null,revoked_at timestamptz);
+      create table platform.device_key_bindings(id uuid primary key,user_id uuid,device_id uuid,device_authorization_id uuid,public_key_thumbprint text,algorithm text,lifecycle_status text,revoked_at timestamptz,retired_at timestamptz);
+      create table platform_private.device_sessions(id uuid primary key,user_id uuid,device_id uuid,device_authorization_id uuid,binding_id uuid,token_hash bytea,purpose text,public_key_thumbprint text,revoked_at timestamptz,expires_at timestamptz);
       create table platform.audit_events(
         id uuid primary key default gen_random_uuid(),actor_user_id uuid,actor_device_authorization_id uuid,
         subject_user_id uuid,domain text,module text,action text,entity_type text,entity_id uuid,
@@ -127,13 +142,17 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
         permission_key text primary key,module_key text,status text,allowed_scope_mode text,allowed_resource_type text
       );
       create table public.module_permission_grants(id uuid);
+      create table public.system_user_access(user_id uuid primary key,account_status text);
       create table public.p3b_test_context(account_approved boolean,device_approved boolean,permission_granted boolean);
       insert into public.p3b_test_context values(true,true,true);
       insert into public.module_permission_catalog values('conference.lifecycle.create','conference','active','module',null);
       insert into auth.users values('${actor}');
       insert into platform.profiles values('${actor}','approved');
-      insert into platform.devices values('${device}','${actor}');
-      insert into platform.user_device_authorizations values('${authorization}','${actor}','${device}','approved');
+      insert into platform.devices values('${device}','${actor}','active',null,null);
+      insert into platform.user_device_authorizations values('${authorization}','${actor}','${device}','approved',null);
+      insert into platform.device_key_bindings values('${binding}','${actor}','${device}','${authorization}','thumbprint','ECDSA_P256_SHA256','active',null,null);
+      insert into platform_private.device_sessions values('${session}','${actor}','${device}','${authorization}','${binding}',decode(repeat('00',32),'hex'),'PLATFORM_DEVICE_SESSION','thumbprint',null,now()+interval '1 day');
+      insert into public.system_user_access values('${actor}','approved');
       insert into public.organizations values('${organization}','active');
       create function public.add_conference_owner_membership() returns trigger language plpgsql security definer as \$\$
       begin
@@ -143,6 +162,12 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
       end \$\$;
       create trigger conferences_add_owner_membership after insert on public.conferences
         for each row execute function public.add_conference_owner_membership();
+      create function public.can_user_create_conferences(uuid)
+      returns boolean language sql stable as \$\$ select true \$\$;
+      create function public.create_organization_conference_idempotent(uuid,uuid,uuid,text,jsonb)
+      returns jsonb language sql as \$\$ select '{}'::jsonb \$\$;
+      create function public.device_guarded_create_organization_conference_idempotent(uuid,uuid,uuid,uuid,text,jsonb)
+      returns jsonb language sql as \$\$ select public.create_organization_conference_idempotent(\$2,\$3,\$4,\$5,\$6) \$\$;
       create function public.require_effective_module_permission(uuid,text,text,text,text)
       returns jsonb language plpgsql stable as \$\$ declare c public.p3b_test_context%rowtype; begin
         select * into c from public.p3b_test_context;
@@ -172,6 +197,10 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
         else raise exception 'CONFERENCE_OPERATION_NOT_ALLOWED' using errcode='42501'; end case;
         return v_result;
       end \$\$;
+      create function public.mutate_conference_core(uuid,uuid,bigint,text,date,date,text)
+      returns jsonb language sql as \$\$ select '{}'::jsonb \$\$;
+      create function platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)
+      returns jsonb language sql as \$\$ select '{}'::jsonb \$\$;
     `);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,migrationPath)]);
 
@@ -185,30 +214,22 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     assert.throws(()=>query(`set role authenticated; select public.create_canonical_conference(
       '${device}','${operation}','${conference}','${organization}','Denied','2026-11-01','2026-11-03')`),
       /permission denied for function create_canonical_conference/i);
-    assert.equal(query(`select has_table_privilege('authenticated',
-      'platform_private.canonical_conference_create_capabilities','INSERT')`),'f');
-    assert.throws(()=>query(`set role authenticated;
-      insert into platform_private.canonical_conference_create_capabilities
-      values(pg_current_xact_id(),pg_backend_pid(),'${actor}',
-        '90000000-0000-0000-0000-000000000001')`),
-      /permission denied for table canonical_conference_create_capabilities/i);
+    assert.equal(query(`select to_regclass('platform_private.canonical_conference_create_capabilities') is null`),'t');
+    assert.equal(query(`select count(*) from pg_trigger where tgrelid='public.conferences'::regclass
+      and tgname='conferences_add_owner_membership' and not tgisinternal`),'0');
+    assert.equal(query(`select to_regprocedure('public.add_conference_owner_membership()') is null`),'t');
 
     query(`grant insert on public.conferences to authenticated`);
     query(`set role authenticated;
-      select set_config('platform.canonical_conference_create_actor','${actor}',true);
-      select set_config('platform.phase1c_context',jsonb_build_object(
-        'purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}',
-        'device_id','${device}','authorization_id','${authorization}')::text,true);
       insert into public.conferences(id,name,owner_id,organization_id)
-      values('90000000-0000-0000-0000-000000000001','Spoofed','${actor}','${organization}')`);
+      values('90000000-0000-0000-0000-000000000001','Direct','${actor}','${organization}')`);
     assert.equal(query(`select count(*) from public.conferences
       where id='90000000-0000-0000-0000-000000000001'`),'1');
     assert.equal(query(`select count(*) from public.conference_members
-      where conference_id='90000000-0000-0000-0000-000000000001'
-        and user_id='${actor}' and role='owner'`),'1');
+      where conference_id='90000000-0000-0000-0000-000000000001'`),'0');
 
-    const dispatch=(overrides='')=>query(`select platform.execute_conference_device_operation_phase1c_core(
-      '${actor}',gen_random_uuid(),decode(repeat('00',32),'hex'),'create_canonical_conference',
+    const dispatch=(overrides='')=>query(`select platform.execute_conference_device_operation(
+      '${actor}','${session}',decode(repeat('00',32),'hex'),'create_canonical_conference',
       jsonb_build_object('p_operation_id','${operation}','p_requested_conference_id','${conference}',
         'p_organization_id','${organization}','p_name','  Canonical Conference  ',
         'p_start_date','2026-11-01','p_end_date','2026-11-03'${overrides}))->>'created'`);
@@ -225,7 +246,6 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     assert.equal(query(`select count(*) from public.organization_members`),'0');
     assert.equal(query(`select count(*) from public.conference_members
       where conference_id='${conference}'`),'0');
-    assert.equal(query(`select count(*) from platform_private.canonical_conference_create_capabilities`),'0');
     assert.equal(dispatch(),'false');
     assert.equal(query(`select count(*) from public.conferences where id='${conference}'`),'1');
     assert.equal(query(`select count(*) from platform.audit_events`),'1');
@@ -234,8 +254,14 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     assert.equal(query(`select actor_user_id||'|'||actor_device_authorization_id||'|'||action||'|'||(metadata->>'permissionKey')||'|'||(metadata->>'authoritySource')||'|'||operation_id from platform.audit_events`),
       `${actor}|${authorization}|conference.lifecycle.created|conference.lifecycle.create|module_grant|${operation}`);
     query(`insert into public.organization_members values('${organization}','${actor}');
-      insert into public.conferences(id,name,owner_id,organization_id)
-      values('80000000-0000-0000-0000-000000000001','Legacy','${actor}','${organization}')`);
+      select public.device_guarded_create_organization_conference_idempotent(
+        '${device}','81000000-0000-0000-0000-000000000001',
+        '80000000-0000-0000-0000-000000000001','${organization}',
+        'Legacy','{}'::jsonb);
+      select public.device_guarded_create_organization_conference_idempotent(
+        '${device}','81000000-0000-0000-0000-000000000001',
+        '80000000-0000-0000-0000-000000000001','${organization}',
+        'Legacy','{}'::jsonb)`);
     assert.equal(query(`select count(*) from public.conference_members
       where conference_id='80000000-0000-0000-0000-000000000001' and user_id='${actor}' and role='owner'`),'1');
   }finally{
