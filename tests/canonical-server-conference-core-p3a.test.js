@@ -76,8 +76,16 @@ function query(statement){
 
 test('isolated PostgreSQL enforces canonical core, concurrency and trusted attribution',
   {skip:!fs.existsSync(psql)},()=>{
+  const clientRoles=['anon','authenticated','service_role'];
+  const createdRoles=[];
   command('createdb',[database]);
   try{
+    for(const role of clientRoles){
+      if(query(`select exists(select 1 from pg_roles where rolname='${role}')`)==='f'){
+        query(`create role ${role} nologin`);
+        createdRoles.push(role);
+      }
+    }
     query(`
       create extension if not exists pgcrypto;
       create schema auth; create schema platform; create schema platform_private;
@@ -133,6 +141,18 @@ test('isolated PostgreSQL enforces canonical core, concurrency and trusted attri
       end \$\$;
     `);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,migrationPath)]);
+    const mutationSignature='public.mutate_conference_core(uuid,uuid,bigint,text,date,date,text)';
+    for(const role of clientRoles){
+      assert.equal(query(`select has_function_privilege('${role}','${mutationSignature}','EXECUTE')`),'f',
+        role+' must not directly execute the core mutation');
+    }
+    assert.equal(query(`select coalesce(bool_or(acl.grantee=0 and acl.privilege_type='EXECUTE'),false)
+      from pg_proc procedure
+      cross join lateral aclexplode(coalesce(procedure.proacl,acldefault('f',procedure.proowner))) acl
+      where procedure.oid='${mutationSignature}'::regprocedure`),'f','PUBLIC execute must be revoked');
+    assert.throws(()=>query(`set role authenticated; select public.mutate_conference_core(
+      '${device}','${conference}',1,'Denied','2026-10-01','2026-10-03','active')`),
+      /permission denied for function mutate_conference_core/i);
     query(`insert into public.conferences(id,name,owner_id) values('${conference}','Initial','${actor}')`);
 
     const mutate=(revision,status='active',extra='')=>query(`select platform.execute_conference_device_operation_phase1c_core(
@@ -161,5 +181,8 @@ test('isolated PostgreSQL enforces canonical core, concurrency and trusted attri
     assert.equal(query(`select count(*) from information_schema.tables where table_schema='public' and table_name in('conference_v2','conferences_v2','conference_people')`),'0');
   }finally{
     command('dropdb',['--if-exists',database]);
+    for(const role of createdRoles){
+      command('psql',['-X','-v','ON_ERROR_STOP=1','-d','postgres','-c',`drop role ${role}`]);
+    }
   }
 });
