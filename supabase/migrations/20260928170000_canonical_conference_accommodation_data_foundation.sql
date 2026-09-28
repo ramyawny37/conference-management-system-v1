@@ -130,7 +130,7 @@ revoke all on table
 from public,anon,authenticated,service_role;
 
 comment on table public.conference_accommodation_houses is 'Canonical Conference-owned Accommodation house instances; template provenance is intentionally non-authoritative and omitted.';
-comment on table public.conference_accommodation_rooms is 'Canonical room capacity and closure data. P5B protected mutations must transactionally enforce active occupancy capacity.';
-comment on table public.conference_accommodation_occupancies is 'One current/latest Accommodation assignment per canonical Conference participation. P5B must require active participation and coordinate cleanup before participation deletion.';
+comment on table public.conference_accommodation_rooms is 'Canonical room capacity and closure data. closed_day is the first unavailable Conference day; null while closed means immediately/fully closed. P5B must validate duration and transactionally enforce closure and capacity.';
+comment on table public.conference_accommodation_occupancies is 'One current/latest Accommodation assignment per canonical Conference participation. P5B must validate Conference duration, require active participation, remove Accommodation effect on apology, and preserve moves in immutable audit evidence.';
 
 commit;

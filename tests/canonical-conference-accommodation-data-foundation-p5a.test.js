@@ -10,6 +10,7 @@ const test=require('node:test');
 const root=path.join(__dirname,'..');
 const migration='supabase/migrations/20260928170000_canonical_conference_accommodation_data_foundation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
+const documentation=fs.readFileSync(path.join(root,'docs/canonical-conference-accommodation-data-foundation-p5a.md'),'utf8');
 const tables=['houses','floors','rooms','occupancies'].map(name=>`conference_accommodation_${name}`);
 
 test('P5A defines one normalized Conference-owned Accommodation hierarchy',()=>{
@@ -31,6 +32,19 @@ test('P5A preserves relational room and stay facts without adding APIs or ledger
   assert.doesNotMatch(sql,/conference_snapshots|peopleDb|reservations\.|organization_members|conference_members|transport|warehouse/i);
 });
 
+test('P5A distinguishes structural checks from P5B duration and participation rules',()=>{
+  assert.match(sql,/check\(arrival_day>=1\)/);
+  assert.match(sql,/check\(leave_day is null or leave_day>arrival_day\)/);
+  assert.match(sql,/check\(closed_day is null or closed_day>=1\)/);
+  assert.match(sql,/check\(is_closed or closed_day is null\)/);
+  assert.doesNotMatch(sql,/create\s+(?:constraint\s+)?trigger/i);
+  assert.match(documentation,/does not claim\s+Conference-duration enforcement/i);
+  assert.match(documentation,/P5B must calculate duration from canonical\s+Conference `start_date`\/`end_date`/i);
+  assert.match(documentation,/P5A intentionally does not enforce participation\s+status through a trigger/i);
+  assert.match(documentation,/P5B assign\/move operations must require\s+`participation\.status = 'active'`/i);
+  assert.match(documentation,/active-to-apologized transition must\s+transactionally remove the current Accommodation effect/i);
+});
+
 const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
 const pgBin=fs.existsSync(path.join(postgresAppBin,'psql'))?postgresAppBin:'';
 const database=`conference_p5a_${process.pid}_${Date.now()}`;
@@ -49,8 +63,10 @@ test('disposable PostgreSQL proves keys, constraints, deletion dependency and is
   const conference2='20000000-0000-0000-0000-000000000002';
   const person1='30000000-0000-0000-0000-000000000001';
   const person2='30000000-0000-0000-0000-000000000002';
+  const person3='30000000-0000-0000-0000-000000000003';
   const participation1='40000000-0000-0000-0000-000000000001';
   const participation2='40000000-0000-0000-0000-000000000002';
+  const participation3='40000000-0000-0000-0000-000000000003';
   const house1='50000000-0000-0000-0000-000000000001';
   const house2='50000000-0000-0000-0000-000000000002';
   const floor1='60000000-0000-0000-0000-000000000001';
@@ -70,9 +86,9 @@ test('disposable PostgreSQL proves keys, constraints, deletion dependency and is
       create table public.module_permission_catalog(permission_key text primary key,module_key text,status text,allowed_scope_mode text,allowed_resource_type text);
       insert into public.module_permission_catalog values('conference.accommodation.view','conference','active','resource','conference'),('conference.accommodation.manage','conference','active','resource','conference');
       insert into platform.profiles values('${actor}');
-      insert into platform.people values('${person1}'),('${person2}');
+      insert into platform.people values('${person1}'),('${person2}'),('${person3}');
       insert into public.conferences values('${conference1}'),('${conference2}');
-      insert into public.conference_participations values('${participation1}','${conference1}','${person1}','active'),('${participation2}','${conference2}','${person2}','apologized');`);
+      insert into public.conference_participations values('${participation1}','${conference1}','${person1}','active'),('${participation2}','${conference2}','${person2}','apologized'),('${participation3}','${conference1}','${person3}','apologized');`);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,migration)]);
     for(const table of tables) assert.equal(query(`select to_regclass('public.${table}') is not null`),'t');
     for(const role of roles) for(const table of tables) assert.equal(query(`select has_table_privilege('${role}','public.${table}','INSERT,UPDATE,DELETE')`),'f');
@@ -85,6 +101,10 @@ test('disposable PostgreSQL proves keys, constraints, deletion dependency and is
     query(`insert into public.conference_accommodation_occupancies(id,conference_id,room_id,participation_id,arrival_day,leave_day,bed_type,extra_bed_person_type,created_by,updated_by) values('${occupancy}','${conference1}','${room1}','${participation1}',1,3,'extra','adult','${actor}','${actor}')`);
     rejects(`insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,created_by,updated_by) values('${conference1}','${room2}','${participation1}',1,'${actor}','${actor}')`,/unique constraint/);
     rejects(`insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,created_by,updated_by) values('${conference1}','${room2}','${participation2}',1,'${actor}','${actor}')`,/foreign key/);
+    rejects(`set role authenticated; insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,created_by,updated_by) values('${conference1}','${room2}','${participation3}',1,'${actor}','${actor}')`,/permission denied/);
+    query(`insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,created_by,updated_by) values('${conference1}','${room2}','${participation3}',1,'${actor}','${actor}')`);
+    assert.equal(query(`select status from public.conference_participations where id='${participation3}'`),'apologized');
+    query(`delete from public.conference_accommodation_occupancies where participation_id='${participation3}'`);
     rejects(`insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,created_by,updated_by) values('${conference1}','${room2}','${participation1}',0,'${actor}','${actor}')`,/check constraint/);
     rejects(`update public.conference_accommodation_occupancies set leave_day=arrival_day where id='${occupancy}'`,/check constraint/);
     rejects(`delete from public.conference_participations where id='${participation1}'`,/foreign key/);
