@@ -60,7 +60,14 @@ test('isolated PostgreSQL Person foundation', async t => {
   }
   command('createdb', [database]);
   try {
-    query(`create schema auth; create schema platform; create schema platform_private; create schema extensions;
+    // Minimal Supabase-shaped fixture: the production migration revokes these API roles,
+    // so the isolated database must define them before executing the real migration.
+    query(`do $$ begin
+        if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
+        if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
+        if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin; end if;
+      end $$;
+      create schema auth; create schema platform; create schema platform_private; create schema extensions;
       create extension pgcrypto with schema extensions;
       create table auth.users(id uuid primary key);`);
     // Use actual Platform profile schema and timestamp trigger; only auth.users is a minimal fixture.
