@@ -1,0 +1,142 @@
+begin;
+
+-- Canonical stays are [arrival_day, coalesce(leave_day, duration + 1)).
+-- Equal leave/arrival boundaries do not overlap; NULL stays through the last day.
+
+create function platform_private.require_conference_accommodation_context(p_device uuid,p_conference uuid,p_permission text,p_mutation boolean)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare c public.conferences%rowtype; context jsonb; actor uuid;
+begin
+  if p_permission not in('conference.accommodation.view','conference.accommodation.manage') then raise exception 'ACCOMMODATION_ARGUMENT_INVALID' using errcode='22023'; end if;
+  context:=public.require_effective_module_permission(p_device,'conference',p_permission,'conference',p_conference::text); actor:=(context->>'actorUserId')::uuid;
+  if platform_private.validated_phase1c_device_authorization(actor,p_device) is null then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+  select * into c from public.conferences where id=p_conference;
+  if not found or c.deleted_at is not null then raise exception 'CONFERENCE_NOT_FOUND' using errcode='P0002'; end if;
+  if p_mutation and c.status<>'active' then raise exception 'COMPLETED_CONFERENCE_IMMUTABLE' using errcode='55000'; end if;
+  return context;
+end $$;
+
+create function platform_private.conference_accommodation_duration(p_conference uuid)
+returns integer language plpgsql stable security definer set search_path='' as $$
+declare days integer;
+begin
+  select end_date-start_date+1 into days from public.conferences where id=p_conference and start_date is not null and end_date is not null and end_date>=start_date;
+  if days is null then raise exception 'CONFERENCE_DURATION_REQUIRED' using errcode='22023'; end if; return days;
+end $$;
+
+create function public.get_conference_accommodation(p_device uuid,p_conference uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare context jsonb; result jsonb;
+begin
+  context:=platform_private.require_conference_accommodation_context(p_device,p_conference,'conference.accommodation.view',false);
+  select coalesce(jsonb_agg(jsonb_build_object('houseId',h.id,'name',h.name,'description',h.description,'position',h.position,'revision',h.revision,'floors',
+    (select coalesce(jsonb_agg(jsonb_build_object('floorId',f.id,'name',f.name,'position',f.position,'revision',f.revision,'rooms',
+      (select coalesce(jsonb_agg(jsonb_build_object('roomId',r.id,'roomNumber',r.room_number,'baseCapacity',r.base_capacity,'extraBedCapacity',r.extra_bed_capacity,'notes',r.notes,'isClosed',r.is_closed,'closedDay',r.closed_day,'position',r.position,'revision',r.revision,'occupancies',
+        (select coalesce(jsonb_agg(jsonb_build_object('occupancyId',o.id,'revision',o.revision,'arrivalDay',o.arrival_day,'leaveDay',o.leave_day,'bedType',o.bed_type,'extraBedPersonType',o.extra_bed_person_type,'participationId',p.id,'participationStatus',p.status,'person',jsonb_build_object('personId',pe.id,'fullName',pe.full_name,'phone',pe.phone,'gender',pe.gender,'dateOfBirth',pe.date_of_birth,'church',pe.church)) order by pe.full_name,o.id),'[]') from public.conference_accommodation_occupancies o join public.conference_participations p on p.id=o.participation_id join platform.people pe on pe.id=p.person_id where o.room_id=r.id)
+      ) order by r.position,r.id),'[]') from public.conference_accommodation_rooms r where r.floor_id=f.id)
+    ) order by f.position,f.id),'[]') from public.conference_accommodation_floors f where f.house_id=h.id)
+  ) order by h.position,h.id),'[]') into result from public.conference_accommodation_houses h where h.conference_id=p_conference;
+  return jsonb_build_object('conferenceId',p_conference,'houses',result);
+end $$;
+
+create function public.mutate_conference_accommodation_structure(p_device uuid,p_operation text,p_args jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare conference uuid:=(p_args->>'p_conference_id')::uuid; context jsonb; actor uuid; device_authorization uuid; v_id uuid; v_expected bigint; v_old jsonb; v_result jsonb; days integer; v_parent uuid;
+begin
+  context:=platform_private.require_conference_accommodation_context(p_device,conference,'conference.accommodation.manage',true); actor:=(context->>'actorUserId')::uuid; device_authorization:=platform_private.validated_phase1c_device_authorization(actor,p_device);
+  if p_operation='create_house' then
+    insert into public.conference_accommodation_houses(conference_id,name,description,position,created_by,updated_by) values(conference,p_args->>'p_name',p_args->>'p_description',coalesce((p_args->>'p_position')::integer,0),actor,actor) returning conference_accommodation_houses.id into v_id; v_result:=jsonb_build_object('houseId',v_id,'revision',1);
+  elsif p_operation='update_house' then
+    v_id:=(p_args->>'p_house_id')::uuid; v_expected:=(p_args->>'p_expected_revision')::bigint; select to_jsonb(h) into v_old from public.conference_accommodation_houses h where h.id=v_id and h.conference_id=conference for update;
+    if v_old is null then raise exception 'ACCOMMODATION_HOUSE_NOT_FOUND' using errcode='P0002'; end if; if (v_old->>'revision')::bigint<>v_expected then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001'; end if;
+    update public.conference_accommodation_houses set name=p_args->>'p_name',description=p_args->>'p_description',position=(p_args->>'p_position')::integer,revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where conference_id=conference and public.conference_accommodation_houses.id=v_id returning jsonb_build_object('houseId',v_id,'revision',revision) into v_result;
+  elsif p_operation='delete_house' then
+    v_id:=(p_args->>'p_house_id')::uuid; v_expected:=(p_args->>'p_expected_revision')::bigint; select to_jsonb(h) into v_old from public.conference_accommodation_houses h where h.id=v_id and h.conference_id=conference for update;
+    if v_old is null then raise exception 'ACCOMMODATION_HOUSE_NOT_FOUND' using errcode='P0002'; end if; if (v_old->>'revision')::bigint<>v_expected then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001'; end if; if exists(select 1 from public.conference_accommodation_floors where house_id=v_id) then raise exception 'ACCOMMODATION_HOUSE_NOT_EMPTY' using errcode='55000'; end if; delete from public.conference_accommodation_houses where public.conference_accommodation_houses.id=v_id; v_result:=jsonb_build_object('houseId',v_id,'deleted',true);
+  elsif p_operation='create_floor' then
+    v_parent:=(p_args->>'p_house_id')::uuid; if not exists(select 1 from public.conference_accommodation_houses where id=v_parent and conference_id=conference) then raise exception 'ACCOMMODATION_HOUSE_NOT_FOUND' using errcode='P0002'; end if;
+    insert into public.conference_accommodation_floors(conference_id,house_id,name,position,created_by,updated_by) values(conference,v_parent,p_args->>'p_name',coalesce((p_args->>'p_position')::integer,0),actor,actor) returning conference_accommodation_floors.id into v_id; v_result:=jsonb_build_object('floorId',v_id,'revision',1);
+  elsif p_operation in('update_floor','delete_floor') then
+    v_id:=(p_args->>'p_floor_id')::uuid; v_expected:=(p_args->>'p_expected_revision')::bigint; select to_jsonb(f) into v_old from public.conference_accommodation_floors f where f.id=v_id and f.conference_id=conference for update;
+    if v_old is null then raise exception 'ACCOMMODATION_FLOOR_NOT_FOUND' using errcode='P0002'; end if; if (v_old->>'revision')::bigint<>v_expected then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001'; end if;
+    if p_operation='update_floor' then update public.conference_accommodation_floors set name=p_args->>'p_name',position=(p_args->>'p_position')::integer,revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where public.conference_accommodation_floors.id=v_id returning jsonb_build_object('floorId',v_id,'revision',revision) into v_result; else if exists(select 1 from public.conference_accommodation_rooms where floor_id=v_id) then raise exception 'ACCOMMODATION_FLOOR_NOT_EMPTY' using errcode='55000'; end if; delete from public.conference_accommodation_floors where public.conference_accommodation_floors.id=v_id; v_result:=jsonb_build_object('floorId',v_id,'deleted',true); end if;
+  elsif p_operation='create_room' then
+    v_parent:=(p_args->>'p_floor_id')::uuid; if not exists(select 1 from public.conference_accommodation_floors where id=v_parent and conference_id=conference) then raise exception 'ACCOMMODATION_FLOOR_NOT_FOUND' using errcode='P0002'; end if; if p_args->>'p_closed_day' is not null then days:=platform_private.conference_accommodation_duration(conference); if (p_args->>'p_closed_day')::integer>days then raise exception 'ACCOMMODATION_DAY_OUT_OF_RANGE' using errcode='22023'; end if; end if;
+    insert into public.conference_accommodation_rooms(conference_id,floor_id,room_number,base_capacity,extra_bed_capacity,notes,is_closed,closed_day,position,created_by,updated_by) values(conference,v_parent,p_args->>'p_room_number',(p_args->>'p_base_capacity')::integer,(p_args->>'p_extra_bed_capacity')::integer,p_args->>'p_notes',(p_args->>'p_is_closed')::boolean,(p_args->>'p_closed_day')::integer,coalesce((p_args->>'p_position')::integer,0),actor,actor) returning conference_accommodation_rooms.id into v_id; v_result:=jsonb_build_object('roomId',v_id,'revision',1);
+  elsif p_operation in('update_room','delete_room') then
+    v_id:=(p_args->>'p_room_id')::uuid; v_expected:=(p_args->>'p_expected_revision')::bigint; select to_jsonb(r) into v_old from public.conference_accommodation_rooms r where r.id=v_id and r.conference_id=conference for update;
+    if v_old is null then raise exception 'ACCOMMODATION_ROOM_NOT_FOUND' using errcode='P0002'; end if; if (v_old->>'revision')::bigint<>v_expected then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001'; end if;
+    if p_operation='delete_room' then if exists(select 1 from public.conference_accommodation_occupancies where room_id=v_id) then raise exception 'ACCOMMODATION_ROOM_OCCUPIED' using errcode='55000'; end if; delete from public.conference_accommodation_rooms where public.conference_accommodation_rooms.id=v_id; v_result:=jsonb_build_object('roomId',v_id,'deleted',true);
+    else if p_args->>'p_closed_day' is not null then days:=platform_private.conference_accommodation_duration(conference); if (p_args->>'p_closed_day')::integer>days then raise exception 'ACCOMMODATION_DAY_OUT_OF_RANGE' using errcode='22023'; end if; end if; -- Evaluate simultaneous use on each Conference day, independently by bed type.
+      -- Preserve undated empty-room edits: duration is needed only with occupancies.
+      if exists(select 1 from public.conference_accommodation_occupancies where room_id=v_id) then
+        days:=platform_private.conference_accommodation_duration(conference);
+        if exists(
+          select 1 from generate_series(1,days) as stay_day(day)
+          join public.conference_accommodation_occupancies o on o.room_id=v_id
+            and o.arrival_day<=stay_day.day and stay_day.day<coalesce(o.leave_day,days+1)
+          group by stay_day.day
+          having count(*) filter(where o.bed_type='base')>(p_args->>'p_base_capacity')::integer
+              or count(*) filter(where o.bed_type='extra')>(p_args->>'p_extra_bed_capacity')::integer
+        ) then raise exception 'ACCOMMODATION_CAPACITY_CONFLICT' using errcode='55000'; end if;
+      end if; if (p_args->>'p_is_closed')::boolean and exists(select 1 from public.conference_accommodation_occupancies where room_id=v_id and ((p_args->>'p_closed_day') is null or arrival_day>=(p_args->>'p_closed_day')::integer or coalesce(leave_day,days+1)>(p_args->>'p_closed_day')::integer)) then raise exception 'ACCOMMODATION_CLOSURE_CONFLICT' using errcode='55000'; end if;
+      update public.conference_accommodation_rooms set room_number=p_args->>'p_room_number',base_capacity=(p_args->>'p_base_capacity')::integer,extra_bed_capacity=(p_args->>'p_extra_bed_capacity')::integer,notes=p_args->>'p_notes',is_closed=(p_args->>'p_is_closed')::boolean,closed_day=(p_args->>'p_closed_day')::integer,position=(p_args->>'p_position')::integer,revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where public.conference_accommodation_rooms.id=v_id returning jsonb_build_object('roomId',v_id,'revision',revision) into v_result; end if;
+  else raise exception 'ACCOMMODATION_OPERATION_INVALID' using errcode='22023'; end if;
+  insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,new_values,metadata,source) values(actor,device_authorization,'platform','conference','conference.accommodation.'||p_operation,'accommodation_structure',v_id,'platform',v_old,v_result,jsonb_build_object('conferenceId',conference,'permissionKey','conference.accommodation.manage','authoritySource',context->>'authoritySource','grantId',context->'grantId'),'rpc'); return v_result;
+end $$;
+
+create function public.assign_conference_accommodation(p_device uuid,p_conference uuid,p_room uuid,p_participation uuid,p_arrival integer,p_leave integer,p_bed text,p_extra_type text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare context jsonb; actor uuid; device_authorization uuid; room public.conference_accommodation_rooms%rowtype; days integer; used integer; row public.conference_accommodation_occupancies%rowtype; result jsonb;
+begin
+ context:=platform_private.require_conference_accommodation_context(p_device,p_conference,'conference.accommodation.manage',true); actor:=(context->>'actorUserId')::uuid; device_authorization:=platform_private.validated_phase1c_device_authorization(actor,p_device); days:=platform_private.conference_accommodation_duration(p_conference);
+ if p_arrival<1 or p_arrival>days or (p_leave is not null and (p_leave<=p_arrival or p_leave>days+1)) then raise exception 'ACCOMMODATION_STAY_INVALID' using errcode='22023'; end if;
+ if not exists(select 1 from public.conference_participations where id=p_participation and conference_id=p_conference and status='active') then raise exception 'ACTIVE_CONFERENCE_PARTICIPATION_REQUIRED' using errcode='42501'; end if;
+ select * into room from public.conference_accommodation_rooms where id=p_room and conference_id=p_conference for update; if not found then raise exception 'ACCOMMODATION_ROOM_NOT_FOUND' using errcode='P0002'; end if;
+ if room.is_closed and (room.closed_day is null or p_arrival>=room.closed_day or coalesce(p_leave,days+1)>room.closed_day) then raise exception 'ACCOMMODATION_ROOM_UNAVAILABLE' using errcode='55000'; end if;
+ select count(*) into used from public.conference_accommodation_occupancies where room_id=p_room and bed_type=p_bed
+   and arrival_day<coalesce(p_leave,days+1) and p_arrival<coalesce(leave_day,days+1); if (p_bed='base' and used>=room.base_capacity) or (p_bed='extra' and used>=room.extra_bed_capacity) then raise exception 'ACCOMMODATION_ROOM_CAPACITY_EXCEEDED' using errcode='55000'; end if;
+ insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,leave_day,bed_type,extra_bed_person_type,created_by,updated_by) values(p_conference,p_room,p_participation,p_arrival,p_leave,p_bed,p_extra_type,actor,actor) returning * into row; result:=jsonb_build_object('occupancyId',row.id,'revision',row.revision,'roomId',row.room_id,'participationId',row.participation_id);
+ insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,new_values,metadata,source) values(actor,device_authorization,'platform','conference','conference.accommodation.assigned','accommodation_occupancy',row.id,'platform',to_jsonb(row),jsonb_build_object('conferenceId',p_conference,'participationId',p_participation,'permissionKey','conference.accommodation.manage','authoritySource',context->>'authoritySource','grantId',context->'grantId'),'rpc'); return result;
+end $$;
+
+create function public.move_conference_accommodation(p_device uuid,p_conference uuid,p_occupancy uuid,p_expected bigint,p_room uuid,p_arrival integer,p_leave integer,p_bed text,p_extra_type text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare context jsonb; actor uuid; device_authorization uuid; current public.conference_accommodation_occupancies%rowtype; destination public.conference_accommodation_rooms%rowtype; days integer; used integer; updated public.conference_accommodation_occupancies%rowtype;
+begin
+ context:=platform_private.require_conference_accommodation_context(p_device,p_conference,'conference.accommodation.manage',true); actor:=(context->>'actorUserId')::uuid; device_authorization:=platform_private.validated_phase1c_device_authorization(actor,p_device); days:=platform_private.conference_accommodation_duration(p_conference); if p_arrival<1 or p_arrival>days or (p_leave is not null and (p_leave<=p_arrival or p_leave>days+1)) then raise exception 'ACCOMMODATION_STAY_INVALID' using errcode='22023'; end if;
+ select * into current from public.conference_accommodation_occupancies where id=p_occupancy and conference_id=p_conference; if not found then raise exception 'ACCOMMODATION_OCCUPANCY_NOT_FOUND' using errcode='P0002'; end if; perform 1 from public.conference_accommodation_rooms where id in(current.room_id,p_room) order by id for update;
+ select * into current from public.conference_accommodation_occupancies where id=p_occupancy for update; if current.revision<>p_expected then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001'; end if; if not exists(select 1 from public.conference_participations where id=current.participation_id and status='active') then raise exception 'ACTIVE_CONFERENCE_PARTICIPATION_REQUIRED' using errcode='42501'; end if;
+ select * into destination from public.conference_accommodation_rooms where id=p_room and conference_id=p_conference; if not found then raise exception 'ACCOMMODATION_ROOM_NOT_FOUND' using errcode='P0002'; end if; if destination.is_closed and (destination.closed_day is null or p_arrival>=destination.closed_day or coalesce(p_leave,days+1)>destination.closed_day) then raise exception 'ACCOMMODATION_ROOM_UNAVAILABLE' using errcode='55000'; end if;
+ select count(*) into used from public.conference_accommodation_occupancies where room_id=p_room and bed_type=p_bed and id<>p_occupancy
+   and arrival_day<coalesce(p_leave,days+1) and p_arrival<coalesce(leave_day,days+1); if (p_bed='base' and used>=destination.base_capacity) or (p_bed='extra' and used>=destination.extra_bed_capacity) then raise exception 'ACCOMMODATION_ROOM_CAPACITY_EXCEEDED' using errcode='55000'; end if;
+ update public.conference_accommodation_occupancies set room_id=p_room,arrival_day=p_arrival,leave_day=p_leave,bed_type=p_bed,extra_bed_person_type=p_extra_type,revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where id=p_occupancy returning * into updated;
+ insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,new_values,metadata,source) values(actor,device_authorization,'platform','conference','conference.accommodation.moved','accommodation_occupancy',p_occupancy,'platform',to_jsonb(current),to_jsonb(updated),jsonb_build_object('conferenceId',p_conference,'participationId',current.participation_id,'oldRoomId',current.room_id,'newRoomId',p_room,'permissionKey','conference.accommodation.manage','authoritySource',context->>'authoritySource','grantId',context->'grantId'),'rpc'); return jsonb_build_object('occupancyId',updated.id,'revision',updated.revision,'roomId',updated.room_id);
+end $$;
+
+create function public.remove_conference_accommodation(p_device uuid,p_conference uuid,p_occupancy uuid,p_expected bigint)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare context jsonb; actor uuid; device_authorization uuid; current public.conference_accommodation_occupancies%rowtype;
+begin
+ context:=platform_private.require_conference_accommodation_context(p_device,p_conference,'conference.accommodation.manage',true); actor:=(context->>'actorUserId')::uuid; device_authorization:=platform_private.validated_phase1c_device_authorization(actor,p_device); select * into current from public.conference_accommodation_occupancies where id=p_occupancy and conference_id=p_conference for update; if not found then raise exception 'ACCOMMODATION_OCCUPANCY_NOT_FOUND' using errcode='P0002'; end if; if current.revision<>p_expected then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001'; end if;
+ delete from public.conference_accommodation_occupancies where id=p_occupancy; insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,metadata,source) values(actor,device_authorization,'platform','conference','conference.accommodation.removed','accommodation_occupancy',p_occupancy,'platform',to_jsonb(current),jsonb_build_object('conferenceId',p_conference,'participationId',current.participation_id,'permissionKey','conference.accommodation.manage','authoritySource',context->>'authoritySource','grantId',context->'grantId'),'rpc'); return jsonb_build_object('occupancyId',p_occupancy,'deleted',true);
+end $$;
+
+revoke all on function platform_private.require_conference_accommodation_context(uuid,uuid,text,boolean),platform_private.conference_accommodation_duration(uuid),public.get_conference_accommodation(uuid,uuid),public.mutate_conference_accommodation_structure(uuid,text,jsonb),public.assign_conference_accommodation(uuid,uuid,uuid,uuid,integer,integer,text,text),public.move_conference_accommodation(uuid,uuid,uuid,bigint,uuid,integer,integer,text,text),public.remove_conference_accommodation(uuid,uuid,uuid,bigint) from public,anon,authenticated,service_role;
+
+create or replace function platform_private.route_canonical_conference_operation(p_user_id uuid,p_session_id uuid,p_token_hash bytea,p_actor_device_id uuid,p_operation text,p_args jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$ begin
+ if p_operation='get_conference_accommodation' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']); return public.get_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+ elsif p_operation in('create_accommodation_house','update_accommodation_house','delete_accommodation_house','create_accommodation_floor','update_accommodation_floor','delete_accommodation_floor','create_accommodation_room','update_accommodation_room','delete_accommodation_room') then return public.mutate_conference_accommodation_structure(p_actor_device_id,replace(p_operation,'_accommodation_','_'),p_args);
+ elsif p_operation='assign_conference_accommodation' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_room_id','p_participation_id','p_arrival_day','p_leave_day','p_bed_type','p_extra_bed_person_type']); return public.assign_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_room_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_arrival_day')::integer,(p_args->>'p_leave_day')::integer,p_args->>'p_bed_type',p_args->>'p_extra_bed_person_type');
+ elsif p_operation='move_conference_accommodation' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_occupancy_id','p_expected_revision','p_room_id','p_arrival_day','p_leave_day','p_bed_type','p_extra_bed_person_type']); return public.move_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_occupancy_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_room_id')::uuid,(p_args->>'p_arrival_day')::integer,(p_args->>'p_leave_day')::integer,p_args->>'p_bed_type',p_args->>'p_extra_bed_person_type');
+ elsif p_operation='remove_conference_accommodation' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_occupancy_id','p_expected_revision']); return public.remove_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_occupancy_id')::uuid,(p_args->>'p_expected_revision')::bigint);
+ elsif p_operation='create_canonical_conference' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_requested_conference_id','p_organization_id','p_name','p_start_date','p_end_date']); return public.create_canonical_conference(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_requested_conference_id')::uuid,(p_args->>'p_organization_id')::uuid,p_args->>'p_name',(p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date);
+ elsif p_operation='mutate_conference_core' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_expected_revision','p_name','p_start_date','p_end_date','p_status']); return public.mutate_conference_core(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_expected_revision')::bigint,p_args->>'p_name',(p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date,p_args->>'p_status');
+ elsif p_operation='list_conference_participations' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']); return public.list_conference_participations(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+ elsif p_operation='create_conference_participation' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_person_id']); return public.create_conference_participation(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,(p_args->>'p_person_id')::uuid);
+ elsif p_operation='set_conference_participation_status' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_participation_id','p_expected_revision','p_status']); return public.set_conference_participation_status(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_expected_revision')::bigint,p_args->>'p_status');
+ elsif p_operation='delete_conference_participation' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_participation_id','p_expected_revision']); return public.delete_conference_participation(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_expected_revision')::bigint); end if;
+ return platform.execute_conference_device_operation_phase1c_core(p_user_id,p_session_id,p_token_hash,p_operation,p_args); end $$;
+revoke all on function platform_private.route_canonical_conference_operation(uuid,uuid,bytea,uuid,text,jsonb) from public,anon,authenticated,service_role;
+commit;
