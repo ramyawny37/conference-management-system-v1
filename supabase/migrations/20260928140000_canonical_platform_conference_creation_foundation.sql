@@ -28,10 +28,23 @@ begin
   end if;
 end $$;
 
--- The historical insert trigger bootstraps owner membership. Canonical
--- Platform creation deliberately has no Conference/Organization membership
--- authority, so only the protected canonical insert suppresses that legacy
--- compatibility side effect.
+-- No existing context object proves call provenance to an INSERT trigger: the
+-- Phase1C context is session state. Use a private one-time capability bound to
+-- the current transaction, backend, actor, and new Conference. Only the
+-- revoked canonical function can establish it and the trigger consumes it.
+create table platform_private.canonical_conference_create_capabilities(
+  transaction_id xid8 not null,
+  backend_pid integer not null,
+  actor_user_id uuid not null,
+  conference_id uuid not null,
+  primary key(transaction_id,backend_pid,actor_user_id,conference_id)
+);
+
+revoke all on table platform_private.canonical_conference_create_capabilities
+  from public,anon,authenticated,service_role;
+
+-- The historical insert trigger still bootstraps owner membership unless it
+-- atomically consumes the exact private capability created for this insert.
 create or replace function public.add_conference_owner_membership()
 returns trigger
 language plpgsql
@@ -39,14 +52,15 @@ security definer
 set search_path=''
 as $$
 declare
-  v_phase1c_device_id uuid:=platform_private.phase1c_context_device_id();
+  v_canonical_create boolean:=false;
 begin
-  if nullif(pg_catalog.current_setting('platform.canonical_conference_create_actor',true),'')::uuid
-       is not distinct from new.owner_id
-     and v_phase1c_device_id is not null
-     and platform_private.validated_phase1c_device_authorization(
-       new.owner_id,v_phase1c_device_id
-     ) is not null then
+  delete from platform_private.canonical_conference_create_capabilities capability
+  where capability.transaction_id=pg_catalog.pg_current_xact_id()
+    and capability.backend_pid=pg_catalog.pg_backend_pid()
+    and capability.actor_user_id=new.owner_id
+    and capability.conference_id=new.id
+  returning true into v_canonical_create;
+  if v_canonical_create then
     return new;
   end if;
   insert into public.conference_members(conference_id,user_id,role)
@@ -131,8 +145,11 @@ begin
     raise exception 'CONFERENCE_ID_ALREADY_USED' using errcode='23505';
   end if;
 
-  perform pg_catalog.set_config(
-    'platform.canonical_conference_create_actor',v_actor::text,true
+  insert into platform_private.canonical_conference_create_capabilities(
+    transaction_id,backend_pid,actor_user_id,conference_id
+  ) values(
+    pg_catalog.pg_current_xact_id(),pg_catalog.pg_backend_pid(),
+    v_actor,p_requested_conference_id
   );
   insert into public.conferences(
     id,name,owner_id,organization_id,start_date,end_date,status,
@@ -141,7 +158,6 @@ begin
     p_requested_conference_id,v_name,v_actor,p_organization_id,
     p_start_date,p_end_date,'active',null,1,v_actor
   );
-  perform pg_catalog.set_config('platform.canonical_conference_create_actor','',true);
 
   insert into public.conference_creation_operations(
     user_id,operation_id,conference_id,initial_metadata

@@ -58,10 +58,16 @@ actor, device authorization, operation UUID, module permission, authority
 source, grant identity, Conference identity, Organization business link, and
 initial canonical values. No audit identity comes from request data.
 
-The legacy owner-membership insert trigger is suppressed only while this
-protected function inserts the canonical row. Canonical creation therefore
-does not bootstrap Conference membership and does not depend on Organization
-membership. Existing legacy inserts retain their owner-membership behavior.
+The legacy owner-membership insert trigger is suppressed through a private,
+one-time database capability. Immediately before the canonical insert, the
+revoked internal function writes a capability bound to the current transaction,
+backend process, verified actor, and requested Conference UUID. The trigger
+atomically deletes that exact row to consume it. The capability table denies
+all access to PUBLIC, `anon`, `authenticated`, and `service_role`; known GUC,
+actor, device, and session values cannot establish or reproduce the capability.
+Canonical creation therefore does not bootstrap Conference membership and does
+not depend on Organization membership. Normal legacy inserts still execute the
+owner-membership bootstrap.
 
 ## Migration boundaries
 

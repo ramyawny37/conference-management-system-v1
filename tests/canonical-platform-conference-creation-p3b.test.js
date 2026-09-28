@@ -27,7 +27,8 @@ test('P3B has one Platform-authorized server creation path',()=>{
   assert.match(sql,/platform\.execute_conference_device_operation_phase1c_core/);
   assert.match(sql,/public\.create_canonical_conference\(v_session\.device_id/);
   assert.doesNotMatch(sql,/create table\s+(?:public\.)?(?:conference_v2|conferences_v2|conference_people)/i);
-  assert.doesNotMatch(sql,/create table[\s\S]{0,120}(?:operation|audit)/i);
+  assert.match(sql,/create table platform_private\.canonical_conference_create_capabilities/);
+  assert.doesNotMatch(sql,/platform\.canonical_conference_create_actor|set_config\([^)]*canonical_conference/i);
 });
 
 test('canonical input and initial P3A values are server constrained',()=>{
@@ -94,6 +95,8 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     query(`
       create extension if not exists pgcrypto;
       create schema auth; create schema platform; create schema platform_private;
+      grant usage on schema public to authenticated;
+      grant usage on schema platform_private to authenticated;
       create table auth.users(id uuid primary key);
       create table platform.profiles(user_id uuid primary key references auth.users(id),account_status text not null);
       create table platform.devices(id uuid primary key,user_id uuid not null references platform.profiles(user_id));
@@ -182,6 +185,27 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     assert.throws(()=>query(`set role authenticated; select public.create_canonical_conference(
       '${device}','${operation}','${conference}','${organization}','Denied','2026-11-01','2026-11-03')`),
       /permission denied for function create_canonical_conference/i);
+    assert.equal(query(`select has_table_privilege('authenticated',
+      'platform_private.canonical_conference_create_capabilities','INSERT')`),'f');
+    assert.throws(()=>query(`set role authenticated;
+      insert into platform_private.canonical_conference_create_capabilities
+      values(pg_current_xact_id(),pg_backend_pid(),'${actor}',
+        '90000000-0000-0000-0000-000000000001')`),
+      /permission denied for table canonical_conference_create_capabilities/i);
+
+    query(`grant insert on public.conferences to authenticated`);
+    query(`set role authenticated;
+      select set_config('platform.canonical_conference_create_actor','${actor}',true);
+      select set_config('platform.phase1c_context',jsonb_build_object(
+        'purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}',
+        'device_id','${device}','authorization_id','${authorization}')::text,true);
+      insert into public.conferences(id,name,owner_id,organization_id)
+      values('90000000-0000-0000-0000-000000000001','Spoofed','${actor}','${organization}')`);
+    assert.equal(query(`select count(*) from public.conferences
+      where id='90000000-0000-0000-0000-000000000001'`),'1');
+    assert.equal(query(`select count(*) from public.conference_members
+      where conference_id='90000000-0000-0000-0000-000000000001'
+        and user_id='${actor}' and role='owner'`),'1');
 
     const dispatch=(overrides='')=>query(`select platform.execute_conference_device_operation_phase1c_core(
       '${actor}',gen_random_uuid(),decode(repeat('00',32),'hex'),'create_canonical_conference',
@@ -199,9 +223,11 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     assert.equal(query(`select name||'|'||start_date||'|'||end_date||'|'||status||'|'||coalesce(completed_at::text,'NULL')||'|'||revision||'|'||owner_id||'|'||organization_id from public.conferences where id='${conference}'`),
       `Canonical Conference|2026-11-01|2026-11-03|active|NULL|1|${actor}|${organization}`);
     assert.equal(query(`select count(*) from public.organization_members`),'0');
-    assert.equal(query(`select count(*) from public.conference_members`),'0');
+    assert.equal(query(`select count(*) from public.conference_members
+      where conference_id='${conference}'`),'0');
+    assert.equal(query(`select count(*) from platform_private.canonical_conference_create_capabilities`),'0');
     assert.equal(dispatch(),'false');
-    assert.equal(query(`select count(*) from public.conferences`),'1');
+    assert.equal(query(`select count(*) from public.conferences where id='${conference}'`),'1');
     assert.equal(query(`select count(*) from platform.audit_events`),'1');
     assert.throws(()=>dispatch(`,'p_name','Different'`),/CANONICAL_CONFERENCE_CREATE_OPERATION_MISMATCH/);
     assert.throws(()=>dispatch(`,'p_actor_user_id','${actor}'`),/UNKNOWN/);
