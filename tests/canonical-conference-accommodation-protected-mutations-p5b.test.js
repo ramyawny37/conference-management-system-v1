@@ -127,6 +127,35 @@ test('disposable PostgreSQL proves protected Accommodation behavior and concurre
     function updateSql(room,base,extra,closed=false,day=null){
       return `select public.mutate_conference_accommodation_structure('${device}','update_room',jsonb_build_object('p_conference_id','${conference}','p_room_id','${room}','p_expected_revision',(select revision from public.conference_accommodation_rooms where id='${room}'),'p_room_number',(select room_number from public.conference_accommodation_rooms where id='${room}'),'p_base_capacity',${base},'p_extra_bed_capacity',${extra},'p_notes',null,'p_is_closed',${closed},'p_closed_day',${day},'p_position',0))`;
     }
+    await t.test('ASSIGN and MOVE accept departure after final day but reject invalid boundaries',()=>{
+      for(const bed of ['base','extra']){
+        for(const [arrival,leave] of [[4,6],[5,6],[4,null]]){
+          const assigned=assign(newRoom(),arrival,leave,bed);
+          const moved=JSON.parse(query(moveSql(assigned,newRoom(),arrival,leave,bed)));
+          assert.equal(moved.occupancyId,assigned.occupancyId); assert.equal(moved.revision,2);
+          assert.deepEqual(JSON.parse(query(`select jsonb_build_array(arrival_day,leave_day) from public.conference_accommodation_occupancies where id='${moved.occupancyId}'`)),[arrival,leave]);
+        }
+        const source=assign(newRoom(),1,3,bed),destination=newRoom();
+        for(const [arrival,leave] of [[4,7],[6,null],[6,7],[4,4],[4,3],[0,6]]){
+          rejects(assignSql(destination,arrival,leave,bed),/ACCOMMODATION_STAY_INVALID/);
+          rejects(moveSql(source,destination,arrival,leave,bed),/ACCOMMODATION_STAY_INVALID/);
+        }
+        const sequential=newRoom(); assign(sequential,1,3,bed); assign(sequential,3,6,bed);
+        rejects(assignSql(sequential,5,null,bed),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+        const moveDestination=newRoom(); assign(moveDestination,1,3,bed);
+        assert.equal(JSON.parse(query(moveSql(source,moveDestination,3,6,bed))).occupancyId,source.occupancyId);
+        query(updateSql(sequential,1,1));
+      }
+    });
+    await t.test('explicit final departure retains scheduled closure boundaries',()=>{
+      const closed=newRoom(2,1,true,5); assign(closed,4,5);
+      const source=assign(newRoom(),4,6);
+      rejects(assignSql(closed,4,6),/ACCOMMODATION_ROOM_UNAVAILABLE/);
+      rejects(moveSql(source,closed,4,6),/ACCOMMODATION_ROOM_UNAVAILABLE/);
+      assert.equal(JSON.parse(query(moveSql(source,closed,4,5))).occupancyId,source.occupancyId);
+      const occupied=newRoom(); assign(occupied,4,6);
+      rejects(updateSql(occupied,1,1,true,5),/ACCOMMODATION_CLOSURE_CONFLICT/);
+    });
     await t.test('half-open sequential stays reuse base and extra capacity; overlaps reject',()=>{
       for(const bed of ['base','extra']){
         const room=newRoom(); assign(room,1,3,bed); assign(room,3,5,bed);

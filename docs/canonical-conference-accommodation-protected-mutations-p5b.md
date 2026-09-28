@@ -50,7 +50,16 @@ The canonical interval is `[arrival_day, effective_leave)`, where
 Two stays overlap exactly when `existing.arrival_day < requested_effective_leave`
 and `requested.arrival_day < existing_effective_leave`. Equality at the
 leave/arrival boundary is not overlap. NULL leave occupies through the final
-Conference day. Existing explicit day validation is unchanged.
+Conference day. Arrival must satisfy `1 <= arrival_day <= conference_duration`.
+Explicit departure must satisfy
+`arrival_day < leave_day <= conference_duration + 1`; arrival on
+`conference_duration + 1` is invalid. ASSIGN and MOVE use the same validation.
+The former `leave_day <= conference_duration` check incorrectly rejected an
+explicit departure immediately after the final Conference day while allowing
+its NULL equivalent. For duration five, `[4,6)`, `[5,6)`, and `[4,NULL)` are
+valid; departure seven, arrival six, and departure at/before arrival reject.
+Executable ASSIGN/MOVE tests also verify `[1,3)` and `[3,6)` reuse capacity,
+and explicit departure six still rejects against scheduled closure day five.
 
 After locking the destination room, ASSIGN counts only overlapping canonical
 rows for the requested bed type. MOVE uses the same overlap predicate and
