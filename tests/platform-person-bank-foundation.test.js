@@ -9,14 +9,23 @@ const root = path.join(__dirname, '..');
 const migration = 'supabase/migrations/20260928120000_platform_person_bank_foundation.sql';
 const sql = fs.readFileSync(path.join(root, migration), 'utf8');
 const foundation = fs.readFileSync(path.join(root, 'supabase/migrations/20260907155000_production_structural_platform_foundation.sql'), 'utf8');
-const pgBin = '/Applications/Postgres.app/Contents/Versions/latest/bin';
+const postgresAppBin = '/Applications/Postgres.app/Contents/Versions/latest/bin';
+const pgBin = fs.existsSync(path.join(postgresAppBin, 'psql')) ? postgresAppBin : '';
 const database = `platform_person_p2a_${process.pid}_${Date.now()}`;
-// Explicit local socket and isolated database; never inherit a live connection URL.
-const connection = ['-h', '/tmp', '-p', '5432', '-U', os.userInfo().username];
+// Use the isolated PostgreSQL selected by the validation environment when present.
+// Local Postgres.app remains the developer fallback; never inherit a live connection URL.
+const validationHost = process.env.PGHOST;
+const validationPort = process.env.PGPORT;
+const validationUser = process.env.PGUSER;
+const validationPassword = process.env.PGPASSWORD;
+const connection = validationHost
+  ? ['-h', validationHost, '-p', validationPort || '5432', '-U', validationUser || os.userInfo().username]
+  : ['-h', '/tmp', '-p', '5432', '-U', os.userInfo().username];
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('PG')));
+if (validationPassword) env.PGPASSWORD = validationPassword;
 const actor = '10000000-0000-0000-0000-000000000001';
 function command(name, args) {
-  return execFileSync(path.join(pgBin, name), [...connection, ...args], {encoding:'utf8', env, stdio:'pipe'}).trim();
+  return execFileSync(pgBin ? path.join(pgBin, name) : name, [...connection, ...args], {encoding:'utf8', env, stdio:'pipe'}).trim();
 }
 function query(statement) {
   return command('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-At', '-d', database, '-c', statement]);
@@ -44,7 +53,11 @@ test('P2A adds only private Person storage/search, with no legacy mutation or pu
 });
 
 test('isolated PostgreSQL Person foundation', async t => {
-  assert.ok(fs.existsSync(path.join(pgBin, 'psql')), 'local PostgreSQL is required; do not silently skip');
+  try {
+    command('psql', ['-X', '-At', '-d', 'postgres', '-c', 'select 1']);
+  } catch {
+    assert.fail('local PostgreSQL is required; do not silently skip');
+  }
   command('createdb', [database]);
   try {
     query(`create schema auth; create schema platform; create schema platform_private; create schema extensions;
