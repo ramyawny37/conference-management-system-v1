@@ -25,14 +25,27 @@ The protected operations are `list_conference_participations`,
 `delete_conference_participation`. The existing
 `platform.execute_conference_device_operation` dispatcher validates the session,
 injects the verified device, and routes to internal functions whose EXECUTE is
-revoked from all client roles.
+revoked from all client roles. Delete replay derives its actor from that
+server-established Phase1C session context and revalidates the actor/device
+pair before reading the actor-scoped ledger. It then rechecks
+`conference.people.manage` for the Conference stored in the original result.
+`auth.uid()` and request JWT actor state are not replay authority.
 
 `public.conference_participation_operations` is the narrow actor-scoped mutation
-ledger because existing ledgers bind other domains and request shapes. Identical
-operation replay returns the stored result; immutable request mismatch fails.
+ledger because existing ledgers bind other domains and request shapes. It is
+participation-scoped replay infrastructure for P4B create/status/delete only.
+Identical operation replay returns the stored result; immutable request mismatch fails.
 Each successful first mutation writes verified actor/device, exact permission,
 authority/grant, Conference, Person, participation, revisions/status, and
 operation UUID to `platform.audit_events`.
+
+Future P5/P6 features must not automatically create another feature-specific
+ledger. Before Accommodation adds mutation families, operation-ledger reuse or
+consolidation must be reviewed; this table may later migrate into a canonical
+Platform operation ledger if one is introduced. That generic ledger is outside
+P4B. The current outer Conference dispatcher routing must likewise be reviewed
+and consolidated before adding the larger Accommodation operation surface so
+the compatibility wrapper does not grow indefinitely.
 
 The list response contains canonical rows plus `totalCount`, `activeCount`, and
 `apologizedCount`. Mutation responses contain current canonical state for later

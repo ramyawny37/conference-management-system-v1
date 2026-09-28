@@ -109,20 +109,33 @@ end $$;
 
 create function public.delete_conference_participation(p_actor_device_id uuid,p_operation_id uuid,p_participation_id uuid,p_expected_revision bigint)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare v_current public.conference_participations%rowtype; v_context jsonb; v_actor uuid; v_device_authorization uuid; v_request jsonb; v_prior public.conference_participation_operations%rowtype; v_result jsonb;
+declare v_current public.conference_participations%rowtype; v_context jsonb; v_session_context jsonb; v_actor uuid; v_device_authorization uuid; v_request jsonb; v_prior public.conference_participation_operations%rowtype; v_result jsonb;
 begin
   if p_operation_id is null or p_participation_id is null or p_expected_revision is null or p_expected_revision<1 then raise exception 'CONFERENCE_PARTICIPATION_ARGUMENT_INVALID' using errcode='22023'; end if;
-  v_actor:=auth.uid();
+  begin
+    v_session_context:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;
+    if v_session_context is null or v_session_context->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH'
+       or (v_session_context->>'device_id')::uuid is distinct from p_actor_device_id then
+      raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';
+    end if;
+    v_actor:=(v_session_context->>'user_id')::uuid;
+  exception when invalid_text_representation or null_value_not_allowed then
+    raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';
+  end;
+  v_device_authorization:=platform_private.validated_phase1c_device_authorization(v_actor,p_actor_device_id);
+  if v_device_authorization is null then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
   v_request:=jsonb_build_object('participationId',p_participation_id,'expectedRevision',p_expected_revision);
   perform pg_advisory_xact_lock(hashtextextended(v_actor::text||':conference-participation:'||p_operation_id::text,0));
   select * into v_prior from public.conference_participation_operations where actor_user_id=v_actor and operation_id=p_operation_id;
   if found then
     if v_prior.operation<>'delete' or v_prior.request<>v_request then raise exception 'CONFERENCE_PARTICIPATION_OPERATION_MISMATCH' using errcode='22023'; end if;
-    perform platform_private.require_conference_participation_context(p_actor_device_id,(v_prior.result->>'conferenceId')::uuid,'conference.people.manage',true);
+    v_context:=platform_private.require_conference_participation_context(p_actor_device_id,(v_prior.result->>'conferenceId')::uuid,'conference.people.manage',false);
+    if (v_context->>'actorUserId')::uuid is distinct from v_actor then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
     return v_prior.result;
   end if;
   select * into v_current from public.conference_participations where id=p_participation_id; if not found then raise exception 'CONFERENCE_PARTICIPATION_NOT_FOUND' using errcode='P0002'; end if;
-  v_context:=platform_private.require_conference_participation_context(p_actor_device_id,v_current.conference_id,'conference.people.manage',true); v_actor:=(v_context->>'actorUserId')::uuid; v_device_authorization:=platform_private.validated_phase1c_device_authorization(v_actor,p_actor_device_id);
+  v_context:=platform_private.require_conference_participation_context(p_actor_device_id,v_current.conference_id,'conference.people.manage',true);
+  if (v_context->>'actorUserId')::uuid is distinct from v_actor then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
   select * into v_current from public.conference_participations where id=p_participation_id for update; if v_current.revision<>p_expected_revision then raise exception 'CONFERENCE_PARTICIPATION_REVISION_CONFLICT' using errcode='40001'; end if;
   delete from public.conference_participations where id=p_participation_id; v_result:=jsonb_build_object('participationId',p_participation_id,'conferenceId',v_current.conference_id,'personId',v_current.person_id,'deleted',true);
   insert into public.conference_participation_operations values(v_actor,p_operation_id,'delete',v_request,v_result,statement_timestamp()); insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,new_values,metadata,operation_id,source) values(v_actor,v_device_authorization,'platform','conference','conference.participation.deleted','conference_participation',p_participation_id,'platform',jsonb_build_object('conferenceId',v_current.conference_id,'personId',v_current.person_id,'status',v_current.status,'revision',v_current.revision),null,jsonb_build_object('permissionKey','conference.people.manage','authoritySource',v_context->>'authoritySource','grantId',v_context->'grantId'),p_operation_id,'rpc'); return v_result;
@@ -235,5 +248,5 @@ end $$;
 revoke all on function platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb) from public,anon,authenticated,service_role;
 grant execute on function platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb) to service_role;
 comment on table public.conference_participations is 'Canonical Conference participation linking one platform.people identity to one Conference. Apologized remains visible but inactive; completed Conferences are read-only.';
-comment on table public.conference_participation_operations is 'P4B actor-scoped idempotency ledger for canonical participation mutations.';
+comment on table public.conference_participation_operations is 'Participation-scoped actor idempotency ledger for P4B create/status/delete only. Before P5/P6 adds mutation families, review consolidation into a canonical Platform operation ledger; do not automatically add another feature ledger.';
 commit;

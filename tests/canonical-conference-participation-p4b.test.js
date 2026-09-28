@@ -31,6 +31,10 @@ test('P4B uses existing dispatcher, audit and bounded operation ledger',()=>{
   assert.match(sql,/CONFERENCE_PARTICIPATION_REVISION_CONFLICT/);
   assert.match(sql,/COMPLETED_CONFERENCE_IMMUTABLE/);
   assert.match(sql,/count\(\*\) filter\(where status='active'\)/);
+  const deleteBody=sql.match(/create function public\.delete_conference_participation[\s\S]*?revoke all on function/)?.[0]||'';
+  assert.doesNotMatch(deleteBody,/auth\.uid\(\)/);
+  assert.match(deleteBody,/current_setting\('platform\.phase1c_context',true\)/);
+  assert.match(deleteBody,/validated_phase1c_device_authorization\(v_actor,p_actor_device_id\)/);
 });
 
 const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
@@ -52,6 +56,11 @@ test('disposable PostgreSQL proves canonical participation lifecycle and securit
   const authorization='30000000-0000-0000-0000-000000000001';
   const binding='31000000-0000-0000-0000-000000000001';
   const session='32000000-0000-0000-0000-000000000001';
+  const actor2='10000000-0000-0000-0000-000000000002';
+  const device2='20000000-0000-0000-0000-000000000002';
+  const authorization2='30000000-0000-0000-0000-000000000002';
+  const binding2='31000000-0000-0000-0000-000000000002';
+  const session2='32000000-0000-0000-0000-000000000002';
   const conference='40000000-0000-0000-0000-000000000001';
   const completed='41000000-0000-0000-0000-000000000001';
   const deleted='42000000-0000-0000-0000-000000000001';
@@ -62,7 +71,9 @@ test('disposable PostgreSQL proves canonical participation lifecycle and securit
   try{
     for(const role of roles){if(query(`select exists(select 1 from pg_roles where rolname='${role}')`)==='f'){query(`create role ${role} nologin`);created.push(role);}}
     query(`create schema extensions; create extension pgcrypto with schema extensions; create schema auth; create schema platform; create schema platform_private;
-      create function auth.uid() returns uuid language sql stable as \$\$ select '${actor}'::uuid \$\$;
+      create table public.p4_context(account_ok boolean,device_ok boolean,permission text,jwt_actor uuid);
+      insert into public.p4_context values(true,true,'conference.people.manage','${actor}');
+      create function auth.uid() returns uuid language sql stable as \$\$ select jwt_actor from public.p4_context \$\$;
       create function auth.role() returns text language sql stable as \$\$ select 'service_role'::text \$\$;
       create table auth.users(id uuid primary key);
       create table platform.profiles(user_id uuid primary key,account_status text not null);
@@ -75,17 +86,16 @@ test('disposable PostgreSQL proves canonical participation lifecycle and securit
       create table public.conferences(id uuid primary key,name text,owner_id uuid,organization_id uuid,start_date date,end_date date,status text,completed_at timestamptz,revision bigint,created_at timestamptz default now(),updated_at timestamptz default now(),updated_by uuid,deleted_at timestamptz);
       create table public.organization_members(organization_id uuid,user_id uuid); create table public.conference_members(conference_id uuid,user_id uuid);
       create table public.module_permission_catalog(permission_key text primary key,module_key text,status text,allowed_scope_mode text,allowed_resource_type text);
-      create table public.p4_context(account_ok boolean,device_ok boolean,permission text);
-      insert into public.p4_context values(true,true,'conference.people.manage');
       insert into public.module_permission_catalog values('conference.people.view','conference','active','resource','conference'),('conference.people.manage','conference','active','resource','conference');
-      insert into auth.users values('${actor}'); insert into platform.profiles values('${actor}','approved');
-      insert into platform.devices values('${device}','${actor}','active',null,null); insert into platform.user_device_authorizations values('${authorization}','${actor}','${device}','approved',null);
-      insert into platform.device_key_bindings values('${binding}','${actor}','${device}','${authorization}','thumb','ECDSA_P256_SHA256','active',null,null);
-      insert into platform_private.device_sessions values('${session}','${actor}','${device}','${authorization}','${binding}',decode(repeat('00',32),'hex'),'PLATFORM_DEVICE_SESSION','thumb',null,now()+interval '1 day');
+      insert into auth.users values('${actor}'),('${actor2}'); insert into platform.profiles values('${actor}','approved'),('${actor2}','approved');
+      insert into platform.devices values('${device}','${actor}','active',null,null),('${device2}','${actor2}','active',null,null);
+      insert into platform.user_device_authorizations values('${authorization}','${actor}','${device}','approved',null),('${authorization2}','${actor2}','${device2}','approved',null);
+      insert into platform.device_key_bindings values('${binding}','${actor}','${device}','${authorization}','thumb','ECDSA_P256_SHA256','active',null,null),('${binding2}','${actor2}','${device2}','${authorization2}','thumb2','ECDSA_P256_SHA256','active',null,null);
+      insert into platform_private.device_sessions values('${session}','${actor}','${device}','${authorization}','${binding}',decode(repeat('00',32),'hex'),'PLATFORM_DEVICE_SESSION','thumb',null,now()+interval '1 day'),('${session2}','${actor2}','${device2}','${authorization2}','${binding2}',decode(repeat('11',32),'hex'),'PLATFORM_DEVICE_SESSION','thumb2',null,now()+interval '1 day');
       insert into platform.people(id,full_name) values('${person}','Person One'),('${person2}','Person Two');
       insert into public.conferences(id,name,status,revision,deleted_at) values('${conference}','Active','active',1,null),('${completed}','Completed','completed',1,null),('${deleted}','Deleted','active',1,now());
-      create function public.require_effective_module_permission(uuid,text,text,text,text) returns jsonb language plpgsql stable as \$\$ declare c public.p4_context%rowtype; begin select * into c from public.p4_context; if not c.account_ok then raise exception 'ACCOUNT_REQUIRED' using errcode='42501'; end if; if \$1<>'${device}'::uuid or \$2<>'conference' or \$3<>c.permission or \$4<>'conference' or \$5 is null then raise exception 'MODULE_PERMISSION_REQUIRED' using errcode='42501'; end if; return jsonb_build_object('actorUserId','${actor}','authoritySource','resource_grant','grantId','60000000-0000-0000-0000-000000000001'); end \$\$;
-      create function platform_private.validated_phase1c_device_authorization(uuid,uuid) returns uuid language sql stable as \$\$ select case when (select device_ok from public.p4_context) and \$1='${actor}'::uuid and \$2='${device}'::uuid then '${authorization}'::uuid end \$\$;
+      create function public.require_effective_module_permission(uuid,text,text,text,text) returns jsonb language plpgsql stable as \$\$ declare c public.p4_context%rowtype; derived_actor uuid; begin select * into c from public.p4_context; if not c.account_ok then raise exception 'ACCOUNT_REQUIRED' using errcode='42501'; end if; derived_actor:=case \$1 when '${device}'::uuid then '${actor}'::uuid when '${device2}'::uuid then '${actor2}'::uuid end; if derived_actor is null or \$2<>'conference' or \$3<>c.permission or \$4<>'conference' or \$5 is null then raise exception 'MODULE_PERMISSION_REQUIRED' using errcode='42501'; end if; return jsonb_build_object('actorUserId',derived_actor,'authoritySource','resource_grant','grantId','60000000-0000-0000-0000-000000000001'); end \$\$;
+      create function platform_private.validated_phase1c_device_authorization(uuid,uuid) returns uuid language plpgsql stable as \$\$ declare c jsonb:=nullif(current_setting('platform.phase1c_context',true),'')::jsonb; enabled boolean; begin select device_ok into enabled from public.p4_context; if not enabled or c->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (c->>'user_id')::uuid is distinct from \$1 or (c->>'device_id')::uuid is distinct from \$2 then return null; end if; return case when \$1='${actor}'::uuid and \$2='${device}'::uuid then '${authorization}'::uuid when \$1='${actor2}'::uuid and \$2='${device2}'::uuid then '${authorization2}'::uuid end; end \$\$;
       create function platform_private.require_exact_jsonb_keys(jsonb,text[],text[] default '{}') returns void language plpgsql immutable as \$\$ declare k text; begin foreach k in array \$2 loop if not \$1?k then raise exception 'MISSING'; end if; end loop; if exists(select 1 from jsonb_object_keys(\$1) x where not(x=any(\$2) or x=any(\$3))) then raise exception 'UNKNOWN'; end if; end \$\$;
       create function platform.execute_conference_device_operation_phase1c_core(uuid,uuid,bytea,text,jsonb) returns jsonb language sql as \$\$ select '{}'::jsonb \$\$;
       create function public.create_canonical_conference(uuid,uuid,uuid,uuid,text,date,date) returns jsonb language sql as \$\$ select '{}'::jsonb \$\$;
@@ -93,6 +103,7 @@ test('disposable PostgreSQL proves canonical participation lifecycle and securit
       create function platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb) returns jsonb language sql as \$\$ select '{}'::jsonb \$\$;`);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,migration)]);
     const dispatch=(operation,args)=>query(`select platform.execute_conference_device_operation('${actor}','${session}',decode(repeat('00',32),'hex'),'${operation}',${args})`);
+    const dispatch2=(operation,args)=>query(`select platform.execute_conference_device_operation('${actor2}','${session2}',decode(repeat('11',32),'hex'),'${operation}',${args})`);
     const signatures=['public.list_conference_participations(uuid,uuid)','public.create_conference_participation(uuid,uuid,uuid,uuid)','public.set_conference_participation_status(uuid,uuid,uuid,bigint,text)','public.delete_conference_participation(uuid,uuid,uuid,bigint)','platform_private.require_conference_participation_context(uuid,uuid,text,boolean)'];
     for(const role of roles) for(const signature of signatures) assert.equal(query(`select has_function_privilege('${role}','${signature}','EXECUTE')`),'f');
     rejects(`set role authenticated; select public.create_conference_participation('${device}',extensions.gen_random_uuid(),'${conference}','${person}')`,/permission denied/);
@@ -107,7 +118,7 @@ test('disposable PostgreSQL proves canonical participation lifecycle and securit
     assert.deepEqual(JSON.parse(dispatch('create_conference_participation',`jsonb_build_object('p_operation_id','${op1}','p_conference_id','${conference}','p_person_id','${person}')`)),createdRow);
     rejectsCall(()=>dispatch('create_conference_participation',`jsonb_build_object('p_operation_id','${op1}','p_conference_id','${conference}','p_person_id','${person2}')`),/OPERATION_MISMATCH/);
     rejectsCall(()=>dispatch('create_conference_participation',`jsonb_build_object('p_operation_id',extensions.gen_random_uuid(),'p_conference_id','${conference}','p_person_id','${person}')`),/ALREADY_EXISTS/);
-    rejects(`select public.create_conference_participation('${device}',extensions.gen_random_uuid(),'${conference}','ffffffff-ffff-ffff-ffff-ffffffffffff')`,/PLATFORM_PERSON_NOT_FOUND/);
+    rejectsCall(()=>dispatch('create_conference_participation',`jsonb_build_object('p_operation_id',extensions.gen_random_uuid(),'p_conference_id','${conference}','p_person_id','ffffffff-ffff-ffff-ffff-ffffffffffff')`),/PLATFORM_PERSON_NOT_FOUND/);
     rejectsCall(()=>dispatch('create_conference_participation',`jsonb_build_object('p_operation_id',extensions.gen_random_uuid(),'p_conference_id','ffffffff-ffff-ffff-ffff-ffffffffffff','p_person_id','${person2}')`),/CONFERENCE_NOT_FOUND/);
     const op2='70000000-0000-0000-0000-000000000002';
     const apologized=JSON.parse(dispatch('set_conference_participation_status',`jsonb_build_object('p_operation_id','${op2}','p_participation_id','${createdRow.participationId}','p_expected_revision',1,'p_status','apologized')`)); assert.equal(apologized.revision,2);
@@ -123,7 +134,15 @@ test('disposable PostgreSQL proves canonical participation lifecycle and securit
     query(`update public.p4_context set permission='conference.people.view'`); assert.equal(JSON.parse(dispatch('list_conference_participations',`jsonb_build_object('p_conference_id','${completed}')`)).totalCount,1); rejectsCall(()=>dispatch('list_conference_participations',`jsonb_build_object('p_conference_id','${deleted}')`),/CONFERENCE_NOT_FOUND/);
     query(`update public.p4_context set permission='conference.people.manage'`);
     const op4='70000000-0000-0000-0000-000000000004'; const deletedResult=JSON.parse(dispatch('delete_conference_participation',`jsonb_build_object('p_operation_id','${op4}','p_participation_id','${createdRow.participationId}','p_expected_revision',3)`)); assert.equal(deletedResult.deleted,true);
+    query(`update public.p4_context set jwt_actor='${actor2}'`);
     assert.deepEqual(JSON.parse(dispatch('delete_conference_participation',`jsonb_build_object('p_operation_id','${op4}','p_participation_id','${createdRow.participationId}','p_expected_revision',3)`)),deletedResult);
+    rejectsCall(()=>dispatch('delete_conference_participation',`jsonb_build_object('p_operation_id','${op4}','p_participation_id','${createdRow.participationId}','p_expected_revision',2)`),/OPERATION_MISMATCH/);
+    query(`update public.p4_context set device_ok=false`);
+    rejectsCall(()=>dispatch('delete_conference_participation',`jsonb_build_object('p_operation_id','${op4}','p_participation_id','${createdRow.participationId}','p_expected_revision',3)`),/APPROVED_DEVICE_SESSION_REQUIRED/);
+    query(`update public.p4_context set device_ok=true,permission='conference.people.view'`);
+    rejectsCall(()=>dispatch('delete_conference_participation',`jsonb_build_object('p_operation_id','${op4}','p_participation_id','${createdRow.participationId}','p_expected_revision',3)`),/MODULE_PERMISSION_REQUIRED/);
+    query(`update public.p4_context set permission='conference.people.manage'`);
+    rejectsCall(()=>dispatch2('delete_conference_participation',`jsonb_build_object('p_operation_id','${op4}','p_participation_id','${createdRow.participationId}','p_expected_revision',3)`),/CONFERENCE_PARTICIPATION_NOT_FOUND/);
     assert.equal(query(`select count(*) from platform.people where id='${person}'`),'1');
     assert.equal(query(`select string_agg(action||':'||amount,',' order by action) from (select action,count(*) amount from platform.audit_events group by action) audit_counts`),'conference.participation.created:1,conference.participation.deleted:1,conference.participation.status_changed:2');
     assert.equal(query(`select count(*) from platform.audit_events where actor_user_id='${actor}' and actor_device_authorization_id='${authorization}' and metadata->>'permissionKey'='conference.people.manage'`),'4');
