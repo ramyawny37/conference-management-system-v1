@@ -39,7 +39,7 @@ function query(statement){return command('psql',['-X','-v','ON_ERROR_STOP=1','-A
 async function queryAsync(statement){return (await execFileAsync(pgBin?path.join(pgBin,'psql'):'psql',[...connection,'-X','-v','ON_ERROR_STOP=1','-At','-d',database,'-c',statement],{encoding:'utf8',env})).stdout.trim();}
 function rejects(statement,pattern){assert.throws(()=>query(statement),error=>pattern.test(String(error.stderr)));}
 
-test('disposable PostgreSQL proves protected Accommodation behavior and concurrency',async()=>{
+test('disposable PostgreSQL proves protected Accommodation behavior and concurrency',async(t)=>{
   const actor='10000000-0000-0000-0000-000000000001',device='11000000-0000-0000-0000-000000000001',authz='12000000-0000-0000-0000-000000000001';
   const conference='20000000-0000-0000-0000-000000000001',completed='20000000-0000-0000-0000-000000000002',nodates='20000000-0000-0000-0000-000000000003';
   const person1='30000000-0000-0000-0000-000000000001',person2='30000000-0000-0000-0000-000000000002',person3='30000000-0000-0000-0000-000000000003';
@@ -108,5 +108,114 @@ test('disposable PostgreSQL proves protected Accommodation behavior and concurre
     assert.equal(concurrent.filter(result=>result.status==='fulfilled').length,1); assert.equal(concurrent.filter(result=>result.status==='rejected').length,1);
     assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where room_id='${room1.roomId}'`),'1');
     assert.equal(query(`select count(*) from platform.audit_events where action like 'conference.accommodation.%'`),'9');
+    // Independent five-day fixtures exercise the temporal contract through protected RPCs.
+    query(`update public.conferences set end_date='2027-01-05' where id='${conference}'`);
+    let roomNumber=200;
+    function newRoom(base=1,extra=1,closed=false,day=null){
+      return mutate('create_room',`jsonb_build_object('p_conference_id','${conference}','p_floor_id','${floor.floorId}','p_room_number','${roomNumber++}','p_base_capacity',${base},'p_extra_bed_capacity',${extra},'p_notes',null,'p_is_closed',${closed},'p_closed_day',${day},'p_position',0)`).roomId;
+    }
+    function newParticipation(){
+      return query(`with person as (insert into platform.people(id,full_name) values(extensions.gen_random_uuid(),'Temporal') returning id) insert into public.conference_participations(id,conference_id,person_id,status) select extensions.gen_random_uuid(),'${conference}',id,'active' from person returning id` ).split('\n')[0];
+    }
+    function assignSql(room,arrival,leave,bed='base'){
+      return `select public.assign_conference_accommodation('${device}','${conference}','${room}','${newParticipation()}',${arrival},${leave},'${bed}',${bed==='extra'?"'adult'":'null'})`;
+    }
+    function assign(room,arrival,leave,bed='base'){return JSON.parse(query(assignSql(room,arrival,leave,bed)));}
+    function moveSql(occupancy,room,arrival,leave,bed='base'){
+      return `select public.move_conference_accommodation('${device}','${conference}','${occupancy.occupancyId}',${occupancy.revision},'${room}',${arrival},${leave},'${bed}',${bed==='extra'?"'adult'":'null'})`;
+    }
+    function updateSql(room,base,extra,closed=false,day=null){
+      return `select public.mutate_conference_accommodation_structure('${device}','update_room',jsonb_build_object('p_conference_id','${conference}','p_room_id','${room}','p_expected_revision',(select revision from public.conference_accommodation_rooms where id='${room}'),'p_room_number',(select room_number from public.conference_accommodation_rooms where id='${room}'),'p_base_capacity',${base},'p_extra_bed_capacity',${extra},'p_notes',null,'p_is_closed',${closed},'p_closed_day',${day},'p_position',0))`;
+    }
+    await t.test('half-open sequential stays reuse base and extra capacity; overlaps reject',()=>{
+      for(const bed of ['base','extra']){
+        const room=newRoom(); assign(room,1,3,bed); assign(room,3,5,bed);
+        rejects(assignSql(room,2,4,bed),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+        const overlapping=newRoom(); assign(overlapping,1,4,bed);
+        rejects(assignSql(overlapping,3,5,bed),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+      }
+    });
+    await t.test('NULL leave occupies through final Conference day; bed capacities are independent',()=>{
+      const room=newRoom(); assign(room,1,3); assign(room,3,null);
+      assign(room,1,null,'extra');
+      rejects(assignSql(room,5,null),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+      rejects(assignSql(room,5,null,'extra'),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+      const openEnded=newRoom(); assign(openEnded,3,5);
+      rejects(assignSql(openEnded,1,null),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+    });
+    await t.test('capacity reduction uses separate daily peaks including NULL leave',()=>{
+      const room=newRoom(3,3);
+      for(const bed of ['base','extra']){assign(room,1,3,bed); assign(room,3,null,bed);}
+      query(updateSql(room,1,1));
+      rejects(updateSql(room,0,1),/ACCOMMODATION_CAPACITY_CONFLICT/);
+      rejects(updateSql(room,1,0),/ACCOMMODATION_CAPACITY_CONFLICT/);
+      query(updateSql(room,3,3));
+      assign(room,2,4); assign(room,2,4,'extra');
+      rejects(updateSql(room,1,2),/ACCOMMODATION_CAPACITY_CONFLICT/);
+      rejects(updateSql(room,2,1),/ACCOMMODATION_CAPACITY_CONFLICT/);
+      query(updateSql(room,2,2));
+      query(updateSql(newRoom(),0,0));
+    });
+    await t.test('scheduled and immediate closure enforce identical ASSIGN and MOVE boundaries',()=>{
+      const room=newRoom(2,1,true,3); assign(room,1,3);
+      const moving=assign(newRoom(),1,3);
+      assert.equal(JSON.parse(query(moveSql(moving,room,1,3))).occupancyId,moving.occupancyId);
+      for(const [arrival,leave] of [[1,4],[3,5],[4,5],[1,null]]){
+        rejects(assignSql(room,arrival,leave),/ACCOMMODATION_ROOM_UNAVAILABLE/);
+        const source=assign(newRoom(),1,3);
+        rejects(moveSql(source,room,arrival,leave),/ACCOMMODATION_ROOM_UNAVAILABLE/);
+      }
+      const immediate=newRoom(2,2,true);
+      rejects(assignSql(immediate,1,3),/ACCOMMODATION_ROOM_UNAVAILABLE/);
+      rejects(moveSql(assign(newRoom(),1,3),immediate,1,3),/ACCOMMODATION_ROOM_UNAVAILABLE/);
+    });
+    await t.test('closure updates accept leave D, reject crossing, starting D, NULL and immediate occupancy',()=>{
+      const boundary=newRoom(); assign(boundary,1,3); query(updateSql(boundary,1,1,true,3));
+      rejects(updateSql(boundary,1,1,true,null),/ACCOMMODATION_CLOSURE_CONFLICT/);
+      for(const [arrival,leave] of [[1,4],[3,5],[4,5],[1,null]]){
+        const room=newRoom(); assign(room,arrival,leave);
+        rejects(updateSql(room,1,1,true,3),/ACCOMMODATION_CLOSURE_CONFLICT/);
+        assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where room_id='${room}'`),'1');
+      }
+      query(updateSql(newRoom(),1,1,true,null));
+    });
+    await t.test('MOVE rejects overlapping full destination, allows sequential destination and excludes itself',()=>{
+      for(const bed of ['base','extra']){
+        const destination=newRoom(); assign(destination,1,3,bed);
+        const source=assign(newRoom(),1,3,bed);
+        rejects(moveSql(source,destination,2,4,bed),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+        const moved=JSON.parse(query(moveSql(source,destination,3,5,bed)));
+        assert.equal(moved.occupancyId,source.occupancyId); assert.equal(moved.revision,2);
+        assert.equal(JSON.parse(query(moveSql(moved,destination,3,5,bed))).revision,3);
+      }
+    });
+    async function waitForSession(name,event){
+      for(let attempt=0;attempt<100;attempt++){
+        if(query(`select exists(select 1 from pg_stat_activity where datname='${database}' and application_name='${name}' and ${event})`)==='t') return;
+        await new Promise(resolve=>setTimeout(resolve,10));
+      }
+      assert.fail(`session ${name} did not reach ${event}`);
+    }
+    async function temporalRace(overlap){
+      const room=newRoom();
+      const firstSql=assignSql(room,1,3),secondSql=assignSql(room,overlap?2:3,5);
+      // First transaction holds the destination lock; prove the second waits for it.
+      const first=queryAsync(`begin; set application_name='p5b_first'; ${firstSql}; select pg_sleep(2); commit`);
+      let second;
+      try{
+        await waitForSession('p5b_first',"wait_event='PgSleep'");
+        second=queryAsync(`set application_name='p5b_second'; ${secondSql}`);
+        // Attach rejection handling immediately, while observing the blocked backend.
+        const results=Promise.allSettled([first,second]);
+        await waitForSession('p5b_second',"wait_event_type='Lock'");
+        const settled=await results;
+        assert.equal(settled.filter(result=>result.status==='fulfilled').length,overlap?1:2);
+        if(overlap) assert.match(String(settled[1].reason.stderr),/ACCOMMODATION_ROOM_CAPACITY_EXCEEDED/);
+        assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where room_id='${room}'`),overlap?'1':'2');
+      }finally{await Promise.allSettled([first,...(second?[second]:[])]);}
+    }
+    await t.test('overlapping final-slot concurrency: exactly one succeeds',()=>temporalRace(true));
+    await t.test('non-overlapping same-slot concurrency: both succeed',()=>temporalRace(false));
+
   }finally{command('dropdb',['--if-exists',database]); for(const role of created) command('psql',['-X','-v','ON_ERROR_STOP=1','-d','postgres','-c',`drop role ${role}`]);}
 });

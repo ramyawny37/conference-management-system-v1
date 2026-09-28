@@ -40,3 +40,50 @@ change status or satisfy the existing restrictive FK. Person remains.
 Legacy snapshot Accommodation is **MIGRATE → REMOVE AFTER ZERO CONSUMERS**.
 P5B performs no snapshot write, frontend migration, Reservations integration,
 or dual write.
+
+## Temporal capacity and closure correction
+
+The original P5B ASSIGN, MOVE and capacity-update checks counted all stored
+room/bed-type rows, incorrectly treating sequential stays as simultaneous use.
+The canonical interval is `[arrival_day, effective_leave)`, where
+`effective_leave = coalesce(leave_day, conference_duration + 1)`.
+Two stays overlap exactly when `existing.arrival_day < requested_effective_leave`
+and `requested.arrival_day < existing_effective_leave`. Equality at the
+leave/arrival boundary is not overlap. NULL leave occupies through the final
+Conference day. Existing explicit day validation is unchanged.
+
+After locking the destination room, ASSIGN counts only overlapping canonical
+rows for the requested bed type. MOVE uses the same overlap predicate and
+excludes its own UUID, preserving deterministic room lock ordering and same-row
+identity/revision behavior. Base and extra capacities remain independent.
+These mutation checks count intersecting rows as requested; they do not compute
+a daily peak across the requested interval.
+
+Room updates retain their room lock and calculate daily occupancy with
+`generate_series(1, duration)`, counting each bed type only when
+`arrival_day <= day AND day < coalesce(leave_day, duration + 1)`.
+Any day exceeding the proposed base or extra capacity rejects with
+`ACCOMMODATION_CAPACITY_CONFLICT`; equivalently, each proposed capacity must
+cover its separate peak. No daily rows or aggregate table are persisted.
+Empty rooms retain support for undated capacity edits.
+
+`closed_day = D` is the first unavailable day. ASSIGN and MOVE accept a stay
+ending exactly D and reject arrival at/after D or effective leave beyond D.
+Closure updates apply the same boundary to existing stays and never evict them.
+Immediate closure (`is_closed = true`, `closed_day = NULL`) rejects all new
+occupancy and cannot be applied to an occupied room.
+
+Validation: run `node --check` and `node --test` against
+`tests/canonical-conference-accommodation-protected-mutations-p5b.test.js`,
+with `PGHOST`, `PGPORT`, and `PGUSER` pointing to an isolated disposable
+PostgreSQL cluster, never a Development or Production server. The harness
+creates and drops its own database and any missing test roles.
+
+Executable cases cover sequential and overlapping base/extra stays, NULL leave
+through day five, independent capacities, reductions from total rows to daily
+peaks, scheduled/immediate closure for assignment/movement and room updates,
+and MOVE rejection/success with UUID and revision preservation. The original
+final-slot race remains. Additional temporal races hold the first transaction's
+room lock and observe the second backend waiting on a lock: overlapping stays
+produce exactly one success and one capacity rejection; sequential stays both
+succeed. P5A schema and P4C routing remain unchanged.
