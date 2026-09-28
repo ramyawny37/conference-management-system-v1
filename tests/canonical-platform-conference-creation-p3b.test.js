@@ -2,6 +2,7 @@
 
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const os=require('node:os');
 const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const test=require('node:test');
@@ -68,8 +69,8 @@ test('legacy local publishing consumers and unrelated domains are outside P3B',(
   assert.match(legacy[0],/values\(p_requested_conference_id,actor_id,'owner'\)/);
 });
 
-const postgresBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
-const psql=path.join(postgresBin,'psql');
+const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
+const pgBin=fs.existsSync(path.join(postgresAppBin,'psql'))?postgresAppBin:'';
 const database=`conference_p3b_${process.pid}_${Date.now()}`;
 const actor='10000000-0000-0000-0000-000000000001';
 const device='20000000-0000-0000-0000-000000000001';
@@ -79,19 +80,34 @@ const conference='50000000-0000-0000-0000-000000000001';
 const operation='60000000-0000-0000-0000-000000000001';
 const session='61000000-0000-0000-0000-000000000001';
 const binding='62000000-0000-0000-0000-000000000001';
-const cleanEnv={...Object.fromEntries(Object.entries(process.env)
-  .filter(([key])=>!key.startsWith('PG'))),PGHOST:'/tmp',PGPORT:'5432',PGDATABASE:database};
+const validationHost=process.env.PGHOST;
+const validationPort=process.env.PGPORT;
+const validationUser=process.env.PGUSER;
+const validationPassword=process.env.PGPASSWORD;
+const connection=validationHost
+  ? ['-h',validationHost,'-p',validationPort||'5432','-U',validationUser||os.userInfo().username]
+  : ['-h','/tmp','-p','5432','-U',os.userInfo().username];
+const cleanEnv=Object.fromEntries(Object.entries(process.env).filter(([key])=>
+  !key.startsWith('PG')&&!/(?:^DIRECT_URL$|(?:DATABASE|DB|POSTGRES|SUPABASE).*URL)/i.test(key)
+));
+if(validationPassword) cleanEnv.PGPASSWORD=validationPassword;
 function command(name,args){
-  return execFileSync(path.join(postgresBin,name),args,{encoding:'utf8',stdio:'pipe',env:cleanEnv}).trim();
+  return execFileSync(pgBin?path.join(pgBin,name):name,[...connection,...args],{
+    encoding:'utf8',stdio:'pipe',env:cleanEnv
+  }).trim();
 }
 function query(statement){
   return command('psql',['-X','-v','ON_ERROR_STOP=1','-At','-d',database,'-c',statement]);
 }
 
-test('isolated PostgreSQL proves authority, idempotency, audit and direct-execute security',
-  {skip:!fs.existsSync(psql)},()=>{
+test('isolated PostgreSQL proves authority, idempotency, audit and direct-execute security',()=>{
   const clientRoles=['anon','authenticated','service_role'];
   const createdRoles=[];
+  try{
+    command('psql',['-X','-At','-d','postgres','-c','select 1']);
+  }catch{
+    assert.fail('isolated/local PostgreSQL is required; do not silently skip');
+  }
   command('createdb',[database]);
   try{
     for(const role of clientRoles){
