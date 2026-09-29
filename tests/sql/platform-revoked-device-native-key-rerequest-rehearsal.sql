@@ -30,22 +30,56 @@ create table platform.audit_events(
 
 create function pg_temp.reset_fixture(p_status text default 'revoked',p_binding_status text default 'active') returns void language plpgsql as $$
 begin
-  truncate platform.revoked_device_authorization_rerequest_operations,platform.audit_events,platform.device_key_bindings,platform.user_device_authorizations,platform.devices,platform.profiles restart identity cascade;
-  insert into platform.profiles(user_id) values('10000000-0000-0000-0000-000000000001');
-  insert into platform.devices(id,lifecycle_status) values('20000000-0000-0000-0000-000000000001','active');
-  insert into platform.user_device_authorizations(id,user_id,device_id,status,requested_at,revoked_at,status_reason) values('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',p_status,now(),case when p_status='revoked' then now() end,'fixture');
-  insert into platform.device_key_bindings(id,user_id,device_id,device_authorization_id,public_key_jwk,public_key_thumbprint,algorithm,lifecycle_status) values('40000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','{"kty":"EC"}'::jsonb,'thumb','ES256',p_binding_status);
+  truncate platform_private.device_authorization_rerequest_nonces,platform.audit_events,platform.device_key_bindings,
+    platform.user_device_authorizations,platform.devices,platform.profiles cascade;
+  insert into platform.profiles values
+    ('10000000-0000-4000-8000-000000000001'),('10000000-0000-4000-8000-000000000002');
+  insert into platform.devices values('20000000-0000-4000-8000-000000000001','active',null,null);
+  insert into platform.user_device_authorizations values(
+    '30000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000001',p_status,now()-interval '1 day',null,null,null,null,
+    case when p_status='revoked' then '10000000-0000-4000-8000-000000000002'::uuid end,
+    case when p_status='revoked' then now()-interval '1 hour' end,'old reason',now()
+  );
+  insert into platform.device_key_bindings values(
+    '40000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001',
+    '{"kty":"EC","crv":"P-256","x":"x","y":"y"}','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    'ECDSA_P256_SHA256',p_binding_status,case when p_binding_status='revoked' then now() end,null
+  );
 end $$;
 
 select pg_temp.reset_fixture();
-select public.rerequest_revoked_device_authorization('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001')::text;
-select public.rerequest_revoked_device_authorization('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001')::text;
+select platform.rerequest_revoked_device_key(
+  '10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001',
+  '40000000-0000-4000-8000-000000000001','AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+);
 do $$ begin
-  if (select status from platform.user_device_authorizations where id='30000000-0000-0000-0000-000000000001')<>'pending' then raise exception 'status mismatch'; end if;
-  if (select count(*) from platform.user_device_authorizations)<>1 then raise exception 'authorization identity changed'; end if;
-  if (select count(*) from platform.devices)<>1 then raise exception 'device identity changed'; end if;
-  if (select count(*) from platform.device_key_bindings)<>1 then raise exception 'binding identity changed'; end if;
-  if (select count(*) from platform.revoked_device_authorization_rerequest_operations)<>1 then raise exception 'operation replay mismatch'; end if;
-  if (select count(*) from platform.audit_events where action='revoked_device_authorization_rerequested')<>1 then raise exception 'audit mismatch'; end if;
+  if (select status from platform.user_device_authorizations)<>'pending' then raise exception 'STATUS_NOT_PENDING'; end if;
+  if (select count(*) from platform.devices)<>1 then raise exception 'DEVICE_COUNT_CHANGED'; end if;
+  if (select count(*) from platform.user_device_authorizations)<>1 then raise exception 'AUTHORIZATION_COUNT_CHANGED'; end if;
+  if (select count(*) from platform.device_key_bindings)<>1 then raise exception 'BINDING_COUNT_CHANGED'; end if;
+  if (select device_id from platform.user_device_authorizations)<>'20000000-0000-4000-8000-000000000001'::uuid then raise exception 'DEVICE_CHANGED'; end if;
+  if (select id from platform.device_key_bindings)<>'40000000-0000-4000-8000-000000000001'::uuid then raise exception 'BINDING_CHANGED'; end if;
+  if exists(select 1 from platform.user_device_authorizations where approved_by is not null or approved_at is not null or blocked_by is not null or blocked_at is not null or revoked_by is not null or revoked_at is not null or status_reason is not null) then raise exception 'TERMINAL_METADATA_RETAINED'; end if;
+  if not exists(select 1 from platform.audit_events where action='device_authorization.native_key_rerequested' and old_values->>'status'='revoked' and new_values->>'status'='pending' and metadata->>'proof'='native_key_possession') then raise exception 'AUDIT_MISSING'; end if;
 end $$;
+
+select pg_temp.reset_fixture();
+update platform.user_device_authorizations set status='pending',revoked_at=null;
+do $$ begin perform platform.rerequest_revoked_device_key('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'); raise exception 'NON_REVOKED_ACCEPTED'; exception when insufficient_privilege then null; end $$;
+select pg_temp.reset_fixture('revoked','revoked');
+do $$ begin perform platform.rerequest_revoked_device_key('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'); raise exception 'INACTIVE_BINDING_ACCEPTED'; exception when insufficient_privilege then null; end $$;
+select pg_temp.reset_fixture();
+do $$ begin perform platform.rerequest_revoked_device_key('10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD'); raise exception 'WRONG_USER_ACCEPTED'; exception when insufficient_privilege then null; end $$;
+select pg_temp.reset_fixture();
+insert into platform.devices values('20000000-0000-4000-8000-000000000002','active',null,null);
+do $$ begin perform platform.rerequest_revoked_device_key('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'); raise exception 'WRONG_DEVICE_ACCEPTED'; exception when insufficient_privilege then null; end $$;
+select pg_temp.reset_fixture();
+insert into platform_private.device_authorization_rerequest_nonces values(
+  'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE','10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001',
+  '30000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001',now()
+);
+do $$ begin perform platform.rerequest_revoked_device_key('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE'); raise exception 'REPLAY_ACCEPTED'; exception when insufficient_privilege then null; end $$;
+
 rollback;
