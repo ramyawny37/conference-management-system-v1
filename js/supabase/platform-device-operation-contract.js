@@ -4,6 +4,7 @@
     ['create_canonical_conference','public.create_canonical_conference(uuid,uuid,uuid,uuid,text,date,date)'],
     ['mutate_conference_core','public.mutate_conference_core(uuid,uuid,bigint,text,date,date,text)'],
     ['get_conference_core','public.get_conference_core(uuid,uuid)'],
+    ['list_accessible_conferences','public.list_accessible_conferences(uuid)'],
     ['list_conference_participations','public.list_conference_participations(uuid,uuid)'],
     ['create_conference_participation','public.create_conference_participation(uuid,uuid,uuid,uuid)'],
     ['create_conference_participation_with_person','public.create_conference_participation_with_person(uuid,uuid,uuid,text,text,text,date,text)'],

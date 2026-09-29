@@ -764,44 +764,6 @@
       });
   }
 
-  function listAvailableConferences(){
-    var context=getOnlineContext();
-    if(context.error){
-      return Promise.resolve(result(false,'error',null,context.error));
-    }
-    return Promise.resolve().then(function(){
-      return context.client
-        .from('conference_members')
-        .select(
-          'role,conference:conferences('+
-          'id,name,owner_id,organization_id,created_at,updated_at,deleted_at)'
-        );
-    })
-      .then(function(response){
-        if(response.error){
-          return result(false,'error',null,normalizeRequestError(response.error));
-        }
-        var conferences=(Array.isArray(response.data)?response.data:[])
-          .filter(function(item){return item&&item.conference;})
-          .map(function(item){
-            return {
-              id:item.conference.id,
-              name:item.conference.name,
-              ownerId:item.conference.owner_id,
-              organizationId:item.conference.organization_id||null,
-              role:item.role,
-              createdAt:item.conference.created_at,
-              updatedAt:item.conference.updated_at,
-              deletedAt:item.conference.deleted_at
-            };
-          });
-        return result(true,'listed',{conferences:conferences},null);
-      })
-      .catch(function(error){
-        return result(false,'error',null,normalizeThrownError(error));
-      });
-  }
-
   global.SupabaseSnapshotSync=Object.freeze({
     createConferenceIdempotent:createConferenceIdempotent,
     verifyOwnerMembership:verifyOwnerMembership,
@@ -811,7 +773,6 @@
     uploadInitialSnapshot:uploadInitialSnapshot,
     uploadSnapshot:uploadSnapshot,
     inspectSnapshotOperation:inspectSnapshotOperation,
-    downloadSnapshot:downloadSnapshot,
-    listAvailableConferences:listAvailableConferences
+    downloadSnapshot:downloadSnapshot
   });
 })(window);

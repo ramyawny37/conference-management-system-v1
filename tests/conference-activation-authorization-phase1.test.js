@@ -46,7 +46,7 @@ var linkStore={get:function(id){return links[id]||null;}};
   assert.strictEqual(wrong.classification,'unverified_legacy_unscoped');
 
   authUser=user;gate.resetForAccount(user);gate.capturePersistedCandidate('cloud','indexeddb');
-  var viewer=await gate.reconcileStartup({appData:data,persistedCandidate:'cloud',discovered:[{remoteConferenceId:links.cloud.remoteConferenceId}],links:linkStore,validateCloud:function(){return Promise.resolve({ok:true,status:'authorized',data:{role:'viewer'}});}});
+  var viewer=await gate.reconcileStartup({appData:data,persistedCandidate:'cloud',discovered:[{remoteConferenceId:links.cloud.remoteConferenceId}],links:linkStore,validateCloud:function(){return Promise.resolve({ok:true,status:'authorized',data:{canonicalAccess:true}});}});
   assert.strictEqual(viewer.classification,'authorized_cloud_linked');
   assert.strictEqual(gate.canDisplay('cloud'),true);
   assert.strictEqual(gate.canReadProtected('cloud'),true);

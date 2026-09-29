@@ -67,6 +67,9 @@ function environment(settings={}){
     SupabaseAuth:{getState:()=>({user:account?{id:account}:null})},
     SupabaseClientLayer:{getClient:()=>client},
     StartupConferenceDiscovery:{getRecord:()=>cached},
+    CanonicalConferenceDiscovery:{listAccessibleConferences:()=>Promise.resolve({
+      ok:true,data:{conferences:settings.deleted?[Object.assign({},listing,{deletedAt:'2026-01-01'})]:[listing]}
+    })},
     SupabaseSnapshotSync:{
       listAvailableConferences:()=>Promise.resolve({
         ok:true,data:{conferences:settings.deleted?[
@@ -258,7 +261,7 @@ function environment(settings={}){
   assert.strictEqual((await explicitRemote.api.open(
     explicitRemote.remoteId,{enterApplication:true})).status,'opened');
   assert.deepStrictEqual(explicitRemote.activationOptions(),[{
-    alreadyPersisted:true,accessRole:'viewer',enterApplication:true
+    alreadyPersisted:true,accessRole:null,enterApplication:true
   }]);
 
   const rejected=environment({cached:false,repositoryVersion:1,
@@ -326,7 +329,7 @@ function environment(settings={}){
   assert.strictEqual(reuse.cloudAuthorizations(),1);
   assert.strictEqual(reuse.activated(),1);
   assert.deepStrictEqual(reuse.activationOptions(),[{
-    alreadyPersisted:true,accessRole:'viewer',enterApplication:true
+    alreadyPersisted:true,accessRole:null,enterApplication:true
   }]);
 
   const linkedDenied=environment({
@@ -337,10 +340,10 @@ function environment(settings={}){
       knownRevision:1,linkStatus:'linked'}
   });
   assert.strictEqual((await linkedDenied.api.open(linkedDenied.remoteId)).status,
-    'membership_unavailable');
-  assert.strictEqual(linkedDenied.cloudAuthorizations(),0);
-  assert.strictEqual(linkedDenied.activated(),0);
-  assert.strictEqual(linkedDenied.stored().currentConferenceId,null);
+    'opened');
+  assert.strictEqual(linkedDenied.cloudAuthorizations(),1);
+  assert.strictEqual(linkedDenied.activated(),1);
+  assert.strictEqual(linkedDenied.stored().currentConferenceId,'existing-local');
 
   const refreshSnapshot2={
     id:'source-local',name:'Rev-2',status:'active',
@@ -542,7 +545,7 @@ function environment(settings={}){
   assert.strictEqual(trustedEmpty.activated(),2);
   assert.strictEqual(trustedEmpty.cloudAuthorizations(),2);
   assert.deepStrictEqual(trustedEmpty.activationOptions().slice(-1)[0],{
-    alreadyPersisted:true,accessRole:'viewer',enterApplication:true
+    alreadyPersisted:true,accessRole:null,enterApplication:true
   });
 
   const failedActivationMemory={conferences:[{
@@ -639,12 +642,12 @@ function environment(settings={}){
   const deniedResult=await refreshDenied.api.refreshLinkedLocalConference(
     'existing-local'
   );
-  assert.strictEqual(deniedResult.status,'membership_unavailable');
-  assert.strictEqual(refreshDenied.stored().conferences[0].name,'Local stale');
+  assert.strictEqual(deniedResult.status,'opened');
+  assert.strictEqual(refreshDenied.stored().conferences[0].name,'Same');
   assert.strictEqual(refreshDenied.stored().currentConferenceId,'existing-local');
-  assert.strictEqual(refreshDenied.memory().currentConferenceId,null);
-  assert.strictEqual(refreshDenied.memory().conferences[0].name,'Local stale');
-  assert.strictEqual(refreshDenied.deactivations(),1);
+  assert.strictEqual(refreshDenied.memory().currentConferenceId,'existing-local');
+  assert.strictEqual(refreshDenied.memory().conferences[0].name,'Same');
+  assert.strictEqual(refreshDenied.deactivations(),0);
   assert.deepStrictEqual(refreshDenied.forbidden(),{queue:0,publication:0,rpc:0});
 
   const notLinked=environment({cached:false,revision:2,appData:{
@@ -721,7 +724,8 @@ function environment(settings={}){
 
   const viewer=environment({role:'transport_viewer'});
   const viewerResult=await viewer.api.open(viewer.remoteId);
-  assert.strictEqual(viewerResult.data.role,'transport_viewer');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(viewerResult.data,'role'),false);
+  assert.strictEqual(viewerResult.data.canonicalAccess,true);
   assert.strictEqual(Object.prototype.hasOwnProperty.call(
     Object.values(viewer.links)[0],'membershipRole'),false);
 

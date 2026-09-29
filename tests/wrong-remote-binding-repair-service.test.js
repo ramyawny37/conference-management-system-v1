@@ -85,10 +85,12 @@ function environment(config){
       handleLocalSave(){calls.queues++;},
       publishConferenceRevision(){calls.publications++;}
     },
-    remote:{
-      listAvailableConferences(){return Promise.resolve({ok:true,data:{conferences:[{
+    discoveryAuthority:{
+      listAccessibleConferences(){return Promise.resolve({ok:true,data:{conferences:[{
         id:newRemote,name:'Correct',organizationId:'org-1'
       }]}});},
+    },
+    remote:{
       downloadSnapshot(){calls.downloads++;return Promise.resolve({ok:true,data:{
         revision:9,schemaVersion:'1',appVersion:'3.1.1',snapshot:conference('remote','Correct',4)
       }});},
@@ -121,8 +123,10 @@ async function selectTarget(env){
 function listingDependencies(rows,snapshots){
   const calls={access:0,downloads:0};
   return {calls,deps:{
+    discoveryAuthority:{
+      listAccessibleConferences(){return Promise.resolve({ok:true,data:{conferences:rows}});}
+    },
     remote:{
-      listAvailableConferences(){return Promise.resolve({ok:true,data:{conferences:rows}});},
       downloadSnapshot(id){calls.downloads++;return Promise.resolve({ok:true,data:snapshots[id]});}
     },
     members:{getCurrentAccess(){calls.access++;return Promise.resolve({

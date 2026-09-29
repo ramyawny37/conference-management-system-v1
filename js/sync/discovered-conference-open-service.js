@@ -27,7 +27,6 @@
     linkedRefreshTrace:[],linkedRefreshCurrentStage:null,
     linkedRefreshExceptionStage:null
   };
-  var ROLES=['owner','manager','viewer','accommodation_viewer','transport_viewer'];
 
   function copy(value){
     if(typeof global.structuredClone==='function')return global.structuredClone(value);
@@ -99,18 +98,18 @@
     }
     return value;
   }
-  function publishCloudAuthorization(d,localId,remoteId,role){
+  function publishCloudAuthorization(d,localId,remoteId){
     if(!d.activationAuthorization||
       typeof d.activationAuthorization.authorizeCloud!=='function')return null;
     return d.activationAuthorization.authorizeCloud({
       localConferenceId:String(localId||''),
       remoteConferenceId:String(remoteId||''),
-      authenticatedUserId:userId(d),role:String(role||'')
+      authenticatedUserId:userId(d),canonicalAccess:true
     });
   }
   function authoritativeAccessLoss(status){
     return ['device_not_approved','account_not_approved',
-      'conference_unavailable','membership_unavailable']
+      'conference_unavailable']
       .indexOf(String(status||''))>=0;
   }
   function deactivateRuntimeAuthorization(d,localId,remoteId,status){
@@ -153,6 +152,7 @@
       auth:options.auth||global.SupabaseAuth,
       clients:options.clientLayer||global.SupabaseClientLayer,
       discovery:options.discovery||global.StartupConferenceDiscovery,
+      discoveryAuthority:options.discoveryAuthority||global.CanonicalConferenceDiscovery,
       remote:options.remote||global.SupabaseSnapshotSync,
       members:options.members||global.ConferenceMembersService,
       device:options.device||global.CurrentDeviceAuthorizationService,
@@ -635,7 +635,7 @@
       diagnosticState.activationReached=true;
       traceLinkedRefresh('activate_persisted_conference','entered',null);
       publishCloudAuthorization(d,localConferenceId,
-        details&&details.remoteConferenceId,details&&details.role);
+        details&&details.remoteConferenceId);
       activated=typeof d.activate==='function'&&
         d.activate(localConferenceId,{
           alreadyPersisted:true,accessRole:details&&details.role||null,
@@ -714,7 +714,7 @@
           return activateUpToDateMaterialization(d,stored,localConferenceId,{
             localConferenceId:localConferenceId,
             remoteConferenceId:remoteId,
-            role:access.data.role,
+            canonicalAccess:true,
             revision:knownRevision,
             schemaVersion:metadata.data.schemaVersion,
             appVersion:metadata.data.appVersion,
@@ -917,16 +917,13 @@
     return Promise.all([
       d.device.getStatus(),
       d.systemAccess.refresh(),
-      d.remote.listAvailableConferences(),
-      d.members.getCurrentAccess({remoteConferenceId:remoteId})
+      d.discoveryAuthority.listAccessibleConferences()
     ]).then(function(values){
       var deviceData=values[0]&&values[0].data||{};
       var system=values[1]||{};
       var available=values[2]&&values[2].ok&&values[2].data&&
         Array.isArray(values[2].data.conferences)?values[2].data.conferences:[];
       var listing=available.find(function(item){return item&&String(item.id)===remoteId;});
-      var access=values[3];
-      var role=String(access&&access.data&&access.data.role||'');
       if(!values[0]||!values[0].ok||
         String(deviceData.deviceAuthorizationStatus||'')!=='approved'){
         return result(false,'device_not_approved');
@@ -936,10 +933,7 @@
         return result(false,'account_not_approved');
       }
       if(!listing||listing.deletedAt){return result(false,'conference_unavailable');}
-      if(!access||!access.ok||access.status!=='available'||ROLES.indexOf(role)<0){
-        return result(false,'membership_unavailable');
-      }
-      return result(true,'authorized',{listing:listing,role:role});
+      return result(true,'authorized',{listing:listing,canonicalAccess:true});
     });
   }
   function snapshotFor(d,remoteId,account,knownMetadata){
@@ -1336,7 +1330,7 @@
             prepared.localId,{
             localConferenceId:prepared.localId,
             remoteConferenceId:remoteId,
-            role:ctx.role,
+            canonicalAccess:true,
             revision:prepared.revision
           });
         }
@@ -1415,7 +1409,7 @@
           return result(true,'opened',{
             localConferenceId:prepared.localId,
             remoteConferenceId:remoteId,
-            role:ctx.role,
+            canonicalAccess:true,
             revision:prepared.link.knownRevision
           });
         });
@@ -1474,7 +1468,7 @@
         diagnosticState.lastActivationStatus='activated';
         return result(true,'opened',{
           localConferenceId:prepared.localId,remoteConferenceId:remoteId,
-          role:ctx.role,revision:prepared.link.knownRevision
+          canonicalAccess:true,revision:prepared.link.knownRevision
         });
       });
     });
@@ -1506,7 +1500,7 @@
         ).then(function(snapshot){
         if(!snapshot.ok||!alive(token,d,account,activeClient))return snapshot.ok?result(false,'stale'):snapshot;
         var task=function(){return runTransaction({d:d,remoteId:remoteConferenceId,
-          account:account,client:activeClient,token:token,role:access.data.role,
+          account:account,client:activeClient,token:token,canonicalAccess:true,
           snapshot:snapshot,options:options});};
         var serialized=transactionTail.catch(function(){return null;}).then(task);
         transactionTail=serialized.catch(function(){return null;});
@@ -1522,7 +1516,7 @@
     var d=deps(options),account=userId(d),activeClient=client(d);
     return validateAccess(d,String(remoteConferenceId||'')).then(function(access){
       if(!access.ok||account!==userId(d)||activeClient!==client(d))return access.ok?result(false,'stale'):access;
-      return result(true,'authorized',{remoteConferenceId:String(remoteConferenceId),role:access.data.role,authenticatedUserId:account});
+      return result(true,'authorized',{remoteConferenceId:String(remoteConferenceId),canonicalAccess:true,authenticatedUserId:account});
     });
   }
   function cleanupRecovery(remoteConferenceId,options){
@@ -1691,7 +1685,7 @@
                 localConferenceId,{
                 localConferenceId:localConferenceId,
                 remoteConferenceId:remoteId,
-                role:access.data.role,
+                canonicalAccess:true,
                 revision:knownRevision
               });
             }
@@ -1745,7 +1739,7 @@
             account:account,
             client:activeClient,
             token:token,
-            role:access.data.role,
+            canonicalAccess:true,
             snapshot:snapshot,
             options:options,
             refreshOnly:true,

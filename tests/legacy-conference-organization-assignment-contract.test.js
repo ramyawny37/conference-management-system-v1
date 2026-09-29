@@ -7,7 +7,7 @@ assert.strictEqual((service.match(/device_guarded_list_eligible_legacy_conferenc
 assert.doesNotMatch(service,/\.from\s*\([^)]*\)\s*\.\s*(insert|update|delete|upsert)/);
 assert.doesNotMatch(service,/organizations\.list|organizationMembers|conferenceMembers|listMembers/);
 assert.doesNotMatch(service,/72d1c27d|9306c61a|Default Organization/);assert.doesNotMatch(ui,/72d1c27d|9306c61a|Default Organization/);
-assert(service.includes('listAvailableConferences'),'unknown-result read-back missing');assert(ui.includes('confirm(warning)'));assert(store.includes('BrowserStorageNamespace'));assert(sync.includes('LegacyConferenceOrganizationAssignmentUI.renderSection'));
+assert(service.includes('listAccessibleConferences'),'canonical unknown-result read-back missing');assert(ui.includes('confirm(warning)'));assert(store.includes('BrowserStorageNamespace'));assert(sync.includes('LegacyConferenceOrganizationAssignmentUI.renderSection'));
 const revision='legacy-conference-preflight-v2';
 ['js/sync/legacy-conference-organization-assignment-attempt-store.js','js/supabase/legacy-conference-organization-assignment-service.js','js/sync/legacy-conference-organization-assignment-ui.js'].forEach(asset=>{assert(index.includes(asset+'?rev='+revision));assert(worker.includes("'./"+asset+'?rev='+revision+"'"));});
 const syncRevision='conference-organization-context-v1',syncAsset='js/sync/conference-sync-ui.js';assert(index.includes(syncAsset+'?rev='+syncRevision));assert(worker.includes("'./"+syncAsset+'?rev='+syncRevision+"'"));

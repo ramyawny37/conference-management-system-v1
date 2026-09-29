@@ -62,6 +62,7 @@
     options=options||{};
     return {
       remote:options.remote||global.SupabaseSnapshotSync,
+      discoveryAuthority:options.discoveryAuthority||global.CanonicalConferenceDiscovery,
       members:options.members||global.ConferenceMembersService,
       organization:options.organization||global.OrganizationAdministrationService,
       links:options.links||global.ConferenceLinkStore,
@@ -104,7 +105,7 @@
 
   function listOwnerConferences(options){
     var deps=dependencies(options);
-    return deps.remote.listAvailableConferences().then(function(response){
+    return deps.discoveryAuthority.listAccessibleConferences().then(function(response){
       if(!response||!response.ok)return result(false,'conference_list_unavailable');
       var seenConferenceIds=Object.create(null);
       var uniqueConferences=(response.data.conferences||[]).filter(function(conference){

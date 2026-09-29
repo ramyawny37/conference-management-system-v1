@@ -41,6 +41,7 @@
     return {
       links:options.links||global.ConferenceLinkStore,
       remote:options.remote||global.SupabaseSnapshotSync,
+      discoveryAuthority:options.discoveryAuthority||global.CanonicalConferenceDiscovery,
       integration:options.integration||global.OfflineFirstIntegration,
       queue:options.queue||global.OfflineSyncQueue,
       comparer:options.comparer||global.ConflictResolution,
@@ -110,7 +111,7 @@
   function listAvailable(options){
     var ready=readiness(options), d=deps(options);
     if(!ready.ready)return Promise.resolve(outcome(false,'prerequisites_missing'));
-    return d.remote.listAvailableConferences().then(function(result){
+    return d.discoveryAuthority.listAccessibleConferences().then(function(result){
       if(!result||!result.ok)return outcome(false,'list_failed');
       available=copy(result.data.conferences||[]).filter(function(item){
         return item&&uuid(item.id);

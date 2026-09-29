@@ -43,6 +43,7 @@ const CORE_ASSETS = [
   './js/supabase/client.js?rev=target-device-argument-preservation-v1',
   './js/supabase/auth.js?rev=account-session-identity-v1',
   './js/platform-integration.js?rev=canonical-conference-core-cutover-v2',
+  './js/supabase/canonical-conference-discovery.js?rev=p6i-b1-v1',
   './modules/reservations/reservations-module.js?rev=reservations-root-boundary-v1',
   './modules/reservations/reservations-visual-prototype.js?rev=reservations-prototype-fidelity-v2',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',

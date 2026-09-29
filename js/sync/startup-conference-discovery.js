@@ -57,10 +57,11 @@
       return Promise.resolve({ok:false,status:'stale'});
     }
     var remote=options.remote||global.SupabaseSnapshotSync;
+    var discovery=options.discoveryAuthority||global.CanonicalConferenceDiscovery;
     var client=currentClient();
     var userId=currentUserId();
-    if(!client||!userId||!remote||
-      typeof remote.listAvailableConferences!=='function'||
+    if(!client||!userId||!remote||!discovery||
+      typeof discovery.listAccessibleConferences!=='function'||
       typeof remote.downloadSnapshot!=='function'){
       clear();
       return Promise.resolve({ok:false,status:'prerequisites_missing'});
@@ -71,7 +72,7 @@
     }
     accountUserId=userId;
     accountClient=client;
-    return Promise.resolve(remote.listAvailableConferences())
+    return Promise.resolve(discovery.listAccessibleConferences())
       .then(function(listed){
         if(!validRun(runGeneration,userId,client)){
           return {ok:false,status:'stale'};
@@ -106,7 +107,6 @@
                 revision:downloaded.data.revision,
                 schemaVersion:downloaded.data.schemaVersion||null,
                 appVersion:downloaded.data.appVersion||null,
-                role:item.role,
                 listing:copy(item),
                 conference:copy(snapshot)
               });

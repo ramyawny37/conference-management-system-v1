@@ -49,6 +49,7 @@ function environment(options={}){
     SupabaseClientLayer:{getClient:()=>clientValue},
     SupabaseAuth:{getState:()=>({user:userId?{id:userId}:null})},
     SupabaseSnapshotSync:remote,
+    CanonicalConferenceDiscovery:{listAccessibleConferences:()=>remote.listAvailableConferences()},
     showStartupConferenceList(){renders++;}
   };
   sandbox.window=sandbox;
@@ -82,6 +83,7 @@ function startupCards(options={}){
     }},
     openConferenceFromStartup:id=>{localOpens.push(id);return true;},
     accommodationIcon:()=>'',esc:value=>String(value),
+    getCanonicalConferenceCoreLink:()=>null,
     showStartupConferenceList(){renders++;},showToast(){},console
   };
   sandbox.window=sandbox;
@@ -106,8 +108,8 @@ function startupCards(options={}){
   assert.strictEqual(env.maxActiveDownloads(),1);
   const records=env.api.getRecords();
   assert.strictEqual(records.length,2);
-  assert.strictEqual(records[0].role,'accommodation_viewer');
-  assert.strictEqual(records[1].role,'transport_viewer');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(records[0],'role'),false);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(records[1],'role'),false);
   assert.strictEqual(env.renders(),1);
 
   let firstRelease;

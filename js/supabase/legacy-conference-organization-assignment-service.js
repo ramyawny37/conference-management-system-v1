@@ -10,6 +10,7 @@
     auth:options.auth||global.SupabaseAuth,
     identity:options.identity||global.SupabaseDeviceIdentity,
     snapshots:options.snapshots||global.SupabaseSnapshotSync,
+    discoveryAuthority:options.discoveryAuthority||global.CanonicalConferenceDiscovery,
     attempts:options.attempts||global.LegacyConferenceOrganizationAssignmentAttemptStore,
     crypto:options.crypto||global.crypto
   };}
@@ -38,8 +39,8 @@
     }).catch(function(){return output(false,'preflight_read_failed');});
   }
   function readBackUnknown(ctx,conferenceId,organizationId){
-    if(!ctx.d.snapshots||typeof ctx.d.snapshots.listAvailableConferences!=='function')return Promise.resolve(false);
-    return ctx.d.snapshots.listAvailableConferences().then(function(result){
+    if(!ctx.d.discoveryAuthority||typeof ctx.d.discoveryAuthority.listAccessibleConferences!=='function')return Promise.resolve(false);
+    return ctx.d.discoveryAuthority.listAccessibleConferences().then(function(result){
       var rows=result&&result.ok&&result.data&&result.data.conferences||[];
       return rows.some(function(item){return item.id===conferenceId&&item.organizationId===organizationId;});
     }).catch(function(){return false;});
