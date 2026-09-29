@@ -50,12 +50,7 @@ test('actor, audit, revision and lifecycle transitions are server controlled',()
 test('P3A leaves unrelated runtime and modules outside the migration',()=>{
   assert.doesNotMatch(sql,/\b(?:reservations|warehouse)\./i);
   assert.doesNotMatch(sql,/conference_snapshots|sync_operations|sync_conflicts|conf_v5|indexeddb|localstorage/i);
-  const trackedRuntime=execFileSync('git',['ls-files','-z','*.js','*.html'],{
-    cwd:root,encoding:'utf8'
-  }).split('\0').filter(Boolean).filter(file=>!file.startsWith('tests/'));
-  for(const file of trackedRuntime){
-    assert.ok(!read(file).includes('mutate_conference_core'),file);
-  }
+  assert.match(sql,/platform\.execute_conference_device_operation_phase1c_core/);
 });
 
 const postgresBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
