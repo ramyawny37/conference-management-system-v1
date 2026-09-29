@@ -16,8 +16,10 @@ function activeGuests(day){ // day=undefined means current/total
   var adults=[],children=[];
   getAllRooms().forEach(function(r) {
     if (!isRoomActiveOnDay(r, day)) return;
-    (r.guests || []).forEach(function(g) { if (!gl(g, day)) adults.push({ name: gn(g), room: r.number, rid: r.id, personId: g && g.personId ? g.personId : '' }); });
-    (r.children || []).forEach(function(c) { if (!gl(c, day)) children.push({ name: c.name, room: r.number, rid: r.id, guardian: c.guardian, personId: c.personId || '', guardianPersonId: c.guardianPersonId || '' }); });
+    getConferenceRoomPeopleOnDay(r,day,current).forEach(function(person){
+      var item={name:person.name||gn(person),room:r.number,rid:r.id,personId:person.personId||'',participationId:person.participationId||'',guardian:person.guardianFullName||person.guardian||'',guardianPersonId:person.guardianPersonId||'',guardianParticipationId:person.guardianParticipationId||null,guardianParticipationStatus:person.guardianParticipationStatus||null};
+      if(person.isChild)children.push(item);else adults.push(item);
+    });
   });
   return {adults:adults,children:children};
 }
@@ -37,6 +39,7 @@ function unassigned(curName){
 
 function allGuestsForPick(){
   var l=[];
-  getAllRooms().forEach(function(r){if(r.closed)return;(r.guests||[]).forEach(function(g){if(!gl(g))l.push({name:gn(g),room:r.number,guardian:null,personId:g&&g.personId?g.personId:''})});(r.children||[]).forEach(function(c){if(!c.leftDay)l.push({name:c.name,room:r.number,guardian:c.guardian,personId:c.personId||'',guardianPersonId:c.guardianPersonId||''})})});
+  var current=getCurrentConference();
+  getAllRooms().forEach(function(r){if(r.closed)return;getConferenceRoomPeopleOnDay(r,undefined,current).forEach(function(person){l.push({name:person.name||gn(person),room:r.number,guardian:person.isChild?(person.guardianFullName||person.guardian||''):null,personId:person.personId||'',guardianPersonId:person.guardianPersonId||'',guardianParticipationStatus:person.guardianParticipationStatus||null})})});
   return l.sort(function(a,b){return a.name.localeCompare(b.name,'ar')});
 }

@@ -724,33 +724,20 @@ function resolveAirConditioningRoomSettings(houseId,roomId){
 
 function countUsedExtraBedsForAccounts(room){
   var used=0;
-  (room&&room.guests||[]).forEach(function(guest){
-    var hasLeft=typeof gl==='function'?gl(guest):!!(guest&&guest.leftDay);
-    if(!hasLeft&&guest&&guest.bedType==='extra')used++;
-  });
-  (room&&room.children||[]).forEach(function(child){
-    var hasLeft=typeof gl==='function'?gl(child):!!(child&&child.leftDay);
-    if(!hasLeft&&child&&child.bedType==='extra')used++;
-  });
+  var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
+  var people=typeof getConferenceRoomPeopleOnDay==='function'?getConferenceRoomPeopleOnDay(room,undefined,conference):[];
+  people.forEach(function(person){if(person&&person.bedType==='extra')used++;});
   return used;
 }
 
 function getRoomResidentsForAccounts(room,day){
   var result={adultsCount:0,childrenCount:0,totalCount:0};
   room=room||{};
-  (room.guests||[]).forEach(function(person){
-    var hasLeft=typeof gl==='function'
-      ?gl(person,day)
-      :!!(person&&person.leftDay&&(day===undefined||person.leftDay<=day));
-    if(hasLeft)return;
-    if(person&&person.bedType==='extra'&&person.extraBedPersonType==='child')result.childrenCount++;
+  var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
+  var people=typeof getConferenceRoomPeopleOnDay==='function'?getConferenceRoomPeopleOnDay(room,day,conference):[];
+  people.forEach(function(person){
+    if(person.isChild||person.bedType==='extra'&&person.extraBedPersonType==='child')result.childrenCount++;
     else result.adultsCount++;
-  });
-  (room.children||[]).forEach(function(child){
-    var hasLeft=typeof gl==='function'
-      ?gl(child,day)
-      :!!(child&&child.leftDay&&(day===undefined||child.leftDay<=day));
-    if(!hasLeft)result.childrenCount++;
   });
   result.totalCount=result.adultsCount+result.childrenCount;
   return result;
@@ -761,8 +748,9 @@ function getAccountsRoomContext(house,floor,room){
   floor=floor||{};
   room=room||{};
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
+  var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
   var displayedIds=conference&&Array.isArray(conference.accommodationDisplayedRoomIds)?conference.accommodationDisplayedRoomIds:[];
-  var displayed=!!room.id&&displayedIds.indexOf(room.id)!==-1;
+  var displayed=linked?true:!!room.id&&displayedIds.indexOf(room.id)!==-1;
   var residents=getRoomResidentsForAccounts(room);
   var adultsCount=residents.adultsCount;
   var childrenCount=residents.childrenCount;
@@ -858,7 +846,12 @@ function getAccountsConferenceContext(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return null;
   var days=typeof getDays==='function'?getDays():parseInt(conference.conf&&conference.conf.days,10)||1;
-  var houses=(conference.houses||[]).map(function(house){return getAccountsHouseContext(house)});
+  var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  var canonical=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceAccommodationState==='function'?window.PlatformIntegration.getConferenceAccommodationState(conference.id):null;
+  var houses=(linked?(canonical&&canonical.houses||[]):(conference.houses||[])).map(function(house){
+    if(linked)return getAccountsHouseContext({id:house.houseId,name:house.name,floors:(house.floors||[]).map(function(floor){return {id:floor.floorId,name:floor.name,rooms:(floor.rooms||[]).map(function(room){return Object.assign({},room,{id:room.roomId,number:room.roomNumber,beds:room.baseCapacity,extraBeds:room.extraBedCapacity,closed:room.isClosed});})};})});
+    return getAccountsHouseContext(house);
+  });
   var rooms=[];
   houses.forEach(function(house){rooms=rooms.concat(house.rooms)});
   return {
@@ -973,7 +966,7 @@ function isAccommodationPersonActiveOnNight(person,night,conferenceDays){
 
 function getAccommodationRoomPeople(roomContext){
   var room=roomContext&&roomContext.sourceRoom||{};
-  return (room.guests||[]).concat(room.children||[]);
+  return typeof getConferenceRoomPeople==='function'?getConferenceRoomPeople(room,getCurrentConference()):[];
 }
 
 function getAccommodationRoomActualOccupancy(roomContext){

@@ -21,6 +21,10 @@ function between(start,end){
 const helperSource=between('function normalizeAccommodationSearchText(',
   'function getAccommodationOccupants(');
 const context={
+  getCurrentConference(){return null;},
+  getConferenceRoomPeople(room){
+    return (room.guests||[]).concat(room.children||[]);
+  },
   getAccommodationPersonDisplayName(person){
     return person.personId==='person-1'?'Mina Adel':(person.name||'');
   }

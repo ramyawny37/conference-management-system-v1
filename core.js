@@ -46,9 +46,13 @@ function getCurrentConference(){
 
 function getConferenceHouseRooms(conference) {
   conference = conference || getCurrentConference();
-  if (!conference || !conference.houses) return [];
+  if (!conference) return [];
+  var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  var canonical=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceAccommodationState==='function'
+    ?window.PlatformIntegration.getConferenceAccommodationState(conference.id):null;
+  var houses=linked?(canonical&&canonical.houses||[]):(conference.houses||[]);
   var allRooms = [];
-  conference.houses.forEach(function(h) {
+  houses.forEach(function(h) {
     (h.floors || []).forEach(function(f) {
       (f.rooms || []).forEach(function(room) {
         var roomWithContext = {};
@@ -59,11 +63,50 @@ function getConferenceHouseRooms(conference) {
         }
         roomWithContext.house = h;
         roomWithContext.floor = f;
+        if(linked){
+          roomWithContext.house={id:h.houseId,name:h.name,description:h.description,position:h.position,revision:h.revision};
+          roomWithContext.floor={id:f.floorId,name:f.name,position:f.position,revision:f.revision};
+          roomWithContext.id=room.roomId;
+          roomWithContext.number=room.roomNumber;
+          roomWithContext.beds=room.baseCapacity;
+          roomWithContext.extraBeds=room.extraBedCapacity;
+          roomWithContext.closed=room.isClosed;
+        }
         allRooms.push(roomWithContext);
       });
     });
   });
   return allRooms;
+}
+
+function getConferenceParticipationItems(conference){
+  conference=conference||getCurrentConference();
+  if(!conference)return [];
+  var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  if(!linked)return [];
+  var state=window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceParticipationState==='function'
+    ?window.PlatformIntegration.getConferenceParticipationState(conference.id):null;
+  return state&&Array.isArray(state.items)?state.items.slice():[];
+}
+
+function getConferenceRoomPeople(room,conference){
+  conference=conference||getCurrentConference();
+  var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  if(linked)return (room&&room.occupancies||[]).map(function(occupancy){
+    var person=occupancy.person||{};
+    return {id:occupancy.occupancyId||'',occupancyId:occupancy.occupancyId||'',personId:person.personId||'',participationId:occupancy.participationId||'',name:person.fullName||'',phone:person.phone||'',arrivalDay:occupancy.arrivalDay,leaveDay:occupancy.leaveDay,leftDay:occupancy.leaveDay,bedType:occupancy.bedType,extraBedPersonType:occupancy.extraBedPersonType,participationStatus:occupancy.participationStatus,guardianParticipationId:occupancy.guardianParticipationId,guardianPersonId:occupancy.guardianPersonId,guardianFullName:occupancy.guardianFullName,guardianParticipationStatus:occupancy.guardianParticipationStatus,isChild:!!occupancy.guardianParticipationId||occupancy.extraBedPersonType==='child'};
+  });
+  var adults=(room&&room.guests||[]).map(function(person){var item=Object.assign({},person);item.isChild=false;return item;});
+  var children=(room&&room.children||[]).map(function(person){var item=Object.assign({},person);item.isChild=true;item.guardianFullName=item.guardian||'';return item;});
+  return adults.concat(children);
+}
+
+function getConferenceRoomPeopleOnDay(room,day,conference){
+  return getConferenceRoomPeople(room,conference).filter(function(person){
+    if(person.participationStatus&&person.participationStatus!=='active')return false;
+    if(day===undefined||day===null||day==='')return person.participationStatus?true:!(typeof gl==='function'?gl(person):person.leftDay);
+    return typeof isPersonPresentOnDay==='function'?isPersonPresentOnDay(person,day):true;
+  });
 }
 
 function getSelectedAccommodationRoomIds(conference){
@@ -102,6 +145,8 @@ function getOpenSelectedAccommodationRooms(day, conference){
 }
 
 function getAllRooms() {
+  var conference=getCurrentConference();
+  if(conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id))return getConferenceHouseRooms(conference);
   return getSelectedAccommodationRooms();
 }
 
@@ -409,7 +454,7 @@ function findRestaurantV3AccommodationPerson(personId,conference){
   if(!targetId)return null;
   var found=null;
   getConferenceHouseRooms(conference).some(function(room){
-    return (room.guests||[]).concat(room.children||[]).some(function(person){
+    return getConferenceRoomPeople(room,conference).some(function(person){
       if(String(person&&person.personId||'')!==targetId)return false;
       found=person;
       return true;
@@ -467,7 +512,7 @@ function getMealBaseCount(day,mealKey,conference){
   var processedPeople={};
   getConferenceHouseRooms(conference).forEach(function(room){
     if(typeof isRoomActiveOnDay==='function'&&!isRoomActiveOnDay(room,day))return;
-    (room.guests||[]).concat(room.children||[]).forEach(function(person){
+    getConferenceRoomPeopleOnDay(room,day,conference).forEach(function(person){
       var personKey=String(person&&(person.personId||person.id)||'');
       if(personKey&&processedPeople[personKey])return;
       if(personKey)processedPeople[personKey]=true;
@@ -671,7 +716,7 @@ function getRoomNightOccupancy(room,night){
   }
   var persons=0;
   var seen={};
-  (room.guests||[]).concat(room.children||[]).forEach(function(person){
+  getConferenceRoomPeopleOnDay(room,nightDay,getCurrentConference()).forEach(function(person){
     var personKey=String(person&&(person.personId||person.id)||'');
     if(personKey&&seen[personKey])return;
     if(personKey)seen[personKey]=true;
@@ -688,7 +733,7 @@ function getRoomDayOccupancy(room,day){
   }
   var persons=0;
   var seen={};
-  (room.guests||[]).concat(room.children||[]).forEach(function(person){
+  getConferenceRoomPeopleOnDay(room,dayNumber,getCurrentConference()).forEach(function(person){
     var personKey=String(person&&(person.personId||person.id)||'');
     if(personKey&&seen[personKey])return;
     if(personKey)seen[personKey]=true;
@@ -731,7 +776,7 @@ function calculateAccommodationSummary(conference){
   var roomDays=0;
   var roomTypeCost=0;
   rooms.forEach(function(room,roomIndex){
-    (room.guests||[]).concat(room.children||[]).forEach(function(person,personIndex){
+    getConferenceRoomPeople(room,conference).forEach(function(person,personIndex){
       if(getPersonDayCount(person,conference)<1)return;
       var personKey=String(person&&(person.personId||person.id)||'room-'+roomIndex+'-person-'+personIndex);
       uniquePersons[personKey]=true;
@@ -947,7 +992,7 @@ function getAirConditioningDayOverride(day,conference){
 function getAirConditioningRoomPersons(room,day){
   var count=0;
   var seen={};
-  (room&&room.guests||[]).concat(room&&room.children||[]).forEach(function(person){
+  getConferenceRoomPeopleOnDay(room,day,getCurrentConference()).forEach(function(person){
     var personKey=String(person&&(person.personId||person.id)||'');
     if(personKey&&seen[personKey])return;
     if(personKey)seen[personKey]=true;

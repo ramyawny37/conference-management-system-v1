@@ -71,14 +71,19 @@ var CardEngine = (function () {
         branding: readBranding(null)
       };
     }
-    var peopleDb = conference.peopleDb || {};
+    var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+    var people=linked&&typeof getConferenceParticipationItems==='function'
+      ?getConferenceParticipationItems(conference).map(function(participation){
+        var person=participation.person||{};
+        return {id:participation.personId,fullName:person.fullName,phone:person.phone};
+      }):asArray((conference.peopleDb||{}).people).slice();
     return {
       conference: conference,
       conferenceId: asText(conference.id),
       conferenceName: asText((conference.conf && conference.conf.name) || conference.name),
-      houses: asArray(conference.houses).slice(),
+      houses: linked?[]:asArray(conference.houses).slice(),
       rooms: typeof getAllRooms === 'function' ? asArray(getAllRooms()) : [],
-      people: asArray(peopleDb.people).slice(),
+      people: people,
       transports: asArray(conference.transports).slice(),
       branding: readBranding(conference)
     };
@@ -216,8 +221,9 @@ var CardEngine = (function () {
       }
     }
     if (personType === 'child') {
-      card.guardianName = asText(entry && entry.guardian);
+      card.guardianName = asText(entry && (entry.guardianFullName || entry.guardian));
       card.guardianPersonId = asText(entry && entry.guardianPersonId);
+      card.guardianParticipationStatus = asText(entry && entry.guardianParticipationStatus);
     }
     return card;
   }
@@ -226,11 +232,9 @@ var CardEngine = (function () {
     var context = getConferenceContext();
     var cards = [];
     context.rooms.forEach(function (room, roomIndex) {
-      asArray(room && room.guests).forEach(function (guest, index) {
-        cards.push(buildPersonCard(context, room, guest, 'adult', index, roomIndex));
-      });
-      asArray(room && room.children).forEach(function (child, index) {
-        cards.push(buildPersonCard(context, room, child, 'child', index, roomIndex));
+      var people=getConferenceRoomPeople(room,context.conference);
+      people.forEach(function (person, index) {
+        cards.push(buildPersonCard(context, room, person, person.isChild?'child':'adult', index, roomIndex));
       });
     });
     return cards;
@@ -282,11 +286,10 @@ var CardEngine = (function () {
     context.rooms.forEach(function (room, roomIndex) {
       var adults = [];
       var children = [];
-      asArray(room && room.guests).forEach(function (guest) {
-        adults.push(createRoomMember(context, room, guest, 'adult', roomIndex));
-      });
-      asArray(room && room.children).forEach(function (child) {
-        children.push(createRoomMember(context, room, child, 'child', roomIndex));
+      var people=getConferenceRoomPeople(room,context.conference);
+      people.forEach(function(person){
+        if(person.isChild)children.push(createRoomMember(context,room,person,'child',roomIndex));
+        else adults.push(createRoomMember(context,room,person,'adult',roomIndex));
       });
       if (!adults.length && !children.length) return;
       var location = getRoomContext(room, roomIndex);

@@ -2505,15 +2505,16 @@ function statsHtml(section){
   var closedC = allRooms.length - activeC;
   var ag=activeGuests();
   var extraBedChildren=allRooms.reduce(function(total,room){
-    return total+(room.guests||[]).filter(function(guest){return !gl(guest)&&guest.bedType==='extra'&&guest.extraBedPersonType==='child'}).length;
+    return total+getConferenceRoomPeopleOnDay(room,undefined,current).filter(function(person){return person.bedType==='extra'&&person.extraBedPersonType==='child'}).length;
   },0);
-  var displayedAdults=Math.max(0,ag.adults.length-extraBedChildren);
-  var displayedChildren=ag.children.length+extraBedChildren;
+  var linkedStats=getCanonicalConferenceCoreLink(current.id);
+  var displayedAdults=linkedStats?ag.adults.length:Math.max(0,ag.adults.length-extraBedChildren);
+  var displayedChildren=linkedStats?ag.children.length:ag.children.length+extraBedChildren;
   var baseBeds=allRooms.reduce(function(a,r){return a+(parseInt(r.beds,10)||0)},0);
   var extraBeds=allRooms.reduce(function(a,r){return a+(parseInt(r.extraBeds,10)||0)},0);
   var totalBeds=baseBeds+extraBeds;
   var usedExtraBeds=allRooms.reduce(function(total,room){
-    return total+(room.guests||[]).filter(function(guest){return !gl(guest)&&guest.bedType==='extra'}).length;
+    return total+getConferenceRoomPeopleOnDay(room,undefined,current).filter(function(person){return person.bedType==='extra'}).length;
   },0);
   var availableExtraBeds=Math.max(0,extraBeds-usedExtraBeds);
   var activeOccupants=[];
@@ -2757,7 +2758,7 @@ function normalizeAccommodationSearchText(value){
 function accommodationRoomMatchesSearch(room,normalizedQuery){
   if(!normalizedQuery)return true;
   if(normalizeAccommodationSearchText(room&&room.number).indexOf(normalizedQuery)!==-1)return true;
-  var people=(room&&room.guests||[]).concat(room&&room.children||[]);
+  var people=getConferenceRoomPeople(room,getCurrentConference());
   return people.some(function(person){
     var name=typeof getAccommodationPersonDisplayName==='function'
       ?getAccommodationPersonDisplayName(person)
@@ -2767,8 +2768,7 @@ function accommodationRoomMatchesSearch(room,normalizedQuery){
 }
 
 function getAccommodationOccupants(room){
-  return (room&&room.guests||[]).filter(function(person){return !gl(person);})
-    .concat((room&&room.children||[]).filter(function(person){return !person.leftDay;}));
+  return getConferenceRoomPeopleOnDay(room,undefined,getCurrentConference());
 }
 
 function getAccommodationPersonIdentity(person){
@@ -5393,10 +5393,11 @@ function removeManualSharedChildFromSeat(index){
 
 function getSeatEditorPersonId(name){
   var personId = '';
+  var current=getCurrentConference();
   getAllRooms().some(function(room){
-    return (room.guests || []).some(function(guest){
-      if(gn(guest) !== name) return false;
-      personId = guest && guest.personId ? guest.personId : '';
+    return getConferenceRoomPeopleOnDay(room,undefined,current).some(function(person){
+      if(person.isChild||(person.name||gn(person)) !== name) return false;
+      personId = person.personId || '';
       return true;
     });
   });
@@ -5427,13 +5428,14 @@ function isSharedChildAssignedToTransport(child, excludedTransportId, excludedSe
 function getEligibleSharedChildren(guardianPersonId, guardianName, excludedTransportId, excludedSeatNumber){
   var children = [];
   var seen = {};
+  var current=getCurrentConference();
   getAllRooms().forEach(function(room){
     if(room.closed) return;
-    (room.children || []).forEach(function(child){
-      if(child.leftDay) return;
+    getConferenceRoomPeopleOnDay(room,undefined,current).filter(function(person){return person.isChild;}).forEach(function(child){
+      if(child.guardianParticipationStatus&&child.guardianParticipationStatus!=='active')return;
       var linked = guardianPersonId && child.guardianPersonId
         ? child.guardianPersonId === guardianPersonId
-        : (!child.guardianPersonId && child.guardian === guardianName);
+        : (!child.guardianPersonId && (child.guardianFullName||child.guardian) === guardianName);
       if(!linked || isSharedChildAssignedToTransport(child, excludedTransportId, excludedSeatNumber)) return;
       var childKey = child.personId || child.name;
       if(seen[childKey]) return;
@@ -5950,8 +5952,7 @@ function personsOnDay(day){
   var adults=0,children=0;
   getAllRooms().forEach(function(r) {
     if (!isRoomActiveOnDay(r, day)) return;
-    (r.guests || []).forEach(function(g) { if (isPersonPresentOnDay(g,day)) adults++; });
-    (r.children || []).forEach(function(c) { if (isPersonPresentOnDay(c,day)) children++; });
+    getConferenceRoomPeopleOnDay(r,day,current).forEach(function(person){if(person.isChild)children++;else adults++;});
   });
   return {adults:adults,children:children};
 }
@@ -6133,14 +6134,14 @@ function getRestaurantV3People(conference){
       people[indexes[personId]]=item;
     }
   }
-  getConferenceHouseRooms(conference).forEach(function(room){
-    (room.guests||[]).concat(room.children||[]).forEach(function(person){
-      addPerson(person&&person.personId,resolvePersonName(person&&person.personId,person&&person.name),person);
-    });
+  var linked=getCanonicalConferenceCoreLink(conference&&conference.id);
+  if(linked)getConferenceParticipationItems(conference).forEach(function(participation){
+    addPerson(participation.personId,participation.person&&participation.person.fullName,participation.person);
   });
-  ((conference.peopleDb&&conference.peopleDb.people)||[]).forEach(function(person){
-    addPerson(person&&person.id,person&&person.fullName,person);
-  });
+  else {
+    getConferenceHouseRooms(conference).forEach(function(room){getConferenceRoomPeople(room,conference).forEach(function(person){addPerson(person&&person.personId,resolvePersonName(person&&person.personId,person&&person.name),person);});});
+    ((conference.peopleDb&&conference.peopleDb.people)||[]).forEach(function(person){addPerson(person&&person.id,person&&person.fullName,person);});
+  }
   return people.sort(function(left,right){return left.name.localeCompare(right.name,'ar')});
 }
 
@@ -6401,48 +6402,34 @@ function liveSearch(q){
 
   roomResults.forEach(function(res) {
     var r = res.room, house = res.house, floor = res.floor;
-    var ag=r.guests.filter(function(g){return !gl(g)});var lg=r.guests.filter(function(g){return gl(g)});var ac=r.children.filter(function(c){return !c.leftDay});
+    var roomPeople=getConferenceRoomPeople(r,current),present=getConferenceRoomPeopleOnDay(r,undefined,current),ag=present.filter(function(person){return !person.isChild}),lg=roomPeople.filter(function(person){return !person.isChild&&!person.participationStatus&&gl(person)}),ac=present.filter(function(person){return person.isChild});
     var tSeats=[];transports.forEach(function(t){t.seats.filter(function(s){return s.room===r.number&&s.name}).forEach(function(s){tSeats.push({t:t,s:s})})});
     h+='<div style="border:2px solid #2E75B6;border-radius:11px;overflow:hidden;margin-bottom:8px">';
     h+='<div style="background:linear-gradient(135deg,#1F4E79,#2E75B6);color:#fff;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;font-size:12px"><span>🏨 غرفة '+esc(r.number)+' ('+esc(house.name)+')</span><span style="opacity:.9">'+(ag.length+ac.length)+'/'+r.beds+'</span></div>';
     h+='<div style="padding:10px">';
     ag.forEach(function(g,i){h+='<div style="display:flex;justify-content:space-between;padding:4px 7px;background:'+(i%2===0?'#EAF4FC':'#fff')+';border-radius:5px;margin-bottom:2px;font-size:11px"><span>👤 '+esc(gn(g))+'</span><span class="pill p-adult">بالغ</span></div>'});
-    ac.forEach(function(c){h+='<div style="background:#FFF9EC;border:1px solid #F9D57A;border-radius:5px;padding:4px 7px;margin-bottom:2px;display:flex;justify-content:space-between;font-size:11px"><span>🧒 '+esc(c.name)+'</span><span style="color:#7D4E00;font-size:9px">'+esc(c.guardian)+'</span></div>'});
+    ac.forEach(function(c){h+='<div style="background:#FFF9EC;border:1px solid #F9D57A;border-radius:5px;padding:4px 7px;margin-bottom:2px;display:flex;justify-content:space-between;font-size:11px"><span>🧒 '+esc(c.name)+'</span><span style="color:#7D4E00;font-size:9px">'+esc(c.guardianFullName||c.guardian||'')+'</span></div>'});
     if(lg.length)h+='<div style="font-size:9px;color:#E74C3C;margin-top:3px">غادر: '+lg.map(function(g){return esc(gn(g))}).join('، ')+'</div>';
     if(tSeats.length){h+='<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">';tSeats.forEach(function(x){h+='<span style="background:#D5F5E3;border:1.5px solid #27AE60;border-radius:5px;padding:2px 7px;font-size:9px;font-weight:700">'+esc(x.t.icon)+' كرسي '+x.s.seat+': '+esc(x.s.name)+'</span>'});h+='</div>';}
-    h+='<div class="row" style="margin-top:7px;gap:4px"><button class="btn btn-blue btn-sm" onclick="openRoomEditor(\''+house.id+'\', \''+floor.id+'\', \''+r.id+'\')">✏️</button></div>';
+    var roomEditAction=getCanonicalConferenceCoreLink(current.id)?"editCanonicalAccommodationRoom('"+r.id+"')":"openRoomEditor('"+house.id+"', '"+floor.id+"', '"+r.id+"')";
+    h+='<div class="row" style="margin-top:7px;gap:4px"><button class="btn btn-blue btn-sm" onclick="'+roomEditAction+'">✏️</button></div>';
     h+='</div></div>';
   });
 
   var nRes=[],tRes=[];
 
   getAllRooms().forEach(function(r){
-
-    (r.guests || []).forEach(function(g){
-      if(gn(g).indexOf(q)>=0){
+    getConferenceRoomPeople(r,current).forEach(function(person){
+      if((person.name||gn(person)).indexOf(q)>=0){
         nRes.push({
-          name:gn(g),
+          name:person.name||gn(person),
           room:r.number,
           house:r.house.name,
-          type:'بالغ',
-          note:'',
-          members:null
+          type:person.isChild?'طفل':'بالغ',
+          note:'',members:null,left:!!person.leftDay
         });
       }
     });
-
-    (r.children || []).forEach(function(c){
-      if(c.name.indexOf(q)>=0){
-        nRes.push({
-          name:c.name,
-          room:r.number,
-          house:r.house.name,
-          type:'طفل',
-          left:!!c.leftDay
-        });
-      }
-    });
-
   });
 
   transports.forEach(function(t) {
