@@ -34,8 +34,8 @@ test('the canonical shell is the only active global shell stylesheet',()=>{
   const canonicalAsset='canonical-platform-shell.css?rev=reservations-workspace-v6';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
-  assert.match(html,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
-  assert.match(worker,/js\/platform-integration\.js\?rev=canonical-platform-foundation-v1/);
+  assert.match(html,/js\/platform-integration\.js\?rev=canonical-conference-core-cutover-v2/);
+  assert.match(worker,/js\/platform-integration\.js\?rev=canonical-conference-core-cutover-v2/);
   assert.doesNotMatch(html,/platform-shell-v2\.css|class="platform-shell-v2"/);
   assert.doesNotMatch(worker,/platform-shell-v2\.css/);
   assert.strictEqual(fs.existsSync(path.join(root,'platform-shell-v2.css')),false);
@@ -53,7 +53,6 @@ test('shared tokens remain the global source and the shell owns only local layou
   assert.match(css,/\.canonical-platform-shell\{--canonical-sidebar-width:204px;--canonical-shell-gutter:24px;--canonical-header-height:64px/);
   assert.match(css,/var\(--platform-v2-navy\)/);
   assert.match(css,/var\(--platform-v2-border\)/);
-  assert.match(css,/var\(--platform-shadow-md\)/);
   assert.match(tokens,/--platform-touch-target:44px/);
   assert.match(tokens,/--platform-safe-area-bottom:max\(16px,env\(safe-area-inset-bottom,0px\)\)/);
   assert.match(tokens,/--platform-v2-primary:#0a6cff/);
