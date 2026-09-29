@@ -40,16 +40,17 @@ create table public.conference_transport_assignments(
 create unique index conference_transport_unique_seat_idx on public.conference_transport_assignments(vehicle_id,seat_number) where seat_number is not null;
 create index conference_transport_assignments_list_idx on public.conference_transport_assignments(conference_id,vehicle_id,seat_number,id);
 
-create table public.conference_transport_operations(
-  actor_user_id uuid not null references platform.profiles(user_id), operation_id uuid not null, operation text not null,
-  request jsonb not null check(jsonb_typeof(request)='object'), result jsonb not null check(jsonb_typeof(result)='object'),
-  created_at timestamptz not null default statement_timestamp(), primary key(actor_user_id,operation_id)
-);
-
 alter table public.conference_transport_vehicles enable row level security; alter table public.conference_transport_vehicles force row level security;
 alter table public.conference_transport_assignments enable row level security; alter table public.conference_transport_assignments force row level security;
-alter table public.conference_transport_operations enable row level security; alter table public.conference_transport_operations force row level security;
-revoke all on table public.conference_transport_vehicles,public.conference_transport_assignments,public.conference_transport_operations from public,anon,authenticated,service_role;
+revoke all on table public.conference_transport_vehicles,public.conference_transport_assignments from public,anon,authenticated,service_role;
+
+alter table public.conference_participation_operations
+  drop constraint conference_participation_operations_operation_check;
+alter table public.conference_participation_operations
+  add constraint conference_participation_operations_operation_check check(operation in(
+    'create','create_with_person','set_status','set_guardian','delete',
+    'transport_vehicle_create','transport_vehicle_update','transport_vehicle_delete',
+    'transport_assignment_set','transport_assignment_remove'));
 
 create function platform_private.require_conference_transport_context(p_device uuid,p_conference uuid,p_permission text,p_mutation boolean)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -62,6 +63,20 @@ begin
   if not found then raise exception 'CONFERENCE_NOT_FOUND' using errcode='P0002'; end if;
   if p_mutation and conf.status<>'active' then raise exception 'COMPLETED_CONFERENCE_IMMUTABLE' using errcode='55000'; end if;
   return c;
+end $$;
+
+create function platform_private.audit_conference_transport_assignment_removal(
+  p_actor uuid,p_device_authorization uuid,p_assignment public.conference_transport_assignments,
+  p_operation_id uuid,p_reason text,p_permission text
+) returns void language plpgsql security definer set search_path='' as $$
+begin
+  insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,
+    entity_id,scope_type,old_values,new_values,metadata,operation_id,source)
+  values(p_actor,p_device_authorization,'platform','conference','conference.transport.assignment_removed',
+    'conference_transport_assignment',p_assignment.id,'platform',to_jsonb(p_assignment),null,
+    jsonb_build_object('conferenceId',p_assignment.conference_id,'vehicleId',p_assignment.vehicle_id,
+      'participationId',p_assignment.participation_id,'removalReason',p_reason,'permissionKey',p_permission),
+    p_operation_id,'rpc');
 end $$;
 
 create function public.get_conference_transport(p_actor_device_id uuid,p_conference_id uuid)
@@ -83,35 +98,47 @@ begin
   return jsonb_build_object('conferenceId',p_conference_id,'canManage',can_manage,'vehicles',vehicles,'assignments',assignments);
 end $$;
 
-create function platform_private.transport_replay(p_actor uuid,p_operation_id uuid,p_operation text,p_request jsonb)
-returns jsonb language plpgsql security definer set search_path='' as $$ declare prior public.conference_transport_operations%rowtype; begin
-  perform pg_advisory_xact_lock(hashtextextended(p_actor::text||':conference-transport:'||p_operation_id::text,0));
-  select * into prior from public.conference_transport_operations where actor_user_id=p_actor and operation_id=p_operation_id;
-  if found then if prior.operation<>p_operation or prior.request<>p_request then raise exception 'CONFERENCE_TRANSPORT_OPERATION_MISMATCH' using errcode='22023'; end if; return prior.result; end if; return null;
-end $$;
-
 create function public.mutate_conference_transport_vehicle(p_device uuid,p_operation_id uuid,p_operation text,p_conference uuid,p_vehicle uuid,p_expected_revision bigint,p_name text,p_icon text,p_capacity integer,p_position integer,p_remove_overflow boolean)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare c jsonb; actor uuid; authz uuid; req jsonb; replay jsonb; old public.conference_transport_vehicles%rowtype; row public.conference_transport_vehicles%rowtype; result jsonb;
+declare c jsonb; actor uuid; authz uuid; req jsonb; prior public.conference_participation_operations%rowtype;
+  old public.conference_transport_vehicles%rowtype; row public.conference_transport_vehicles%rowtype;
+  removed public.conference_transport_assignments%rowtype; removed_ids jsonb:='[]'::jsonb; result jsonb;
 begin
   if p_operation_id is null or p_operation not in('create','update','delete') then raise exception 'CONFERENCE_TRANSPORT_ARGUMENT_INVALID' using errcode='22023'; end if;
   c:=platform_private.require_conference_transport_context(p_device,p_conference,'conference.transport.manage',true); actor:=(c->>'actorUserId')::uuid; authz:=platform_private.validated_phase1c_device_authorization(actor,p_device);
-  req:=jsonb_build_object('operation',p_operation,'conferenceId',p_conference,'vehicleId',p_vehicle,'expectedRevision',p_expected_revision,'name',p_name,'icon',p_icon,'capacity',p_capacity,'position',p_position,'removeOverflow',p_remove_overflow); replay:=platform_private.transport_replay(actor,p_operation_id,'vehicle_'||p_operation,req); if replay is not null then return replay; end if;
+  req:=jsonb_build_object('operation',p_operation,'conferenceId',p_conference,'vehicleId',p_vehicle,'expectedRevision',p_expected_revision,'name',p_name,'icon',p_icon,'capacity',p_capacity,'position',p_position,'removeOverflow',p_remove_overflow);
+  perform pg_advisory_xact_lock(hashtextextended(actor::text||':conference-participation:'||p_operation_id::text,0));
+  select * into prior from public.conference_participation_operations where actor_user_id=actor and operation_id=p_operation_id;
+  if found then if prior.operation<>'transport_vehicle_'||p_operation or prior.request<>req then raise exception 'CONFERENCE_PARTICIPATION_OPERATION_MISMATCH' using errcode='22023'; end if; return prior.result; end if;
   if p_operation='create' then insert into public.conference_transport_vehicles(conference_id,name,icon,capacity,position,created_by,updated_by) values(p_conference,btrim(p_name),coalesce(nullif(p_icon,''),'🚌'),p_capacity,coalesce(p_position,0),actor,actor) returning * into row;
   else select * into old from public.conference_transport_vehicles where id=p_vehicle and conference_id=p_conference for update; if not found then raise exception 'CONFERENCE_TRANSPORT_VEHICLE_NOT_FOUND' using errcode='P0002'; end if; if old.revision<>p_expected_revision then raise exception 'CONFERENCE_TRANSPORT_REVISION_CONFLICT' using errcode='40001'; end if;
-    if p_operation='delete' then delete from public.conference_transport_vehicles where id=p_vehicle; row:=old;
-    else if p_capacity<old.capacity and exists(select 1 from public.conference_transport_assignments where vehicle_id=p_vehicle and seat_number>p_capacity) and not coalesce(p_remove_overflow,false) then raise exception 'CONFERENCE_TRANSPORT_CAPACITY_OCCUPIED' using errcode='23514'; end if; if p_capacity<old.capacity then delete from public.conference_transport_assignments where vehicle_id=p_vehicle and seat_number>p_capacity; end if; update public.conference_transport_vehicles set name=btrim(p_name),icon=coalesce(nullif(p_icon,''),'🚌'),capacity=p_capacity,position=coalesce(p_position,position),revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where id=p_vehicle returning * into row; end if;
+    if p_operation='delete' then
+      for removed in select * from public.conference_transport_assignments where vehicle_id=p_vehicle order by id for update loop
+        perform platform_private.audit_conference_transport_assignment_removal(actor,authz,removed,p_operation_id,'vehicle_deleted','conference.transport.manage'); removed_ids:=removed_ids||jsonb_build_array(removed.id);
+      end loop;
+      delete from public.conference_transport_assignments where vehicle_id=p_vehicle; delete from public.conference_transport_vehicles where id=p_vehicle; row:=old;
+    else
+      if p_capacity<old.capacity and exists(select 1 from public.conference_transport_assignments where vehicle_id=p_vehicle and seat_number>p_capacity) and not coalesce(p_remove_overflow,false) then raise exception 'CONFERENCE_TRANSPORT_CAPACITY_OCCUPIED' using errcode='23514'; end if;
+      if p_capacity<old.capacity then
+        for removed in select * from public.conference_transport_assignments where vehicle_id=p_vehicle and seat_number>p_capacity order by id for update loop
+          perform platform_private.audit_conference_transport_assignment_removal(actor,authz,removed,p_operation_id,'capacity_reduced','conference.transport.manage'); removed_ids:=removed_ids||jsonb_build_array(removed.id);
+        end loop;
+        delete from public.conference_transport_assignments where vehicle_id=p_vehicle and seat_number>p_capacity;
+      end if;
+      update public.conference_transport_vehicles set name=btrim(p_name),icon=coalesce(nullif(p_icon,''),'🚌'),capacity=p_capacity,position=coalesce(p_position,position),revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where id=p_vehicle returning * into row;
+    end if;
   end if;
-  result:=jsonb_build_object('vehicleId',row.id,'conferenceId',row.conference_id,'name',row.name,'icon',row.icon,'capacity',row.capacity,'position',row.position,'revision',row.revision,'deleted',p_operation='delete'); insert into public.conference_transport_operations values(actor,p_operation_id,'vehicle_'||p_operation,req,result,statement_timestamp());
+  result:=jsonb_build_object('vehicleId',row.id,'conferenceId',row.conference_id,'name',row.name,'icon',row.icon,'capacity',row.capacity,'position',row.position,'revision',row.revision,'deleted',p_operation='delete','removedAssignmentIds',removed_ids);
+  insert into public.conference_participation_operations(actor_user_id,operation_id,operation,request,result,created_at) values(actor,p_operation_id,'transport_vehicle_'||p_operation,req,result,statement_timestamp());
   insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,new_values,metadata,operation_id,source) values(actor,authz,'platform','conference','conference.transport.vehicle_'||p_operation,'conference_transport_vehicle',row.id,'platform',case when p_operation='create' then null else to_jsonb(old) end,case when p_operation='delete' then null else to_jsonb(row) end,jsonb_build_object('conferenceId',p_conference,'permissionKey','conference.transport.manage'),p_operation_id,'rpc'); return result;
 end $$;
 
 create function public.set_conference_transport_assignment(p_device uuid,p_operation_id uuid,p_conference uuid,p_participation uuid,p_vehicle uuid,p_mode text,p_rider_kind text,p_seat integer,p_expected_revision bigint)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare c jsonb; actor uuid; authz uuid; req jsonb; replay jsonb; part public.conference_participations%rowtype; guardian public.conference_participations%rowtype; vehicle public.conference_transport_vehicles%rowtype; old public.conference_transport_assignments%rowtype; row public.conference_transport_assignments%rowtype; result jsonb;
+declare c jsonb; actor uuid; authz uuid; req jsonb; prior public.conference_participation_operations%rowtype; part public.conference_participations%rowtype; guardian public.conference_participations%rowtype; vehicle public.conference_transport_vehicles%rowtype; old public.conference_transport_assignments%rowtype; row public.conference_transport_assignments%rowtype; result jsonb;
 begin
   c:=platform_private.require_conference_transport_context(p_device,p_conference,'conference.transport.manage',true); actor:=(c->>'actorUserId')::uuid; authz:=platform_private.validated_phase1c_device_authorization(actor,p_device);
-  req:=jsonb_build_object('conferenceId',p_conference,'participationId',p_participation,'vehicleId',p_vehicle,'mode',p_mode,'riderKind',p_rider_kind,'seatNumber',p_seat,'expectedRevision',p_expected_revision); replay:=platform_private.transport_replay(actor,p_operation_id,'set_assignment',req); if replay is not null then return replay; end if;
+  req:=jsonb_build_object('conferenceId',p_conference,'participationId',p_participation,'vehicleId',p_vehicle,'mode',p_mode,'riderKind',p_rider_kind,'seatNumber',p_seat,'expectedRevision',p_expected_revision); perform pg_advisory_xact_lock(hashtextextended(actor::text||':conference-participation:'||p_operation_id::text,0)); select * into prior from public.conference_participation_operations where actor_user_id=actor and operation_id=p_operation_id; if found then if prior.operation<>'transport_assignment_set' or prior.request<>req then raise exception 'CONFERENCE_PARTICIPATION_OPERATION_MISMATCH' using errcode='22023'; end if; return prior.result; end if;
   select * into part from public.conference_participations where id=p_participation and conference_id=p_conference for key share; if not found or part.status<>'active' then raise exception 'CONFERENCE_TRANSPORT_PARTICIPATION_INELIGIBLE' using errcode='23514'; end if;
   select * into vehicle from public.conference_transport_vehicles where id=p_vehicle and conference_id=p_conference for update; if not found then raise exception 'CONFERENCE_TRANSPORT_VEHICLE_NOT_FOUND' using errcode='P0002'; end if;
   if p_mode='independent' then if p_seat is null or p_seat>vehicle.capacity then raise exception 'CONFERENCE_TRANSPORT_SEAT_INVALID' using errcode='23514'; end if;
@@ -124,16 +151,81 @@ begin
     update public.conference_transport_assignments child_assignment set vehicle_id=row.vehicle_id,revision=child_assignment.revision+1,updated_at=statement_timestamp(),updated_by=actor
     from public.conference_participations child where child.id=child_assignment.participation_id and child.guardian_participation_id=row.participation_id and child_assignment.assignment_mode='shared' and child_assignment.conference_id=row.conference_id and child_assignment.vehicle_id<>row.vehicle_id;
   end if;
-  result:=jsonb_build_object('assignmentId',row.id,'conferenceId',row.conference_id,'vehicleId',row.vehicle_id,'participationId',row.participation_id,'mode',row.assignment_mode,'riderKind',row.rider_kind,'seatNumber',row.seat_number,'revision',row.revision); insert into public.conference_transport_operations values(actor,p_operation_id,'set_assignment',req,result,statement_timestamp());
+  result:=jsonb_build_object('assignmentId',row.id,'conferenceId',row.conference_id,'vehicleId',row.vehicle_id,'participationId',row.participation_id,'mode',row.assignment_mode,'riderKind',row.rider_kind,'seatNumber',row.seat_number,'revision',row.revision); insert into public.conference_participation_operations(actor_user_id,operation_id,operation,request,result,created_at) values(actor,p_operation_id,'transport_assignment_set',req,result,statement_timestamp());
   insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,new_values,metadata,operation_id,source) values(actor,authz,'platform','conference','conference.transport.assignment_set','conference_transport_assignment',row.id,'platform',case when old.id is null then null else to_jsonb(old) end,to_jsonb(row),jsonb_build_object('conferenceId',p_conference,'permissionKey','conference.transport.manage'),p_operation_id,'rpc'); return result;
 end $$;
 
 create function public.remove_conference_transport_assignment(p_device uuid,p_operation_id uuid,p_assignment uuid,p_expected_revision bigint)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare old public.conference_transport_assignments%rowtype; c jsonb; actor uuid; authz uuid; req jsonb; replay jsonb; result jsonb;
-begin select * into old from public.conference_transport_assignments where id=p_assignment; if not found then raise exception 'CONFERENCE_TRANSPORT_ASSIGNMENT_NOT_FOUND' using errcode='P0002'; end if; c:=platform_private.require_conference_transport_context(p_device,old.conference_id,'conference.transport.manage',true); actor:=(c->>'actorUserId')::uuid; authz:=platform_private.validated_phase1c_device_authorization(actor,p_device); req:=jsonb_build_object('assignmentId',p_assignment,'expectedRevision',p_expected_revision); replay:=platform_private.transport_replay(actor,p_operation_id,'remove_assignment',req); if replay is not null then return replay; end if; select * into old from public.conference_transport_assignments where id=p_assignment for update; if old.revision<>p_expected_revision then raise exception 'CONFERENCE_TRANSPORT_REVISION_CONFLICT' using errcode='40001'; end if; if old.assignment_mode='independent' then delete from public.conference_transport_assignments child_assignment using public.conference_participations child where child.id=child_assignment.participation_id and child.guardian_participation_id=old.participation_id and child_assignment.assignment_mode='shared' and child_assignment.vehicle_id=old.vehicle_id; end if; delete from public.conference_transport_assignments where id=p_assignment; result:=jsonb_build_object('assignmentId',p_assignment,'conferenceId',old.conference_id,'deleted',true); insert into public.conference_transport_operations values(actor,p_operation_id,'remove_assignment',req,result,statement_timestamp()); insert into platform.audit_events(actor_user_id,actor_device_authorization_id,domain,module,action,entity_type,entity_id,scope_type,old_values,metadata,operation_id,source) values(actor,authz,'platform','conference','conference.transport.assignment_removed','conference_transport_assignment',old.id,'platform',to_jsonb(old),jsonb_build_object('conferenceId',old.conference_id,'permissionKey','conference.transport.manage'),p_operation_id,'rpc'); return result; end $$;
+declare old public.conference_transport_assignments%rowtype; removed public.conference_transport_assignments%rowtype;
+  c jsonb; session_context jsonb; actor uuid; authz uuid; req jsonb; prior public.conference_participation_operations%rowtype;
+  removed_ids jsonb:='[]'::jsonb; result jsonb;
+begin
+  if p_operation_id is null or p_assignment is null or p_expected_revision is null then raise exception 'CONFERENCE_TRANSPORT_ARGUMENT_INVALID' using errcode='22023'; end if;
+  begin
+    session_context:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;
+    if session_context is null or session_context->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (session_context->>'device_id')::uuid is distinct from p_device then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+    actor:=(session_context->>'user_id')::uuid;
+  exception when invalid_text_representation or null_value_not_allowed then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end;
+  authz:=platform_private.validated_phase1c_device_authorization(actor,p_device); if authz is null then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+  req:=jsonb_build_object('assignmentId',p_assignment,'expectedRevision',p_expected_revision);
+  perform pg_advisory_xact_lock(hashtextextended(actor::text||':conference-participation:'||p_operation_id::text,0)); select * into prior from public.conference_participation_operations where actor_user_id=actor and operation_id=p_operation_id;
+  if found then if prior.operation<>'transport_assignment_remove' or prior.request<>req then raise exception 'CONFERENCE_PARTICIPATION_OPERATION_MISMATCH' using errcode='22023'; end if; c:=platform_private.require_conference_transport_context(p_device,(prior.result->>'conferenceId')::uuid,'conference.transport.manage',false); if (c->>'actorUserId')::uuid is distinct from actor then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if; return prior.result; end if;
+  select * into old from public.conference_transport_assignments where id=p_assignment for update; if not found then raise exception 'CONFERENCE_TRANSPORT_ASSIGNMENT_NOT_FOUND' using errcode='P0002'; end if;
+  c:=platform_private.require_conference_transport_context(p_device,old.conference_id,'conference.transport.manage',true); if (c->>'actorUserId')::uuid is distinct from actor then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+  if old.revision<>p_expected_revision then raise exception 'CONFERENCE_TRANSPORT_REVISION_CONFLICT' using errcode='40001'; end if;
+  if old.assignment_mode='independent' then
+    for removed in select child_assignment.* from public.conference_transport_assignments child_assignment join public.conference_participations child on child.id=child_assignment.participation_id where child.guardian_participation_id=old.participation_id and child_assignment.assignment_mode='shared' and child_assignment.vehicle_id=old.vehicle_id order by child_assignment.id for update of child_assignment loop
+      perform platform_private.audit_conference_transport_assignment_removal(actor,authz,removed,p_operation_id,'guardian_assignment_removed','conference.transport.manage'); removed_ids:=removed_ids||jsonb_build_array(removed.id);
+    end loop;
+    delete from public.conference_transport_assignments child_assignment using public.conference_participations child where child.id=child_assignment.participation_id and child.guardian_participation_id=old.participation_id and child_assignment.assignment_mode='shared' and child_assignment.vehicle_id=old.vehicle_id;
+  end if;
+  perform platform_private.audit_conference_transport_assignment_removal(actor,authz,old,p_operation_id,'assignment_removed','conference.transport.manage'); removed_ids:=removed_ids||jsonb_build_array(old.id);
+  delete from public.conference_transport_assignments where id=p_assignment;
+  result:=jsonb_build_object('assignmentId',p_assignment,'conferenceId',old.conference_id,'deleted',true,'removedAssignmentIds',removed_ids);
+  insert into public.conference_participation_operations(actor_user_id,operation_id,operation,request,result,created_at) values(actor,p_operation_id,'transport_assignment_remove',req,result,statement_timestamp()); return result;
+end $$;
 
-revoke all on function platform_private.require_conference_transport_context(uuid,uuid,text,boolean),platform_private.transport_replay(uuid,uuid,text,jsonb),public.get_conference_transport(uuid,uuid),public.mutate_conference_transport_vehicle(uuid,uuid,text,uuid,uuid,bigint,text,text,integer,integer,boolean),public.set_conference_transport_assignment(uuid,uuid,uuid,uuid,uuid,text,text,integer,bigint),public.remove_conference_transport_assignment(uuid,uuid,uuid,bigint) from public,anon,authenticated,service_role;
+alter function public.delete_conference_participation(uuid,uuid,uuid,bigint)
+  rename to delete_conference_participation_without_transport_cleanup;
+
+create function public.delete_conference_participation(
+  p_actor_device_id uuid,p_operation_id uuid,p_participation_id uuid,p_expected_revision bigint
+) returns jsonb language plpgsql security definer set search_path='' as $$
+declare v_session_context jsonb; v_actor uuid; v_device_authorization uuid; v_context jsonb;
+  v_current public.conference_participations%rowtype; v_prior public.conference_participation_operations%rowtype;
+  v_assignment public.conference_transport_assignments%rowtype; v_participation_ids uuid[];
+  v_removed_ids jsonb:='[]'::jsonb; v_result jsonb;
+begin
+  if p_operation_id is null or p_participation_id is null or p_expected_revision is null or p_expected_revision<1 then raise exception 'CONFERENCE_PARTICIPATION_ARGUMENT_INVALID' using errcode='22023'; end if;
+  begin
+    v_session_context:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;
+    if v_session_context is null or v_session_context->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (v_session_context->>'device_id')::uuid is distinct from p_actor_device_id then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+    v_actor:=(v_session_context->>'user_id')::uuid;
+  exception when invalid_text_representation or null_value_not_allowed then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end;
+  v_device_authorization:=platform_private.validated_phase1c_device_authorization(v_actor,p_actor_device_id); if v_device_authorization is null then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_actor::text||':conference-participation:'||p_operation_id::text,0));
+  select * into v_prior from public.conference_participation_operations where actor_user_id=v_actor and operation_id=p_operation_id;
+  if found then
+    if v_prior.operation<>'delete' or v_prior.request<>jsonb_build_object('participationId',p_participation_id,'expectedRevision',p_expected_revision) then raise exception 'CONFERENCE_PARTICIPATION_OPERATION_MISMATCH' using errcode='22023'; end if;
+    v_context:=platform_private.require_conference_participation_context(p_actor_device_id,(v_prior.result->>'conferenceId')::uuid,'conference.people.manage',false); if (v_context->>'actorUserId')::uuid is distinct from v_actor then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+    return v_prior.result;
+  end if;
+  select * into v_current from public.conference_participations where id=p_participation_id; if not found then raise exception 'CONFERENCE_PARTICIPATION_NOT_FOUND' using errcode='P0002'; end if;
+  v_context:=platform_private.require_conference_participation_context(p_actor_device_id,v_current.conference_id,'conference.people.manage',true); if (v_context->>'actorUserId')::uuid is distinct from v_actor then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501'; end if;
+  perform pg_advisory_xact_lock(hashtextextended('conference-guardian:'||v_current.conference_id::text,0));
+  perform 1 from public.conference_participations where id=p_participation_id or guardian_participation_id=p_participation_id order by id for update;
+  select array_agg(id order by id) into v_participation_ids from public.conference_participations where id=p_participation_id or guardian_participation_id=p_participation_id;
+  for v_assignment in select assignment.* from public.conference_transport_assignments assignment where assignment.participation_id=any(v_participation_ids) order by assignment.id for update loop
+    perform platform_private.audit_conference_transport_assignment_removal(v_actor,v_device_authorization,v_assignment,p_operation_id,'participation_deleted','conference.people.manage'); v_removed_ids:=v_removed_ids||jsonb_build_array(v_assignment.id);
+  end loop;
+  delete from public.conference_transport_assignments where participation_id=any(v_participation_ids);
+  v_result:=public.delete_conference_participation_without_transport_cleanup(p_actor_device_id,p_operation_id,p_participation_id,p_expected_revision)||jsonb_build_object('removedTransportAssignmentIds',v_removed_ids);
+  update public.conference_participation_operations set result=v_result where actor_user_id=v_actor and operation_id=p_operation_id;
+  return v_result;
+end $$;
+
+revoke all on function platform_private.require_conference_transport_context(uuid,uuid,text,boolean),platform_private.audit_conference_transport_assignment_removal(uuid,uuid,public.conference_transport_assignments,uuid,text,text),public.get_conference_transport(uuid,uuid),public.mutate_conference_transport_vehicle(uuid,uuid,text,uuid,uuid,bigint,text,text,integer,integer,boolean),public.set_conference_transport_assignment(uuid,uuid,uuid,uuid,uuid,text,text,integer,bigint),public.remove_conference_transport_assignment(uuid,uuid,uuid,bigint),public.delete_conference_participation_without_transport_cleanup(uuid,uuid,uuid,bigint),public.delete_conference_participation(uuid,uuid,uuid,bigint) from public,anon,authenticated,service_role;
 
 do $$ declare sig regprocedure:='platform_private.route_canonical_conference_operation(uuid,uuid,bytea,uuid,text,jsonb)'::regprocedure; d text; marker text:='if p_operation=''list_accessible_conferences'' then'; branch text:='if p_operation=''get_conference_transport'' then perform platform_private.require_exact_jsonb_keys(p_args,array[''p_conference_id'']); return public.get_conference_transport(p_actor_device_id,(p_args->>''p_conference_id'')::uuid); elsif p_operation=''mutate_conference_transport_vehicle'' then perform platform_private.require_exact_jsonb_keys(p_args,array[''p_operation_id'',''p_operation'',''p_conference_id'',''p_vehicle_id'',''p_expected_revision'',''p_name'',''p_icon'',''p_capacity'',''p_position'',''p_remove_overflow'']); return public.mutate_conference_transport_vehicle(p_actor_device_id,(p_args->>''p_operation_id'')::uuid,p_args->>''p_operation'',(p_args->>''p_conference_id'')::uuid,nullif(p_args->>''p_vehicle_id'','''')::uuid,nullif(p_args->>''p_expected_revision'','''')::bigint,p_args->>''p_name'',p_args->>''p_icon'',nullif(p_args->>''p_capacity'','''')::integer,nullif(p_args->>''p_position'','''')::integer,coalesce((p_args->>''p_remove_overflow'')::boolean,false)); elsif p_operation=''set_conference_transport_assignment'' then perform platform_private.require_exact_jsonb_keys(p_args,array[''p_operation_id'',''p_conference_id'',''p_participation_id'',''p_vehicle_id'',''p_mode'',''p_rider_kind'',''p_seat_number'',''p_expected_revision'']); return public.set_conference_transport_assignment(p_actor_device_id,(p_args->>''p_operation_id'')::uuid,(p_args->>''p_conference_id'')::uuid,(p_args->>''p_participation_id'')::uuid,(p_args->>''p_vehicle_id'')::uuid,p_args->>''p_mode'',p_args->>''p_rider_kind'',nullif(p_args->>''p_seat_number'','''')::integer,nullif(p_args->>''p_expected_revision'','''')::bigint); elsif p_operation=''remove_conference_transport_assignment'' then perform platform_private.require_exact_jsonb_keys(p_args,array[''p_operation_id'',''p_assignment_id'',''p_expected_revision'']); return public.remove_conference_transport_assignment(p_actor_device_id,(p_args->>''p_operation_id'')::uuid,(p_args->>''p_assignment_id'')::uuid,(p_args->>''p_expected_revision'')::bigint); elsif p_operation=''list_accessible_conferences'' then'; begin d:=pg_get_functiondef(sig); if position('p_operation=''get_conference_transport''' in d)<>0 or position(marker in d)=0 then raise exception 'P6I_B2_ROUTER_PRECONDITION_FAILED' using errcode='55000'; end if; execute replace(d,marker,branch); end $$;
 

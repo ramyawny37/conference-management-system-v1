@@ -58,10 +58,10 @@ test('conference access view alone does not grant edit or sync and remains ineli
   assert.equal(resolutions,0);assert.equal(gate.canEdit('local-a'),false);assert.equal(gate.canSync('local-a'),false);
 });
 
-test('the shared edit gate has only Accommodation and Transport linked consumers',()=>{
+test('the shared edit gate remains for Accommodation while linked Transport uses its exact manage capability',()=>{
   const body=scriptSource.slice(scriptSource.indexOf('function canEditCurrentConferenceData'),scriptSource.indexOf('function beginAccommodationEditing'));
   assert.match(body,/authorization\.canEdit\(current\.id\)/);
   assert.equal((scriptSource.match(/canEditCurrentConferenceData\(\)/g)||[]).length,3);
   assert.match(scriptSource,/function canEditCurrentConferenceAccommodation\(\)[\s\S]*?canEditCurrentConferenceData\(\)/);
-  assert.match(scriptSource,/var canEditTransport=canEditCurrentConferenceData\(\)/);
+  assert.match(scriptSource,/var canEditTransport=canonicalTransport\?!!canonicalState\.canManage:canEditCurrentConferenceData\(\)/);
 });
