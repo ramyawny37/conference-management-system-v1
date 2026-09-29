@@ -513,7 +513,11 @@ function exportJsonFile(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('exportJsonFile',null))return false;
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   updateCurrentConferenceData();
-  var data=JSON.stringify(appData,null,2);
+  var serializationInput=window.PlatformIntegration&&
+    typeof window.PlatformIntegration.prepareLegacyConferenceSerialization==='function'
+    ?window.PlatformIntegration.prepareLegacyConferenceSerialization(appData)
+    :appData;
+  var data=JSON.stringify(serializationInput,null,2);
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data],{type:'application/json;charset=utf-8'}));
   a.download='conference_'+new Date().toISOString().slice(0,10)+'.json';

@@ -8,6 +8,9 @@ const test=require('node:test');
 const read=file=>fs.readFileSync(file,'utf8');
 const integrationSource=read('js/platform-integration.js');
 const scriptSource=read('script.js');
+const repositorySource=read('js/storage/storage-repository.js');
+const backupSource=read('js/storage/full-backup.js');
+const stateSource=read('state.js');
 const snapshotSources=[
   'js/sync/discovered-conference-open-service.js',
   'js/sync/local-snapshot-application.js',
@@ -22,7 +25,7 @@ function environment(){
   let fail=null;
   const remote='50000000-0000-4000-8000-000000000001';
   const canonical={conferenceId:remote,organizationId:'organization',name:'Canonical',startDate:'2026-10-01',endDate:'2026-10-03',status:'active',completedAt:null,revision:4,createdAt:'created',updatedAt:'updated',updatedBy:'actor',days:3,nights:2,schedule:['2026-10-01','2026-10-02','2026-10-03']};
-  const sandbox={window:null,console,Promise,JSON,Object,String,Array,Date,RegExp,Error,setTimeout,clearTimeout,navigator:{onLine:true},document:{addEventListener(){},getElementById(){return null;},querySelector(){return null;}},addEventListener(){},dispatchEvent(){},CustomEvent:function(){},appData:{currentConferenceId:'local',conferences:[{id:'local',name:'Legacy',startDate:'old-start',endDate:'old-end',status:'active',conf:{name:'Legacy',startDate:'old-start',endDate:'old-end',place:'Legacy place'},peopleDb:{people:[{id:'person-old'}]},houses:[{id:'house-old'}]}]},PlatformDeviceSession:{invokeModuleProtected(module,operation,args){calls.push({module,operation,args:JSON.parse(JSON.stringify(args))});if(fail)return Promise.reject({code:fail});if(operation==='get_conference_core')return Promise.resolve(JSON.parse(JSON.stringify(canonical)));if(operation==='mutate_conference_core')return Promise.resolve(Object.assign({},canonical,{name:args.p_name,startDate:args.p_start_date,endDate:args.p_end_date,status:args.p_status,revision:5,updatedAt:'updated-2'}));throw new Error('unexpected operation');}}};
+  const sandbox={window:null,console,Promise,JSON,Object,String,Array,Date,RegExp,Error,setTimeout,clearTimeout,navigator:{onLine:true},document:{addEventListener(){},getElementById(){return null;},querySelector(){return null;}},addEventListener(){},dispatchEvent(){},CustomEvent:function(){},appData:{currentConferenceId:'local',conferences:[{id:'local',organizationId:'legacy-organization',name:'Legacy',startDate:'old-start',endDate:'old-end',status:'active',revision:2,createdAt:'legacy-created',updatedAt:'legacy-updated',updatedBy:'legacy-actor',days:2,nights:1,schedule:['old-start'],conf:{name:'Legacy',startDate:'old-start',endDate:'old-end',days:2,nights:1,schedule:['old-start'],place:'Legacy place'},peopleDb:{people:[{id:'person-old'}]},houses:[{id:'house-old'}]}]},ConferenceLinkStore:{get(id){return id==='local'?{linkStatus:'linked',remoteConferenceId:remote}:null;}},PlatformDeviceSession:{invokeModuleProtected(module,operation,args){calls.push({module,operation,args:JSON.parse(JSON.stringify(args))});if(fail)return Promise.reject({code:fail});if(operation==='get_conference_core')return Promise.resolve(JSON.parse(JSON.stringify(canonical)));if(operation==='mutate_conference_core')return Promise.resolve(Object.assign({},canonical,{name:args.p_name,startDate:args.p_start_date,endDate:args.p_end_date,status:args.p_status,revision:5,updatedAt:'updated-2'}));throw new Error('unexpected operation');}}};
   sandbox.window=sandbox;
   vm.runInNewContext(integrationSource,sandbox);
   return {sandbox,calls,remote,canonical,fail:value=>{fail=value;}};
@@ -94,4 +97,38 @@ test('snapshot, recovery and realtime application share the canonical core guard
   assert.equal((integrationSource.match(/function hydrateConferenceCore\(/g)||[]).length,1);
   assert.equal((integrationSource.match(/function mutateConferenceCore\(/g)||[]).length,1);
   assert.doesNotMatch(integrationSource,/localStorage|indexedDB|conference_snapshots|OfflineSyncQueue|WebSocket|channel\s*\(/i);
+});
+
+test('unrelated legacy saves retain the old core cache and persist new legacy domains',async()=>{
+  const env=environment();
+  const api=env.sandbox.PlatformIntegration;
+  await api.hydrateConferenceCore('local',env.remote);
+  await api.mutateConferenceCore('local',{name:'B',startDate:'2026-10-02',endDate:'2026-10-04',status:'active'});
+  const live=env.sandbox.appData.conferences[0];
+  live.peopleDb.people.push({id:'person-new'});
+  live.houses.push({id:'house-new'});
+  const serialized=api.prepareLegacyConferenceSerialization(env.sandbox.appData);
+  const persisted=serialized.conferences[0];
+  assert.equal(live.name,'B');
+  assert.equal(live.revision,5);
+  assert.equal(persisted.name,'Legacy');
+  assert.equal(persisted.revision,2);
+  assert.equal(persisted.conf.name,'Legacy');
+  assert.deepEqual(Array.from(persisted.peopleDb.people,item=>item.id),['person-old','person-new']);
+  assert.deepEqual(Array.from(persisted.houses,item=>item.id),['house-old','house-new']);
+});
+
+test('one sanitizer protects repository queue, mirrors, backups and exports',()=>{
+  assert.equal((integrationSource.match(/function prepareLegacyConferenceSerialization\(/g)||[]).length,1);
+  assert.match(repositorySource,/persistenceInput=platform\.prepareLegacyConferenceSerialization/);
+  assert.match(repositorySource,/var queuedSnapshot=cloneSnapshotData\(inspected\.snapshot\)/);
+  assert.match(repositorySource,/saveAppSnapshot\(queuedSnapshot,metadata\)/);
+  assert.match(repositorySource,/handleLocalSave\(queuedSnapshot\)/);
+  assert.match(repositorySource,/JSON\.stringify\(queuedSnapshot\)/);
+  assert.match(repositorySource,/createLocalBackup\(persistenceInput,reason\)/);
+  assert.match(backupSource,/serializationInput=platform&&[\s\S]*platform\.prepareLegacyConferenceSerialization\(appData\)/);
+  assert.match(scriptSource,/JSON\.stringify\(serializationInput,null,2\)/);
+  assert.match(stateSource,/getConferenceCoreState\(current\.id\)\)return/);
+  assert.doesNotMatch(repositorySource,/function prepareLegacyConferenceSerialization/);
+  assert.doesNotMatch(backupSource,/function prepareLegacyConferenceSerialization/);
 });

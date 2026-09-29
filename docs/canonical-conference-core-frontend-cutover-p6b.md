@@ -12,6 +12,13 @@ and other legacy domain data remain in the same object. Snapshot, conflict,
 recovery, linking, and realtime application retain those legacy domains but
 restore the canonical core projection before replacing memory or persistence.
 
+Before the first canonical projection, `PlatformIntegration` retains the
+existing legacy core cache for serialization. Its single legacy-serialization
+sanitizer restores that cache only in cloned persistence, queue, publication,
+export, and backup payloads. Later participant or accommodation saves therefore
+persist those legacy domains without copying a newly mutated canonical core
+back into legacy authority. The live object keeps the canonical projection.
+
 Linked Conference edits and completion use `mutate_conference_core` with the
 hydrated revision. Success updates memory immediately without `save()`, local
 snapshot persistence, or snapshot queue publication. Offline editing is
