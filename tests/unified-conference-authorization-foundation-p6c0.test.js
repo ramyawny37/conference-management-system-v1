@@ -2,6 +2,7 @@
 
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const os=require('node:os');
 const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const test=require('node:test');
@@ -56,8 +57,8 @@ test('legacy role and boolean capability consumers remain explicitly temporary',
   assert.doesNotMatch(sql,/canManageMembers|canSync|canResolveConflicts|canAcquireLock/);
 });
 
-const pgBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
-const psql=path.join(pgBin,'psql');
+const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
+const pgBin=fs.existsSync(path.join(postgresAppBin,'psql'))?postgresAppBin:'';
 const database=`conference_p6c0_${process.pid}_${Date.now()}`;
 const ids={
   owner:'10000000-0000-4000-8000-000000000001',grantee:'10000000-0000-4000-8000-000000000002',
@@ -66,12 +67,27 @@ const ids={
   conferenceB:'20000000-0000-4000-8000-000000000002',badDevice:'30000000-0000-4000-8000-000000000099'
 };
 const device=user=>user.replace(/^10000000/,'30000000');
-const cleanEnv={...Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('PG'))),PGHOST:'/tmp',PGPORT:'5432',PGDATABASE:database};
-function command(name,args){return execFileSync(path.join(pgBin,name),args,{encoding:'utf8',stdio:'pipe',env:cleanEnv}).trim();}
+const validationHost=process.env.PGHOST;
+const validationPort=process.env.PGPORT;
+const validationUser=process.env.PGUSER;
+const validationPassword=process.env.PGPASSWORD;
+const connection=validationHost
+  ?['-h',validationHost,'-p',validationPort||'5432','-U',validationUser||os.userInfo().username]
+  :['-h','/tmp','-p','5432','-U',os.userInfo().username];
+const cleanEnv=Object.fromEntries(Object.entries(process.env).filter(([key])=>
+  !key.startsWith('PG')&&!/(?:^DIRECT_URL$|(?:DATABASE|DB|POSTGRES|SUPABASE).*URL)/i.test(key)
+));
+if(validationPassword)cleanEnv.PGPASSWORD=validationPassword;
+function command(name,args){return execFileSync(pgBin?path.join(pgBin,name):name,[...connection,...args],{encoding:'utf8',stdio:'pipe',env:cleanEnv}).trim();}
 function query(statement){return command('psql',['-X','-v','ON_ERROR_STOP=1','-At','-d',database,'-c',statement]);}
 
 test('disposable PostgreSQL proves grants, isolation, participant separation, legacy denial and owner inheritance',
-  {skip:!fs.existsSync(psql)},()=>{
+  ()=>{
+  try{
+    command('psql',['-X','-At','-d','postgres','-c','select 1']);
+  }catch{
+    assert.fail('isolated/local PostgreSQL is required; do not silently skip');
+  }
   command('createdb',[database]);
   try{
     query(`
