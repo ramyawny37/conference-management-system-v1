@@ -23,7 +23,11 @@
     ['delete_accommodation_room','public.mutate_conference_accommodation_structure(uuid,text,jsonb)'],
     ['assign_conference_accommodation','public.assign_conference_accommodation(uuid,uuid,uuid,uuid,integer,integer,text,text)'],
     ['move_conference_accommodation','public.move_conference_accommodation(uuid,uuid,uuid,bigint,uuid,integer,integer,text,text)'],
-    ['remove_conference_accommodation','public.remove_conference_accommodation(uuid,uuid,uuid,bigint)']
+    ['remove_conference_accommodation','public.remove_conference_accommodation(uuid,uuid,uuid,bigint)'],
+    ['get_conference_transport','public.get_conference_transport(uuid,uuid)'],
+    ['mutate_conference_transport_vehicle','public.mutate_conference_transport_vehicle(uuid,uuid,text,uuid,uuid,bigint,text,text,integer,integer,boolean)'],
+    ['set_conference_transport_assignment','public.set_conference_transport_assignment(uuid,uuid,uuid,uuid,uuid,text,text,integer,bigint)'],
+    ['remove_conference_transport_assignment','public.remove_conference_transport_assignment(uuid,uuid,uuid,bigint)']
   ].map(function(entry){return Object.freeze({module:'conference',operation:entry[0],signature:entry[1],dispatchable:true});});
   var conference=canonicalConference.concat(global.ConferenceDeviceOperationContract.EDGE_ONLY_PROTECTED.map(function(entry){return Object.freeze({module:'conference',operation:entry.operation,signature:entry.signature,dispatchable:true});}));
   var warehouse=global.WarehouseDeviceOperationContract.DISPATCHABLE;

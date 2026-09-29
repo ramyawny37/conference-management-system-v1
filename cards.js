@@ -84,7 +84,7 @@ var CardEngine = (function () {
       houses: linked?[]:asArray(conference.houses).slice(),
       rooms: typeof getAllRooms === 'function' ? asArray(getAllRooms()) : [],
       people: people,
-      transports: asArray(conference.transports).slice(),
+      transports: typeof getConferenceTransportVehicles==='function'?getConferenceTransportVehicles(conference):asArray(conference.transports).slice(),
       branding: readBranding(conference)
     };
   }

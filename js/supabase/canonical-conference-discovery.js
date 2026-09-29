@@ -16,8 +16,9 @@
         completedAt:item.completedAt||null,revision:item.revision,
         createdAt:item.createdAt,updatedAt:item.updatedAt,
         capabilities:{
-          edit:item.capabilities&&item.capabilities.edit===true,
-          sync:item.capabilities&&item.capabilities.sync===true
+          edit:!!(item.capabilities&&item.capabilities.edit===true),
+          sync:!!(item.capabilities&&item.capabilities.sync===true),
+          transportManage:!!(item.capabilities&&item.capabilities.transportManage===true)
         }
       };});
       return output(true,'listed',{conferences:conferences});

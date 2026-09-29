@@ -4,6 +4,10 @@ const conference=new Set(['create_canonical_conference','mutate_conference_core'
 const warehouse=new Set(['discover_parties','get_beneficiary_balance','create_party','update_party','list_stores','list_item_master','view_stock','discover_stores','list_documents','get_document','list_approval_queue','list_reversal_requests','list_history','list_balances','create_store','update_store','upsert_item_master','upsert_item_units','create_receipt_draft','create_issue_draft','create_transfer_draft','create_adjustment_draft','update_document_draft','cancel_document_draft','submit_adjustment_for_approval','decide_adjustment_approval','post_receipt','post_issue','post_transfer','post_adjustment','create_reversal_request','submit_reversal_request','decide_reversal_approval','post_reversal','authorize_report_export']);
 conference.add('list_accessible_conferences');
 conference.add('create_conference_participation_with_person');
+conference.add('get_conference_transport');
+conference.add('mutate_conference_transport_vehicle');
+conference.add('set_conference_transport_assignment');
+conference.add('remove_conference_transport_assignment');
 const reservations=new Set(['list_conference_options','get_booking_creation_context','get_booking_accommodation','get_dashboard_summary','list_events','get_event','list_event_periods','list_booking_types','list_bookings','get_booking_detail','search_participants_bookings','list_booking_payments','list_attendance','get_operational_state','get_report_source_data','get_report_booking_page','create_event','update_event','delete_event','create_event_period','update_event_period','delete_event_period','reorder_event_periods','create_booking_type','update_booking_type','create_booking','update_participant_booking','delete_booking','record_payment','void_payment','update_attendance','update_operational_review','link_standalone_event_to_conference']);
 for(const operation of ['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant'])conference.add(operation);
 warehouse.add('list_permission_administration_stores');

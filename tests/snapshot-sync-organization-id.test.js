@@ -17,8 +17,8 @@ vm.runInNewContext(source,sandbox,{filename:'snapshot-sync.js'});
   var result=await sandbox.CanonicalConferenceDiscovery.listAccessibleConferences();
   assert.strictEqual(result.ok,true);
   assert.deepStrictEqual(JSON.parse(JSON.stringify(result.data.conferences)),[
-    {id:rows[0].conference.id,organizationId:rows[0].conference.organization_id,name:'نفس الاسم',startDate:null,endDate:null,status:'active',completedAt:null,revision:1,createdAt:'a',updatedAt:'b'},
-    {id:rows[1].conference.id,organizationId:null,name:'نفس الاسم',startDate:null,endDate:null,status:'active',completedAt:null,revision:1,createdAt:'c',updatedAt:'d'}
+    {id:rows[0].conference.id,organizationId:rows[0].conference.organization_id,name:'نفس الاسم',startDate:null,endDate:null,status:'active',completedAt:null,revision:1,createdAt:'a',updatedAt:'b',capabilities:{edit:false,sync:false,transportManage:false}},
+    {id:rows[1].conference.id,organizationId:null,name:'نفس الاسم',startDate:null,endDate:null,status:'active',completedAt:null,revision:1,createdAt:'c',updatedAt:'d',capabilities:{edit:false,sync:false,transportManage:false}}
   ]);
   assert.strictEqual(calls.operation,'list_accessible_conferences');
   assert.strictEqual(calls.writes,0);
