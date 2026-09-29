@@ -8,6 +8,7 @@
     ['create_conference_participation','public.create_conference_participation(uuid,uuid,uuid,uuid)'],
     ['create_conference_participation_with_person','public.create_conference_participation_with_person(uuid,uuid,uuid,text,text,text,date,text)'],
     ['set_conference_participation_status','public.set_conference_participation_status(uuid,uuid,uuid,bigint,text)'],
+    ['set_conference_participation_guardian','public.set_conference_participation_guardian(uuid,uuid,uuid,bigint,uuid)'],
     ['delete_conference_participation','public.delete_conference_participation(uuid,uuid,uuid,bigint)'],
     ['get_conference_accommodation','public.get_conference_accommodation(uuid,uuid)'],
     ['create_accommodation_house','public.mutate_conference_accommodation_structure(uuid,text,jsonb)'],
