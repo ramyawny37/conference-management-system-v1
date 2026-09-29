@@ -71,7 +71,7 @@
       backup:options.backup||global.FullBackupService,
       storage:options.storage||global.localStorage,
       getAppData:options.getAppData||function(){return global.appData;},
-      setAppData:options.setAppData||function(value){global.appData=value;},
+      setAppData:options.setAppData||function(value){global.appData=global.PlatformIntegration&&typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'?global.PlatformIntegration.preserveCanonicalConferenceCores(value):value;},
       activate:options.activate||global.activatePersistedConferenceById
     };
   }

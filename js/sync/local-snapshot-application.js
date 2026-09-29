@@ -162,6 +162,10 @@
             if(currentDigest===record.snapshotDigest)return null;
             var next=copy(source);
             next.conferences[index]=copy(record.resolvedSnapshot);
+            if(global.PlatformIntegration&&
+              typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'){
+              next=global.PlatformIntegration.preserveCanonicalConferenceCores(next);
+            }
             return d.repository.saveAppSnapshot(next,{
               source:'remote_resolution',
               skipSyncQueue:true
@@ -169,7 +173,10 @@
               if(typeof options.applyMemory==='function'){
                 options.applyMemory(copy(next));
               }else{
-                global.appData=copy(next);
+                global.appData=global.PlatformIntegration&&
+                  typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'
+                  ?global.PlatformIntegration.preserveCanonicalConferenceCores(copy(next))
+                  :copy(next);
                 options.appData=global.appData;
               }
               if(typeof options.render==='function')options.render();

@@ -79,6 +79,9 @@ function syncCurrentConferenceRefs(){
 function updateCurrentConferenceData(){
   var current = getCurrentConference();
   if(!current) return;
+  if(window.PlatformIntegration&&
+    typeof window.PlatformIntegration.getConferenceCoreState==='function'&&
+    window.PlatformIntegration.getConferenceCoreState(current.id))return;
   var confObj = current.conf || {name: current.name || 'المؤتمر', startDate: current.startDate || '', endDate: current.endDate || '', days: current.days || 1};
   current.name = confObj.name || current.name || 'المؤتمر';
   current.startDate = confObj.startDate || current.startDate || '';

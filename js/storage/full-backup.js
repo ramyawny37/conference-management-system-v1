@@ -170,7 +170,11 @@
   function buildFullBackupDocument(appData,options){
     options=isPlainObject(options)?options:{};
     requireBuildInput(appData);
-    var clonedAppData=cloneFullBackupValue(appData);
+    var platform=global.PlatformIntegration;
+    var serializationInput=platform&&
+      typeof platform.prepareLegacyConferenceSerialization==='function'
+      ?platform.prepareLegacyConferenceSerialization(appData):appData;
+    var clonedAppData=cloneFullBackupValue(serializationInput);
     if(!hasOwn(clonedAppData,'currentConferenceId')){
       clonedAppData.currentConferenceId=null;
     }

@@ -25,7 +25,7 @@
       getCurrentConference:options.getCurrentConference||
         global.getCurrentConference,
       getAppData:options.getAppData||function(){return global.appData;},
-      applyAppData:options.applyAppData||function(value){global.appData=value;},
+      applyAppData:options.applyAppData||function(value){global.appData=global.PlatformIntegration&&typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'?global.PlatformIntegration.preserveCanonicalConferenceCores(value):value;},
       navigator:options.navigator||global.navigator,
       orchestrator:options.orchestrator||global.AutomaticSyncOrchestrator
     };

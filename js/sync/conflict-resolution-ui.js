@@ -451,7 +451,7 @@
     applyServerLocally({
       localConferenceId:localConferenceId,
       appData:global.appData,
-      applyMemory:function(value){global.appData=value;},
+      applyMemory:function(value){global.appData=global.PlatformIntegration&&typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'?global.PlatformIntegration.preserveCanonicalConferenceCores(value):value;},
       render:function(){
         if(global.syncCurrentConferenceRefs)global.syncCurrentConferenceRefs();
       }

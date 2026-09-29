@@ -30,6 +30,13 @@
     var persistenceInput=activation&&
       typeof activation.preparePersistedAppData==='function'
       ?activation.preparePersistedAppData(appData):appData;
+    var platform=global.PlatformIntegration;
+    if(platform&&
+      typeof platform.prepareLegacyConferenceSerialization==='function'){
+      persistenceInput=platform.prepareLegacyConferenceSerialization(
+        persistenceInput
+      );
+    }
     var inspected=inspectSnapshot(persistenceInput);
     if(!inspected.ok){
       var serializationError=new Error(
@@ -183,7 +190,11 @@
   }
 
   function createLocalBackup(appData,reason){
-    return global.AppIndexedDB.createLocalBackup(appData,reason);
+    var platform=global.PlatformIntegration;
+    var persistenceInput=platform&&
+      typeof platform.prepareLegacyConferenceSerialization==='function'
+      ?platform.prepareLegacyConferenceSerialization(appData):appData;
+    return global.AppIndexedDB.createLocalBackup(persistenceInput,reason);
   }
 
   function getLocalBackups(conferenceId){

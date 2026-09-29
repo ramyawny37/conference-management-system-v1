@@ -225,6 +225,43 @@ function restoreArchive(id){
   showToast('✅ تم استعادة مؤتمر من الأرشيف');
   return true;
 }
+function getCanonicalConferenceCoreLink(localConferenceId){
+  var link=window.ConferenceLinkStore&&
+    typeof window.ConferenceLinkStore.get==='function'
+      ?window.ConferenceLinkStore.get(String(localConferenceId||'')):null;
+  return link&&['linked','cloud_linked'].indexOf(link.linkStatus)>=0&&
+    link.remoteConferenceId?link:null;
+}
+function refreshCanonicalConferenceCorePresentation(localConferenceId){
+  var current=getCurrentConference();
+  if(!current||String(current.id)!==String(localConferenceId||''))return;
+  setCurrentConference(current);
+  syncCurrentConferenceRefs();
+  if(typeof renderSettings==='function')renderSettings();
+  if(typeof renderTab==='function')renderTab(currentTab);
+}
+function hydrateCanonicalConferenceCore(localConferenceId,options){
+  options=options||{};
+  var link=getCanonicalConferenceCoreLink(localConferenceId);
+  if(!link||!link.remoteConferenceId){
+    return Promise.resolve({status:'legacy_local'});
+  }
+  var integration=window.PlatformIntegration;
+  if(!integration||typeof integration.hydrateConferenceCore!=='function'){
+    return Promise.reject({code:'CANONICAL_CONFERENCE_CORE_UNAVAILABLE'});
+  }
+  return integration.hydrateConferenceCore(
+    String(localConferenceId),String(link.remoteConferenceId)
+  ).then(function(result){
+    refreshCanonicalConferenceCorePresentation(localConferenceId);
+    return result;
+  }).catch(function(error){
+    if(options.silent!==true&&typeof showToast==='function'){
+      showToast('تعذر تحميل بيانات المؤتمر المحدثة.','#E74C3C');
+    }
+    throw error;
+  });
+}
 function setCurrentConferenceById(id, options){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   var activationAuthorization=window.ConferenceActivationAuthorization;
@@ -305,6 +342,9 @@ function setCurrentConferenceById(id, options){
     if(!switchTab(requestedTabId,{preserveRoute:true}))switchTab(0);
   }else if (!switchTab(currentTab)) switchTab(0);
   if(!options.skipToast) showToast('✅ تم تبديل المؤتمر');
+  if(typeof hydrateCanonicalConferenceCore==='function'){
+    hydrateCanonicalConferenceCore(id).catch(function(){});
+  }
   return true;
 }
 
@@ -312,6 +352,28 @@ function completeCurrentConference(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('completeCurrentConference',null))return false;
   var conference = getCurrentConference();
   if(!conference) return;
+  var link=getCanonicalConferenceCoreLink(conference.id);
+  if(link){
+    var integration=window.PlatformIntegration;
+    if(!integration||!integration.getConferenceCoreState(conference.id)||
+      window.navigator&&window.navigator.onLine===false){
+      showToast('تعذر إنهاء المؤتمر دون اتصال بالخادم.','#E74C3C');
+      return false;
+    }
+    return integration.mutateConferenceCore(conference.id,{
+      name:conference.name,
+      startDate:conference.startDate,
+      endDate:conference.endDate,
+      status:'completed'
+    }).then(function(){
+      appData.currentConferenceId=null;
+      showSelectConferenceModal();
+      return true;
+    }).catch(function(){
+      showToast('تعذر إنهاء المؤتمر. أعد المحاولة.','#E74C3C');
+      return false;
+    });
+  }
   conference.status = 'completed';
   conference.completedAt = new Date().toISOString();
   appData.currentConferenceId = null;
@@ -451,7 +513,11 @@ function exportJsonFile(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('exportJsonFile',null))return false;
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   updateCurrentConferenceData();
-  var data=JSON.stringify(appData,null,2);
+  var serializationInput=window.PlatformIntegration&&
+    typeof window.PlatformIntegration.prepareLegacyConferenceSerialization==='function'
+    ?window.PlatformIntegration.prepareLegacyConferenceSerialization(appData)
+    :appData;
+  var data=JSON.stringify(serializationInput,null,2);
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data],{type:'application/json;charset=utf-8'}));
   a.download='conference_'+new Date().toISOString().slice(0,10)+'.json';
@@ -546,6 +612,9 @@ function activatePersistedConferenceById(id,options){
     return false;
   }
   traceMemberActivation('conference_resolved','completed',null);
+  if(typeof hydrateCanonicalConferenceCore==='function'){
+    hydrateCanonicalConferenceCore(id).catch(function(){});
+  }
   var entry=prepareCanonicalConferenceApplicationEntry(options);
   var conferenceRoute=entry.route;
   if(!conferenceRoute){
@@ -805,7 +874,12 @@ function executeConfirmedFullRestore(){
     currentAppData:appData,
     supportedDataSchemaVersion:appData.version,
     normalizeCandidate:normalizeAppDataCandidate,
-    applyAppData:function(value){appData=value;}
+    applyAppData:function(value){
+      appData=window.PlatformIntegration&&
+        typeof window.PlatformIntegration.preserveCanonicalConferenceCores==='function'
+        ?window.PlatformIntegration.preserveCanonicalConferenceCores(value)
+        :value;
+    }
   }).then(function(result){
     if(result.success){
       if(status){
@@ -9522,6 +9596,35 @@ function createConferenceFromSelection(){
   if (conferenceDialogMode === 'edit') {
     var current = getCurrentConference();
     if (!current) return;
+    var canonicalLink=getCanonicalConferenceCoreLink(current.id);
+    if(canonicalLink){
+      var integration=window.PlatformIntegration;
+      var canonicalState=integration&&
+        integration.getConferenceCoreState(current.id);
+      if(!canonicalState||window.navigator&&window.navigator.onLine===false){
+        showToast('تعذر تعديل بيانات المؤتمر دون اتصال بالخادم.','#E74C3C');
+        return false;
+      }
+      return integration.mutateConferenceCore(current.id,{
+        name:name,startDate:startDate,endDate:endDate,status:current.status
+      }).then(function(){
+        closeNewConferenceModal();
+        renderSettings();
+        renderTab(currentTab);
+        showToast('✅ تم تحديث بيانات المؤتمر');
+        return true;
+      }).catch(function(error){
+        var code=String(error&&error.code||'');
+        if(code==='CONFERENCE_CORE_REVISION_CONFLICT'){
+          hydrateCanonicalConferenceCore(current.id,{silent:true})
+            .catch(function(){});
+        }
+        showToast(code==='CONFERENCE_CORE_REVISION_CONFLICT'
+          ?'تم تعديل المؤتمر من جلسة أخرى. راجع البيانات وحاول مجددًا.'
+          :'تعذر تحديث بيانات المؤتمر. راجع الاتصال والصلاحيات.','#E74C3C');
+        return false;
+      });
+    }
     current.conf = current.conf || {};
     current.conf.name = name;
     current.conf.startDate = startDate;
@@ -9686,6 +9789,10 @@ function openNewConferenceModal(mode){
   ge('cfg_place').value = conf.place || '';
   ge('cfg_start').value = conf.startDate || '';
   ge('cfg_end').value = conf.endDate || '';
+  if(ge('cfg_place')){
+    ge('cfg_place').disabled=conferenceDialogMode==='edit'&&current&&
+      !!getCanonicalConferenceCoreLink(current.id);
+  }
 
   ge('newConferenceModal').style.display = 'flex';
   updateConferencePeriodPreview();
@@ -9703,6 +9810,14 @@ function closeNewConferenceModal(){
 
 function editCurrentConference(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('editCurrentConference',null))return false;
+  var current=getCurrentConference();
+  var link=current&&getCanonicalConferenceCoreLink(current.id);
+  if(link&&(!window.PlatformIntegration||
+    !window.PlatformIntegration.getConferenceCoreState(current.id)||
+    window.navigator&&window.navigator.onLine===false)){
+    showToast('تعذر تعديل بيانات المؤتمر دون اتصال بالخادم.','#E74C3C');
+    return false;
+  }
   openNewConferenceModal('edit');
 }
 

@@ -166,7 +166,12 @@
       remoteUpdates:options.remoteUpdateStore||global.RemoteUpdateStore,
       deviceIdentity:options.deviceIdentity||global.SupabaseDeviceIdentity,
       getData:options.getAppData||function(){return global.appData;},
-      applyData:options.applyAppData||function(value){global.appData=value;},
+      applyData:options.applyAppData||function(value){
+        global.appData=global.PlatformIntegration&&
+          typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'
+          ?global.PlatformIntegration.preserveCanonicalConferenceCores(value)
+          :value;
+      },
       normalize:options.normalizeAppData||global.normalizeAppDataCandidate,
       makeId:options.makeLocalId||global.uid,
       activate:options.activate||global.activatePersistedConferenceById,
@@ -738,7 +743,10 @@
     var mapped=copy(snapshot);
     mapped.id=String(localConferenceId);
     next.conferences[index]=mapped;
-    return next;
+    return global.PlatformIntegration&&
+      typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'
+      ?global.PlatformIntegration.preserveCanonicalConferenceCores(next)
+      :next;
   }
   function refreshExistingLinkedLocal(d,previous,identity,ctx){
     if(!identity.existing||!conference(previous,identity.id)||
