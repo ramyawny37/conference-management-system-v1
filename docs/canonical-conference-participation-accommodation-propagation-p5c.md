@@ -48,6 +48,25 @@ then the current occupancy through the cleanup helper. This serializes the
 active-status decision with creation or movement of Accommodation while
 preserving P5B's deterministic room order.
 
+MOVE performs an initial non-locking occupancy read solely to discover its
+Participation UUID. P5C makes `participation_id` and `conference_id`
+structurally immutable for the lifetime of an occupancy through a `BEFORE
+UPDATE` trigger. Canonical MOVE never reparents an occupancy, client roles
+cannot update the table directly, and even a privileged direct update now
+rejects. The discovered Participation is therefore the only possible owner.
+After locking it, MOVE rereads the occupancy and verifies the same
+Participation before locking rooms; concurrent REMOVE can only make the row
+disappear, which produces `ACCOMMODATION_OCCUPANCY_NOT_FOUND` after safe
+serialization.
+
+Participation `conference_id` has no canonical mutator and direct client table
+mutation is denied, but P4B did not make the column structurally immutable.
+P5C therefore does not rely on the discovery read for final authority. Status
+and delete first perform the established early permission check, then lock the
+Participation row and revalidate `conference.people.manage` against the
+locked row's `conference_id` before cleanup or mutation. The authorized
+Conference and the mutated Participation are thus bound under the row lock.
+
 Explicit REMOVE needs only its occupancy lock and acquires no later
 Participation or room lock, so it cannot form a reverse-order cycle. If REMOVE
 wins, lifecycle cleanup finds no occupancy; if lifecycle cleanup wins, REMOVE
@@ -62,12 +81,14 @@ Participation and rejects. After either order, missing or apologized
 Participation has zero canonical occupancy.
 
 The P5C executable PostgreSQL proof observes actual lock waiting for ASSIGN vs
-APOLOGIZE, MOVE vs APOLOGIZE, ASSIGN vs DELETE, and MOVE vs DELETE, and verifies
-the final invariant and absence of deadlock. It also covers cleanup/no-cleanup,
-reactivation without restoration, Person survival, restrictive FK retention,
-authority separation, exact-once audit/replay, helper ACLs, and direct-table
-ACLs. The migration replaces function bodies only; P4C routing and the outer
-dispatcher remain unchanged.
+APOLOGIZE, MOVE vs APOLOGIZE, ASSIGN vs DELETE, MOVE vs DELETE, MOVE vs MOVE,
+and REMOVE vs MOVE. Same-occupancy moves serialize and the stale expected
+revision rejects after the first move increments it. REMOVE vs MOVE serializes
+to a deleted occupancy, one removal audit, no move audit, and an unchanged
+active Participation. The proof also covers cleanup/no-cleanup, reactivation
+without restoration, Person survival, restrictive FK retention, authority
+separation, exact-once audit/replay, ownership immutability, helper ACLs, and
+direct-table ACLs. P4C routing and the outer dispatcher remain unchanged.
 
 P5C writes ordinary canonical Participation and Accommodation rows for future
 Realtime observation. It does not update legacy snapshot JSON, Reservations,

@@ -1,5 +1,19 @@
 begin;
 
+create function platform_private.prevent_conference_accommodation_occupancy_reparenting()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+  if new.participation_id is distinct from old.participation_id
+     or new.conference_id is distinct from old.conference_id then
+    raise exception 'ACCOMMODATION_OCCUPANCY_PARENT_IMMUTABLE' using errcode='55000';
+  end if;
+  return new;
+end $$;
+
+create trigger conference_accommodation_occupancy_parent_immutable
+before update on public.conference_accommodation_occupancies
+for each row execute function platform_private.prevent_conference_accommodation_occupancy_reparenting();
+
 create function platform_private.cleanup_conference_accommodation_for_participation(
   p_participation_id uuid,p_actor_user_id uuid,p_device_authorization_id uuid,
   p_authority_context jsonb,p_cause text,p_operation_id uuid
@@ -63,6 +77,11 @@ begin
   end if;
   select * into v_current from public.conference_participations where id=p_participation_id for update;
   if not found then raise exception 'CONFERENCE_PARTICIPATION_NOT_FOUND' using errcode='P0002'; end if;
+  v_context:=platform_private.require_conference_participation_context(
+    p_actor_device_id,v_current.conference_id,'conference.people.manage',true);
+  if (v_context->>'actorUserId')::uuid is distinct from v_actor then
+    raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';
+  end if;
   if v_current.revision<>p_expected_revision then
     raise exception 'CONFERENCE_PARTICIPATION_REVISION_CONFLICT' using errcode='40001';
   end if;
@@ -145,6 +164,11 @@ begin
   end if;
   select * into v_current from public.conference_participations where id=p_participation_id for update;
   if not found then raise exception 'CONFERENCE_PARTICIPATION_NOT_FOUND' using errcode='P0002'; end if;
+  v_context:=platform_private.require_conference_participation_context(
+    p_actor_device_id,v_current.conference_id,'conference.people.manage',true);
+  if (v_context->>'actorUserId')::uuid is distinct from v_actor then
+    raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';
+  end if;
   if v_current.revision<>p_expected_revision then
     raise exception 'CONFERENCE_PARTICIPATION_REVISION_CONFLICT' using errcode='40001';
   end if;
@@ -304,6 +328,7 @@ begin
 end $$;
 
 revoke all on function
+  platform_private.prevent_conference_accommodation_occupancy_reparenting(),
   platform_private.cleanup_conference_accommodation_for_participation(uuid,uuid,uuid,jsonb,text,uuid),
   public.set_conference_participation_status(uuid,uuid,uuid,bigint,text),
   public.delete_conference_participation(uuid,uuid,uuid,bigint),

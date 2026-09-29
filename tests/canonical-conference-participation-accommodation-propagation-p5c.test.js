@@ -19,11 +19,15 @@ test('P5C extends canonical participation lifecycle without new routing or ledge
   assert.match(sql,/create or replace function public\.assign_conference_accommodation/);
   assert.match(sql,/create or replace function public\.move_conference_accommodation/);
   assert.match(sql,/create function platform_private\.cleanup_conference_accommodation_for_participation/);
+  assert.match(sql,/create trigger conference_accommodation_occupancy_parent_immutable/);
+  assert.match(sql,/new\.participation_id is distinct from old\.participation_id/);
+  assert.match(sql,/new\.conference_id is distinct from old\.conference_id/);
   assert.doesNotMatch(sql,/create table|execute_conference_device_operation|route_canonical_conference_operation|conference_snapshots|reservations\.|transport|warehouse\./i);
   assert.match(sql,/'permissionKey','conference\.people\.manage'/);
   assert.match(sql,/'cause',p_cause/);
   assert.match(sql,/where id=p_participation and conference_id=p_conference for update/);
   assert.match(sql,/order by id for update/);
+  assert.equal((sql.match(/select \* into v_current from public\.conference_participations where id=p_participation_id for update;[\s\S]*?require_conference_participation_context\(\s*p_actor_device_id,v_current\.conference_id,'conference\.people\.manage',true\)/g)||[]).length,2);
 });
 
 const pgApp='/Applications/Postgres.app/Contents/Versions/latest/bin';
@@ -143,7 +147,15 @@ test('disposable PostgreSQL proves lifecycle propagation, replay, authority and 
       assert.ok(apologyOccupancy.occupancyId); assert.ok(deleteOccupancy.occupancyId); remove(explicitOccupancy.occupancyId);
     });
 
+    await t.test('occupancy parent identity is structurally immutable',()=>{
+      const owner=participant(),other=participant(),occupancy=assign(owner.part);
+      rejects(`update public.conference_accommodation_occupancies set participation_id='${other.part}' where id='${occupancy.occupancyId}'`,/ACCOMMODATION_OCCUPANCY_PARENT_IMMUTABLE/);
+      assert.equal(query(`select participation_id from public.conference_accommodation_occupancies where id='${occupancy.occupancyId}'`),owner.part);
+      remove(occupancy.occupancyId);
+    });
+
     for(const role of roles){
+      assert.equal(query(`select has_function_privilege('${role}','platform_private.prevent_conference_accommodation_occupancy_reparenting()','EXECUTE')`),'f');
       assert.equal(query(`select has_function_privilege('${role}','platform_private.cleanup_conference_accommodation_for_participation(uuid,uuid,uuid,jsonb,text,uuid)','EXECUTE')`),'f');
       assert.equal(query(`select has_table_privilege('${role}','public.conference_accommodation_occupancies','INSERT,UPDATE,DELETE')`),'f');
     }
@@ -181,6 +193,34 @@ test('disposable PostgreSQL proves lifecycle propagation, replay, authority and 
     await t.test('MOVE vs APOLOGIZE waits without deadlock and ends clean',()=>race('move','apologized'));
     await t.test('ASSIGN vs DELETE waits without deadlock and ends clean',()=>race('assign','deleted'));
     await t.test('MOVE vs DELETE waits without deadlock and ends clean',()=>race('move','deleted'));
+    await t.test('MOVE vs MOVE serializes and rejects the stale revision',async()=>{
+      const item=participant(),occupancy=assign(item.part,room1),suffix=String(sequence++).padStart(12,'0');
+      const first=queryAsync(`begin; set application_name='p5c_move_first_${suffix}'; select public.move_conference_accommodation('${device}','${conference}','${occupancy.occupancyId}',1,'${room2}',1,6,'base',null); select pg_sleep(2); commit`);
+      await waitFor(`p5c_move_first_${suffix}`,"wait_event='PgSleep'");
+      const second=queryAsync(`set application_name='p5c_move_second_${suffix}'; select public.move_conference_accommodation('${device}','${conference}','${occupancy.occupancyId}',1,'${room1}',1,6,'base',null)`);
+      const settled=Promise.allSettled([first,second]);
+      await waitFor(`p5c_move_second_${suffix}`,"wait_event_type='Lock'");
+      const results=await settled;
+      assert.equal(results[0].status,'fulfilled'); assert.equal(results[1].status,'rejected');
+      assert.match(String(results[1].reason.stderr),/ACCOMMODATION_REVISION_CONFLICT/);
+      assert.equal(query(`select jsonb_build_array(revision,room_id,participation_id) from public.conference_accommodation_occupancies where id='${occupancy.occupancyId}'`),`[2, "${room2}", "${item.part}"]`);
+      assert.equal(query(`select count(*) from platform.audit_events where action='conference.accommodation.moved' and entity_id='${occupancy.occupancyId}'`),'1');
+    });
+    await t.test('REMOVE vs MOVE serializes deletion without orphan or incorrect audit',async()=>{
+      const item=participant(),occupancy=assign(item.part,room1),suffix=String(sequence++).padStart(12,'0');
+      const first=queryAsync(`begin; set application_name='p5c_remove_first_${suffix}'; select public.remove_conference_accommodation('${device}','${conference}','${occupancy.occupancyId}',1); select pg_sleep(2); commit`);
+      await waitFor(`p5c_remove_first_${suffix}`,"wait_event='PgSleep'");
+      const second=queryAsync(`set application_name='p5c_move_after_remove_${suffix}'; select public.move_conference_accommodation('${device}','${conference}','${occupancy.occupancyId}',1,'${room2}',1,6,'base',null)`);
+      const settled=Promise.allSettled([first,second]);
+      await waitFor(`p5c_move_after_remove_${suffix}`,"wait_event_type='Lock'");
+      const results=await settled;
+      assert.equal(results[0].status,'fulfilled'); assert.equal(results[1].status,'rejected');
+      assert.match(String(results[1].reason.stderr),/ACCOMMODATION_OCCUPANCY_NOT_FOUND/);
+      assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where id='${occupancy.occupancyId}'`),'0');
+      assert.equal(query(`select status from public.conference_participations where id='${item.part}'`),'active');
+      assert.equal(query(`select count(*) from platform.audit_events where entity_id='${occupancy.occupancyId}' and action='conference.accommodation.removed'`),'1');
+      assert.equal(query(`select count(*) from platform.audit_events where entity_id='${occupancy.occupancyId}' and action in('conference.accommodation.moved','conference.accommodation.participation_cleanup')`),'0');
+    });
   }finally{
     command('dropdb',['--if-exists',database]);
     for(const role of created) command('psql',['-X','-v','ON_ERROR_STOP=1','-d','postgres','-c',`drop role ${role}`]);
