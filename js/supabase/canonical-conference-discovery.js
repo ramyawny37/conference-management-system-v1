@@ -14,7 +14,11 @@
         id:item.conferenceId,organizationId:item.organizationId||null,name:item.name,
         startDate:item.startDate||null,endDate:item.endDate||null,status:item.status,
         completedAt:item.completedAt||null,revision:item.revision,
-        createdAt:item.createdAt,updatedAt:item.updatedAt
+        createdAt:item.createdAt,updatedAt:item.updatedAt,
+        capabilities:{
+          edit:item.capabilities&&item.capabilities.edit===true,
+          sync:item.capabilities&&item.capabilities.sync===true
+        }
       };});
       return output(true,'listed',{conferences:conferences});
     }).catch(function(error){return output(false,'failed',null,{code:String(error&&error.code||'CANONICAL_CONFERENCE_DISCOVERY_FAILED')});});

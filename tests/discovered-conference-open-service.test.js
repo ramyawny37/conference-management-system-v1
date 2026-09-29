@@ -13,6 +13,7 @@ function environment(settings={}){
   let memory=clone(stored);
   let activated=0,downloads=0,inspects=0,configured=0,deactivations=0;
   let cloudAuthorizations=0;
+  const cloudAuthorizationInputs=[];
   const activationOptions=[];
   let manualRelinkChecks=[];
   const forbidden={queue:0,publication:0,rpc:0};
@@ -46,7 +47,8 @@ function environment(settings={}){
   const snapshot=clone(settings.snapshot||{
     id:'source-local',name:'Same',status:'active',peopleDb:{people:[]}
   });
-  const listing={id:remoteId,name:'Same',role:settings.role||'viewer',deletedAt:null};
+  const listing={id:remoteId,name:'Same',role:settings.role||'viewer',deletedAt:null,
+    capabilities:settings.capabilities||{edit:true,sync:true}};
   if(settings.existingLink){
     links[settings.existingLink.localConferenceId]=clone(settings.existingLink);
   }
@@ -57,7 +59,7 @@ function environment(settings={}){
   };
   const sandbox={window:null,structuredClone:clone,
     ConferenceActivationAuthorization:{
-      authorizeCloud:()=>{cloudAuthorizations++;return {ok:true};},
+      authorizeCloud:input=>{cloudAuthorizations++;cloudAuthorizationInputs.push(clone(input));return {ok:true};},
       deactivate:()=>{deactivations++;return {ok:false,status:'membership_unavailable'};}
     },
     AutomaticSyncOrchestrator:{schedule:()=>{}},
@@ -202,6 +204,7 @@ function environment(settings={}){
     activated:()=>activated,configured:()=>configured,
     activationOptions:()=>clone(activationOptions),
     cloudAuthorizations:()=>cloudAuthorizations,
+    cloudAuthorizationInputs:()=>clone(cloudAuthorizationInputs),
     downloads:()=>downloads,inspects:()=>inspects,
     deactivations:()=>deactivations,
     realtimePipeline:()=>clone(realtimePipeline),
@@ -726,6 +729,8 @@ function environment(settings={}){
   const viewerResult=await viewer.api.open(viewer.remoteId);
   assert.strictEqual(Object.prototype.hasOwnProperty.call(viewerResult.data,'role'),false);
   assert.strictEqual(viewerResult.data.canonicalAccess,true);
+  assert.deepStrictEqual(viewer.cloudAuthorizationInputs().at(-1).capabilities,
+    {edit:true,sync:true});
   assert.strictEqual(Object.prototype.hasOwnProperty.call(
     Object.values(viewer.links)[0],'membershipRole'),false);
 

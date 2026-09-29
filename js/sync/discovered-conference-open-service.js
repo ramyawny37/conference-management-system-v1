@@ -98,13 +98,14 @@
     }
     return value;
   }
-  function publishCloudAuthorization(d,localId,remoteId){
+  function publishCloudAuthorization(d,localId,remoteId,capabilities){
     if(!d.activationAuthorization||
       typeof d.activationAuthorization.authorizeCloud!=='function')return null;
     return d.activationAuthorization.authorizeCloud({
       localConferenceId:String(localId||''),
       remoteConferenceId:String(remoteId||''),
-      authenticatedUserId:userId(d),canonicalAccess:true
+      authenticatedUserId:userId(d),canonicalAccess:true,
+      capabilities:capabilities||{}
     });
   }
   function authoritativeAccessLoss(status){
@@ -635,7 +636,7 @@
       diagnosticState.activationReached=true;
       traceLinkedRefresh('activate_persisted_conference','entered',null);
       publishCloudAuthorization(d,localConferenceId,
-        details&&details.remoteConferenceId);
+        details&&details.remoteConferenceId,details&&details.capabilities);
       activated=typeof d.activate==='function'&&
         d.activate(localConferenceId,{
           alreadyPersisted:true,accessRole:details&&details.role||null,
@@ -715,6 +716,7 @@
             localConferenceId:localConferenceId,
             remoteConferenceId:remoteId,
             canonicalAccess:true,
+            capabilities:access.data.capabilities,
             revision:knownRevision,
             schemaVersion:metadata.data.schemaVersion,
             appVersion:metadata.data.appVersion,
@@ -933,7 +935,8 @@
         return result(false,'account_not_approved');
       }
       if(!listing||listing.deletedAt){return result(false,'conference_unavailable');}
-      return result(true,'authorized',{listing:listing,canonicalAccess:true});
+      return result(true,'authorized',{listing:listing,canonicalAccess:true,
+        capabilities:listing.capabilities||{}});
     });
   }
   function snapshotFor(d,remoteId,account,knownMetadata){
@@ -1331,6 +1334,7 @@
             localConferenceId:prepared.localId,
             remoteConferenceId:remoteId,
             canonicalAccess:true,
+            capabilities:ctx.capabilities,
             revision:prepared.revision
           });
         }
@@ -1385,7 +1389,7 @@
           if(currentSelected){
             try{
               diagnosticState.activationReached=true;
-              publishCloudAuthorization(d,prepared.localId,remoteId,ctx.role);
+              publishCloudAuthorization(d,prepared.localId,remoteId,ctx.capabilities);
               activated=typeof d.activate==='function'&&
                 d.activate(prepared.localId,{
                   alreadyPersisted:true,accessRole:ctx.role||null
@@ -1410,6 +1414,7 @@
             localConferenceId:prepared.localId,
             remoteConferenceId:remoteId,
             canonicalAccess:true,
+            capabilities:ctx.capabilities,
             revision:prepared.link.knownRevision
           });
         });
@@ -1446,7 +1451,7 @@
         var activationOk=false;
         try{
           diagnosticState.activationReached=true;
-          publishCloudAuthorization(d,prepared.localId,remoteId,ctx.role);
+          publishCloudAuthorization(d,prepared.localId,remoteId,ctx.capabilities);
           activationOk=typeof d.activate==='function'&&
             d.activate(prepared.localId,{
               alreadyPersisted:true,accessRole:ctx.role||null,
@@ -1468,7 +1473,8 @@
         diagnosticState.lastActivationStatus='activated';
         return result(true,'opened',{
           localConferenceId:prepared.localId,remoteConferenceId:remoteId,
-          canonicalAccess:true,revision:prepared.link.knownRevision
+          canonicalAccess:true,capabilities:ctx.capabilities,
+          revision:prepared.link.knownRevision
         });
       });
     });
@@ -1501,6 +1507,7 @@
         if(!snapshot.ok||!alive(token,d,account,activeClient))return snapshot.ok?result(false,'stale'):snapshot;
         var task=function(){return runTransaction({d:d,remoteId:remoteConferenceId,
           account:account,client:activeClient,token:token,canonicalAccess:true,
+          capabilities:access.data.capabilities,
           snapshot:snapshot,options:options});};
         var serialized=transactionTail.catch(function(){return null;}).then(task);
         transactionTail=serialized.catch(function(){return null;});
@@ -1516,7 +1523,7 @@
     var d=deps(options),account=userId(d),activeClient=client(d);
     return validateAccess(d,String(remoteConferenceId||'')).then(function(access){
       if(!access.ok||account!==userId(d)||activeClient!==client(d))return access.ok?result(false,'stale'):access;
-      return result(true,'authorized',{remoteConferenceId:String(remoteConferenceId),canonicalAccess:true,authenticatedUserId:account});
+      return result(true,'authorized',{remoteConferenceId:String(remoteConferenceId),canonicalAccess:true,capabilities:access.data.capabilities,authenticatedUserId:account});
     });
   }
   function cleanupRecovery(remoteConferenceId,options){
@@ -1686,6 +1693,7 @@
                 localConferenceId:localConferenceId,
                 remoteConferenceId:remoteId,
                 canonicalAccess:true,
+                capabilities:access.data.capabilities,
                 revision:knownRevision
               });
             }
@@ -1740,6 +1748,7 @@
             client:activeClient,
             token:token,
             canonicalAccess:true,
+            capabilities:access.data.capabilities,
             snapshot:snapshot,
             options:options,
             refreshOnly:true,
