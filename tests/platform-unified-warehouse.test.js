@@ -22,7 +22,8 @@ test("unified catalogs include the approved guarded Warehouse operations",()=>{
   assert.equal(warehouse.DISPATCHABLE.length,36);
   assert.equal(warehouse.DEFERRED.length,1);
   assert.equal(warehouse.DEFERRED[0].signature,"warehouse.stage_import(uuid,uuid,jsonb)");
-  assert.equal(platform.DISPATCHABLE.length,97);
+  assert.equal(platform.CONFERENCE.length,81);
+  assert.equal(platform.DISPATCHABLE.length,117);
 });
 
 test("generic Edge and SQL dispatchers expose exactly the dispatchable catalogs",()=>{
@@ -32,7 +33,7 @@ test("generic Edge and SQL dispatchers expose exactly the dispatchable catalogs"
     if(match[1])edgeConference.add(match[1]); else for(const value of match[2].match(/'([a-z0-9_]+)'/g)||[])edgeConference.add(value.slice(1,-1));
   }
   for(const match of edge.matchAll(/warehouse\.add\('([a-z0-9_]+)'\)/g))edgeWarehouse.add(match[1]);
-  assert.equal(JSON.stringify([...edgeConference].sort()),JSON.stringify(conference.EDGE_ONLY_PROTECTED.map(x=>x.operation).sort()));
+  assert.equal(JSON.stringify([...edgeConference].sort()),JSON.stringify(platform.CONFERENCE.map(x=>x.operation).sort()));
   assert.equal(JSON.stringify([...edgeWarehouse].sort()),JSON.stringify(warehouse.DISPATCHABLE.map(x=>x.operation).concat('check_module_access').sort()));
   assert.doesNotMatch(edge,/stage_import/);
   assert.match(migration,/execute_device_operation\(uuid,uuid,bytea,text,text,jsonb\)/);
