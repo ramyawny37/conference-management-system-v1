@@ -462,9 +462,10 @@
     </div>
     <div class="row" style="margin-bottom:9px;gap:8px">
       <div style="flex:1"><label class="lbl">النوع</label><input id="person_gender" placeholder="ذكر/أنثى"></div>
-      <div style="flex:1"><label class="lbl">العمر</label><input id="person_age" type="number" min="0" placeholder="العمر"></div>
+      <div id="person_age_field" style="flex:1"><label class="lbl">العمر</label><input id="person_age" type="number" min="0" placeholder="العمر"></div>
+      <div id="person_date_of_birth_field" style="flex:1;display:none"><label class="lbl">تاريخ الميلاد</label><input id="person_date_of_birth" type="date"></div>
     </div>
-    <div style="margin-bottom:9px"><label class="lbl">ملاحظات</label><input id="person_notes" placeholder="ملاحظات"></div>
+    <div id="person_notes_field" style="margin-bottom:9px"><label class="lbl">ملاحظات</label><input id="person_notes" placeholder="ملاحظات"></div>
     <div class="row">
       <button class="btn btn-green" style="flex:1" onclick="savePersonDialog()">💾 حفظ</button>
       <button class="btn btn-gray" onclick="closePersonDialog()">إلغاء</button>

@@ -262,6 +262,23 @@ function hydrateCanonicalConferenceCore(localConferenceId,options){
     throw error;
   });
 }
+function hydrateCanonicalConferenceParticipations(localConferenceId,options){
+  options=options||{};
+  var link=getCanonicalConferenceCoreLink(localConferenceId);
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  var integration=window.PlatformIntegration;
+  if(!integration||typeof integration.hydrateConferenceParticipations!=='function'){
+    return Promise.reject({code:'CANONICAL_CONFERENCE_PARTICIPATIONS_UNAVAILABLE'});
+  }
+  return integration.hydrateConferenceParticipations(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
+    var current=getCurrentConference();
+    if(current&&String(current.id)===String(localConferenceId)&&typeof renderSettings==='function')renderSettings();
+    return result;
+  }).catch(function(error){
+    if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل بيانات المشاركين المحدثة.','#E74C3C');
+    throw error;
+  });
+}
 function setCurrentConferenceById(id, options){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   var activationAuthorization=window.ConferenceActivationAuthorization;
@@ -344,6 +361,9 @@ function setCurrentConferenceById(id, options){
   if(!options.skipToast) showToast('✅ تم تبديل المؤتمر');
   if(typeof hydrateCanonicalConferenceCore==='function'){
     hydrateCanonicalConferenceCore(id).catch(function(){});
+  }
+  if(typeof hydrateCanonicalConferenceParticipations==='function'){
+    hydrateCanonicalConferenceParticipations(id).catch(function(){});
   }
   return true;
 }
@@ -7234,6 +7254,11 @@ function renderStartupConferenceGroup(title, emptyMessage, conferences){
 }
 
 function getStartupConferenceParticipantCount(conference){
+  var link=conference&&getCanonicalConferenceCoreLink(conference.id);
+  if(link){
+    var state=window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceParticipationState==='function'?window.PlatformIntegration.getConferenceParticipationState(conference.id):null;
+    return state?state.totalCount:0;
+  }
   var people = conference && conference.peopleDb && Array.isArray(conference.peopleDb.people) ? conference.peopleDb.people : [];
   var seen = {};
   var count = 0;
@@ -8502,7 +8527,9 @@ function renderSettings(){
   }
   conferenceBrandingDraft=getConferenceBrandingSettings(current);
   var conf = (current || {}).conf || {};
-  var peopleCount = getPeopleList().length;
+  var currentLink=getCanonicalConferenceCoreLink(current.id);
+  var currentParticipationState=currentLink&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceParticipationState==='function'?window.PlatformIntegration.getConferenceParticipationState(current.id):null;
+  var peopleCount=currentLink?(currentParticipationState?currentParticipationState.totalCount:0):getPeopleList().length;
   h+='<div class="settings-summary-grid">';
   h+='<div class="settings-summary-card"><strong>'+appData.conferences.length+'</strong><span>عدد المؤتمرات</span></div>';
   h+='<div class="settings-summary-card"><strong>'+peopleCount+'</strong><span>عدد الأشخاص</span></div>';
@@ -8642,22 +8669,29 @@ function renderSettings(){
 }
 
 function renderPeopleDatabaseSection(){
-  var people = getPeopleList();
+  var current=getCurrentConference();
+  var linked=!!(current&&getCanonicalConferenceCoreLink(current.id));
+  var canonicalState=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceParticipationState==='function'?window.PlatformIntegration.getConferenceParticipationState(current.id):null;
+  var people=linked?(canonicalState?canonicalState.items:[]):getPeopleList();
   var h = '<section class="settings-section settings-branding-section settings-ui-accordion"><button type="button" class="settings-branding-toggle" aria-expanded="false" onclick="var content=this.nextElementSibling;var isOpen=content.classList.toggle(\'settings-branding-content-open\');content.setAttribute(\'aria-hidden\',isOpen?\'false\':\'true\');this.setAttribute(\'aria-expanded\',isOpen?\'true\':\'false\');this.querySelector(\'.settings-branding-toggle-arrow\').textContent=isOpen?\'▲\':\'▼\'"><span class="settings-accordion-heading">قاعدة بيانات الأشخاص <b class="settings-count-badge">'+people.length+'</b></span><span class="settings-branding-toggle-arrow" aria-hidden="true">▼</span></button><div class="settings-branding-content settings-ui-accordion-content" aria-hidden="true">';
   h += '<div class="settings-people-toolbar">';
-  h += '<button class="btn btn-blue" onclick="openPeopleExcelImport()">📥 استيراد ملف إكسل</button>';
-  h += '<button class="btn btn-purple" onclick="openPersonDialog()">➕ إضافة شخص جديد</button>';
+  if(!linked)h += '<button class="btn btn-blue" onclick="openPeopleExcelImport()">📥 استيراد ملف إكسل</button>';
+  h += '<button class="btn btn-purple" onclick="openPersonDialog()" '+(linked&&!canonicalState?'disabled':'')+'>➕ إضافة شخص جديد</button>';
   h += '</div>';
-  if(!people.length){
+  if(linked&&!canonicalState){
+    h += '<div class="settings-empty-state">...</div>';
+  } else if(!people.length){
     h += '<div class="settings-empty-state">لا توجد بيانات أشخاص بعد.</div>';
   } else {
     h += '<div class="settings-list settings-people-list">';
     people.slice().reverse().slice(0, 30).forEach(function(p){
+      var person=linked?p.person:p;
       h += '<div class="settings-list-item">';
-      h += '<div><div style="font-weight:700">' + esc(p.fullName) + '</div><div style="font-size:10px;color:#5a7a9a">' + esc(personMetaText(p) || '-') + '</div></div>';
+      h += '<div><div style="font-weight:700">' + esc(person.fullName) + '</div><div style="font-size:10px;color:#5a7a9a">' + esc(linked?canonicalParticipantMetaText(p):personMetaText(person) || '-') + '</div></div>';
       h += '<div class="row" style="gap:4px">';
-      h += '<button class="btn btn-gray btn-sm" onclick="openPersonDialog(\'' + p.id + '\')">✏️ تعديل</button>';
-      h += '<button class="btn btn-red btn-sm" onclick="deletePersonFromDatabase(\'' + p.id + '\')">🗑️ حذف</button>';
+      if(linked)h += '<button class="btn btn-gray btn-sm" onclick="setCanonicalParticipantStatus(\''+p.participationId+'\',\''+(p.status==='active'?'apologized':'active')+'\')">'+(p.status==='active'?'اعتذار':'تفعيل')+'</button>';
+      else h += '<button class="btn btn-gray btn-sm" onclick="openPersonDialog(\'' + p.id + '\')">✏️ تعديل</button>';
+      h += '<button class="btn btn-red btn-sm" onclick="deletePersonFromDatabase(\'' + (linked?p.participationId:p.id) + '\')">🗑️ حذف</button>';
       h += '</div>';
       h += '</div>';
     });
@@ -8667,7 +8701,24 @@ function renderPeopleDatabaseSection(){
   return h;
 }
 
+function canonicalParticipantMetaText(participation){
+  var person=participation&&participation.person||{};
+  var parts=[];
+  if(person.church)parts.push(person.church);
+  if(person.phone)parts.push(person.phone);
+  if(person.gender)parts.push(person.gender);
+  if(person.dateOfBirth)parts.push(person.dateOfBirth);
+  if(participation&&participation.status)parts.push(participation.status);
+  return parts.join(' • ')||'-';
+}
+
 function importPeopleExcelFile(e){
+  var linkedCurrent=getCurrentConference();
+  if(linkedCurrent&&getCanonicalConferenceCoreLink(linkedCurrent.id)){
+    if(e&&e.target)e.target.value='';
+    alert('استيراد Excel غير متاح للمشاركين المرتبطين حاليًا.');
+    return false;
+  }
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('importPeopleExcelFile',null))return false;
   var f = e.target.files && e.target.files[0];
   if(!f) return;
@@ -8715,6 +8766,9 @@ function importPeopleExcelFile(e){
 }
 
 function openPersonDialog(personId){
+  var current=getCurrentConference();
+  var linked=!!(current&&getCanonicalConferenceCoreLink(current.id));
+  if(linked&&personId)return false;
   var person = personId ? getPersonById(personId) : null;
   ge('personDialogId').value = person ? person.id : '';
   ge('person_full_name').value = person ? person.fullName : '';
@@ -8722,7 +8776,13 @@ function openPersonDialog(personId){
   ge('person_phone').value = person ? person.phone : '';
   ge('person_gender').value = person ? person.gender : '';
   ge('person_age').value = person ? person.age : '';
+  ge('person_date_of_birth').value = linked ? '' : (person&&person.dateOfBirth||'');
   ge('person_notes').value = person ? person.notes : '';
+  ge('person_age').disabled=linked;
+  ge('person_notes').disabled=linked;
+  ge('person_age_field').style.display=linked?'none':'';
+  ge('person_date_of_birth_field').style.display=linked?'':'none';
+  ge('person_notes_field').style.display=linked?'none':'';
   ge('personModalTitle').textContent = person ? '✏️ تعديل شخص' : '➕ إضافة شخص جديد';
   ge('personModal').style.display = 'flex';
 }
@@ -8733,6 +8793,15 @@ function closePersonDialog(){
 }
 
 function deletePersonFromDatabase(personId){
+  var linkedCurrent=getCurrentConference();
+  if(linkedCurrent&&getCanonicalConferenceCoreLink(linkedCurrent.id)){
+    var integration=window.PlatformIntegration;
+    var state=integration&&integration.getConferenceParticipationState(linkedCurrent.id);
+    var participation=state&&state.items.find(function(item){return item.participationId===String(personId||'');});
+    if(!participation)return false;
+    if(!confirm('هل أنت متأكد من حذف "'+esc(participation.person.fullName||'الشخص')+'"؟'))return false;
+    return integration.deleteConferenceParticipation(linkedCurrent.id,participation.participationId).then(function(){renderSettings();showToast('🗑️ تم حذف الشخص');return true;}).catch(function(){showToast('تعذر حذف المشارك.','#E74C3C');return false;});
+  }
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deletePersonFromDatabase',null))return false;
   var person = getPersonById(personId);
   if(!person) return;
@@ -8787,6 +8856,17 @@ function deletePersonFromDatabase(personId){
 
 function savePersonDialog(){
   var personId = ge('personDialogId').value;
+  var linkedCurrent=getCurrentConference();
+  if(linkedCurrent&&getCanonicalConferenceCoreLink(linkedCurrent.id)){
+    if(personId||personDialogContext.guestRowId||personDialogContext.childRowId)return false;
+    var linkedFullName=ge('person_full_name').value.trim();
+    if(!linkedFullName){alert('الاسم الكامل مطلوب.');return false;}
+    var genderValue=ge('person_gender').value.trim();
+    if(genderValue==='ذكر')genderValue='male';
+    else if(genderValue==='أنثى')genderValue='female';
+    else if(genderValue!=='male'&&genderValue!=='female')genderValue=null;
+    return window.PlatformIntegration.createConferenceParticipationWithPerson(linkedCurrent.id,{fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null}).then(function(){renderSettings();closePersonDialog();showToast('✅ تم حفظ بيانات الشخص');return true;}).catch(function(){showToast('تعذر حفظ الشخص.','#E74C3C');return false;});
+  }
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('savePersonDialog',personId?'update':'create'))return false;
   var fullName = ge('person_full_name').value.trim();
   if(!fullName){ alert('الاسم الكامل مطلوب.'); return; }
@@ -8837,6 +8917,12 @@ function savePersonDialog(){
   closePersonDialog();
   showToast('✅ تم حفظ بيانات الشخص');
   return true;
+}
+
+function setCanonicalParticipantStatus(participationId,status){
+  var current=getCurrentConference();
+  if(!current||!getCanonicalConferenceCoreLink(current.id))return false;
+  return window.PlatformIntegration.setConferenceParticipationStatus(current.id,participationId,status).then(function(){renderSettings();return true;}).catch(function(){showToast('تعذر تحديث حالة المشارك.','#E74C3C');return false;});
 }
 
 function openQuickAddPersonForGuest(rowId){
