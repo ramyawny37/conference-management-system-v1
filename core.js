@@ -1349,8 +1349,9 @@ function normalizeAppData_core(targetAppData){
   normalizeConferenceImportRecovery(target);
   target.conferences.forEach(function(confObj){
     normalizeConference(confObj,target);
-    if(target===appData)linkRoomPeopleToDatabase(confObj);
-    if(typeof normalizeConferencePeopleReferences==='function'){
+    var linkedRuntime=target===appData&&!!getCanonicalConferenceCoreLink(confObj&&confObj.id);
+    if(target===appData&&!linkedRuntime)linkRoomPeopleToDatabase(confObj);
+    if(!linkedRuntime&&typeof normalizeConferencePeopleReferences==='function'){
       normalizeConferencePeopleReferences(confObj);
     }
   });
@@ -1420,9 +1421,10 @@ function normalizeAppDataCandidate(candidate){
 function normalizeConference(confObj,sourceAppData){
   if(!confObj) return;
   var source=sourceAppData||appData;
+  var linkedRuntime=source===appData&&!!getCanonicalConferenceCoreLink(confObj.id);
   confObj.conf = confObj.conf || {name:confObj.name||'المؤتمر',startDate:confObj.startDate||'',endDate:confObj.endDate||'',days:confObj.days||1};
   syncConferencePeriod(confObj);
-  confObj.houses = confObj.houses || [];
+  if(!linkedRuntime)confObj.houses = confObj.houses || [];
   confObj.activityLog = Array.isArray(confObj.activityLog) ? confObj.activityLog : [];
   confObj.transports = confObj.transports || [];
   confObj.restaurant = confObj.restaurant || createDefaultRestaurant();
@@ -1433,10 +1435,12 @@ function normalizeConference(confObj,sourceAppData){
   confObj.status = confObj.status || 'active';
   confObj.completedAt = confObj.completedAt || null;
   if(typeof normalizeConferenceAccounts==='function') normalizeConferenceAccounts(confObj);
-  confObj.peopleDb = confObj.peopleDb || { version: '1.0.0', people: [] };
-  confObj.peopleDb.version = confObj.peopleDb.version || '1.0.0';
-  confObj.peopleDb.people = confObj.peopleDb.people || [];
-  if(
+  if(!linkedRuntime){
+    confObj.peopleDb = confObj.peopleDb || { version: '1.0.0', people: [] };
+    confObj.peopleDb.version = confObj.peopleDb.version || '1.0.0';
+    confObj.peopleDb.people = confObj.peopleDb.people || [];
+  }
+  if(!linkedRuntime&&
     !confObj.skipPeopleMigration &&
     !confObj.peopleDb.people.length &&
     source.peopleDb &&
@@ -1446,14 +1450,14 @@ function normalizeConference(confObj,sourceAppData){
     confObj.peopleDb.people = deepClone(source.peopleDb.people);
   }
 
-  if(!confObj.houses.length && Array.isArray(confObj.rooms) && confObj.rooms.length){
+  if(!linkedRuntime&&!confObj.houses.length && Array.isArray(confObj.rooms) && confObj.rooms.length){
     confObj.houses = convertLegacyRoomsToHouses(confObj.rooms, confObj.name || 'البيت الافتراضي');
   }
 
-  confObj.houses.forEach(function(h){
+  (!linkedRuntime?confObj.houses:[]).forEach(function(h){
     normalizeHouseStructure(h);
   });
-  if(typeof ensureAccommodationDisplayState==='function'){
+  if(!linkedRuntime&&typeof ensureAccommodationDisplayState==='function'){
     ensureAccommodationDisplayState(confObj);
   }
   confObj.transports.forEach(function(t){
@@ -1467,7 +1471,7 @@ function normalizeConference(confObj,sourceAppData){
     }
   });
   // ensureGuestIds(confObj); // This logic is now inside migrateToV3
-  migrateToV3(confObj);
+  if(!linkedRuntime)migrateToV3(confObj);
 }
 
 function createDefaultRestaurant(){

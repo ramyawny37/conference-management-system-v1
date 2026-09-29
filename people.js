@@ -33,8 +33,17 @@ function normalizePersonKey(value){
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+function requireLocalOnlyPeopleConference(){
+  var current=getCurrentConference();
+  if(!current)return null;
+  if(typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(current.id)){
+    throw new Error('LINKED_CONFERENCE_LEGACY_PEOPLE_FORBIDDEN');
+  }
+  return current;
+}
+
 function getPeopleDb(){
-  var current = getCurrentConference();
+  var current = requireLocalOnlyPeopleConference();
   if(!current) return { version: '1.0.0', people: [] };
   current.peopleDb = current.peopleDb || { version: '1.0.0', people: [] };
   current.peopleDb.version = current.peopleDb.version || '1.0.0';
@@ -75,6 +84,7 @@ function findExistingPerson(fullName, phone){
 }
 
 function upsertPerson(personData, allowUpdate){
+  requireLocalOnlyPeopleConference();
   var normalized = normalizePersonRecord(personData);
   if(!normalized.fullName) return null;
   var existingById = allowUpdate && personData && personData.id
@@ -112,6 +122,9 @@ function resolvePersonName(personId, fallback){
 
 function normalizeConferencePeopleReferences(confObj){
   if(!confObj||typeof confObj!=='object')return confObj;
+  if(typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(confObj.id)){
+    throw new Error('LINKED_CONFERENCE_LEGACY_PEOPLE_NORMALIZATION_FORBIDDEN');
+  }
   var people=confObj.peopleDb&&Array.isArray(confObj.peopleDb.people)
     ?confObj.peopleDb.people:[];
   var peopleById={};
@@ -156,6 +169,9 @@ function normalizeConferencePeopleReferences(confObj){
 
 function linkRoomPeopleToDatabase(confObj){
   if(!confObj || !confObj.houses) return;
+  if(typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(confObj.id)){
+    throw new Error('LINKED_CONFERENCE_LEGACY_PEOPLE_LINK_FORBIDDEN');
+  }
   (confObj.houses || []).forEach(function(house){
     (house.floors || []).forEach(function(floor){
       (floor.rooms || []).forEach(function(room){

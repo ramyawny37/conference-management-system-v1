@@ -72,7 +72,7 @@ function openHouseModal(id){
 function closeHouseModal(){ge('houseModal').style.display='none';}
 function saveHouse() {
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveHouse',editHouseId?'update':'create'))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   if(!current) return;
 
@@ -106,7 +106,7 @@ function saveHouse() {
 }
 function deleteHouse(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteHouse',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference(); if(!current) return;
   if(!editHouseId) return;
   var houseToDelete = null;
@@ -2744,6 +2744,14 @@ function requireAccommodationMutation(){
     window.ConferenceEditLockManager.requireAccommodationMutation());
 }
 
+function requireLocalOnlyAccommodationMutation(){
+  var current=getCurrentConference();
+  if(current&&getCanonicalConferenceCoreLink(current.id)){
+    throw new Error('LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN');
+  }
+  return requireAccommodationMutation();
+}
+
 function normalizeAccommodationSearchText(value){
   var arabicDigits='٠١٢٣٤٥٦٧٨٩';
   var persianDigits='۰۱۲۳۴۵۶۷۸۹';
@@ -2812,7 +2820,7 @@ function toggleAccommodationFloor(houseId,floorId){
 
 function setAccommodationPersonArrival(houseId,floorId,roomId,personId,arrived){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('setAccommodationPersonArrival',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var result=findRoomInHouses((getCurrentConference()||{}).houses||[],houseId,floorId,roomId);
   if(!result||!result.room)return false;
   var person=getAccommodationOccupants(result.room).filter(function(item){return getAccommodationPersonIdentity(item)===String(personId);})[0];
@@ -2825,7 +2833,7 @@ function setAccommodationPersonArrival(houseId,floorId,roomId,personId,arrived){
 
 function setAccommodationRoomKeyHolder(houseId,floorId,roomId,personId){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('setAccommodationRoomKeyHolder',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var result=findRoomInHouses((getCurrentConference()||{}).houses||[],houseId,floorId,roomId);
   if(!result||!result.room)return false;
   var nextId=String(personId||'');
@@ -3247,7 +3255,7 @@ var guestPersonPickerPositionHandler = null;
 var partialTransferState;
 
 function deactivateAccommodationRoom(roomId){
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   var result = current ? findRoomByIdInHouses(current.houses || [], roomId) : null;
   if(!current || !result || !result.room) return false;
@@ -3415,7 +3423,7 @@ function openAssignConferenceHouseSelector(){
   });
   openSearchableSelectDialog('إسناد بيت للمؤتمر', items, function(template){
     if(!template) return;
-    if(!requireAccommodationMutation())return;
+    if(!requireLocalOnlyAccommodationMutation())return;
     current.houses = current.houses || [];
     var alreadyAssigned = current.houses.some(function(house) { return house.sourceTemplateId === template.id; });
     if (alreadyAssigned) {
@@ -3436,7 +3444,7 @@ function openAssignConferenceHouseSelector(){
 
 function removeConferenceHouseFromAccommodation(houseId){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('removeConferenceHouseFromAccommodation',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   if(!current || !current.houses) return;
   var idx = -1;
@@ -3527,7 +3535,7 @@ function confirmAddRoomFromTemplate(){
 }
 
 function openActiveRoomsManager(houseId){
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var house = getHouseById(houseId);
   if(!house){
     alert('لا يمكن فتح إدارة الغرف النشطة: البيت غير موجود في المؤتمر الحالي.');
@@ -3591,7 +3599,7 @@ function renderActiveRoomsManager(){
 
 function addAvailableTemplateRoom(templateRoomId){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('addAvailableTemplateRoom',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   var house = getHouseById(activeRoomsManager.houseId);
   if(!current || !house)return false;
@@ -3624,7 +3632,7 @@ function addAvailableTemplateRoom(templateRoomId){
 
 function toggleActiveRoom(roomId, checked){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('toggleActiveRoom',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   if(!current) return;
   var result = findRoomByIdInHouses(current.houses || [], roomId);
@@ -3653,7 +3661,7 @@ function toggleActiveRoom(roomId, checked){
 
 function setAllActiveRoomsForFloor(houseId, floorId, checked){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('setAllActiveRoomsForFloor',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   var house = getHouseById(houseId);
   var floor = null;
@@ -3683,7 +3691,7 @@ function setAllActiveRoomsForFloor(houseId, floorId, checked){
 
 function setAllActiveRoomsForHouse(checked){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('setAllActiveRoomsForHouse',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   var house = getHouseById(activeRoomsManager.houseId);
   if(!current || !house) return;
@@ -3795,7 +3803,7 @@ function renderRoomEditorFromDraft(){
 }
 
 function openRoomEditor(houseId, floorId, roomId) {
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var result = roomId ? (getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId)) : null;
   var room = result ? result.room : null;
   var floor = result ? result.floor : null;
@@ -4462,7 +4470,7 @@ function openMoveGuestDialog(rowId){
 }
 
 function openMoveRoomDialog(houseId, floorId, roomId){
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var useDraft = !!(editRoomData && editRoomData.draftHouses);
   var sourceResult = useDraft
     ? (findRoomInHouses(editRoomData.draftHouses, houseId, floorId, roomId) || findRoomByIdInHouses(editRoomData.draftHouses, roomId))
@@ -4479,7 +4487,7 @@ function openMoveRoomDialog(houseId, floorId, roomId){
     sourceHouseId: sourceResult.house.id
   }, function(targetRoomResult){
     if(!targetRoomResult) return;
-    if(!requireAccommodationMutation())return;
+    if(!requireLocalOnlyAccommodationMutation())return;
 
     var sourceRoom = sourceResult.room;
     var targetRoom = targetRoomResult.room;
@@ -4680,7 +4688,7 @@ function partialTransferContinue(){
 }
 
 function partialTransferSelectGuests(){
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   renderPartialTransferGuestView();
 }
 
@@ -4756,6 +4764,7 @@ function partialTransferToggleGuestSelection(guestId, checkbox){
 }
 
 function partialTransferConfirmSelection(){
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var state = partialTransferState;
   if(!state || !state.sourceRoom || !state.targetRoom) return;
   var selectedIds = (state.selectedGuestIds || []).slice();
@@ -4920,7 +4929,7 @@ function cleanupAutoExtraBeds(room){
 
 function partialTransferGuest(guestId){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('partialTransferGuest',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var state = partialTransferState;
   if(!state || !state.sourceRoom || !state.targetRoom) return;
   state.currentOccupancy = countRoomOccupancy(state.targetRoom);
@@ -4981,7 +4990,7 @@ function addCI(name,guardian,leftDay,personId,guardianPersonId,childId,arrivalDa
 
 function saveRoomData(options){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveRoomData',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   options = options || {};
   if(!editRoomData || !editRoomData.draftHouses) return false;
 
@@ -5007,7 +5016,7 @@ function saveRoomData(options){
 
 function clearConferenceRoom(houseId, floorId, roomId) {
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('clearConferenceRoom',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var result = getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId);
   if (!result) return;
   if (!confirm('تفريغ بيانات الغرفة بالكامل؟ سيتم حذف النزلاء فقط مع بقاء رقم الغرفة والأسرة والملاحظات.')) return;
@@ -5028,7 +5037,7 @@ function clearConferenceRoom(houseId, floorId, roomId) {
 
 function toggleConferenceRoomClosed(houseId, floorId, roomId) {
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('toggleConferenceRoomClosed',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var result = getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId);
   if (!result) return;
   result.room.closed = !result.room.closed;
@@ -5040,7 +5049,7 @@ function toggleConferenceRoomClosed(houseId, floorId, roomId) {
 
 function deleteConferenceRoom(houseId, floorId, roomId) {
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteConferenceRoom',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var result = getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId);
   if (!result) return;
   if (!deactivateAccommodationRoom(result.room.id)) return;
@@ -8171,7 +8180,7 @@ function clearActivityLog(){
 }
 
 function updateAccommodationV3Setting(field,value){
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current=getCurrentConference();
   if(!current)return false;
   var plan=getConferenceAccommodationPlan(current);
@@ -8199,7 +8208,7 @@ function updateAccommodationV3Setting(field,value){
 }
 
 function updateAccommodationV3RoomTypePrice(roomType,value){
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current=getCurrentConference();
   if(!current)return false;
   var validTypes=['single','double','triple','quadruple','quintuple','sextuple','sevenPlus'];
@@ -8880,6 +8889,10 @@ function importPeopleExcelFile(e){
     alert('استيراد Excel غير متاح للمشاركين المرتبطين حاليًا.');
     return false;
   }
+  return importLocalOnlyPeopleExcelFile(e);
+}
+
+function importLocalOnlyPeopleExcelFile(e){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('importPeopleExcelFile',null))return false;
   var f = e.target.files && e.target.files[0];
   if(!f) return;
@@ -8956,13 +8969,21 @@ function closePersonDialog(){
 function deletePersonFromDatabase(personId){
   var linkedCurrent=getCurrentConference();
   if(linkedCurrent&&getCanonicalConferenceCoreLink(linkedCurrent.id)){
-    var integration=window.PlatformIntegration;
-    var state=integration&&integration.getConferenceParticipationState(linkedCurrent.id);
-    var participation=state&&state.items.find(function(item){return item.participationId===String(personId||'');});
-    if(!participation)return false;
-    if(!confirm('هل أنت متأكد من حذف "'+esc(participation.person.fullName||'الشخص')+'"؟'))return false;
-    return integration.deleteConferenceParticipation(linkedCurrent.id,participation.participationId).then(function(){renderSettings();showToast('🗑️ تم حذف الشخص');return true;}).catch(function(){showToast('تعذر حذف المشارك.','#E74C3C');return false;});
+    return deleteCanonicalConferenceParticipation(linkedCurrent,personId);
   }
+  return deleteLocalOnlyPersonFromDatabase(personId);
+}
+
+function deleteCanonicalConferenceParticipation(linkedCurrent,participationId){
+  var integration=window.PlatformIntegration;
+  var state=integration&&integration.getConferenceParticipationState(linkedCurrent.id);
+  var participation=state&&state.items.find(function(item){return item.participationId===String(participationId||'');});
+  if(!participation)return false;
+  if(!confirm('هل أنت متأكد من حذف "'+esc(participation.person.fullName||'الشخص')+'"؟'))return false;
+  return integration.deleteConferenceParticipation(linkedCurrent.id,participation.participationId).then(function(){renderSettings();showToast('🗑️ تم حذف الشخص');return true;}).catch(function(){showToast('تعذر حذف المشارك.','#E74C3C');return false;});
+}
+
+function deleteLocalOnlyPersonFromDatabase(personId){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deletePersonFromDatabase',null))return false;
   var person = getPersonById(personId);
   if(!person) return;
@@ -9019,15 +9040,23 @@ function savePersonDialog(){
   var personId = ge('personDialogId').value;
   var linkedCurrent=getCurrentConference();
   if(linkedCurrent&&getCanonicalConferenceCoreLink(linkedCurrent.id)){
-    if(personId||personDialogContext.guestRowId||personDialogContext.childRowId)return false;
-    var linkedFullName=ge('person_full_name').value.trim();
-    if(!linkedFullName){alert('الاسم الكامل مطلوب.');return false;}
-    var genderValue=ge('person_gender').value.trim();
-    if(genderValue==='ذكر')genderValue='male';
-    else if(genderValue==='أنثى')genderValue='female';
-    else if(genderValue!=='male'&&genderValue!=='female')genderValue=null;
-    return window.PlatformIntegration.createConferenceParticipationWithPerson(linkedCurrent.id,{fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null}).then(function(){renderSettings();closePersonDialog();showToast('✅ تم حفظ بيانات الشخص');return true;}).catch(function(){showToast('تعذر حفظ الشخص.','#E74C3C');return false;});
+    return saveCanonicalConferenceParticipant(linkedCurrent,personId);
   }
+  return saveLocalOnlyPersonDialog(personId);
+}
+
+function saveCanonicalConferenceParticipant(linkedCurrent,personId){
+  if(personId||personDialogContext.guestRowId||personDialogContext.childRowId)return false;
+  var linkedFullName=ge('person_full_name').value.trim();
+  if(!linkedFullName){alert('الاسم الكامل مطلوب.');return false;}
+  var genderValue=ge('person_gender').value.trim();
+  if(genderValue==='ذكر')genderValue='male';
+  else if(genderValue==='أنثى')genderValue='female';
+  else if(genderValue!=='male'&&genderValue!=='female')genderValue=null;
+  return window.PlatformIntegration.createConferenceParticipationWithPerson(linkedCurrent.id,{fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null}).then(function(){renderSettings();closePersonDialog();showToast('✅ تم حفظ بيانات الشخص');return true;}).catch(function(){showToast('تعذر حفظ الشخص.','#E74C3C');return false;});
+}
+
+function saveLocalOnlyPersonDialog(personId){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('savePersonDialog',personId?'update':'create'))return false;
   var fullName = ge('person_full_name').value.trim();
   if(!fullName){ alert('الاسم الكامل مطلوب.'); return; }
@@ -9492,7 +9521,7 @@ function saveSettings(){
 
 function applyConferenceHouseTemplate(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('applyConferenceHouseTemplate',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var current = getCurrentConference();
   if (!current) return;
   var conf = current.conf || {};
@@ -10260,7 +10289,7 @@ function closeImportHouseModal() {
 
 function importHouseFromTemplate(templateId) {
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('importHouseFromTemplate',null))return false;
-  if(!requireAccommodationMutation())return false;
+  if(!requireLocalOnlyAccommodationMutation())return false;
   var template = null;
   var templates = appData.houseTemplates || [];
   for (var i = 0; i < templates.length; i++) {
