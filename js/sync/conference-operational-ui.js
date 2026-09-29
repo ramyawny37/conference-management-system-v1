@@ -246,7 +246,10 @@
       realtime:options.realtimeManager||global.ConferenceRealtimeManager,
       getData:options.getAppData||function(){return global.appData;},
       applyData:options.applyAppData||function(value){
-        global.appData=value;
+        global.appData=global.PlatformIntegration&&
+          typeof global.PlatformIntegration.preserveCanonicalConferenceCores==='function'
+          ?global.PlatformIntegration.preserveCanonicalConferenceCores(value)
+          :value;
       },
       persist:options.persistAppData||function(value){
         if(!global.StorageRepository||
