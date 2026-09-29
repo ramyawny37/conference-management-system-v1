@@ -54,13 +54,15 @@ test("protected member-device targets survive while actor-device overrides are s
     assert.equal(Object.prototype.hasOwnProperty.call(call.args,'p_actor_device_id'),false,call.name);
   }
 });
-test("exact Phase 1C contract is identical in frontend, Edge, dispatcher, and revokes",()=>{
+test("legacy Phase 1C contract stays aligned while canonical operations use the canonical router",()=>{
   const round3g2=new Set(['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant']);
+  const canonical=new Set(['create_canonical_conference','mutate_conference_core','get_conference_core','list_conference_participations','create_conference_participation','set_conference_participation_status','delete_conference_participation','get_conference_accommodation','create_accommodation_house','update_accommodation_house','delete_accommodation_house','create_accommodation_floor','update_accommodation_floor','delete_accommodation_floor','create_accommodation_room','update_accommodation_room','delete_accommodation_room','assign_conference_accommodation','move_conference_accommodation','remove_conference_accommodation']);
   const declared=[...contract.EDGE_ONLY_PROTECTED].filter(row=>!round3g2.has(row.operation)).map(row=>row.operation).sort();
   const edgeBlock=edge.match(/const allowed=new Set\(\[([\s\S]*?)\]\);/)[1];
   const edgeOperations=[...edgeBlock.matchAll(/'([a-z0-9_]+)'/g)].map(match=>match[1]).sort();
   const dispatcher=[...migration.matchAll(/when '([a-z0-9_]+)'(?:,'([a-z0-9_]+)')?(?:,'([a-z0-9_]+)')? then/g)].flatMap(match=>match.slice(1).filter(Boolean)).sort();
-  assert.deepEqual(edgeOperations,declared);
+  assert.deepEqual(edgeOperations.filter(operation=>!canonical.has(operation)),declared);
+  assert.deepEqual(edgeOperations.filter(operation=>canonical.has(operation)),[...canonical].sort());
   assert.deepEqual(dispatcher,declared);
   for(const row of contract.EDGE_ONLY_PROTECTED.filter(row=>!round3g2.has(row.operation))){
     assert.ok(migration.includes("'"+row.signature+"'"),"missing exact revoke: "+row.signature);
