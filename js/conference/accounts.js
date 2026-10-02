@@ -597,16 +597,12 @@ function getAccountSettingSourceLabel(source){
 function getAirConditioningAccounts(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return null;
-  var state=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
-  if(state)return {enabled:state.defaultConfiguration.enabled!==false,houses:{}};
   return normalizeConferenceAccounts(conference).expenses.airConditioning;
 }
 
 function getAirConditioningDefaults(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return null;
-  var state=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
-  if(state){var c=state.defaultConfiguration,map={PER_PERSON:'per_person',PER_ROOM:'per_room',PER_UNIT:'per_unit',FIXED:'fixed_house',INCLUDED:'per_room'};return {enabled:c.enabled!==false,calculationMethod:map[c.pricingBasis]||'per_room',timeUnit:String(c.timeBasis||'DAY').toLowerCase(),durationMode:c.durationBasis==='ACTUAL_OCCUPANCY'?'actual_occupancy':'conference',includeClosedRooms:c.includeClosedRooms===true,roomRate:c.pricingBasis==='PER_ROOM'?c.unitPrice:null,unitRate:c.pricingBasis==='PER_UNIT'?c.unitPrice:null,personRate:c.pricingBasis==='PER_PERSON'?c.unitPrice:null};}
   return normalizeConferenceAccounts(conference).settings.airConditioningDefaults;
 }
 
@@ -648,8 +644,6 @@ function getDefaultAirConditioningRoomSettings(){
 }
 
 function getAirConditioningHouseSettings(houseId,createIfMissing){
-  var conference=typeof getCurrentConference==='function'?getCurrentConference():null,state=window.PlatformIntegration&&conference&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
-  if(state){var c=state.houseOverrides.find(function(item){return item.scopeId===String(houseId)});if(!c)return null;return {enabled:c.enabled,overrides:{calculationMethod:null,timeUnit:c.timeBasis&&c.timeBasis.toLowerCase(),durationMode:c.durationBasis==='ACTUAL_OCCUPANCY'?'actual_occupancy':(c.durationBasis?'conference':null),includeClosedRooms:c.includeClosedRooms,roomRate:c.pricingBasis==='PER_ROOM'?c.unitPrice:null,unitRate:c.pricingBasis==='PER_UNIT'?c.unitPrice:null,personRate:c.pricingBasis==='PER_PERSON'?c.unitPrice:null},unitsCount:c.unitsCount,fixedAmount:c.fixedAmount,manualTotal:null,rooms:{},notes:''};}
   var airConditioning=getAirConditioningAccounts();
   if(!airConditioning||!houseId)return null;
   var existing=airConditioning.houses[houseId];
@@ -660,8 +654,6 @@ function getAirConditioningHouseSettings(houseId,createIfMissing){
 }
 
 function getAirConditioningRoomSettings(houseId,roomId,createIfMissing){
-  var conference=typeof getCurrentConference==='function'?getCurrentConference():null,state=window.PlatformIntegration&&conference&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
-  if(state){var c=state.roomOverrides.find(function(item){return item.scopeId===String(roomId)});if(!c)return null;return {included:c.included,overrides:{calculationMethod:null,timeUnit:c.timeBasis&&c.timeBasis.toLowerCase(),durationMode:c.durationBasis==='ACTUAL_OCCUPANCY'?'actual_occupancy':(c.durationBasis?'conference':null),roomRate:c.pricingBasis==='PER_ROOM'?c.unitPrice:null,unitRate:c.pricingBasis==='PER_UNIT'?c.unitPrice:null,personRate:c.pricingBasis==='PER_PERSON'?c.unitPrice:null},unitsCount:c.unitsCount,manualTotal:null,notes:''};}
   if(!houseId||!roomId)return null;
   var houseSettings=getAirConditioningHouseSettings(houseId,createIfMissing===true);
   if(!houseSettings)return null;
@@ -1647,9 +1639,7 @@ function calculateAirConditioningExpense(context){
   var current=typeof getCurrentConference==='function'?getCurrentConference():null;
   var integration=window.PlatformIntegration,canonical=integration&&current&&integration.getConferenceAirConditioningState&&integration.getConferenceAirConditioningState(current.id);
   if(canonical){
-    var summary=calculateAirConditioningSummary(current),canonicalHouses=context&&context.houses||[];
-    var projectedHouses=(summary.houses||[]).map(function(house){return applyAccountExpenseEnvelope({houseId:house.houseId,houseName:house.houseName,enabled:house.enabled,rooms:house.rooms,includedRoomsCount:house.rooms.filter(function(room){return room.included}).length,excludedRoomsCount:house.rooms.filter(function(room){return !room.included}).length,calculatedTotal:house.calculatedTotal,manualTotal:null,finalTotal:house.finalTotal,formula:'إجمالي التكييف = '+formatAccountMoney(house.finalTotal)},{houseId:house.houseId},{values:{enabled:house.enabled},sources:{enabled:'canonical_air_conditioning'}},{includedRoomsCount:house.rooms.filter(function(room){return room.included}).length},{calculatedTotal:house.calculatedTotal,manualTotal:null,finalTotal:house.finalTotal},{formula:'إجمالي التكييف = '+formatAccountMoney(house.finalTotal)})});
-    return applyAccountExpenseEnvelope({enabled:summary.enabled,houses:projectedHouses,housesCount:canonicalHouses.length,includedHousesCount:projectedHouses.filter(function(house){return house.enabled}).length,includedRoomsCount:summary.totalRoomDays,excludedRoomsCount:0,calculatedTotal:summary.totalCost,finalTotal:summary.totalCost},{conferenceId:context&&context.conferenceId||'',housesCount:canonicalHouses.length},{values:{enabled:summary.enabled},sources:{enabled:'canonical_air_conditioning'}},{includedHousesCount:projectedHouses.filter(function(house){return house.enabled}).length,includedRoomsCount:summary.totalRoomDays,excludedRoomsCount:0},{calculatedTotal:summary.totalCost,manualTotal:null,finalTotal:summary.totalCost},{formula:'إجمالي التكييف = '+formatAccountMoney(summary.totalCost)});
+    return calculateAirConditioningSummary(current);
   }
   var airConditioning=getAirConditioningAccounts();
   var enabled=!!context&&!(airConditioning&&airConditioning.enabled===false);
@@ -2102,7 +2092,7 @@ function calculateConferenceFinancialSummary(){
   var income=calculateIncomeItems();
   var settlements=calculateSettlements();
   var accommodationTotal=getSafeFinancialEngineTotal(accommodation,'finalTotal');
-  var airConditioningTotal=getSafeFinancialEngineTotal(airConditioning,'finalTotal');
+  var airConditioningTotal=getSafeFinancialEngineTotal(airConditioning,airConditioning&&airConditioning.available!==undefined?'totalCost':'finalTotal');
   var mealsTotal=getSafeFinancialEngineTotal(meals,'finalTotal');
   var additionalExpensesTotal=getSafeFinancialEngineTotal(additionalExpenses,'total');
   var incomeItemsTotal=getSafeFinancialEngineTotal(income,'total');
@@ -2345,6 +2335,11 @@ function buildAccommodationReportSection(expense,options){
 
 function buildAirConditioningReportSection(expense,options){
   expense=expense||{};
+  if(expense.available!==undefined){
+    var canonicalRows=[];
+    (expense.houses||[]).forEach(function(house){(house.rooms||[]).forEach(function(room){if(!options.includeDisabledItems&&!room.included)return;canonicalRows.push({houseName:house.houseName||'',roomNumber:room.roomNumber||'',status:room.included?'محتسب':'غير مفعّل — غير محتسب',pricingBasis:room.pricingBasis||'',quantity:getFinancialReportNumber(room.quantity),duration:getFinancialReportNumber(room.duration),unitPrice:getFinancialReportNumber(room.unitPrice),amount:getFinancialReportNumber(room.finalTotal)})})});
+    return createFinancialReportSection({id:'air_conditioning',title:'التكييف',type:'grouped-table',enabled:expense.enabled!==false,columns:[{key:'houseName',label:'البيت',dataType:'text'},{key:'roomNumber',label:'الغرفة',dataType:'text'},{key:'status',label:'الحالة',dataType:'text'},{key:'pricingBasis',label:'طريقة الحساب',dataType:'text'},{key:'quantity',label:'الكمية',dataType:'number'},{key:'duration',label:'المدة',dataType:'number'},{key:'unitPrice',label:'السعر',dataType:'money'},{key:'amount',label:'الإجمالي النهائي',dataType:'money'}],rows:canonicalRows,totals:[{label:'إجمالي التكييف',value:getFinancialReportNumber(expense.totalCost),dataType:'money'}],notes:getFinancialReportSectionNotes(expense.enabled!==false,canonicalRows)});
+  }
   var enabled=expense.enabled!==false;
   var columns=[
     {key:'houseName',label:'البيت',dataType:'text'},
@@ -3822,6 +3817,7 @@ function renderSettlementsSettings(){
 }
 
 function renderAirConditioningExpenseSummary(expense){
+  if(expense&&expense.available!==undefined){var houses=expense.houses||[],rooms=[];houses.forEach(function(house){rooms=rooms.concat(house.rooms||[])});return '<div class="settings-summary-grid"><div class="settings-summary-card"><span>❄️ إجمالي التكييف</span><strong>'+formatAccountMoney(expense.totalCost)+'</strong></div><div class="settings-summary-card"><span>البيوت الداخلة في التكييف</span><strong>'+houses.filter(function(house){return house.enabled}).length+'</strong></div><div class="settings-summary-card"><span>الغرف الداخلة في التكييف</span><strong>'+rooms.filter(function(room){return room.included}).length+'</strong></div><div class="settings-summary-card"><span>الغرف المستبعدة من التكييف</span><strong>'+rooms.filter(function(room){return !room.included}).length+'</strong></div></div>'}
   return '<div class="settings-summary-grid">'+
     '<div class="settings-summary-card"><span>❄️ إجمالي التكييف</span><strong>'+formatAccountMoney(expense.finalTotal)+'</strong></div>'+
     '<div class="settings-summary-card"><span>البيوت الداخلة في التكييف</span><strong>'+expense.includedHousesCount+'</strong></div>'+
@@ -3834,12 +3830,12 @@ function renderAccommodationExpenseSummary(expense,airConditioningExpense,mealsE
   airConditioningExpense=airConditioningExpense||{finalTotal:0,includedHousesCount:0,includedRoomsCount:0,excludedRoomsCount:0};
   mealsExpense=mealsExpense||{finalTotal:0};
   financialItemsExpense=financialItemsExpense||{total:0};
-  var cards=[
+  var airTotal=airConditioningExpense.available!==undefined?Number(airConditioningExpense.totalCost||0):Number(airConditioningExpense.finalTotal||0),cards=[
     ['🏨','إجمالي الإقامة',formatAccountMoney(expense.finalTotal)],
-    ['❄️','إجمالي التكييف',formatAccountMoney(airConditioningExpense.finalTotal)],
+    ['❄️','إجمالي التكييف',formatAccountMoney(airTotal)],
     ['🍽️','إجمالي الوجبات',formatAccountMoney(mealsExpense.finalTotal)],
     ['🧾','المصروفات الإضافية',formatAccountMoney(financialItemsExpense.total)],
-    ['💰','إجمالي المصروفات المنفذة',formatAccountMoney(expense.finalTotal+airConditioningExpense.finalTotal+mealsExpense.finalTotal+financialItemsExpense.total)],
+    ['💰','إجمالي المصروفات المنفذة',formatAccountMoney(expense.finalTotal+airTotal+mealsExpense.finalTotal+financialItemsExpense.total)],
     ['🏠','البيوت الداخلة في الإقامة',expense.includedHousesCount],
     ['🚪','الغرف الداخلة في الإقامة',expense.includedRoomsCount],
     ['⛔','الغرف المستبعدة من الإقامة',expense.excludedRoomsCount]
@@ -4007,6 +4003,17 @@ function renderAirConditioningAccountsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return '<div class="settings-empty-state">لا يوجد مؤتمر حالي.</div>';
   var canonicalAir=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
+  if(canonicalAir){
+    var c=canonicalAir.defaultConfiguration,html='<div class="settings-branding-grid">';
+    html+='<div class="settings-branding-field"><label class="settings-branding-auto-toggle"><input id="accounts_air_enabled" type="checkbox" '+(c.enabled!==false?'checked':'')+'><span>تفعيل حساب التكييف</span></label></div>';
+    html+='<div class="settings-branding-field"><label class="lbl" for="accounts_air_method">طريقة الحساب الافتراضية</label><select id="accounts_air_method"><option value="PER_ROOM" '+(c.pricingBasis==='PER_ROOM'?'selected':'')+'>لكل غرفة</option><option value="PER_UNIT" '+(c.pricingBasis==='PER_UNIT'?'selected':'')+'>لكل وحدة تكييف</option><option value="PER_PERSON" '+(c.pricingBasis==='PER_PERSON'?'selected':'')+'>لكل شخص</option><option value="FIXED" '+(c.pricingBasis==='FIXED'?'selected':'')+'>مبلغ ثابت للبيت</option><option value="INCLUDED" '+(c.pricingBasis==='INCLUDED'?'selected':'')+'>التكييف مشمول</option></select></div>';
+    html+='<div class="settings-branding-field"><label class="lbl" for="accounts_air_time">وحدة الزمن</label><select id="accounts_air_time"><option value="DAY" '+(c.timeBasis==='DAY'?'selected':'')+'>لكل يوم</option><option value="NIGHT" '+(c.timeBasis==='NIGHT'?'selected':'')+'>لكل ليلة</option><option value="CONFERENCE" '+(c.timeBasis==='CONFERENCE'?'selected':'')+'>مبلغ ثابت للمؤتمر</option></select></div>';
+    html+='<div class="settings-branding-field"><label class="lbl" for="accounts_air_duration">مدة الحساب</label><select id="accounts_air_duration"><option value="CONFERENCE" '+(c.durationBasis==='CONFERENCE'?'selected':'')+'>مدة المؤتمر كاملة</option><option value="ACTUAL_OCCUPANCY" '+(c.durationBasis==='ACTUAL_OCCUPANCY'?'selected':'')+'>مدة الإشغال الفعلية</option></select></div>';
+    html+='<div class="settings-branding-field"><label class="settings-branding-auto-toggle"><input id="accounts_air_closed" type="checkbox" '+(c.includeClosedRooms===true?'checked':'')+'><span>تضمين الغرف المغلقة</span></label></div>';
+    html+='<div class="settings-branding-field"><label class="lbl" for="accounts_air_room_rate">سعر الغرفة</label><input id="accounts_air_room_rate" type="number" min="0" step="0.01" value="'+(c.unitPrice||0)+'"></div>';
+    html+='<div class="settings-branding-field"><label class="lbl" for="accounts_air_fixed">مبلغ ثابت</label><input id="accounts_air_fixed" type="number" min="0" step="0.01" value="'+(c.fixedAmount||0)+'"></div>';
+    return html+'</div><div class="settings-branding-actions"><button class="btn btn-green" onclick="saveAirConditioningDefaults()">💾 حفظ إعدادات التكييف العامة</button></div>';
+  }
   var accounts=normalizeConferenceAccounts(conference);
   var defaults=getAirConditioningDefaults();
   var airConditioning=getAirConditioningAccounts();
@@ -4028,14 +4035,14 @@ function saveAirConditioningDefaults(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAirConditioningDefaults',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
+  var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
+  var enabled=!!ge('accounts_air_enabled').checked;
+  if(canonical){var roomRate=readNullableAccountNumber('accounts_air_room_rate','سعر الغرفة'),basis=ge('accounts_air_method').value,fixed=readNullableAccountNumber('accounts_air_fixed','المبلغ الثابت');if(!roomRate.ok||!fixed.ok)return;window.PlatformIntegration.mutateConferenceAirConditioning(conference.id,'CONFERENCE',null,'SET',{enabled:enabled,pricingBasis:basis,timeBasis:ge('accounts_air_time').value,durationBasis:ge('accounts_air_duration').value,unitPrice:Number(roomRate.value||0),fixedAmount:basis==='FIXED'?Number(fixed.value||0):null,includeEmptyRooms:canonical.defaultConfiguration.includeEmptyRooms===true,includeClosedRooms:!!ge('accounts_air_closed').checked,unitsCount:canonical.defaultConfiguration.unitsCount}).then(renderAccounts).catch(handleCanonicalAccommodationMutationError);return;}
   var roomRate=readNullableAccountNumber('accounts_air_room_rate','سعر الغرفة');
   var unitRate=readNullableAccountNumber('accounts_air_unit_rate','سعر وحدة التكييف');
   var personRate=readNullableAccountNumber('accounts_air_person_rate','سعر الشخص');
   if(!roomRate.ok||!unitRate.ok||!personRate.ok)return;
   var accounts=normalizeConferenceAccounts(conference);
-  var enabled=!!ge('accounts_air_enabled').checked;
-  var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
-  if(canonical){var method=ge('accounts_air_method').value,basis={per_person:'PER_PERSON',per_room:'PER_ROOM',per_unit:'PER_UNIT'}[method]||'INCLUDED',price=basis==='PER_PERSON'?personRate.value:(basis==='PER_UNIT'?unitRate.value:roomRate.value);window.PlatformIntegration.mutateConferenceAirConditioning(conference.id,'CONFERENCE',null,'SET',{enabled:enabled,pricingBasis:basis,timeBasis:String(ge('accounts_air_time').value||'day').toUpperCase(),durationBasis:ge('accounts_air_duration').value==='actual_occupancy'?'ACTUAL_OCCUPANCY':'CONFERENCE',unitPrice:Number(price||0),fixedAmount:null,includeEmptyRooms:false,includeClosedRooms:!!ge('accounts_air_closed').checked,unitsCount:null}).then(renderAccounts).catch(handleCanonicalAccommodationMutationError);return;}
   accounts.expenses.airConditioning.enabled=enabled;
   var defaults=accounts.settings.airConditioningDefaults;
   defaults.enabled=enabled;
@@ -4284,6 +4291,8 @@ function renderAirConditioningHouseSettings(houseContext){
   var houseId=houseContext.id;
   var domKey=getAccountsDomKey(houseId);
   var jsHouse=String(houseId).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  var canonicalState=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState((getCurrentConference()||{}).id);
+  if(canonicalState){var c=canonicalState.houseOverrides.find(function(item){return item.scopeId===String(houseId)})||{},html='<div class="settings-section" style="margin:10px 0"><div class="settings-section-title">إعدادات تكييف البيت</div><div class="settings-branding-grid">',option=function(value,label){return '<option value="'+value+'" '+(c.pricingBasis===value?'selected':'')+'>'+label+'</option>'};html+='<div class="settings-branding-field"><label class="lbl">طريقة الحساب</label><select id="air_house_method_'+domKey+'"><option value="">استخدام الإعداد العام</option>'+option('PER_ROOM','لكل غرفة')+option('PER_UNIT','لكل وحدة تكييف')+option('PER_PERSON','لكل شخص')+option('FIXED','مبلغ ثابت للبيت')+option('INCLUDED','التكييف مشمول')+'</select></div>';html+='<div class="settings-branding-field"><label class="lbl">وحدة الزمن</label><select id="air_house_time_'+domKey+'"><option value="">استخدام الإعداد العام</option><option value="DAY" '+(c.timeBasis==='DAY'?'selected':'')+'>لكل يوم</option><option value="NIGHT" '+(c.timeBasis==='NIGHT'?'selected':'')+'>لكل ليلة</option><option value="CONFERENCE" '+(c.timeBasis==='CONFERENCE'?'selected':'')+'>مبلغ ثابت للمؤتمر</option></select></div>';html+='<div class="settings-branding-field"><label class="lbl">مدة الحساب</label><select id="air_house_duration_'+domKey+'"><option value="">استخدام الإعداد العام</option><option value="CONFERENCE" '+(c.durationBasis==='CONFERENCE'?'selected':'')+'>مدة المؤتمر كاملة</option><option value="ACTUAL_OCCUPANCY" '+(c.durationBasis==='ACTUAL_OCCUPANCY'?'selected':'')+'>مدة الإشغال الفعلية</option></select></div>';html+='<div class="settings-branding-field"><label class="lbl">سعر الغرفة</label><input id="air_house_room_rate_'+domKey+'" type="number" min="0" step="0.01" value="'+(c.unitPrice==null?'':c.unitPrice)+'"></div><div class="settings-branding-field"><label class="lbl">عدد الوحدات الافتراضي لكل غرفة</label><input id="air_house_units_'+domKey+'" type="number" min="0" step="1" value="'+(c.unitsCount==null?'':c.unitsCount)+'"></div><div class="settings-branding-field"><label class="lbl">مبلغ ثابت</label><input id="air_house_fixed_'+domKey+'" type="number" min="0" step="0.01" value="'+(c.fixedAmount==null?'':c.fixedAmount)+'"></div></div><div class="settings-branding-actions"><button class="btn btn-green" onclick="saveAirConditioningHouseSettings(\''+jsHouse+'\')">💾 حفظ إعدادات تكييف البيت</button><button class="btn btn-gray" onclick="resetAirConditioningHouseSettings(\''+jsHouse+'\')">إعادة إعدادات البيت للإعداد العام</button><button class="btn btn-red" onclick="resetAirConditioningHouseAndRoomsSettings(\''+jsHouse+'\')">إعادة إعدادات البيت والغرف للإعداد العام</button></div></div>';return html;}
   var stored=getAirConditioningHouseSettings(houseId,false)||{};
   var overrides=stored.overrides&&typeof stored.overrides==='object'?stored.overrides:{};
   var resolved=resolveAirConditioningHouseSettings(houseId);
@@ -4324,6 +4333,7 @@ function saveAirConditioningHouseSettings(houseId){
   if(!conference)return;
   var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
   var key=getAccountsDomKey(houseId);
+  if(canonical){var basis=ge('air_house_method_'+key).value,rate=readNullableAccountNumber('air_house_room_rate_'+key,'سعر الغرفة'),units=readNullableAccountInteger('air_house_units_'+key,'عدد وحدات التكييف'),fixed=readNullableAccountNumber('air_house_fixed_'+key,'المبلغ الثابت');if(!rate.ok||!units.ok||!fixed.ok)return;window.PlatformIntegration.mutateConferenceAirConditioning(conference.id,'HOUSE',houseId,'SET',{enabled:null,pricingBasis:basis||null,timeBasis:ge('air_house_time_'+key).value||null,durationBasis:ge('air_house_duration_'+key).value||null,unitPrice:rate.value,fixedAmount:basis==='FIXED'?fixed.value:null,includeEmptyRooms:null,includeClosedRooms:null,unitsCount:units.value}).then(renderAccounts).catch(handleCanonicalAccommodationMutationError);return;}
   var values={
     enabled:readInheritedAccountValue('air_house_enabled_'+key,'boolean'),
     method:readInheritedAccountValue('air_house_method_'+key,'select'),
@@ -4338,7 +4348,6 @@ function saveAirConditioningHouseSettings(houseId){
     manual:canonical?{ok:true,value:null}:readNullableAccountNumber('air_house_manual_'+key,'الإجمالي اليدوي')
   };
   if(!values.roomRate.ok||!values.unitRate.ok||!values.personRate.ok||!values.units.ok||!values.fixed.ok||!values.manual.ok)return;
-  if(canonical){var method=values.method.value,basis={per_person:'PER_PERSON',per_room:'PER_ROOM',per_unit:'PER_UNIT',fixed_house:'FIXED'}[method]||null,price=basis==='PER_PERSON'?values.personRate.value:(basis==='PER_UNIT'?values.unitRate.value:values.roomRate.value);window.PlatformIntegration.mutateConferenceAirConditioning(conference.id,'HOUSE',houseId,'SET',{enabled:values.enabled.value,pricingBasis:basis,timeBasis:values.time.value&&String(values.time.value).toUpperCase(),durationBasis:values.duration.value?(values.duration.value==='actual_occupancy'?'ACTUAL_OCCUPANCY':'CONFERENCE'):null,unitPrice:price,fixedAmount:basis==='FIXED'?values.fixed.value:null,includeEmptyRooms:null,includeClosedRooms:values.closed.value,unitsCount:values.units.value}).then(renderAccounts).catch(handleCanonicalAccommodationMutationError);return;}
   var settings=getAirConditioningHouseSettings(houseId,true);
   settings.enabled=values.enabled.value;
   settings.overrides=settings.overrides&&typeof settings.overrides==='object'?settings.overrides:{};
@@ -4560,6 +4569,8 @@ function openAirConditioningRoomSettings(houseId,roomId){
 function renderAirConditioningRoomSettings(roomContext){
   var houseId=roomContext.houseId;
   var roomId=roomContext.id;
+  var canonicalState=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState((getCurrentConference()||{}).id);
+  if(canonicalState){var c=canonicalState.roomOverrides.find(function(item){return item.scopeId===String(roomId)})||{},jsHouse=String(houseId).replace(/\\/g,'\\\\').replace(/'/g,"\\'"),jsRoom=String(roomId).replace(/\\/g,'\\\\').replace(/'/g,"\\'"),html='<div class="modal" style="max-width:760px" role="dialog" aria-modal="true"><div class="mhead"><span>تخصيص تكييف الغرفة '+esc(roomContext.number||'')+'</span><span style="cursor:pointer" onclick="closeAirConditioningRoomSettings()">✕</span></div><div class="mbody"><div class="settings-branding-grid">';html+='<div class="settings-branding-field"><label class="lbl">تضمين الغرفة</label><select id="air_room_included"><option value="auto">تلقائي</option><option value="true" '+(c.included===true?'selected':'')+'>تضمين صريح</option><option value="false" '+(c.included===false?'selected':'')+'>استبعاد صريح</option></select></div>';html+='<div class="settings-branding-field"><label class="lbl">طريقة الحساب</label><select id="air_room_method"><option value="">استخدام إعداد البيت</option><option value="PER_ROOM" '+(c.pricingBasis==='PER_ROOM'?'selected':'')+'>لكل غرفة</option><option value="PER_UNIT" '+(c.pricingBasis==='PER_UNIT'?'selected':'')+'>لكل وحدة تكييف</option><option value="PER_PERSON" '+(c.pricingBasis==='PER_PERSON'?'selected':'')+'>لكل شخص</option><option value="INCLUDED" '+(c.pricingBasis==='INCLUDED'?'selected':'')+'>التكييف مشمول</option></select></div>';html+='<div class="settings-branding-field"><label class="lbl">وحدة الزمن</label><select id="air_room_time"><option value="">استخدام إعداد البيت</option><option value="DAY" '+(c.timeBasis==='DAY'?'selected':'')+'>لكل يوم</option><option value="NIGHT" '+(c.timeBasis==='NIGHT'?'selected':'')+'>لكل ليلة</option><option value="CONFERENCE" '+(c.timeBasis==='CONFERENCE'?'selected':'')+'>مبلغ ثابت للمؤتمر</option></select></div>';html+='<div class="settings-branding-field"><label class="lbl">مدة الحساب</label><select id="air_room_duration"><option value="">استخدام إعداد البيت</option><option value="CONFERENCE" '+(c.durationBasis==='CONFERENCE'?'selected':'')+'>مدة المؤتمر كاملة</option><option value="ACTUAL_OCCUPANCY" '+(c.durationBasis==='ACTUAL_OCCUPANCY'?'selected':'')+'>مدة الإشغال الفعلية</option></select></div>';html+='<div class="settings-branding-field"><label class="lbl">سعر الغرفة</label><input id="air_room_room_rate" type="number" min="0" step="0.01" value="'+(c.unitPrice==null?'':c.unitPrice)+'"></div><div class="settings-branding-field"><label class="lbl">عدد وحدات التكييف</label><input id="air_room_units" type="number" min="0" step="1" value="'+(c.unitsCount==null?'':c.unitsCount)+'"></div></div><div class="settings-branding-actions"><button class="btn btn-green" onclick="saveAirConditioningRoomSettings(\''+jsHouse+'\',\''+jsRoom+'\')">💾 حفظ تخصيص التكييف</button><button class="btn btn-red" onclick="clearAirConditioningRoomSettings(\''+jsHouse+'\',\''+jsRoom+'\')">إلغاء تخصيص التكييف</button><button class="btn btn-gray" onclick="closeAirConditioningRoomSettings()">إغلاق</button></div></div></div>';return html;}
   var stored=getAirConditioningRoomSettings(houseId,roomId,false)||{};
   var overrides=stored.overrides&&typeof stored.overrides==='object'?stored.overrides:{};
   var resolved=resolveAirConditioningRoomSettings(houseId,roomId);
@@ -4603,6 +4614,7 @@ function saveAirConditioningRoomSettings(houseId,roomId){
   var conference=getCurrentConference();
   if(!conference)return;
   var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
+  if(canonical){var basis=ge('air_room_method').value,rate=readNullableAccountNumber('air_room_room_rate','سعر الغرفة'),units=readNullableAccountInteger('air_room_units','عدد وحدات التكييف'),includedValue=ge('air_room_included').value;if(!rate.ok||!units.ok)return;window.PlatformIntegration.mutateConferenceAirConditioning(conference.id,'ROOM',roomId,'SET',{included:includedValue==='true'?true:(includedValue==='false'?false:null),enabled:null,pricingBasis:basis||null,timeBasis:ge('air_room_time').value||null,durationBasis:ge('air_room_duration').value||null,unitPrice:rate.value,fixedAmount:null,includeEmptyRooms:null,includeClosedRooms:null,unitsCount:units.value}).then(function(){closeAirConditioningRoomSettings();renderAccounts()}).catch(handleCanonicalAccommodationMutationError);return;}
   var values={
     method:readInheritedAccountValue('air_room_method','select'),
     time:readInheritedAccountValue('air_room_time','select'),
@@ -4614,7 +4626,6 @@ function saveAirConditioningRoomSettings(houseId,roomId){
     manual:canonical?{ok:true,value:null}:readNullableAccountNumber('air_room_manual','الإجمالي اليدوي')
   };
   if(!values.roomRate.ok||!values.unitRate.ok||!values.personRate.ok||!values.units.ok||!values.manual.ok)return;
-  if(canonical){var method=values.method.value,basis={per_person:'PER_PERSON',per_room:'PER_ROOM',per_unit:'PER_UNIT',fixed_house:'FIXED'}[method]||null,price=basis==='PER_PERSON'?values.personRate.value:(basis==='PER_UNIT'?values.unitRate.value:values.roomRate.value),includedValue=ge('air_room_included').value;window.PlatformIntegration.mutateConferenceAirConditioning(conference.id,'ROOM',roomId,'SET',{included:includedValue==='true'?true:(includedValue==='false'?false:null),enabled:null,pricingBasis:basis,timeBasis:values.time.value&&String(values.time.value).toUpperCase(),durationBasis:values.duration.value?(values.duration.value==='actual_occupancy'?'ACTUAL_OCCUPANCY':'CONFERENCE'):null,unitPrice:price,fixedAmount:null,includeEmptyRooms:null,includeClosedRooms:null,unitsCount:values.units.value}).then(function(){closeAirConditioningRoomSettings();renderAccounts()}).catch(handleCanonicalAccommodationMutationError);return;}
   var settings=getAirConditioningRoomSettings(houseId,roomId,true);
   var included=ge('air_room_included').value;
   settings.included=included==='true'?true:(included==='false'?false:null);
@@ -4676,6 +4687,7 @@ function renderAirConditioningRoomExpense(roomExpense){
   if(!roomExpense)return '<span>—</span>';
   var html='<details><summary>تفاصيل التكييف</summary><div style="min-width:260px;padding:8px">';
   html+='<div><b>الحالة:</b> '+(roomExpense.included?'داخلة':'مستبعدة')+'</div>';
+  if(roomExpense.pricingBasis){html+='<div><b>الطريقة:</b> '+esc(getAirConditioningPricingModeLabel(roomExpense.pricingBasis))+'</div><div><b>الكمية:</b> '+roomExpense.quantity+'</div><div><b>المدة:</b> '+roomExpense.duration+' ('+esc(String(roomExpense.timeBasis||''))+')</div><div><b>السعر:</b> '+formatAccountMoney(roomExpense.unitPrice)+'</div><div><b>المحسوب:</b> '+formatAccountMoney(roomExpense.calculatedTotal)+'</div><div><b>النهائي:</b> '+formatAccountMoney(roomExpense.finalTotal)+'</div></div></details>';return html;}
   if(roomExpense.excludedReason)html+='<div><b>السبب:</b> '+esc(roomExpense.excludedReason)+'</div>';
   html+='<div><b>الطريقة:</b> '+esc(getAirConditioningCalculationMethodLabel(roomExpense.calculationMethod))+'</div>';
   html+='<div><b>الكمية:</b> '+roomExpense.quantity+'</div>';
@@ -4714,6 +4726,7 @@ function renderAccommodationHouseExpense(houseExpense){
 
 function renderAirConditioningHouseExpense(houseExpense){
   if(!houseExpense)return '';
+  if(houseExpense.pricingBasis){var rooms=houseExpense.rooms||[];return '<div class="settings-summary-grid" style="margin:10px 0"><div class="settings-summary-card"><span>غرف التكييف الداخلة</span><strong>'+rooms.filter(function(room){return room.included}).length+'</strong></div><div class="settings-summary-card"><span>غرف التكييف المستبعدة</span><strong>'+rooms.filter(function(room){return !room.included}).length+'</strong></div><div class="settings-summary-card"><span>إجمالي التكييف</span><strong>'+formatAccountMoney(houseExpense.finalTotal)+'</strong></div></div>'}
   return '<div class="settings-summary-grid" style="margin:10px 0">'+
     '<div class="settings-summary-card"><span>غرف التكييف الداخلة</span><strong>'+houseExpense.includedRoomsCount+'</strong></div>'+
     '<div class="settings-summary-card"><span>غرف التكييف المستبعدة</span><strong>'+houseExpense.excludedRoomsCount+'</strong></div>'+
