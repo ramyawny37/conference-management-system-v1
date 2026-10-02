@@ -32,7 +32,9 @@
     ['mutate_conference_restaurant','public.mutate_conference_restaurant(uuid,uuid,text,uuid,bigint,jsonb)'],
     ['mutate_conference_accommodation_pricing','public.mutate_conference_accommodation_pricing(uuid,uuid,uuid,bigint,jsonb)'],
     ['get_conference_air_conditioning','public.get_conference_air_conditioning(uuid,uuid)'],
-    ['mutate_conference_air_conditioning','public.mutate_conference_air_conditioning(uuid,uuid,uuid,text,uuid,text,bigint,jsonb)']
+    ['mutate_conference_air_conditioning','public.mutate_conference_air_conditioning(uuid,uuid,uuid,text,uuid,text,bigint,jsonb)'],
+    ['get_conference_finance','public.get_conference_finance(uuid,uuid)'],
+    ['mutate_conference_finance','public.mutate_conference_finance(uuid,uuid,uuid,text,text,uuid,bigint,jsonb)']
   ].map(function(entry){return Object.freeze({module:'conference',operation:entry[0],signature:entry[1],dispatchable:true});});
   var conference=canonicalConference.concat(global.ConferenceDeviceOperationContract.EDGE_ONLY_PROTECTED.map(function(entry){return Object.freeze({module:'conference',operation:entry.operation,signature:entry.signature,dispatchable:true});}));
   var warehouse=global.WarehouseDeviceOperationContract.DISPATCHABLE;

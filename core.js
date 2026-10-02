@@ -1147,16 +1147,7 @@ function calculateAirConditioningSummary(conference){
 function createDefaultFinancialV3(){
   return {
     enabled:true,
-    adjustments:[],
-    invoiceComparison:{
-      enabled:false,
-      accommodation:null,
-      restaurant:null,
-      airConditioning:null,
-      other:null,
-      total:null,
-      note:''
-    }
+    adjustments:[]
   };
 }
 
@@ -1180,7 +1171,6 @@ function normalizeFinancialV3Adjustment(adjustment){
 }
 
 function normalizeFinancialV3(financialV3){
-  var defaults=createDefaultFinancialV3();
   financialV3=financialV3&&typeof financialV3==='object'&&!Array.isArray(financialV3)
     ?financialV3
     :{};
@@ -1198,18 +1188,7 @@ function normalizeFinancialV3(financialV3){
     }
   });
   financialV3.adjustments=normalizedAdjustments;
-  var invoiceComparison=financialV3.invoiceComparison&&typeof financialV3.invoiceComparison==='object'&&!Array.isArray(financialV3.invoiceComparison)
-    ?financialV3.invoiceComparison
-    :{};
-  financialV3.invoiceComparison={
-    enabled:invoiceComparison.enabled===true,
-    accommodation:invoiceComparison.accommodation===undefined?defaults.invoiceComparison.accommodation:invoiceComparison.accommodation,
-    restaurant:invoiceComparison.restaurant===undefined?defaults.invoiceComparison.restaurant:invoiceComparison.restaurant,
-    airConditioning:invoiceComparison.airConditioning===undefined?defaults.invoiceComparison.airConditioning:invoiceComparison.airConditioning,
-    other:invoiceComparison.other===undefined?defaults.invoiceComparison.other:invoiceComparison.other,
-    total:invoiceComparison.total===undefined?defaults.invoiceComparison.total:invoiceComparison.total,
-    note:invoiceComparison.note===undefined||invoiceComparison.note===null?'':String(invoiceComparison.note)
-  };
+  delete financialV3.invoiceComparison;
   return financialV3;
 }
 
@@ -1238,7 +1217,8 @@ function calculateFinancialV3Summary(conference){
       }
     };
   }
-  conference.financialV3=normalizeFinancialV3(conference.financialV3);
+  var canonicalFinance=window.CanonicalConferenceFinance&&window.CanonicalConferenceFinance.getState(conference.id);
+  var financialState=canonicalFinance?{enabled:canonicalFinance.settings.adjustmentsEnabled,adjustments:canonicalFinance.adjustments}:normalizeFinancialV3(conference.financialV3);
   var accommodationPlan=typeof getConferenceAccommodationPlan==='function'?getConferenceAccommodationPlan(conference):{pricingMode:''};
   var restaurantSummary=typeof calculateMealSummary==='function'?calculateMealSummary(conference):{days:[],grandTotal:0};
   var accommodationSummary=typeof calculateAccommodationSummary==='function'?calculateAccommodationSummary(conference):{pricingMode:'',totalPersonNights:0,totalPersonDays:0,roomNights:0,roomDays:0,totalCost:0};
@@ -1247,7 +1227,7 @@ function calculateFinancialV3Summary(conference){
   var accommodationTotal=getFinancialV3SafeNumber(accommodationSummary.totalCost);
   var airConditioningTotal=getFinancialV3SafeNumber(airConditioningSummary.totalCost);
   var subtotal=restaurantTotal+accommodationTotal+airConditioningTotal;
-  var adjustments=(conference.financialV3.adjustments||[]).map(function(adjustment){
+  var adjustments=(financialState.adjustments||[]).map(function(adjustment){
     return {
       id:adjustment.id,
       type:adjustment.type,
@@ -1263,7 +1243,7 @@ function calculateFinancialV3Summary(conference){
     else additionsTotal+=adjustment.amount;
   });
   var grandTotal=subtotal+additionsTotal-deductionsTotal;
-  if(conference.financialV3.enabled===false)grandTotal=0;
+  if(financialState.enabled===false)grandTotal=0;
   grandTotal=Math.max(0,grandTotal);
   var totalMeals=0;
   (restaurantSummary.days||[]).forEach(function(daySummary){
@@ -1273,7 +1253,7 @@ function calculateFinancialV3Summary(conference){
     });
   });
   return {
-    enabled:conference.financialV3.enabled!==false,
+    enabled:financialState.enabled!==false,
     restaurantTotal:restaurantTotal,
     accommodationTotal:accommodationTotal,
     airConditioningTotal:airConditioningTotal,

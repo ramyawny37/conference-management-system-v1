@@ -286,7 +286,10 @@ function hydrateCanonicalConferenceAccommodation(localConferenceId,options){
   var integration=window.PlatformIntegration;
   if(!integration||typeof integration.hydrateConferenceAccommodation!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_ACCOMMODATION_UNAVAILABLE'});
   return integration.hydrateConferenceAccommodation(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
-    return integration.hydrateConferenceAirConditioning(String(localConferenceId),String(link.remoteConferenceId)).then(function(){return result});
+    return integration.hydrateConferenceAirConditioning(String(localConferenceId),String(link.remoteConferenceId)).then(function(){
+      if(!window.CanonicalConferenceFinance||typeof window.CanonicalConferenceFinance.hydrate!=='function')throw {code:'CANONICAL_CONFERENCE_FINANCE_UNAVAILABLE'};
+      return window.CanonicalConferenceFinance.hydrate(String(localConferenceId),String(link.remoteConferenceId));
+    }).then(function(){return result});
   }).then(function(result){
     var current=getCurrentConference();
     if(current&&String(current.id)===String(localConferenceId)){

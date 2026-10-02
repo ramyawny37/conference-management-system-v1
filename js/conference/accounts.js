@@ -73,8 +73,24 @@ function getDefaultConferenceAccounts(){
   };
 }
 
+function getCanonicalConferenceFinance(conference){
+  return window.CanonicalConferenceFinance&&conference&&window.CanonicalConferenceFinance.getState(conference.id);
+}
+
+function projectCanonicalFinanceAccounts(state){
+  var accounts=getDefaultConferenceAccounts(),items=state.items||[];
+  accounts.settings.currency=state.settings.currency;
+  accounts.settings.roundingPrecision=state.settings.roundingPrecision;
+  accounts.financialItems={enabled:state.settings.expensesEnabled,items:items.filter(function(item){return item.kind==='EXPENSE'}).map(function(item){return Object.assign({type:'expense',category:'additional'},item)})};
+  accounts.incomeItems={enabled:state.settings.incomeEnabled,items:items.filter(function(item){return item.kind==='INCOME'}).map(function(item){return Object.assign({type:'income',category:'general'},item)})};
+  accounts.settlements={enabled:state.settings.settlementsEnabled,items:items.filter(function(item){return item.kind==='SETTLEMENT'})};
+  return accounts;
+}
+
 function normalizeConferenceAccounts(conference){
   if(!conference)return null;
+  var canonicalFinance=getCanonicalConferenceFinance(conference);
+  if(canonicalFinance)return projectCanonicalFinanceAccounts(canonicalFinance);
   var canonicalAir=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
   if(!conference.accounts||typeof conference.accounts!=='object'||Array.isArray(conference.accounts)){
     conference.accounts=getDefaultConferenceAccounts();
@@ -149,6 +165,19 @@ function normalizeConferenceAccounts(conference){
   accounts.adjustments=Array.isArray(accounts.adjustments)?accounts.adjustments:[];
   accounts.notes=accounts.notes===undefined||accounts.notes===null?'':String(accounts.notes);
   return accounts;
+}
+
+function canonicalFinancePayload(item,kind){
+  return {name:item.name||'',enabled:item.enabled!==false,calculationMethod:item.calculationMethod||'fixed',target:kind==='SETTLEMENT'?(item.target||'expense'):null,operation:kind==='SETTLEMENT'?(item.operation||'add'):null,quantity:item.quantity==null?null:item.quantity,unitPrice:item.unitPrice==null?null:item.unitPrice,amount:item.amount==null?null:item.amount,notes:item.notes||''};
+}
+
+function saveCanonicalFinanceCollection(conference,kind,enabled,items,onSuccess,onFailure){
+  var service=window.CanonicalConferenceFinance,state=getCanonicalConferenceFinance(conference),existing=(state.items||[]).filter(function(item){return item.kind===kind}),draftIds={};
+  items.forEach(function(item){draftIds[item.id]=true});
+  var steps=existing.filter(function(item){return !draftIds[item.id]}).map(function(item){return function(){return service.mutate(conference.id,kind,'DELETE',item.id,{})}});
+  items.forEach(function(item){steps.push(function(){return service.mutate(conference.id,kind,'UPSERT',item.id,canonicalFinancePayload(item,kind))})});
+  steps.push(function(){var latest=service.getState(conference.id),settings=latest.settings;settings[kind==='EXPENSE'?'expensesEnabled':kind==='INCOME'?'incomeEnabled':'settlementsEnabled']=enabled;return service.mutate(conference.id,'SETTINGS','UPSERT',null,{currency:settings.currency,roundingPrecision:settings.roundingPrecision,expensesEnabled:settings.expensesEnabled,incomeEnabled:settings.incomeEnabled,settlementsEnabled:settings.settlementsEnabled,adjustmentsEnabled:settings.adjustmentsEnabled})});
+  steps.reduce(function(promise,step){return promise.then(step)},Promise.resolve()).then(onSuccess).catch(onFailure);
 }
 
 function getDefaultFinancialItem(){
@@ -3425,11 +3454,15 @@ function removeFinancialItemDraft(itemId){
 }
 
 function saveFinancialItemsSettings(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveFinancialItemsSettings',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
+  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveFinancialItemsSettings',null))return false;
   var draft=getFinancialItemsDraft();
   var normalized=normalizeFinancialItems(draft);
+  if(getCanonicalConferenceFinance(conference)){
+    saveCanonicalFinanceCollection(conference,'EXPENSE',normalized.enabled,normalized.items,function(){resetFinancialItemsDraftFromSaved();renderAccounts();showToast('✅ تم حفظ المصروفات الإضافية')},function(){showToast('تعذر حفظ المصروفات الإضافية.','#E74C3C')});
+    return;
+  }
   var accounts=normalizeConferenceAccounts(conference);
   accounts.financialItems={
     enabled:normalized.enabled,
@@ -3586,10 +3619,14 @@ function removeIncomeItemDraft(itemId){
 }
 
 function saveIncomeItemsSettings(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveIncomeItemsSettings',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
+  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveIncomeItemsSettings',null))return false;
   var normalized=normalizeIncomeItems(getIncomeItemsDraft());
+  if(getCanonicalConferenceFinance(conference)){
+    saveCanonicalFinanceCollection(conference,'INCOME',normalized.enabled,normalized.items,function(){resetIncomeItemsDraftFromSaved();renderAccounts();showToast('✅ تم حفظ الإيرادات')},function(){showToast('تعذر حفظ الإيرادات.','#E74C3C')});
+    return;
+  }
   var accounts=normalizeConferenceAccounts(conference);
   accounts.incomeItems={
     enabled:normalized.enabled,
@@ -3736,10 +3773,14 @@ function removeSettlementDraft(itemId){
 }
 
 function saveSettlementsSettings(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveSettlementsSettings',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
+  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveSettlementsSettings',null))return false;
   var normalized=normalizeSettlements(getSettlementsDraft());
+  if(getCanonicalConferenceFinance(conference)){
+    saveCanonicalFinanceCollection(conference,'SETTLEMENT',normalized.enabled,normalized.items,function(){resetSettlementsDraftFromSaved();renderAccounts();showToast('✅ تم حفظ التسويات النهائية')},function(){showToast('تعذر حفظ التسويات النهائية.','#E74C3C')});
+    return;
+  }
   var accounts=normalizeConferenceAccounts(conference);
   accounts.settlements={
     enabled:normalized.enabled,
@@ -3991,6 +4032,12 @@ function saveAccommodationDefaults(){
   accounts.settings.currency=ge('accounts_currency').value.trim()||'EGP';
   accounts.settings.roundingPrecision=precision;
   accounts.updatedAt=new Date().toISOString();
+  var canonicalFinance=getCanonicalConferenceFinance(conference);
+  if(canonicalFinance){
+    var settings=canonicalFinance.settings;
+    window.CanonicalConferenceFinance.mutate(conference.id,'SETTINGS','UPSERT',null,{currency:accounts.settings.currency,roundingPrecision:precision,expensesEnabled:settings.expensesEnabled,incomeEnabled:settings.incomeEnabled,settlementsEnabled:settings.settlementsEnabled,adjustmentsEnabled:settings.adjustmentsEnabled}).then(function(){renderAccounts();showToast('✅ تم حفظ إعدادات الإقامة العامة')}).catch(function(){showToast('تعذر حفظ إعدادات الإقامة.','#E74C3C')});
+    return;
+  }
   if(typeof save==='function'&&save()===false){
     showToast('تعذر حفظ إعدادات الإقامة.','#E74C3C');
     return;
@@ -5012,7 +5059,7 @@ function getDefaultFinancialV3Draft(){
 
 function resetFinancialV3DraftFromSaved(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
-  if(conference&&typeof normalizeFinancialV3==='function')conference.financialV3=normalizeFinancialV3(conference.financialV3);
+  if(conference&&!getCanonicalConferenceFinance(conference)&&typeof normalizeFinancialV3==='function')conference.financialV3=normalizeFinancialV3(conference.financialV3);
   financialV3Draft=getDefaultFinancialV3Draft();
   financialV3DraftConferenceId=conference&&conference.id||'';
   return financialV3Draft;
@@ -5059,10 +5106,10 @@ function startEditingFinancialV3Adjustment(adjustmentId){
 function saveFinancialV3Adjustment(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
-  if(typeof normalizeFinancialV3==='function')conference.financialV3=normalizeFinancialV3(conference.financialV3);
-  conference.financialV3=conference.financialV3||{enabled:true,adjustments:[],invoiceComparison:{enabled:false,accommodation:null,restaurant:null,airConditioning:null,other:null,total:null,note:''}};
+  var canonicalFinance=getCanonicalConferenceFinance(conference);
+  if(!canonicalFinance){if(typeof normalizeFinancialV3==='function')conference.financialV3=normalizeFinancialV3(conference.financialV3);conference.financialV3=conference.financialV3||{enabled:true,adjustments:[]};}
   var draft=getFinancialV3Draft();
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveFinancialV3Adjustment',draft.editingId?'update':'create'))return false;
+  if(!canonicalFinance&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveFinancialV3Adjustment',draft.editingId?'update':'create'))return false;
   var amount=Number(draft.amount);
   if(!isFinite(amount)||amount<0){
     showToast('يرجى إدخال مبلغ صحيح.','#E74C3C');
@@ -5079,6 +5126,11 @@ function saveFinancialV3Adjustment(){
     amount:amount,
     note:String(draft.note||'').trim()
   };
+  if(canonicalFinance){
+    var current=canonicalFinance.adjustments.filter(function(item){return item.id===normalized.id})[0];
+    window.CanonicalConferenceFinance.mutate(conference.id,'ADJUSTMENT','UPSERT',normalized.id,{type:normalized.type,category:normalized.category,amount:normalized.amount,note:normalized.note}).then(function(){resetFinancialV3DraftFromSaved();renderAccounts();showToast('تم حفظ التعديل المالي.')}).catch(function(){showToast('تعذر حفظ التعديل المالي.','#E74C3C')});
+    return;
+  }
   var adjustments=Array.isArray(conference.financialV3.adjustments)?conference.financialV3.adjustments.slice():[];
   var replaced=false;
   for(var index=0;index<adjustments.length;index++){
@@ -5100,12 +5152,16 @@ function saveFinancialV3Adjustment(){
 }
 
 function deleteFinancialV3Adjustment(adjustmentId){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteFinancialV3Adjustment',null))return false;
   if(!confirm('هل تريد حذف هذا التعديل المالي؟'))return;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
+  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteFinancialV3Adjustment',null))return false;
+  if(getCanonicalConferenceFinance(conference)){
+    window.CanonicalConferenceFinance.mutate(conference.id,'ADJUSTMENT','DELETE',adjustmentId,{}).then(function(){if(financialV3Draft&&financialV3Draft.editingId===adjustmentId)resetFinancialV3DraftFromSaved();renderAccounts();showToast('تم حذف التعديل المالي.')}).catch(function(){showToast('تعذر حذف التعديل المالي.','#E74C3C')});
+    return;
+  }
   if(typeof normalizeFinancialV3==='function')conference.financialV3=normalizeFinancialV3(conference.financialV3);
-  conference.financialV3=conference.financialV3||{enabled:true,adjustments:[],invoiceComparison:{enabled:false,accommodation:null,restaurant:null,airConditioning:null,other:null,total:null,note:''}};
+  conference.financialV3=conference.financialV3||{enabled:true,adjustments:[]};
   conference.financialV3.adjustments=(conference.financialV3.adjustments||[]).filter(function(adjustment){return adjustment.id!==adjustmentId});
   if(financialV3Draft&&financialV3Draft.editingId===adjustmentId){
     resetFinancialV3DraftFromSaved();
