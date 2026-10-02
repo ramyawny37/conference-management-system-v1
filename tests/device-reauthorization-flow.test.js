@@ -12,6 +12,12 @@ function environment(status){
   sandbox.window=sandbox;vm.runInNewContext(source,sandbox,{filename:'device-reauthorization-flow.js'});
   return {window:sandbox,elements:elements,count:function(){return initializeCount;},approve:function(){current='approved';sandbox.DeviceReauthorizationFlow.handleAuthorizationState('approved');}};
 }
+function loadedAsset(asset){
+  var escaped=asset.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  var match=index.match(new RegExp('src=["\\\']('+escaped+'\\?rev=[^"\\\']+)["\\\']'));
+  assert.ok(match,'index missing versioned '+asset);
+  return match[1];
+}
 (async function(){
   var pending=environment('pending'),resolved=false,queue={records:['existing']},revision=7,link={remoteConferenceId:'remote-1'};
   var waiting=pending.window.DeviceReauthorizationFlow.waitUntilApproved().then(function(){resolved=true;});
@@ -30,6 +36,9 @@ function environment(status){
   assert.strictEqual(approved.window.DeviceReauthorizationFlow.getState().gateActive,false);
   assert.match(stateSource,/function initializeApplicationStorage[\s\S]*managedPlatformApproved[\s\S]*DeviceReauthorizationFlow\.waitUntilApproved/);
   assert.ok(index.indexOf('current-device-authorization-ui.js')<index.indexOf('device-reauthorization-flow.js'));
-  ['js/sync/current-device-authorization-ui.js?rev=platform-first-login-coordinator-v1','js/sync/device-reauthorization-flow.js?rev=device-reauthorization-flow-v1','state.js?rev=managed-platform-startup-gate-v1'].forEach(function(asset){assert.ok(index.includes(asset),asset);assert.ok(worker.includes('./'+asset),asset);});
+  ['js/sync/current-device-authorization-ui.js','js/sync/device-reauthorization-flow.js','state.js'].forEach(function(asset){
+    var versioned=loadedAsset(asset);
+    assert.ok(worker.includes("'./"+versioned+"'"),'service worker cache must match '+versioned);
+  });
   console.log('device re-authorization flow tests: passed');
 })().catch(function(error){console.error(error);process.exitCode=1;});
