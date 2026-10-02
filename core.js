@@ -972,6 +972,14 @@ function normalizeAirConditioningV3(airConditioningV3,conference){
 function getConferenceAirConditioningPlan(conference){
   conference=conference||getCurrentConference();
   if(!conference)return createDefaultAirConditioningV3();
+  var localId=String(conference.id||''),store=typeof window!=='undefined'&&window.ConferenceLinkStore;
+  var link=store&&typeof store.get==='function'?store.get(localId):null;
+  if(link&&['linked','cloud_linked'].indexOf(link.linkStatus)>=0&&link.remoteConferenceId){
+    var integration=window.PlatformIntegration,state=integration&&integration.getConferenceAirConditioningState&&integration.getConferenceAirConditioningState(localId),config=state&&state.defaultConfiguration;
+    if(!config)return createDefaultAirConditioningV3();
+    var mode={PER_PERSON:'per_person_day',PER_ROOM:'per_room_day',PER_UNIT:'per_unit_day',FIXED:'fixed_package',INCLUDED:'included'}[config.pricingBasis]||'included';
+    return {enabled:config.enabled!==false,pricingMode:mode,prices:{personDay:config.pricingBasis==='PER_PERSON'?Number(config.unitPrice||0):0,roomDay:config.pricingBasis==='PER_ROOM'?Number(config.unitPrice||0):0,unitDay:config.pricingBasis==='PER_UNIT'?Number(config.unitPrice||0):0,fixedPackage:Number(config.fixedAmount||0),packageDayPrice:0},includeEmptyRooms:config.includeEmptyRooms===true,includeClosedRooms:config.includeClosedRooms===true,roomOverrides:state.roomOverrides.map(function(item){return {roomId:item.scopeId,included:item.included,units:item.unitsCount,rate:item.unitPrice}}),dayOverrides:[]};
+  }
   conference.airConditioningV3=normalizeAirConditioningV3(conference.airConditioningV3,conference);
   return conference.airConditioningV3;
 }
@@ -1063,6 +1071,8 @@ function getAirConditioningDayUnits(day,conference){
 
 function calculateAirConditioningSummary(conference){
   conference=conference||getCurrentConference();
+  var canonicalProjection=calculateCanonicalAirConditioningProjection(conference);
+  if(canonicalProjection)return canonicalProjection;
   var plan=getConferenceAirConditioningPlan(conference);
   var rooms=getConferenceHouseRooms(conference);
   var totalPersonDays=0;
@@ -1135,6 +1145,66 @@ function calculateAirConditioningSummary(conference){
     totalCost:totalCost,
     daySummary:daySummary
   };
+}
+
+function calculateCanonicalAirConditioningProjection(conference){
+  conference=conference||getCurrentConference();
+  if(!conference||typeof window==='undefined'||!window.PlatformIntegration)return null;
+  var integration=window.PlatformIntegration;
+  var air=typeof integration.getConferenceAirConditioningState==='function'?integration.getConferenceAirConditioningState(conference.id):null;
+  var accommodation=typeof integration.getConferenceAccommodationState==='function'?integration.getConferenceAccommodationState(conference.id):null;
+  var core=typeof integration.getConferenceCoreState==='function'?integration.getConferenceCoreState(conference.id):null;
+  if(!air||!accommodation||!core||!core.core)return null;
+  var defaults=air.defaultConfiguration;
+  var houseOverrides={};
+  var roomOverrides={};
+  air.houseOverrides.forEach(function(item){houseOverrides[item.scopeId]=item});
+  air.roomOverrides.forEach(function(item){roomOverrides[item.scopeId]=item});
+  function inherit(parent,override){
+    var result={};
+    ['enabled','pricingBasis','timeBasis','durationBasis','unitPrice','fixedAmount','includeEmptyRooms','includeClosedRooms','unitsCount'].forEach(function(key){result[key]=override&&override[key]!==null&&override[key]!==undefined?override[key]:parent[key]});
+    if(override&&override.included!==null&&override.included!==undefined)result.included=override.included;
+    return result;
+  }
+  function daysBetween(start,end){
+    var first=/^\d{4}-\d{2}-\d{2}$/.test(String(start||''))?new Date(start+'T00:00:00Z'):null;
+    var last=/^\d{4}-\d{2}-\d{2}$/.test(String(end||''))?new Date(end+'T00:00:00Z'):null;
+    if(!first||!last||isNaN(first.getTime())||isNaN(last.getTime())||last<first)return [];
+    var result=[],cursor=first.getTime(),number=1;
+    while(cursor<=last.getTime()){result.push({dayNumber:number++,date:new Date(cursor).toISOString().slice(0,10)});cursor+=86400000}
+    return result;
+  }
+  var schedule=daysBetween(core.core.startDate,core.core.endDate);
+  var totals={personDays:0,roomDays:0,unitDays:0,cost:0};
+  var houses=(accommodation.houses||[]).map(function(house){
+    var houseConfig=inherit(defaults,houseOverrides[house.houseId]);
+    var houseResult={houseId:house.houseId,houseName:house.name,enabled:houseConfig.enabled!==false,rooms:[],calculatedTotal:0,finalTotal:0};
+    (house.floors||[]).forEach(function(floor){(floor.rooms||[]).forEach(function(room){
+      var roomConfig=inherit(houseConfig,roomOverrides[room.roomId]);
+      var personDays=0,roomDays=0,unitDays=0;
+      schedule.forEach(function(day){
+        var active=room.isClosed!==true||(room.closedDay!==null&&Number(room.closedDay)>day.dayNumber);
+        var persons=(room.occupancies||[]).filter(function(occupancy){return occupancy.participationStatus==='active'&&Number(occupancy.arrivalDay)<=day.dayNumber&&(occupancy.leaveDay===null||Number(occupancy.leaveDay)>day.dayNumber)}).length;
+        var included=roomConfig.enabled!==false&&(roomConfig.included===true||(roomConfig.included!==false&&(roomConfig.includeClosedRooms===true||active)&&(roomConfig.includeEmptyRooms===true||persons>0)));
+        if(!included)return;
+        personDays+=persons;roomDays+=1;unitDays+=roomConfig.unitsCount===null||roomConfig.unitsCount===undefined?1:Number(roomConfig.unitsCount);
+      });
+      var duration=roomConfig.timeBasis==='CONFERENCE'?1:(roomConfig.timeBasis==='NIGHT'?Math.max(0,roomDays-(roomDays?schedule.length===roomDays?1:0:0)):roomDays);
+      var quantity=roomConfig.pricingBasis==='PER_PERSON'?personDays:(roomConfig.pricingBasis==='PER_UNIT'?unitDays:duration);
+      var cost=0;
+      if(roomConfig.enabled!==false&&roomConfig.pricingBasis!=='INCLUDED'&&roomConfig.pricingBasis!=='FIXED')cost=Number(roomConfig.unitPrice||0)*quantity;
+      if(roomConfig.pricingBasis==='FIXED'&&roomOverrides[room.roomId])cost=Number(roomConfig.fixedAmount||0);
+      var roomResult={roomId:room.roomId,roomNumber:room.roomNumber,floorId:floor.floorId,included:roomConfig.included!==false&&roomConfig.enabled!==false,pricingBasis:roomConfig.pricingBasis,personDays:personDays,roomDays:roomDays,unitDays:unitDays,calculatedTotal:Math.max(0,cost),finalTotal:Math.max(0,cost),configuration:roomConfig};
+      houseResult.rooms.push(roomResult);houseResult.calculatedTotal+=roomResult.calculatedTotal;
+      totals.personDays+=personDays;totals.roomDays+=roomDays;totals.unitDays+=unitDays;
+    })});
+    if(houseConfig.enabled===false)houseResult.calculatedTotal=0;
+    else if(houseConfig.pricingBasis==='FIXED'&&houseOverrides[house.houseId])houseResult.calculatedTotal=Number(houseConfig.fixedAmount||0);
+    houseResult.finalTotal=Math.max(0,houseResult.calculatedTotal);totals.cost+=houseResult.finalTotal;return houseResult;
+  });
+  if(defaults.enabled===false)totals.cost=0;
+  else if(defaults.pricingBasis==='FIXED')totals.cost=Number(defaults.fixedAmount||0);
+  return {canonical:true,enabled:defaults.enabled!==false,pricingMode:defaults.pricingBasis,totalPersonDays:totals.personDays,totalRoomDays:totals.roomDays,totalUnitDays:totals.unitDays,totalCost:Math.max(0,totals.cost),daySummary:schedule,houses:houses};
 }
 
 function createDefaultFinancialV3(){

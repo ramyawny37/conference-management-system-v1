@@ -286,6 +286,8 @@ function hydrateCanonicalConferenceAccommodation(localConferenceId,options){
   var integration=window.PlatformIntegration;
   if(!integration||typeof integration.hydrateConferenceAccommodation!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_ACCOMMODATION_UNAVAILABLE'});
   return integration.hydrateConferenceAccommodation(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
+    return integration.hydrateConferenceAirConditioning(String(localConferenceId),String(link.remoteConferenceId)).then(function(){return result});
+  }).then(function(result){
     var current=getCurrentConference();
     if(current&&String(current.id)===String(localConferenceId)){
       if(typeof renderAccommodation==='function')renderAccommodation();
@@ -8416,7 +8418,6 @@ function renderAccommodationV3Settings(conference){
 }
 
 function updateAirConditioningV3Setting(field,value){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('updateAirConditioningV3Setting',null))return false;
   var current=getCurrentConference();
   if(!current)return false;
   var plan=getConferenceAirConditioningPlan(current);
@@ -8439,6 +8440,14 @@ function updateAirConditioningV3Setting(field,value){
   }else{
     return false;
   }
+  var integration=window.PlatformIntegration,state=integration&&integration.getConferenceAirConditioningState&&integration.getConferenceAirConditioningState(current.id);
+  if(state){
+    var basis={per_person_day:'PER_PERSON',per_room_day:'PER_ROOM',per_unit_day:'PER_UNIT',fixed_package:'FIXED',included:'INCLUDED'}[plan.pricingMode];
+    var price=basis==='PER_PERSON'?plan.prices.personDay:(basis==='PER_ROOM'?plan.prices.roomDay:(basis==='PER_UNIT'?plan.prices.unitDay:0));
+    integration.mutateConferenceAirConditioning(current.id,'CONFERENCE',null,'SET',{enabled:plan.enabled,pricingBasis:basis,timeBasis:'DAY',durationBasis:'CONFERENCE',unitPrice:price,fixedAmount:basis==='FIXED'?plan.prices.fixedPackage:null,includeEmptyRooms:plan.includeEmptyRooms,includeClosedRooms:plan.includeClosedRooms,unitsCount:null}).then(function(){renderSettings();if(typeof renderAccounts==='function')renderAccounts()}).catch(handleCanonicalAccommodationMutationError);
+    return true;
+  }
+  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('updateAirConditioningV3Setting',null))return false;
   if(!save())return false;
   if(ge('tab2')&&ge('tab2').style.display!=='none'&&typeof renderAccounts==='function')renderAccounts();
   else renderSettings();
