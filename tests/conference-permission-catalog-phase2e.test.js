@@ -137,9 +137,12 @@ entries.forEach(function(item){
   assert.ok(activeSource.indexOf('function '+item.handler+'(')>=0,item.handler+' active function');
 });
 var gates=Array.from(activeSource.matchAll(/ConferencePermissionShadowGate\('([^']+)'/g))
-  .map(function(match){return match[1];});
-assert.strictEqual(gates.length,73);
-assert.strictEqual(new Set(gates).size,73);
+  .map(function(match){return match[1]);});
+// Eight Restaurant V3 linked mutations moved to CanonicalConferenceRestaurant and
+// no longer carry legacy shadow gates. The remaining 65 gates are local-only or
+// otherwise still intentionally legacy; do not restore canonicalized gates here.
+assert.strictEqual(gates.length,65);
+assert.strictEqual(new Set(gates).size,65);
 entries.filter(function(item){return item.shadowGate==='pending';}).forEach(function(item){
   assert.strictEqual(gates.indexOf(item.handler),-1,item.handler+' must not receive a Phase 2E gate');
 });
