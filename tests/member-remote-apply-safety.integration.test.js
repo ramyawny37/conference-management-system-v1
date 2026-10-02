@@ -83,11 +83,13 @@ function createEnvironment(settings={}){
     SupabaseAuth:{getState:()=>({user:{id:account}})},
     SupabaseClientLayer:{getClient:()=>stableClient},
     StartupConferenceDiscovery:{getRecord:()=>null},
-    SupabaseSnapshotSync:{
-      listAvailableConferences:()=>Promise.resolve({
+    CanonicalConferenceDiscovery:{
+      listAccessibleConferences:()=>Promise.resolve({
         ok:true,
-        data:{conferences:[{id:remoteId,name:'Cloud conf',deletedAt:null}]}
-      }),
+        data:{conferences:[{id:remoteId,name:'Cloud conf',deletedAt:null,capabilities:{}}]}
+      })
+    },
+    SupabaseSnapshotSync:{
       inspectInitialSnapshot:()=>{
         activeRevision=revisions[Math.min(revisionIndex,revisions.length-1)];
         if(revisionIndex<revisions.length-1)revisionIndex++;
@@ -200,7 +202,7 @@ function createEnvironment(settings={}){
     });
   }
 
-  // Positive path contract: linked member should apply cloud rev3 once,
+  // Positive path contract: canonically authorized linked actor should apply cloud rev3 once,
   // then ignore duplicate revision event.
   await capture('positive-path-duplicate-noop',async function(){
     const env=createEnvironment({revisions:[3,3]});
