@@ -73,10 +73,20 @@ var activeSources=['script.js','core.js','js/conference/accounts.js'].map(functi
   return fs.readFileSync(path.join(root,file),'utf8');
 }).join('\n');
 var contract=sandbox.ConferencePermissionContract;
+var canonicalRestaurantHandlers=new Set([
+  'setRestaurantV3MealBoundary','setRestaurantV3BasePrice',
+  'saveRestaurantV3PriceOverride','deleteRestaurantV3PriceOverride',
+  'saveRestaurantV3CountOverride','deleteRestaurantV3CountOverride',
+  'saveRestaurantV3PersonOverride','deleteRestaurantV3PersonOverride'
+]);
 var classified=Array.from(contract.mutationCatalog).concat(Array.from(contract.conferenceMutationCatalog)).filter(function(item){
   return item.status==='classified'&&item.shadowGate!=='pending';
 });
 classified.forEach(function(item){
+  if(canonicalRestaurantHandlers.has(item.handler)){
+    assert.strictEqual(activeSources.indexOf("ConferencePermissionShadowGate('"+item.handler+"'"),-1,item.handler+' linked canonical mutation must not regain a legacy shadow gate');
+    return;
+  }
   assert.ok(activeSources.indexOf("ConferencePermissionShadowGate('"+item.handler+"'")>=0,item.handler+' shadow gate');
 });
 assert.ok(activeSources.indexOf("ConferencePermissionShadowGate('partialTransferGuest'")>=0,'Phase 2B legacy flow gate remains until a later gate phase');
