@@ -645,6 +645,14 @@ function normalizeAccommodationV3(accommodationV3){
 function getConferenceAccommodationPlan(conference){
   conference=conference||getCurrentConference();
   if(!conference)return createDefaultAccommodationV3();
+  var localId=String(conference.id||'');
+  var store=typeof window!=='undefined'&&window.ConferenceLinkStore;
+  var link=store&&typeof store.get==='function'?store.get(localId):null;
+  if(link&&['linked','cloud_linked'].indexOf(link.linkStatus)>=0&&link.remoteConferenceId){
+    var integration=window.PlatformIntegration;
+    var state=integration&&typeof integration.getConferenceAccommodationState==='function'?integration.getConferenceAccommodationState(localId):null;
+    return state&&state.pricing?state.pricing:createDefaultAccommodationV3();
+  }
   conference.accommodationV3=normalizeAccommodationV3(conference.accommodationV3);
   return conference.accommodationV3;
 }

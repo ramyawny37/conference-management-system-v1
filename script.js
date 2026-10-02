@@ -287,7 +287,11 @@ function hydrateCanonicalConferenceAccommodation(localConferenceId,options){
   if(!integration||typeof integration.hydrateConferenceAccommodation!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_ACCOMMODATION_UNAVAILABLE'});
   return integration.hydrateConferenceAccommodation(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
     var current=getCurrentConference();
-    if(current&&String(current.id)===String(localConferenceId)&&typeof renderAccommodation==='function')renderAccommodation();
+    if(current&&String(current.id)===String(localConferenceId)){
+      if(typeof renderAccommodation==='function')renderAccommodation();
+      if(typeof renderAccounts==='function')renderAccounts();
+      if(typeof renderSettings==='function')renderSettings();
+    }
     return result;
   }).catch(function(error){
     if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل بيانات التسكين المحدثة.','#E74C3C');
@@ -8276,7 +8280,6 @@ function clearActivityLog(){
 }
 
 function updateAccommodationV3Setting(field,value){
-  if(!requireLocalOnlyAccommodationMutation())return false;
   var current=getCurrentConference();
   if(!current)return false;
   var plan=getConferenceAccommodationPlan(current);
@@ -8297,6 +8300,17 @@ function updateAccommodationV3Setting(field,value){
   }else{
     return false;
   }
+  var integration=window.PlatformIntegration;
+  var canonicalState=integration&&typeof integration.getConferenceAccommodationState==='function'
+    ?integration.getConferenceAccommodationState(current.id):null;
+  if(canonicalState){
+    integration.mutateConferenceAccommodationPricing(current.id,plan).then(function(){
+      if(ge('tab2')&&ge('tab2').style.display!=='none'&&typeof renderAccounts==='function')renderAccounts();
+      else renderSettings();
+    }).catch(handleCanonicalAccommodationMutationError);
+    return true;
+  }
+  if(!requireLocalOnlyAccommodationMutation())return false;
   if(!save())return false;
   if(ge('tab2')&&ge('tab2').style.display!=='none'&&typeof renderAccounts==='function')renderAccounts();
   else renderSettings();
@@ -8304,7 +8318,6 @@ function updateAccommodationV3Setting(field,value){
 }
 
 function updateAccommodationV3RoomTypePrice(roomType,value){
-  if(!requireLocalOnlyAccommodationMutation())return false;
   var current=getCurrentConference();
   if(!current)return false;
   var validTypes=['single','double','triple','quadruple','quintuple','sextuple','sevenPlus'];
@@ -8315,7 +8328,16 @@ function updateAccommodationV3RoomTypePrice(roomType,value){
     renderSettings();
     return false;
   }
-  getConferenceAccommodationPlan(current).roomTypePrices[roomType]=price;
+  var plan=getConferenceAccommodationPlan(current);
+  plan.roomTypePrices[roomType]=price;
+  var integration=window.PlatformIntegration;
+  var canonicalState=integration&&typeof integration.getConferenceAccommodationState==='function'
+    ?integration.getConferenceAccommodationState(current.id):null;
+  if(canonicalState){
+    integration.mutateConferenceAccommodationPricing(current.id,plan).then(function(){renderSettings();}).catch(handleCanonicalAccommodationMutationError);
+    return true;
+  }
+  if(!requireLocalOnlyAccommodationMutation())return false;
   if(!save())return false;
   renderSettings();
   return true;
