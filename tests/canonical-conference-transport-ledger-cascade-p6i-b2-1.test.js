@@ -50,11 +50,12 @@ test('disposable PostgreSQL proves ledger replay, complete cleanup audits and at
       create table public.conference_accommodation_rooms(id uuid primary key,room_number text);
       create table public.conference_accommodation_occupancies(participation_id uuid,room_id uuid);
       create table public.module_permission_catalog(permission_key text primary key,module_key text,status text);
-      insert into public.module_permission_catalog values('conference.transport.view','conference','active'),('conference.transport.manage','conference','active');
+      create table public.permission_context(view_allowed boolean,manage_allowed boolean,device_allowed boolean);insert into public.permission_context values(true,true,true);
+      insert into public.module_permission_catalog values('conference.transport.view','conference','active'),('conference.transport.manage','conference','active'),('conference.restaurant.view','conference','active'),('conference.restaurant.manage','conference','active');
       insert into platform.profiles values('${actor}');
       insert into public.conferences(id,organization_id,name,start_date,end_date,status) values('${conference}',extensions.gen_random_uuid(),'Test','2027-01-01','2027-01-05','active');
-      create function public.require_effective_module_permission(uuid,text,text,text,text) returns jsonb language sql stable as \$\$ select jsonb_build_object('actorUserId','${actor}') \$\$;
-      create function platform_private.validated_phase1c_device_authorization(uuid,uuid) returns uuid language sql stable as \$\$ select case when \$1='${actor}' and \$2='${device}' then '${authz}'::uuid end \$\$;
+      create function public.require_effective_module_permission(uuid,text,text,text,text) returns jsonb language plpgsql stable as \$\$ declare x public.permission_context%rowtype;begin select * into x from public.permission_context;if (\$3='conference.restaurant.view' and not x.view_allowed) or (\$3='conference.restaurant.manage' and not x.manage_allowed) then raise exception 'MODULE_PERMISSION_REQUIRED' using errcode='42501';end if;return jsonb_build_object('actorUserId','${actor}');end \$\$;
+      create function platform_private.validated_phase1c_device_authorization(uuid,uuid) returns uuid language sql stable as \$\$ select case when \$1='${actor}' and \$2='${device}' and (select device_allowed from public.permission_context) then '${authz}'::uuid end \$\$;
       create function platform_private.require_exact_jsonb_keys(jsonb,text[],text[] default '{}') returns void language sql immutable as \$\$ select \$\$;
       create function public.require_current_approved_device(uuid) returns jsonb language sql stable as \$\$ select '{}'::jsonb \$\$;
       create function platform_private.require_conference_participation_context(uuid,uuid,text,boolean) returns jsonb language sql stable as \$\$ select jsonb_build_object('actorUserId','${actor}') \$\$;
@@ -73,6 +74,7 @@ test('disposable PostgreSQL proves ledger replay, complete cleanup audits and at
         return result;
       end \$\$;`);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261003140000_canonical_conference_transport_foundation.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261003160000_canonical_conference_restaurant_foundation.sql')]);
     query(`create function platform_private.run_delete(uuid,uuid,bigint) returns jsonb language plpgsql security definer set search_path='' as \$\$ begin perform set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true); return public.delete_conference_participation('${device}',\$1,\$2,\$3); end \$\$;
       create function platform_private.run_remove(uuid,uuid,bigint) returns jsonb language plpgsql security definer set search_path='' as \$\$ begin perform set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true); return public.remove_conference_transport_assignment('${device}',\$1,\$2,\$3); end \$\$;`);
     let sequence=1;
@@ -97,22 +99,44 @@ test('disposable PostgreSQL proves ledger replay, complete cleanup audits and at
       const gone=uuid('54'),deleted=JSON.parse(query(`select public.mutate_conference_transport_vehicle('${device}','${gone}','delete','${conference}','${bus.vehicleId}',2,null,null,null,null,false)`));
       assert.deepEqual(deleted.removedAssignmentIds,[a.assignmentId]);assert.equal(query(`select metadata->>'removalReason' from platform.audit_events where operation_id='${gone}' and action='conference.transport.assignment_removed'`),'vehicle_deleted');
     });
+    await t.test('Restaurant facts use Participation without Accommodation and canonical replay',()=>{
+      const first=participant(),second=participant(),settingsOp=uuid('57');query(`update platform.people set full_name='Same name' where id in(select person_id from public.conference_participations where id in('${first}','${second}'))`);
+      const payload=`jsonb_build_object('enabled',true,'firstMeal','dinner','lastMeal','lunch','prices',jsonb_build_object('breakfast',10,'lunch',20,'dinner',30))`;
+      const result=JSON.parse(query(`select public.mutate_conference_restaurant('${device}','${settingsOp}','update_settings','${conference}',null,${payload})`));
+      assert.deepEqual(JSON.parse(query(`select public.mutate_conference_restaurant('${device}','${settingsOp}','update_settings','${conference}',null,${payload})`)),result);
+      assert.equal(query(`select count(*) from platform.audit_events where operation_id='${settingsOp}'`),'1');
+      rejects(`select public.mutate_conference_restaurant('${device}','${settingsOp}','update_settings','${conference}',null,jsonb_build_object('enabled',false,'firstMeal','dinner','lastMeal','lunch','prices',jsonb_build_object('breakfast',10,'lunch',20,'dinner',30)))`,/CONFERENCE_PARTICIPATION_OPERATION_MISMATCH/);
+      for(const part of [first,second])query(`select public.mutate_conference_restaurant('${device}','${uuid('58')}','upsert_participation','${conference}',null,jsonb_build_object('participationId','${part}','day',1,'meal','dinner','included',false,'note','test'))`);
+      const projection=JSON.parse(query(`select public.get_conference_restaurant('${device}','${conference}')`));
+      assert.equal(projection.participations.filter(item=>item.person.fullName==='Same name').length,2);assert.equal(projection.participations.filter(item=>[first,second].includes(item.participationId)&&item.roomNumber===null).length,2);assert.equal(projection.participationOverrides.length,2);
+      assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id in('${first}','${second}')`),'0');
+      assert.equal(query(`select count(*) from public.conference_restaurant_participation_overrides where participation_id in('${first}','${second}')`),'2');
+    });
+    await t.test('Restaurant read, manage and approved-device boundaries fail closed',()=>{
+      query('update public.permission_context set manage_allowed=false');rejects(`select public.mutate_conference_restaurant('${device}','${uuid('57')}','update_settings','${conference}',1,jsonb_build_object('enabled',true,'firstMeal','dinner','lastMeal','lunch','prices',jsonb_build_object('breakfast',1,'lunch',1,'dinner',1)))`,/MODULE_PERMISSION_REQUIRED/);query(`select public.get_conference_restaurant('${device}','${conference}')`);
+      query('update public.permission_context set manage_allowed=true,view_allowed=false');rejects(`select public.get_conference_restaurant('${device}','${conference}')`,/MODULE_PERMISSION_REQUIRED/);
+      query('update public.permission_context set view_allowed=true,device_allowed=false');rejects(`select public.get_conference_restaurant('${device}','${conference}')`,/APPROVED_DEVICE_SESSION_REQUIRED/);query('update public.permission_context set device_allowed=true');
+    });
     await t.test('Participation guardian cascade cleans Transport explicitly and replays without duplicate audit',()=>{
       const guardian=participant(),child=participant(guardian),bus=vehicle(),ga=assign(guardian,bus.vehicleId),ca=assign(child,bus.vehicleId,'shared',null),op=uuid('55');
+      query(`select public.mutate_conference_restaurant('${device}','${uuid('59')}','upsert_participation','${conference}',null,jsonb_build_object('participationId','${child}','day',1,'meal','dinner','included',false,'note','cascade'))`);
       const result=JSON.parse(query(`select platform_private.run_delete('${op}','${guardian}',1)`));
       assert.deepEqual(new Set(result.removedTransportAssignmentIds),new Set([ga.assignmentId,ca.assignmentId]));
       assert.equal(query(`select count(*) from public.conference_participations where id in('${guardian}','${child}')`),'0');
       assert.equal(query(`select count(*) from platform.audit_events where operation_id='${op}' and action='conference.transport.assignment_removed'`),'2');
+      assert.equal(query(`select count(*) from platform.audit_events where operation_id='${op}' and action='conference.restaurant.participation_override_removed'`),'1');
       assert.deepEqual(JSON.parse(query(`select platform_private.run_delete('${op}','${guardian}',1)`)),result);
-      assert.equal(query(`select count(*) from platform.audit_events where operation_id='${op}'`),'2');
+      assert.equal(query(`select count(*) from platform.audit_events where operation_id='${op}'`),'3');
     });
     await t.test('injected failure rolls back Transport cleanup, audit and Participation deletion',()=>{
       const part=participant(),bus=vehicle(),assignment=assign(part,bus.vehicleId),op=uuid('56');
+      query(`select public.mutate_conference_restaurant('${device}','${uuid('59')}','upsert_participation','${conference}',null,jsonb_build_object('participationId','${part}','day',1,'meal','dinner','included',false,'note','rollback'))`);
       query(`create function public.fail_transport_cleanup() returns trigger language plpgsql as \$\$ begin if new.operation_id='${op}' then raise exception 'INJECTED_TRANSPORT_FAILURE'; end if; return new; end \$\$;create trigger fail_transport_cleanup before insert on platform.audit_events for each row execute function public.fail_transport_cleanup()`);
       rejects(`select platform_private.run_delete('${op}','${part}',1)`,/INJECTED_TRANSPORT_FAILURE/);
       assert.equal(query(`select count(*) from public.conference_participations where id='${part}'`),'1');assert.equal(query(`select count(*) from public.conference_transport_assignments where id='${assignment.assignmentId}'`),'1');assert.equal(query(`select count(*) from platform.audit_events where operation_id='${op}'`),'0');assert.equal(query(`select count(*) from public.conference_participation_operations where operation_id='${op}'`),'0');
+      assert.equal(query(`select count(*) from public.conference_restaurant_participation_overrides where participation_id='${part}'`),'1');
     });
-    for(const role of roles){assert.equal(query(`select has_table_privilege('${role}','public.conference_transport_assignments','SELECT,INSERT,UPDATE,DELETE')`),'f');assert.equal(query(`select has_function_privilege('${role}','public.remove_conference_transport_assignment(uuid,uuid,uuid,bigint)','EXECUTE')`),'f');}
+    for(const role of roles){assert.equal(query(`select has_table_privilege('${role}','public.conference_transport_assignments','SELECT,INSERT,UPDATE,DELETE')`),'f');assert.equal(query(`select has_function_privilege('${role}','public.remove_conference_transport_assignment(uuid,uuid,uuid,bigint)','EXECUTE')`),'f');assert.equal(query(`select has_table_privilege('${role}','public.conference_restaurant_participation_overrides','SELECT,INSERT,UPDATE,DELETE')`),'f');assert.equal(query(`select has_function_privilege('${role}','public.get_conference_restaurant(uuid,uuid)','EXECUTE')`),'f');assert.equal(query(`select has_function_privilege('${role}','public.mutate_conference_restaurant(uuid,uuid,text,uuid,bigint,jsonb)','EXECUTE')`),'f');}
   }finally{
     command('dropdb',['--if-exists',database]);
     for(const role of created)command('psql',['-X','-v','ON_ERROR_STOP=1','-d','postgres','-c',`drop role ${role}`]);

@@ -384,6 +384,9 @@ function normalizeRestaurantV3(restaurantV3){
 function getConferenceMealPlan(conference){
   conference=conference||getCurrentConference();
   if(!conference)return createDefaultRestaurantV3();
+  if(typeof window!=='undefined'&&window.CanonicalConferenceRestaurant&&window.CanonicalConferenceRestaurant.isLinked(conference.id)){
+    return window.CanonicalConferenceRestaurant.getPlan(conference.id)||createDefaultRestaurantV3();
+  }
   conference.restaurantV3=normalizeRestaurantV3(conference.restaurantV3);
   return conference.restaurantV3;
 }
@@ -443,7 +446,7 @@ function getRestaurantV3PersonMealException(personId,day,mealKey,conference){
   day=Math.floor(Number(day));
   for(var index=plan.personOverrides.length-1;index>=0;index--){
     var item=plan.personOverrides[index];
-    if(item&&String(item.personId||'')===targetId&&Number(item.day)===day&&item.meal===mealKey&&
+    if(item&&String(item.participationId||item.personId||'')===targetId&&Number(item.day)===day&&item.meal===mealKey&&
       typeof item.included==='boolean')return item;
   }
   return null;
@@ -466,10 +469,11 @@ function findRestaurantV3AccommodationPerson(personId,conference){
 function isRestaurantV3PersonIncluded(person,day,mealKey,conference){
   conference=conference||getCurrentConference();
   day=Math.floor(Number(day));
-  var personId=person&&person.personId;
-  var accommodationPerson=findRestaurantV3AccommodationPerson(personId,conference);
-  var sourcePerson=accommodationPerson||person;
-  var legacyOverride=accommodationPerson?null:getPersonMealOverride(personId,conference);
+  var personId=person&&(person.participationId||person.personId);
+  var canonical=typeof window!=='undefined'&&window.CanonicalConferenceRestaurant&&window.CanonicalConferenceRestaurant.isLinked(conference&&conference.id);
+  var accommodationPerson=canonical?null:findRestaurantV3AccommodationPerson(personId,conference);
+  var sourcePerson=canonical?person:(accommodationPerson||person);
+  var legacyOverride=canonical?null:(accommodationPerson?null:getPersonMealOverride(personId,conference));
   var mealIndex=RESTAURANT_V3_MEAL_KEYS.indexOf(mealKey);
   if(day<1||mealIndex===-1)return false;
   var included;
@@ -509,6 +513,10 @@ function getMealBaseCount(day,mealKey,conference){
   })[0];
   if(!scheduleDay||!scheduleDay.meals[mealKey])return 0;
   var count=0;
+  if(typeof window!=='undefined'&&window.CanonicalConferenceRestaurant&&window.CanonicalConferenceRestaurant.isLinked(conference.id)){
+    window.CanonicalConferenceRestaurant.getParticipations(conference.id).forEach(function(participation){if(participation.status==='active'&&isRestaurantV3PersonIncluded({participationId:participation.participationId},day,mealKey,conference))count++;});
+    return count;
+  }
   var processedPeople={};
   getConferenceHouseRooms(conference).forEach(function(room){
     if(typeof isRoomActiveOnDay==='function'&&!isRoomActiveOnDay(room,day))return;

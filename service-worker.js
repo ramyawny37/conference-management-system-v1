@@ -45,6 +45,7 @@ const CORE_ASSETS = [
   './js/platform-integration.js?rev=canonical-conference-core-cutover-v2',
   './js/supabase/canonical-conference-discovery.js?rev=p6i-b1-v1',
   './js/supabase/canonical-conference-transport.js?rev=p6i-b2-v1',
+  './js/supabase/canonical-conference-restaurant.js?rev=p6i-b3-v1',
   './modules/reservations/reservations-module.js?rev=reservations-root-boundary-v1',
   './modules/reservations/reservations-visual-prototype.js?rev=reservations-prototype-fidelity-v2',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',

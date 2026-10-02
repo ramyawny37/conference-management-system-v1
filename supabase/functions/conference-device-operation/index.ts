@@ -12,6 +12,8 @@ const allowed=new Set([
   'acquire_conference_lock','renew_conference_lock','release_conference_lock','get_conference_lock','acquire_conference_section_lock','renew_conference_section_lock','release_conference_section_lock','get_conference_section_lock'
 ]);
 allowed.add('create_conference_participation_with_person');
+allowed.add('get_conference_restaurant');
+allowed.add('mutate_conference_restaurant');
 function required(name:string){const value=String(Deno.env.get(name)||'');if(!value)throw new Error(`MISSING_${name}`);return value;}
 function response(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});}
 function bytes(value:unknown){const text=String(value||'');if(!/^[A-Za-z0-9_-]{43}$/.test(text))throw new Error('DEVICE_SESSION_TOKEN_INVALID');const normalized=text.replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(normalized+'='.repeat((4-normalized.length%4)%4)),c=>c.charCodeAt(0));}

@@ -299,6 +299,11 @@ function hydrateCanonicalConferenceTransport(localConferenceId,options){
   if(!window.CanonicalConferenceTransport||!window.CanonicalConferenceTransport.isLinked(localConferenceId))return Promise.resolve({status:'legacy_local'});
   return window.CanonicalConferenceTransport.hydrate(String(localConferenceId)).then(function(result){var current=getCurrentConference();if(current&&String(current.id)===String(localConferenceId)&&typeof renderTransports==='function')renderTransports();return result;}).catch(function(error){if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل بيانات المواصلات المعتمدة.','#E74C3C');throw error;});
 }
+function hydrateCanonicalConferenceRestaurant(localConferenceId,options){
+  options=options||{};
+  if(!window.CanonicalConferenceRestaurant||!window.CanonicalConferenceRestaurant.isLinked(localConferenceId))return Promise.resolve({status:'legacy_local'});
+  return window.CanonicalConferenceRestaurant.hydrate(String(localConferenceId)).then(function(result){var current=getCurrentConference();if(current&&String(current.id)===String(localConferenceId)&&typeof renderAccounts==='function')renderAccounts();return result;}).catch(function(error){if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل بيانات المطعم المعتمدة.','#E74C3C');throw error;});
+}
 function setCurrentConferenceById(id, options){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   var activationAuthorization=window.ConferenceActivationAuthorization;
@@ -390,6 +395,9 @@ function setCurrentConferenceById(id, options){
   }
   if(typeof hydrateCanonicalConferenceTransport==='function'){
     hydrateCanonicalConferenceTransport(id).catch(function(){});
+  }
+  if(typeof hydrateCanonicalConferenceRestaurant==='function'){
+    hydrateCanonicalConferenceRestaurant(id).catch(function(){});
   }
   return true;
 }
@@ -6046,12 +6054,17 @@ function restaurantExceptionHandlerKey(value){
     .replace(/\n/g,'\\n');
 }
 
+function isCanonicalRestaurantConference(conference){return !!(conference&&window.CanonicalConferenceRestaurant&&window.CanonicalConferenceRestaurant.isLinked(conference.id));}
+function canMutateRestaurant(operation,action){var current=getCurrentConference();if(isCanonicalRestaurantConference(current)){var state=window.CanonicalConferenceRestaurant.getState(current.id);return !!(state&&state.canManage);}return !window.ConferencePermissionShadowGate||window.ConferencePermissionShadowGate(operation,action);}
+function mutateCanonicalRestaurant(conference,operation,payload,revision,message){return window.CanonicalConferenceRestaurant.mutate(conference.id,operation,payload,revision).then(function(){calculateMealSummary(conference);renderAccounts();showToast(message);return true;},function(){showToast('تعذر حفظ بيانات المطعم المعتمدة.','#E74C3C');return false;});}
+
 function setRestaurantV3MealBoundary(field,value){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('setRestaurantV3MealBoundary',null))return false;
+  if(!canMutateRestaurant('setRestaurantV3MealBoundary',null))return false;
   if(field!=='firstMeal'&&field!=='lastMeal')return false;
   if(MKEYS.indexOf(value)===-1)return false;
   var current=getCurrentConference();
   if(!current)return false;
+  if(isCanonicalRestaurantConference(current)){var plan=getConferenceMealPlan(current),next={enabled:plan.enabled,firstMeal:plan.firstMeal,lastMeal:plan.lastMeal,prices:plan.prices};next[field]=value;return mutateCanonicalRestaurant(current,'update_settings',next,plan.revision,'تم تحديث إعدادات الوجبات.');}
   getConferenceMealPlan(current)[field]=value;
   if(!save())return false;
   renderAccounts();
@@ -6059,11 +6072,12 @@ function setRestaurantV3MealBoundary(field,value){
 }
 
 function setRestaurantV3BasePrice(mealKey,value){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('setRestaurantV3BasePrice',null))return false;
+  if(!canMutateRestaurant('setRestaurantV3BasePrice',null))return false;
   if(MKEYS.indexOf(mealKey)===-1)return false;
   var current=getCurrentConference();
   if(!current)return false;
   var price=Number(value);
+  if(isCanonicalRestaurantConference(current)){var plan=getConferenceMealPlan(current),prices={breakfast:plan.prices.breakfast,lunch:plan.prices.lunch,dinner:plan.prices.dinner};prices[mealKey]=isFinite(price)?price:0;return mutateCanonicalRestaurant(current,'update_settings',{enabled:plan.enabled,firstMeal:plan.firstMeal,lastMeal:plan.lastMeal,prices:prices},plan.revision,'تم تحديث السعر الأساسي.');}
   getConferenceMealPlan(current).prices[mealKey]=isFinite(price)?price:0;
   if(!save())return false;
   renderAccounts();
@@ -6110,7 +6124,8 @@ function saveRestaurantV3PriceOverride(){
   }
   var list=getConferenceMealPlan(current).mealPriceOverrides;
   var existing=list.filter(function(item){return Number(item.day)===day&&item.meal===meal})[0];
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveRestaurantV3PriceOverride',existing?'update':'create'))return false;
+  if(!canMutateRestaurant('saveRestaurantV3PriceOverride',existing?'update':'create'))return false;
+  if(isCanonicalRestaurantConference(current))return mutateCanonicalRestaurant(current,'upsert_price',{day:day,meal:meal,price:price},existing?existing.revision:null,'تم حفظ الاستثناء.');
   if(existing){
     existing.price=price;
   }else{
@@ -6131,8 +6146,10 @@ function editRestaurantV3PriceOverride(day,meal){
 }
 
 function deleteRestaurantV3PriceOverride(day,meal){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteRestaurantV3PriceOverride',null))return false;
+  if(!canMutateRestaurant('deleteRestaurantV3PriceOverride',null))return false;
   var plan=getConferenceMealPlan();
+  var current=getCurrentConference(),existing=plan.mealPriceOverrides.filter(function(item){return Number(item.day)===Number(day)&&item.meal===meal;})[0];
+  if(isCanonicalRestaurantConference(current))return existing?mutateCanonicalRestaurant(current,'delete_price',{day:Number(day),meal:meal},existing.revision,'تم حذف الاستثناء.'):false;
   plan.mealPriceOverrides=plan.mealPriceOverrides.filter(function(item){
     return !(Number(item.day)===Number(day)&&item.meal===meal);
   });
@@ -6164,7 +6181,8 @@ function saveRestaurantV3CountOverride(){
   }
   var list=getConferenceMealPlan(current).mealCountOverrides;
   var existing=list.filter(function(item){return Number(item.day)===day&&item.meal===meal})[0];
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveRestaurantV3CountOverride',existing?'update':'create'))return false;
+  if(!canMutateRestaurant('saveRestaurantV3CountOverride',existing?'update':'create'))return false;
+  if(isCanonicalRestaurantConference(current))return mutateCanonicalRestaurant(current,'upsert_count',{day:day,meal:meal,extra:extra,deduction:deduction,note:note},existing?existing.revision:null,'تم حفظ الاستثناء.');
   var value={day:day,meal:meal,extra:extra,deduction:deduction};
   if(note)value.note=note;
   if(existing){
@@ -6192,8 +6210,10 @@ function editRestaurantV3CountOverride(day,meal){
 }
 
 function deleteRestaurantV3CountOverride(day,meal){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteRestaurantV3CountOverride',null))return false;
+  if(!canMutateRestaurant('deleteRestaurantV3CountOverride',null))return false;
   var plan=getConferenceMealPlan();
+  var current=getCurrentConference(),existing=plan.mealCountOverrides.filter(function(item){return Number(item.day)===Number(day)&&item.meal===meal;})[0];
+  if(isCanonicalRestaurantConference(current))return existing?mutateCanonicalRestaurant(current,'delete_count',{day:Number(day),meal:meal},existing.revision,'تم حذف الاستثناء.'):false;
   plan.mealCountOverrides=plan.mealCountOverrides.filter(function(item){
     return !(Number(item.day)===Number(day)&&item.meal===meal);
   });
@@ -6204,10 +6224,10 @@ function getRestaurantV3People(conference){
   conference=conference||getCurrentConference();
   var people=[];
   var indexes={};
-  function addPerson(personId,name,sourcePerson){
+  function addPerson(personId,name,sourcePerson,participationId){
     personId=String(personId||'').trim();
     if(!personId)return;
-    var item={personId:personId,name:String(name||'').trim()||'بدون اسم',sourcePerson:sourcePerson||null};
+    var item={personId:personId,name:String(name||'').trim()||'بدون اسم',sourcePerson:sourcePerson||null};if(participationId)item.participationId=String(participationId);
     if(indexes[personId]===undefined){
       indexes[personId]=people.length;
       people.push(item);
@@ -6216,8 +6236,8 @@ function getRestaurantV3People(conference){
     }
   }
   var linked=getCanonicalConferenceCoreLink(conference&&conference.id);
-  if(linked)getConferenceParticipationItems(conference).forEach(function(participation){
-    addPerson(participation.personId,participation.person&&participation.person.fullName,participation.person);
+  if(linked&&window.CanonicalConferenceRestaurant)window.CanonicalConferenceRestaurant.getParticipations(conference.id).forEach(function(participation){
+    addPerson(participation.participationId,participation.person&&participation.person.fullName,participation.person,participation.participationId);
   });
   else {
     getConferenceHouseRooms(conference).forEach(function(room){getConferenceRoomPeople(room,conference).forEach(function(person){addPerson(person&&person.personId,resolvePersonName(person&&person.personId,person&&person.name),person);});});
@@ -6228,7 +6248,7 @@ function getRestaurantV3People(conference){
 
 function findRestaurantV3Person(personId,conference){
   return getRestaurantV3People(conference).filter(function(person){
-    return person.personId===String(personId||'');
+    return String(person.participationId||person.personId)===String(personId||'');
   })[0]||null;
 }
 
@@ -6253,13 +6273,14 @@ function saveRestaurantV3PersonOverride(){
     alert('هذه الوجبة غير مفعلة في اليوم المحدد.');
     return false;
   }
-  var value={personId:personId,day:day,meal:meal,included:included};
+  var value={personId:personId,participationId:personId,day:day,meal:meal,included:included};
   if(note)value.note=note;
   var list=getConferenceMealPlan(current).personOverrides;
   var existing=list.filter(function(item){
-    return String(item.personId)===personId&&Number(item.day)===day&&item.meal===meal;
+    return String(item.participationId||item.personId)===personId&&Number(item.day)===day&&item.meal===meal;
   })[0];
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveRestaurantV3PersonOverride',existing?'update':'create'))return false;
+  if(!canMutateRestaurant('saveRestaurantV3PersonOverride',existing?'update':'create'))return false;
+  if(isCanonicalRestaurantConference(current))return mutateCanonicalRestaurant(current,'upsert_participation',{participationId:personId,day:day,meal:meal,included:included,note:note},existing?existing.revision:null,'تم حفظ استثناء الوجبة.');
   if(existing){
     existing.included=included;
     if(note)existing.note=note;
@@ -6273,7 +6294,7 @@ function saveRestaurantV3PersonOverride(){
 function editRestaurantV3PersonOverride(personId,day,meal){
   var item=getRestaurantV3PersonMealException(personId,day,meal);
   if(!item)return;
-  ge('restaurantV3PersonId').value=item.personId;
+  ge('restaurantV3PersonId').value=item.participationId||item.personId;
   ge('restaurantV3PersonDay').value=String(item.day);
   refreshRestaurantV3MealOptions('restaurantV3Person');
   ge('restaurantV3PersonMeal').value=item.meal;
@@ -6282,10 +6303,12 @@ function editRestaurantV3PersonOverride(personId,day,meal){
 }
 
 function deleteRestaurantV3PersonOverride(personId,day,meal){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteRestaurantV3PersonOverride',null))return false;
+  if(!canMutateRestaurant('deleteRestaurantV3PersonOverride',null))return false;
   var plan=getConferenceMealPlan();
+  var current=getCurrentConference(),existing=plan.personOverrides.filter(function(item){return String(item.participationId||item.personId)===String(personId)&&Number(item.day)===Number(day)&&item.meal===meal;})[0];
+  if(isCanonicalRestaurantConference(current))return existing?mutateCanonicalRestaurant(current,'delete_participation',{participationId:String(personId),day:Number(day),meal:meal},existing.revision,'تم حذف استثناء الوجبة.'):false;
   plan.personOverrides=plan.personOverrides.filter(function(item){
-    return !(String(item.personId)===String(personId)&&Number(item.day)===Number(day)&&item.meal===meal);
+    return !(String(item.participationId||item.personId)===String(personId)&&Number(item.day)===Number(day)&&item.meal===meal);
   });
   return finishRestaurantV3ExceptionChange('تم حذف استثناء الوجبة.');
 }
@@ -6430,7 +6453,7 @@ function renderRestaurantV3Settings(conference){
   html+='<div class="card"><div class="card-title">استثناءات وجبات الأشخاص</div>';
   html+='<div style="margin-bottom:8px"><label class="lbl">بحث بالاسم</label><input type="search" placeholder="اكتب اسم الشخص" oninput="filterRestaurantV3People(this.value)"></div>';
   html+='<div class="row" style="align-items:flex-end"><div style="flex:2;min-width:190px"><label class="lbl">الشخص</label><select id="restaurantV3PersonId"><option value="">اختر الشخص</option>';
-  people.forEach(function(person){html+='<option value="'+esc(person.personId)+'">'+esc(person.name)+'</option>'});
+  people.forEach(function(person){html+='<option value="'+esc(person.participationId||person.personId)+'">'+esc(person.name)+'</option>'});
   html+='</select></div><div style="flex:1;min-width:150px"><label class="lbl">اليوم</label><select id="restaurantV3PersonDay" onchange="refreshRestaurantV3MealOptions(\'restaurantV3Person\')">'+dayOptions(false)+'</select></div>';
   html+='<div style="flex:1;min-width:130px"><label class="lbl">الوجبة</label><select id="restaurantV3PersonMeal">'+mealOptions(false)+'</select></div>';
   html+='<div style="flex:1;min-width:150px"><label class="lbl">نوع الاستثناء</label><select id="restaurantV3PersonIncluded"><option value="true">إضافة للوجبة</option><option value="false">استبعاد من الوجبة</option></select></div>';
@@ -6441,9 +6464,10 @@ function renderRestaurantV3Settings(conference){
   }else{
     html+='<div style="overflow-x:auto;margin-top:10px"><table><thead><tr><th>الشخص</th><th>اليوم</th><th>الوجبة</th><th>النوع</th><th>الملاحظة</th><th>إجراءات</th></tr></thead><tbody>';
     mealExceptions.forEach(function(item){
-      var person=findRestaurantV3Person(item.personId,conference);
-      var personKey=restaurantExceptionHandlerKey(item.personId);
-      html+='<tr><td><b>'+esc(person?person.name:item.personId)+'</b></td><td>'+item.day+'</td><td>'+labels[item.meal]+'</td>'+
+      var restaurantParticipantId=item.participationId||item.personId;
+      var person=findRestaurantV3Person(restaurantParticipantId,conference);
+      var personKey=restaurantExceptionHandlerKey(restaurantParticipantId);
+      html+='<tr><td><b>'+esc(person?person.name:restaurantParticipantId)+'</b></td><td>'+item.day+'</td><td>'+labels[item.meal]+'</td>'+
         '<td>'+(item.included?'إضافة للوجبة':'استبعاد من الوجبة')+'</td><td>'+esc(item.note||'—')+'</td>'+
         '<td><button class="btn btn-gray btn-sm" onclick="editRestaurantV3PersonOverride(\''+esc(personKey)+'\','+item.day+',\''+item.meal+'\')">تعديل</button> '+
         '<button class="btn btn-red btn-sm" onclick="deleteRestaurantV3PersonOverride(\''+esc(personKey)+'\','+item.day+',\''+item.meal+'\')">حذف</button></td></tr>';

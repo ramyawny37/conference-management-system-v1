@@ -22,8 +22,8 @@ test("unified catalogs include the approved guarded Warehouse operations",()=>{
   assert.equal(warehouse.DISPATCHABLE.length,36);
   assert.equal(warehouse.DEFERRED.length,1);
   assert.equal(warehouse.DEFERRED[0].signature,"warehouse.stage_import(uuid,uuid,jsonb)");
-  assert.equal(platform.CONFERENCE.length,88);
-  assert.equal(platform.DISPATCHABLE.length,124);
+  assert.equal(platform.CONFERENCE.length,90);
+  assert.equal(platform.DISPATCHABLE.length,126);
 });
 
 test("generic Edge and SQL dispatchers expose exactly the dispatchable catalogs",()=>{
