@@ -137,7 +137,7 @@ entries.forEach(function(item){
   assert.ok(activeSource.indexOf('function '+item.handler+'(')>=0,item.handler+' active function');
 });
 var gates=Array.from(activeSource.matchAll(/ConferencePermissionShadowGate\('([^']+)'/g))
-  .map(function(match){return match[1]);});
+  .map(function(match){return match[1];});
 // Eight Restaurant V3 linked mutations moved to CanonicalConferenceRestaurant and
 // no longer carry legacy shadow gates. The remaining 65 gates are local-only or
 // otherwise still intentionally legacy; do not restore canonicalized gates here.
