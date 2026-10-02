@@ -36,6 +36,12 @@ function runtime(pathname,basePath='/'){
   return {sandbox,location,classes};
 }
 
+function loadedAssetRevision(asset){
+  const match=html.match(new RegExp('(?:src|href)=["\\\']'+asset.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\?rev=([^"\\\']+)["\\\']'));
+  assert.ok(match,'index missing versioned '+asset);
+  return match[1];
+}
+
 test('authorized startup keeps direct Conference pathname authoritative',()=>{
   const state=runtime('/conference');
   assert.strictEqual(state.sandbox.openStartupScreen({persistView:false}),true);
@@ -67,10 +73,9 @@ test('repository-scoped Conference and Platform home share the operational dashb
   assert.strictEqual(state.classes.has('platform-conference-active'),true);
 });
 
-test('Conference route correction invalidates the Development runtime cache',()=>{
-  assert.match(html,/script\.js\?rev=canonical-conference-core-cutover-v1/);
-  assert.match(worker,/canonical-conference-core-cutover-v1/);
-  assert.match(worker,/script\.js\?rev=canonical-conference-core-cutover-v1/);
+test('Conference route runtime script uses the same revision in index and cache',()=>{
+  const revision=loadedAssetRevision('script.js');
+  assert.ok(worker.includes("'./script.js?rev="+revision+"'"),'service worker cache must match the script revision loaded by index');
 });
 
 test('authorized async restoration cannot override an explicit Conference home route',()=>{
