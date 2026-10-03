@@ -36,7 +36,9 @@
     ['get_conference_finance','public.get_conference_finance(uuid,uuid)'],
     ['mutate_conference_finance','public.mutate_conference_finance(uuid,uuid,uuid,text,text,uuid,bigint,jsonb)'],
     ['get_conference_branding','public.get_conference_branding(uuid,uuid)'],
-    ['mutate_conference_branding','public.mutate_conference_branding(uuid,uuid,uuid,text,bigint,jsonb)']
+    ['mutate_conference_branding','public.mutate_conference_branding(uuid,uuid,uuid,text,bigint,jsonb)'],
+    ['list_conference_activity','public.list_conference_activity(uuid,uuid)'],
+    ['record_conference_output_event','public.record_conference_output_event(uuid,uuid,text)']
   ].map(function(entry){return Object.freeze({module:'conference',operation:entry[0],signature:entry[1],dispatchable:true});});
   var conference=canonicalConference.concat(global.ConferenceDeviceOperationContract.EDGE_ONLY_PROTECTED.map(function(entry){return Object.freeze({module:'conference',operation:entry.operation,signature:entry.signature,dispatchable:true});}));
   var warehouse=global.WarehouseDeviceOperationContract.DISPATCHABLE;

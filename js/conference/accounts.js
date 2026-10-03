@@ -781,8 +781,8 @@ function getAccountsRoomContext(house,floor,room){
   room=room||{};
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
-  var displayedIds=conference&&Array.isArray(conference.accommodationDisplayedRoomIds)?conference.accommodationDisplayedRoomIds:[];
-  var displayed=linked?true:!!room.id&&displayedIds.indexOf(room.id)!==-1;
+  var displayedIds=!linked&&conference&&Array.isArray(conference.accommodationDisplayedRoomIds)?conference.accommodationDisplayedRoomIds:[];
+  var displayed=linked?room.includedInPricing!==false:!!room.id&&displayedIds.indexOf(room.id)!==-1;
   var residents=getRoomResidentsForAccounts(room);
   var adultsCount=residents.adultsCount;
   var childrenCount=residents.childrenCount;
@@ -877,23 +877,24 @@ function getAccountsRestaurantContext(){
 function getAccountsConferenceContext(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return null;
-  var days=typeof getDays==='function'?getDays():parseInt(conference.conf&&conference.conf.days,10)||1;
   var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  var core=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceCoreState==='function'?window.PlatformIntegration.getConferenceCoreState(conference.id):null;
+  var days=linked?Number(core&&core.core&&core.core.days):typeof getDays==='function'?getDays():parseInt(conference.conf&&conference.conf.days,10)||1;
   var canonical=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceAccommodationState==='function'?window.PlatformIntegration.getConferenceAccommodationState(conference.id):null;
   var houses=(linked?(canonical&&canonical.houses||[]):(conference.houses||[])).map(function(house){
-    if(linked)return getAccountsHouseContext({id:house.houseId,name:house.name,floors:(house.floors||[]).map(function(floor){return {id:floor.floorId,name:floor.name,rooms:(floor.rooms||[]).map(function(room){return Object.assign({},room,{id:room.roomId,number:room.roomNumber,beds:room.baseCapacity,extraBeds:room.extraBedCapacity,closed:room.isClosed});})};})});
+    if(linked)return getAccountsHouseContext({id:house.houseId,name:house.name,floors:(house.floors||[]).map(function(floor){return {id:floor.floorId,name:floor.name,rooms:(floor.rooms||[]).map(function(room){return Object.assign({},room,{id:room.roomId,number:room.roomNumber,beds:room.baseCapacity,extraBeds:room.extraBedCapacity,closed:room.isClosed,includedInPricing:room.includedInPricing!==false});})};})});
     return getAccountsHouseContext(house);
   });
   var rooms=[];
   houses.forEach(function(house){rooms=rooms.concat(house.rooms)});
   return {
     conferenceId:conference.id||'',
-    conferenceName:(conference.conf&&conference.conf.name)||conference.name||'المؤتمر',
+    conferenceName:linked?String(core&&core.core&&core.core.name||''):((conference.conf&&conference.conf.name)||conference.name||'المؤتمر'),
     days:days,
     nights:Math.max(0,days-1),
     houses:houses,
     rooms:rooms,
-    displayedRoomIds:Array.isArray(conference.accommodationDisplayedRoomIds)?conference.accommodationDisplayedRoomIds.slice():[],
+    displayedRoomIds:linked?[]:(Array.isArray(conference.accommodationDisplayedRoomIds)?conference.accommodationDisplayedRoomIds.slice():[]),
     restaurant:getAccountsRestaurantContext()
   };
 }
@@ -901,7 +902,9 @@ function getAccountsConferenceContext(){
 function getSelectedAccommodationAccountsContext(context){
   context=context||getAccountsConferenceContext();
   if(!context)return null;
-  var selectedRooms=typeof getSelectedAccommodationRooms==='function'
+  var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
+  var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  var selectedRooms=linked?(context.rooms||[]).filter(function(room){return room.displayed!==false}):typeof getSelectedAccommodationRooms==='function'
     ?getSelectedAccommodationRooms()
     :[];
   var selectedIds={};
@@ -939,7 +942,7 @@ function getSelectedAccommodationAccountsContext(context){
   accommodationContext.houses.forEach(function(house){
     accommodationContext.rooms=accommodationContext.rooms.concat(house.rooms);
   });
-  accommodationContext.displayedRoomIds=Object.keys(selectedIds);
+  accommodationContext.displayedRoomIds=linked?[]:Object.keys(selectedIds);
   return accommodationContext;
 }
 

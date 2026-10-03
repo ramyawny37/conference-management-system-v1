@@ -146,6 +146,13 @@ function deleteHouse(){
 function setCurrentConference(confObj){
   if(!confObj) return;
   normalizeConference(confObj);
+  var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(confObj.id);
+  if(linked){
+    var state=window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceCoreState==='function'?window.PlatformIntegration.getConferenceCoreState(confObj.id):null;
+    updateLogoText();
+    DAYS=parseInt(state&&state.core&&state.core.days,10)||1;
+    return;
+  }
   var conf = confObj.conf || {name:'المؤتمر',startDate:'',endDate:'',days:1};
   updateLogoText();
   DAYS = conf.days || 1;
@@ -279,6 +286,38 @@ function hydrateCanonicalConferenceParticipations(localConferenceId,options){
     throw error;
   });
 }
+function hydrateCanonicalConferenceBranding(localConferenceId,options){
+  options=options||{};
+  var link=getCanonicalConferenceCoreLink(localConferenceId);
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  var integration=window.PlatformIntegration;
+  if(!integration||typeof integration.hydrateConferenceBranding!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_BRANDING_UNAVAILABLE'});
+  return integration.hydrateConferenceBranding(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
+    var banner=result&&result.branding&&result.branding.banner||'';
+    return prepareConferenceBannerForHeader(banner,result&&result.branding&&result.branding.primaryColor).then(function(prepared){
+      integration.setConferenceBrandingPreparedBanner(localConferenceId,prepared);
+      return integration.getConferenceBrandingState(localConferenceId);
+    });
+  }).then(function(result){
+    var current=getCurrentConference();
+    if(current&&String(current.id)===String(localConferenceId)){
+      conferenceBrandingDraft=getConferenceBrandingSettings(current);
+      if(typeof renderSettings==='function')renderSettings();
+      if(currentTab===4&&typeof renderCards==='function')renderCards();
+    }
+    return result;
+  }).catch(function(error){
+    if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل هوية المؤتمر المحدثة.','#E74C3C');
+    throw error;
+  });
+}
+function hydrateCanonicalConferenceActivity(localConferenceId,options){
+  options=options||{};
+  var link=getCanonicalConferenceCoreLink(localConferenceId),integration=window.PlatformIntegration;
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  if(!integration||typeof integration.hydrateConferenceActivity!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_ACTIVITY_UNAVAILABLE'});
+  return integration.hydrateConferenceActivity(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){renderActivityLog();return result}).catch(function(error){if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل سجل العمليات.','#E74C3C');throw error});
+}
 function hydrateCanonicalConferenceAccommodation(localConferenceId,options){
   options=options||{};
   var link=getCanonicalConferenceCoreLink(localConferenceId);
@@ -398,6 +437,12 @@ function setCurrentConferenceById(id, options){
   }
   if(typeof hydrateCanonicalConferenceParticipations==='function'){
     hydrateCanonicalConferenceParticipations(id).catch(function(){});
+  }
+  if(typeof hydrateCanonicalConferenceBranding==='function'){
+    hydrateCanonicalConferenceBranding(id).catch(function(){});
+  }
+  if(typeof hydrateCanonicalConferenceActivity==='function'){
+    hydrateCanonicalConferenceActivity(id).catch(function(){});
   }
   if(typeof hydrateCanonicalConferenceAccommodation==='function'){
     hydrateCanonicalConferenceAccommodation(id).catch(function(){});
@@ -1390,9 +1435,10 @@ function renderGlobalConferenceHeader(){
     container.style.display = 'none';
     return;
   }
-  var conf = current.conf || {};
-  var isCompleted = current.status === 'completed';
   var linkedAccommodation=getCanonicalConferenceCoreLink(current.id);
+  var coreState=linkedAccommodation&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceCoreState==='function'?window.PlatformIntegration.getConferenceCoreState(current.id):null;
+  var conf=linkedAccommodation?(coreState&&coreState.core||{}):(current.conf||{});
+  var isCompleted=(linkedAccommodation?conf.status:current.status)==='completed';
   var canonicalAccommodation=linkedAccommodation&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceAccommodationState==='function'?window.PlatformIntegration.getConferenceAccommodationState(current.id):null;
   var headerHouses=linkedAccommodation?(canonicalAccommodation?canonicalAccommodation.houses:[]):(current.houses||[]);
   var houseNames = headerHouses.map(function(house){ return house.name || 'بيت غير مسمى'; });
@@ -7154,6 +7200,12 @@ function openShareCenter(key){
   if(phoneInput&&!card.phone)phoneInput.focus();
 }
 function shareCard(k){openShareCenter(k)}
+function recordLinkedConferenceOutputEvent(eventName){
+  var current=getCurrentConference(),integration=window.PlatformIntegration;
+  if(!current||!getCanonicalConferenceCoreLink(current.id)||!integration||typeof integration.recordConferenceOutputEvent!=='function')return false;
+  integration.recordConferenceOutputEvent(current.id,eventName).catch(function(){});
+  return true;
+}
 var selectedCardsQueue=[];
 var selectedCardsQueueIndex=0;
 var selectedCardsQueueMode='share';
@@ -7227,7 +7279,7 @@ function shareSelectedQueueCard(button){
     var data={title:getCardShareTitle(card),text:buildConferenceCardShareMessage(card),files:[file]};
     if(!navigator.canShare(data)){var error=new Error('file sharing unsupported');error.name='NotSupportedError';throw error}
     return navigator.share(data);
-  }).then(function(){advanceSelectedCardsQueue()}).catch(function(error){
+  }).then(function(){recordLinkedConferenceOutputEvent('card_shared');advanceSelectedCardsQueue()}).catch(function(error){
     if(error&&error.name==='AbortError')return;
     if(error&&error.name==='NotSupportedError'){showToast('هذا الجهاز لا يدعم مشاركة الصور مباشرة. استخدم تنزيل PNG.','#E67E22');return}
     showToast('تعذر مشاركة صورة الكارت عبر النظام.','#E74C3C');
@@ -7258,7 +7310,7 @@ function shareSelectedCardsFiles(button){
     if(!navigator.share||!navigator.canShare){var unavailableError=new Error('multiple file sharing unsupported');unavailableError.name='NotSupportedError';throw unavailableError}
     var data={title:'كروت المؤتمر',files:files};
     if(!navigator.canShare(data)){var error=new Error('multiple file sharing unsupported');error.name='NotSupportedError';throw error}
-    return navigator.share(data);
+    return navigator.share(data).then(function(){recordLinkedConferenceOutputEvent('card_shared')});
   }).catch(function(error){
     if(error&&error.name==='AbortError')return;
     if(error&&error.name==='NotSupportedError'){showToast('هذا الجهاز لا يدعم مشاركة عدة صور مباشرة. استخدم المشاركة أو التحميل الفردي.','#E67E22');return}
@@ -7284,12 +7336,13 @@ function shareCenterViaSystem(button){
   var card=getShareCenterCard();
   if(!card)return;
   if(!navigator.share||!navigator.canShare){showToast('هذا الجهاز لا يدعم مشاركة الصور مباشرة. يمكنك فتح واتساب أو تنزيل PNG.','#E67E22');return}
-  addActivityLog('card_shared','تمت مشاركة كارت واحد',{details:getCardShareTitle(card),section:'cards',entityType:card.type==='room'?'room':'person',entityId:shareCenterCardKey});
+  var linkedOutputAudit=recordLinkedConferenceOutputEvent,current=getCurrentConference();
+  if(!current||!getCanonicalConferenceCoreLink(current.id))addActivityLog('card_shared','تمت مشاركة كارت واحد',{details:getCardShareTitle(card),section:'cards',entityType:card.type==='room'?'room':'person',entityId:shareCenterCardKey});
   setShareCenterButtonBusy(button,true,'جارٍ تجهيز البطاقة...');
   getCardPngFile(shareCenterCardKey).then(function(file){
     var shareData={title:card.type==='room'?'بطاقة الغرفة '+(card.roomNumber||''):'بطاقة '+(card.name||'ضيف'),text:buildConferenceCardShareMessage(card),files:[file]};
     if(!navigator.canShare(shareData)){var unsupportedError=new Error('file sharing unsupported');unsupportedError.name='NotSupportedError';throw unsupportedError}
-    return navigator.share(shareData);
+    return navigator.share(shareData).then(function(){linkedOutputAudit('card_shared')});
   }).catch(function(error){
     if(error&&error.name==='AbortError')return;
     if(error&&error.name==='NotSupportedError'){showToast('هذا الجهاز لا يدعم مشاركة الصور مباشرة. يمكنك فتح واتساب أو تنزيل PNG.','#E67E22');return}
@@ -7380,15 +7433,16 @@ function openShareCenterWhatsApp(button){
 }
 function printOne(k){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('printOne',null))return false;
-  addActivityLog('card_printed','تمت طباعة كارت واحد',{section:'cards',entityType:'card',entityId:k});
+  var current=getCurrentConference();
+  if(!current||!getCanonicalConferenceCoreLink(current.id))addActivityLog('card_printed','تمت طباعة كارت واحد',{section:'cards',entityType:'card',entityId:k});
   document.body.classList.add('print-single-card');
   document.body.classList.remove('print-multiple-cards');
   document.querySelectorAll('.guest-card').forEach(function(el){
     el.classList.remove('print-page-break');
     el.style.display = el.dataset.key === k ? '' : 'none';
   });
-  window.print();setTimeout(function(){document.querySelectorAll('.guest-card').forEach(function(el){el.style.display=''});document.body.classList.remove('print-single-card')},500)}
-function printSel(){if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('printSel',null))return false;var ks=Object.keys(selectedCards).filter(function(k){return selectedCards[k]});if(!ks.length){alert('اختر كارت واحد على الأقل');return}addActivityLog('cards_printed','تمت طباعة مجموعة كروت',{details:'عدد الكروت: '+ks.length,section:'cards',entityType:'card_selection',entityId:''});document.body.classList.remove('print-single-card');document.body.classList.add('print-multiple-cards');var printedCount=0;document.querySelectorAll('.guest-card').forEach(function(el){var isPrinted=!!selectedCards[el.dataset.key];el.style.display=isPrinted?'':'none';el.classList.remove('print-page-break');if(isPrinted){printedCount++;if(printedCount%8===0)el.classList.add('print-page-break')}});window.print();setTimeout(function(){document.querySelectorAll('.guest-card').forEach(function(el){el.style.display='';el.classList.remove('print-page-break')});document.body.classList.remove('print-multiple-cards')},500)}
+  window.print();recordLinkedConferenceOutputEvent('card_printed');setTimeout(function(){document.querySelectorAll('.guest-card').forEach(function(el){el.style.display=''});document.body.classList.remove('print-single-card')},500)}
+function printSel(){if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('printSel',null))return false;var ks=Object.keys(selectedCards).filter(function(k){return selectedCards[k]});if(!ks.length){alert('اختر كارت واحد على الأقل');return}var current=getCurrentConference();if(!current||!getCanonicalConferenceCoreLink(current.id))addActivityLog('cards_printed','تمت طباعة مجموعة كروت',{details:'عدد الكروت: '+ks.length,section:'cards',entityType:'card_selection',entityId:''});document.body.classList.remove('print-single-card');document.body.classList.add('print-multiple-cards');var printedCount=0;document.querySelectorAll('.guest-card').forEach(function(el){var isPrinted=!!selectedCards[el.dataset.key];el.style.display=isPrinted?'':'none';el.classList.remove('print-page-break');if(isPrinted){printedCount++;if(printedCount%8===0)el.classList.add('print-page-break')}});window.print();recordLinkedConferenceOutputEvent('cards_printed');setTimeout(function(){document.querySelectorAll('.guest-card').forEach(function(el){el.style.display='';el.classList.remove('print-page-break')});document.body.classList.remove('print-multiple-cards')},500)}
 
 // ═══════════════════════════════════════════════════════
 // TAB 5: SETTINGS
@@ -7813,6 +7867,13 @@ function getDefaultConferenceBranding(){
 }
 function getConferenceBrandingSettings(conference){
   var defaults=getDefaultConferenceBranding();
+  var linked=conference&&getCanonicalConferenceCoreLink(conference.id);
+  if(linked){
+    var state=window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceBrandingState==='function'?window.PlatformIntegration.getConferenceBrandingState(conference.id):null;
+    if(!state||!state.branding)return defaults;
+    var canonical=state.branding;
+    return {banner:canonical.banner,bannerPrepared:canonical.bannerPrepared||'',serviceLogo:canonical.serviceLogo,autoColors:canonical.autoColors===true,bannerPosition:canonical.bannerPosition, bannerFit:'cover',cardTheme:normalizeConferenceCardTheme(canonical.cardTheme),logo:'',watermark:'',primaryColor:canonical.primaryColor,secondaryColor:canonical.secondaryColor,textColor:canonical.textColor,fontFamily:defaults.fontFamily};
+  }
   var branding=conference&&conference.branding?conference.branding:{};
   return {
     banner:branding.banner||branding.logo||defaults.banner,
@@ -8175,6 +8236,25 @@ function saveConferenceBranding(){
     return branding.banner&&!branding.bannerPrepared?prepareConferenceBrandingDraftBanner():branding.bannerPrepared||'';
   }).then(function(){
     branding=syncConferenceBrandingDraftFromInputs();
+    var linked=getCanonicalConferenceCoreLink(current.id);
+    if(linked){
+      var integration=window.PlatformIntegration;
+      var state=integration&&integration.getConferenceBrandingState(current.id);
+      if(!state||!state.branding)throw {code:'CANONICAL_CONFERENCE_BRANDING_NOT_HYDRATED'};
+      var before=state.branding;
+      var actions=[];
+      actions.push(['SETTINGS_UPDATE',{autoColors:branding.autoColors===true,bannerPosition:branding.bannerPosition||'center',cardTheme:normalizeConferenceCardTheme(branding.cardTheme),primaryColor:branding.primaryColor||'#6C3483',secondaryColor:branding.secondaryColor||'#8E44AD',textColor:branding.textColor||'#1A2A3A'}]);
+      if((branding.banner||'')!==(before.banner||''))actions.push([branding.banner?'BANNER_SET':'BANNER_REMOVE',branding.banner?{image:branding.banner}:{}]);
+      if((branding.serviceLogo||'')!==(before.serviceLogo||''))actions.push([branding.serviceLogo?'SERVICE_LOGO_SET':'SERVICE_LOGO_REMOVE',branding.serviceLogo?{image:branding.serviceLogo}:{}]);
+      return actions.reduce(function(chain,item){return chain.then(function(){return integration.mutateConferenceBranding(current.id,item[0],item[1])})},Promise.resolve()).then(function(){
+        return prepareConferenceBannerForHeader(branding.banner||'',branding.primaryColor).then(function(prepared){integration.setConferenceBrandingPreparedBanner(current.id,prepared)});
+      }).then(function(){
+        conferenceBrandingDraft=getConferenceBrandingSettings(current);
+        if(currentTab===4)renderCards();
+        showToast('✅ تم حفظ هوية المؤتمر');
+        return true;
+      });
+    }
     var storedBranding={
       banner:branding.banner||'',
       bannerPrepared:branding.bannerPrepared||'',
@@ -8241,7 +8321,8 @@ function activityLogSectionTitle(section){
   return titles[section]||'عام';
 }
 function renderActivityLogSection(){
-  return '<section class="settings-section settings-branding-section activity-log-section"><button type="button" class="settings-branding-toggle" aria-expanded="false" aria-controls="settings_activity_log_content" onclick="toggleActivityLogSection()"><span>سجل العمليات</span><span id="settings_activity_log_arrow" class="settings-branding-toggle-arrow" aria-hidden="true">▼</span></button><div id="settings_activity_log_content" class="settings-branding-content activity-log-content" aria-hidden="true"><div class="activity-log-filters"><select id="activityLogSectionFilter" onchange="renderActivityLog()"><option value="all">الكل</option><option value="conference">المؤتمر</option><option value="accommodation">التسكين</option><option value="cards">الكروت</option><option value="settings">الإعدادات</option><option value="general">عام</option></select><input id="activityLogSearch" type="search" placeholder="بحث في عنوان العملية أو التفاصيل" oninput="renderActivityLog()"></div><div id="activityLogList" class="activity-log-list"></div><div class="activity-log-actions"><button class="btn btn-red btn-sm" onclick="clearActivityLog()">مسح سجل العمليات</button></div></div></section>';
+  var current=getCurrentConference(),linked=current&&getCanonicalConferenceCoreLink(current.id);
+  return '<section class="settings-section settings-branding-section activity-log-section"><button type="button" class="settings-branding-toggle" aria-expanded="false" aria-controls="settings_activity_log_content" onclick="toggleActivityLogSection()"><span>سجل العمليات</span><span id="settings_activity_log_arrow" class="settings-branding-toggle-arrow" aria-hidden="true">▼</span></button><div id="settings_activity_log_content" class="settings-branding-content activity-log-content" aria-hidden="true"><div class="activity-log-filters"><select id="activityLogSectionFilter" onchange="renderActivityLog()"><option value="all">الكل</option><option value="conference">المؤتمر</option><option value="accommodation">التسكين</option><option value="cards">الكروت</option><option value="settings">الإعدادات</option><option value="general">عام</option></select><input id="activityLogSearch" type="search" placeholder="بحث في عنوان العملية أو التفاصيل" oninput="renderActivityLog()"></div><div id="activityLogList" class="activity-log-list"></div>'+(linked?'':'<div class="activity-log-actions"><button class="btn btn-red btn-sm" onclick="clearActivityLog()">مسح سجل العمليات</button></div>')+'</div></section>';
 }
 function toggleActivityLogSection(){
   var content=ge('settings_activity_log_content');
@@ -8258,7 +8339,9 @@ function renderActivityLog(){
   var list=ge('activityLogList');
   if(!list)return;
   var conference=getCurrentConference();
-  var entries=conference&&Array.isArray(conference.activityLog)?conference.activityLog.slice():[];
+  var linked=conference&&getCanonicalConferenceCoreLink(conference.id);
+  var activityState=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceActivityState==='function'?window.PlatformIntegration.getConferenceActivityState(conference.id):null;
+  var entries=linked?(activityState&&activityState.items||[]):(conference&&Array.isArray(conference.activityLog)?conference.activityLog.slice():[]);
   var sectionFilter=ge('activityLogSectionFilter');
   var searchInput=ge('activityLogSearch');
   var section=sectionFilter?sectionFilter.value:'all';
@@ -8283,6 +8366,7 @@ function renderActivityLog(){
 function clearActivityLog(){
   var conference=getCurrentConference();
   if(!conference)return;
+  if(getCanonicalConferenceCoreLink(conference.id))return false;
   if(!confirm('هل أنت متأكد من مسح سجل العمليات لهذا المؤتمر؟ لا يمكن التراجع عن هذا الإجراء.'))return;
   conference.activityLog=[];
   addActivityLog('activity_log_cleared','تم مسح سجل العمليات',{section:'settings',entityType:'conference',entityId:conference.id});
@@ -9630,6 +9714,12 @@ function saveTemplateRoom() {
 function saveSettings(){
   var current=getCurrentConference();
   if(!current)return false;
+  var linked=getCanonicalConferenceCoreLink(current.id);
+  if(linked){
+    var integration=window.PlatformIntegration,state=integration&&integration.getConferenceCoreState(current.id);
+    if(!state||!state.core||window.navigator&&window.navigator.onLine===false)return false;
+    return integration.mutateConferenceCore(current.id,{name:ge('cfg_name').value.trim()||'المؤتمر',place:ge('cfg_place')?ge('cfg_place').value.trim():'',startDate:ge('cfg_start').value,endDate:ge('cfg_end').value,status:state.core.status}).then(function(){renderSettings();return true}).catch(function(){return false});
+  }
   var conf=current.conf||{};
   var startDate=ge('cfg_start').value;
   var endDate=ge('cfg_end').value;
@@ -10031,7 +10121,7 @@ function createConferenceFromSelection(){
         return false;
       }
       return integration.mutateConferenceCore(current.id,{
-        name:name,startDate:startDate,endDate:endDate,status:current.status
+        name:name,place:place,startDate:startDate,endDate:endDate,status:canonicalState.core.status
       }).then(function(){
         closeNewConferenceModal();
         renderSettings();
@@ -10206,6 +10296,8 @@ function openNewConferenceModal(mode){
   conferenceDialogMode = (mode === 'edit') ? 'edit' : 'create';
   var current = getCurrentConference();
   var conf = (conferenceDialogMode === 'edit' && current) ? (current.conf || {}) : {};
+  var coreState=conferenceDialogMode==='edit'&&current&&getCanonicalConferenceCoreLink(current.id)&&window.PlatformIntegration?window.PlatformIntegration.getConferenceCoreState(current.id):null;
+  if(coreState&&coreState.core)conf=coreState.core;
 
   ge('nc_modal_title').textContent = conferenceDialogMode === 'edit' ? '✏️ تعديل المؤتمر' : '➕ مؤتمر جديد';
   ge('nc_save_btn').textContent = conferenceDialogMode === 'edit' ? '💾 حفظ التعديلات' : '💾 إنشاء المؤتمر';
@@ -10214,10 +10306,7 @@ function openNewConferenceModal(mode){
   ge('cfg_place').value = conf.place || '';
   ge('cfg_start').value = conf.startDate || '';
   ge('cfg_end').value = conf.endDate || '';
-  if(ge('cfg_place')){
-    ge('cfg_place').disabled=conferenceDialogMode==='edit'&&current&&
-      !!getCanonicalConferenceCoreLink(current.id);
-  }
+  if(ge('cfg_place'))ge('cfg_place').disabled=false;
 
   ge('newConferenceModal').style.display = 'flex';
   updateConferencePeriodPreview();

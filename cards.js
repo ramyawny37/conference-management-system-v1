@@ -72,6 +72,9 @@ var CardEngine = (function () {
       };
     }
     var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+    var integration=window.PlatformIntegration;
+    var coreState=linked&&integration&&typeof integration.getConferenceCoreState==='function'?integration.getConferenceCoreState(conference.id):null;
+    var brandingState=linked&&integration&&typeof integration.getConferenceBrandingState==='function'?integration.getConferenceBrandingState(conference.id):null;
     var people=linked&&typeof getConferenceParticipationItems==='function'
       ?getConferenceParticipationItems(conference).map(function(participation){
         var person=participation.person||{};
@@ -80,17 +83,22 @@ var CardEngine = (function () {
     return {
       conference: conference,
       conferenceId: asText(conference.id),
-      conferenceName: asText((conference.conf && conference.conf.name) || conference.name),
+      conferenceName: linked?asText(coreState&&coreState.core&&coreState.core.name):asText((conference.conf && conference.conf.name) || conference.name),
       houses: linked?[]:asArray(conference.houses).slice(),
       rooms: typeof getAllRooms === 'function' ? asArray(getAllRooms()) : [],
       people: people,
       transports: typeof getConferenceTransportVehicles==='function'?getConferenceTransportVehicles(conference):asArray(conference.transports).slice(),
-      branding: readBranding(conference)
+      branding: linked?copyBranding(brandingState&&brandingState.branding):readBranding(conference)
     };
   }
 
   function getBranding() {
     var conference = typeof getCurrentConference === 'function' ? getCurrentConference() : null;
+    var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+    if(linked){
+      var state=window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceBrandingState==='function'?window.PlatformIntegration.getConferenceBrandingState(conference.id):null;
+      return copyBranding(state&&state.branding);
+    }
     return readBranding(conference);
   }
 

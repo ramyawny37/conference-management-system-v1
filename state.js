@@ -71,7 +71,9 @@ function syncCurrentConferenceRefs(){
   if(!current){
     return;
   }
-  var conf = current.conf || {name: current.name || 'المؤتمر', startDate: current.startDate || '', endDate: current.endDate || '', days: current.days || 1};
+  var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(current.id);
+  var state=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceCoreState==='function'?window.PlatformIntegration.getConferenceCoreState(current.id):null;
+  var conf=state&&state.core?state.core:(linked?{}:(current.conf || {name: current.name || 'المؤتمر', startDate: current.startDate || '', endDate: current.endDate || '', days: current.days || 1}));
   DAYS = conf.days || 1;
   updateLogoText();
 }

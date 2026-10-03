@@ -1708,7 +1708,13 @@ function migrateToV3(conference) {
 }
 
 function getDays(){
-  var conf = (getCurrentConference() || {}).conf || {};
+  var conference=getCurrentConference();
+  var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  if(linked){
+    var state=window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceCoreState==='function'?window.PlatformIntegration.getConferenceCoreState(conference.id):null;
+    return parseInt(state&&state.core&&state.core.days,10)||1;
+  }
+  var conf = (conference || {}).conf || {};
   return parseInt(conf.days)||1
 }
 

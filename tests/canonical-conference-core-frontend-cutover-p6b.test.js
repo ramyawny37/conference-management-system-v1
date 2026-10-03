@@ -24,8 +24,8 @@ function environment(){
   const calls=[];
   let fail=null;
   const remote='50000000-0000-4000-8000-000000000001';
-  const canonical={conferenceId:remote,organizationId:'organization',name:'Canonical',startDate:'2026-10-01',endDate:'2026-10-03',status:'active',completedAt:null,revision:4,createdAt:'created',updatedAt:'updated',updatedBy:'actor',days:3,nights:2,schedule:['2026-10-01','2026-10-02','2026-10-03']};
-  const sandbox={window:null,console,Promise,JSON,Object,String,Array,Date,RegExp,Error,setTimeout,clearTimeout,navigator:{onLine:true},document:{addEventListener(){},getElementById(){return null;},querySelector(){return null;}},addEventListener(){},dispatchEvent(){},CustomEvent:function(){},appData:{currentConferenceId:'local',conferences:[{id:'local',organizationId:'legacy-organization',name:'Legacy',startDate:'old-start',endDate:'old-end',status:'active',revision:2,createdAt:'legacy-created',updatedAt:'legacy-updated',updatedBy:'legacy-actor',days:2,nights:1,schedule:['old-start'],conf:{name:'Legacy',startDate:'old-start',endDate:'old-end',days:2,nights:1,schedule:['old-start'],place:'Legacy place'},peopleDb:{people:[{id:'person-old'}]},houses:[{id:'house-old'}]}]},ConferenceLinkStore:{get(id){return id==='local'?{linkStatus:'linked',remoteConferenceId:remote}:null;}},PlatformDeviceSession:{invokeModuleProtected(module,operation,args){calls.push({module,operation,args:JSON.parse(JSON.stringify(args))});if(fail)return Promise.reject({code:fail});if(operation==='get_conference_core')return Promise.resolve(JSON.parse(JSON.stringify(canonical)));if(operation==='mutate_conference_core')return Promise.resolve(Object.assign({},canonical,{name:args.p_name,startDate:args.p_start_date,endDate:args.p_end_date,status:args.p_status,revision:5,updatedAt:'updated-2'}));throw new Error('unexpected operation');}}};
+  const canonical={conferenceId:remote,organizationId:'organization',name:'Canonical',place:'Canonical place',startDate:'2026-10-01',endDate:'2026-10-03',status:'active',completedAt:null,revision:4,createdAt:'created',updatedAt:'updated',updatedBy:'actor',days:3,nights:2,schedule:['2026-10-01','2026-10-02','2026-10-03']};
+  const sandbox={window:null,console,Promise,JSON,Object,String,Array,Date,RegExp,Error,Uint8Array,Math,setTimeout,clearTimeout,crypto:{randomUUID:()=> '50000000-0000-4000-8000-000000000099'},navigator:{onLine:true},document:{addEventListener(){},getElementById(){return null;},querySelector(){return null;}},addEventListener(){},dispatchEvent(){},CustomEvent:function(){},appData:{currentConferenceId:'local',conferences:[{id:'local',organizationId:'legacy-organization',name:'Legacy',startDate:'old-start',endDate:'old-end',status:'active',revision:2,createdAt:'legacy-created',updatedAt:'legacy-updated',updatedBy:'legacy-actor',days:2,nights:1,schedule:['old-start'],conf:{name:'Legacy',startDate:'old-start',endDate:'old-end',days:2,nights:1,schedule:['old-start'],place:'Legacy place'},peopleDb:{people:[{id:'person-old'}]},houses:[{id:'house-old'}]}]},ConferenceLinkStore:{get(id){return id==='local'?{linkStatus:'linked',remoteConferenceId:remote}:null;}},PlatformDeviceSession:{invokeModuleProtected(module,operation,args){calls.push({module,operation,args:JSON.parse(JSON.stringify(args))});if(fail)return Promise.reject({code:fail});if(operation==='get_conference_core')return Promise.resolve(JSON.parse(JSON.stringify(canonical)));if(operation==='mutate_conference_core')return Promise.resolve(Object.assign({},canonical,{name:args.p_name,place:args.p_place,startDate:args.p_start_date,endDate:args.p_end_date,status:args.p_status,revision:5,updatedAt:'updated-2'}));throw new Error('unexpected operation');}}};
   sandbox.window=sandbox;
   vm.runInNewContext(integrationSource,sandbox);
   return {sandbox,calls,remote,canonical,fail:value=>{fail=value;}};
@@ -39,27 +39,28 @@ test('online hydration and mutation use the one protected Platform boundary',asy
   assert.equal(env.calls[0].module,'conference');
   assert.equal(env.calls[0].operation,'get_conference_core');
   assert.deepEqual(env.calls[0].args,{p_conference_id:env.remote});
-  assert.equal(conference.name,'Canonical');
-  assert.equal(conference.conf.name,'Canonical');
-  assert.equal(conference.revision,4);
+  assert.equal(conference.name,'Legacy');
+  assert.equal(conference.conf.name,'Legacy');
+  assert.equal(api.getConferenceCoreState('local').core.name,'Canonical');
   assert.equal(conference.peopleDb.people[0].id,'person-old');
   assert.equal(conference.houses[0].id,'house-old');
-  await api.mutateConferenceCore('local',{name:'Edited',startDate:'2026-10-02',endDate:'2026-10-04',status:'active'});
+  await api.mutateConferenceCore('local',{name:'Edited',place:'Edited place',startDate:'2026-10-02',endDate:'2026-10-04',status:'active'});
   assert.equal(env.calls[1].operation,'mutate_conference_core');
   assert.equal(env.calls[1].args.p_expected_revision,4);
-  assert.equal(conference.name,'Edited');
-  assert.equal(conference.revision,5);
+  assert.equal(env.calls[1].args.p_place,'Edited place');
+  assert.equal(env.calls[1].args.p_operation_id,'50000000-0000-4000-8000-000000000099');
+  assert.equal(conference.name,'Legacy');
   assert.equal(api.getConferenceCoreState('local').core.revision,5);
 });
 
-test('legacy snapshot domains hydrate while canonical core resists reverse overwrite',async()=>{
+test('canonical core remains separate from the legacy document',async()=>{
   const env=environment();
   const api=env.sandbox.PlatformIntegration;
   await api.hydrateConferenceCore('local',env.remote);
   const incoming={currentConferenceId:'local',conferences:[{id:'local',name:'Snapshot name',startDate:'snapshot-start',endDate:'snapshot-end',status:'completed',revision:99,conf:{name:'Snapshot name'},peopleDb:{people:[{id:'person-new'}]},houses:[{id:'house-new'}]}]};
   const preserved=api.preserveCanonicalConferenceCores(incoming);
-  assert.equal(preserved.conferences[0].name,'Canonical');
-  assert.equal(preserved.conferences[0].revision,4);
+  assert.equal(preserved.conferences[0].name,'Snapshot name');
+  assert.equal(api.getConferenceCoreState('local').core.name,'Canonical');
   assert.equal(preserved.conferences[0].peopleDb.people[0].id,'person-new');
   assert.equal(preserved.conferences[0].houses[0].id,'house-new');
 });
@@ -70,7 +71,7 @@ test('conflict and offline failures never become legacy mutations',async()=>{
   await api.hydrateConferenceCore('local',env.remote);
   env.fail('CONFERENCE_CORE_REVISION_CONFLICT');
   await assert.rejects(api.mutateConferenceCore('local',{name:'Draft',startDate:'2026-10-01',endDate:'2026-10-03',status:'active'}),error=>error.code==='CONFERENCE_CORE_REVISION_CONFLICT');
-  assert.equal(env.sandbox.appData.conferences[0].name,'Canonical');
+  assert.equal(env.sandbox.appData.conferences[0].name,'Legacy');
   env.fail(null);
   env.sandbox.navigator.onLine=false;
   await assert.rejects(api.mutateConferenceCore('local',{name:'Offline draft'}),error=>error.code==='CANONICAL_CONFERENCE_CORE_OFFLINE');
@@ -80,7 +81,7 @@ test('conflict and offline failures never become legacy mutations',async()=>{
 test('same-page edit preserves its draft on conflict and does not invoke legacy save',()=>{
   const edit=scriptSource.slice(scriptSource.indexOf("if (conferenceDialogMode === 'edit')"),scriptSource.indexOf('var organizationId=',scriptSource.indexOf("if (conferenceDialogMode === 'edit')")));
   assert.match(edit,/integration\.mutateConferenceCore\(current\.id/);
-  assert.match(edit,/name:name,startDate:startDate,endDate:endDate,status:current\.status/);
+  assert.match(edit,/name:name,place:place,startDate:startDate,endDate:endDate,status:canonicalState\.core\.status/);
   assert.match(edit,/CONFERENCE_CORE_REVISION_CONFLICT[\s\S]*hydrateCanonicalConferenceCore/);
   assert.doesNotMatch(edit,/\bsave\s*\(/);
   const failureStart=edit.indexOf('catch(function(error)');
@@ -99,7 +100,7 @@ test('snapshot, recovery and realtime application share the canonical core guard
   assert.doesNotMatch(integrationSource,/localStorage|indexedDB|conference_snapshots|OfflineSyncQueue|WebSocket|channel\s*\(/i);
 });
 
-test('unrelated legacy saves retain the old core cache and persist new legacy domains',async()=>{
+test('linked serialization removes all canonical-owned business roots',async()=>{
   const env=environment();
   const api=env.sandbox.PlatformIntegration;
   await api.hydrateConferenceCore('local',env.remote);
@@ -109,13 +110,11 @@ test('unrelated legacy saves retain the old core cache and persist new legacy do
   live.houses.push({id:'house-new'});
   const serialized=api.prepareLegacyConferenceSerialization(env.sandbox.appData);
   const persisted=serialized.conferences[0];
-  assert.equal(live.name,'B');
-  assert.equal(live.revision,5);
-  assert.equal(persisted.name,'Legacy');
-  assert.equal(persisted.revision,2);
-  assert.equal(persisted.conf.name,'Legacy');
-  assert.deepEqual(Array.from(persisted.peopleDb.people,item=>item.id),['person-old','person-new']);
-  assert.deepEqual(Array.from(persisted.houses,item=>item.id),['house-old','house-new']);
+  assert.equal(live.name,'Legacy');
+  assert.equal(persisted.name,undefined);
+  assert.equal(persisted.conf,undefined);
+  assert.equal(persisted.peopleDb,undefined);
+  assert.equal(persisted.houses,undefined);
 });
 
 test('one sanitizer protects repository queue, mirrors, backups and exports',()=>{
