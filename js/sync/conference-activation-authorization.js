@@ -1,23 +1,112 @@
-(function(global){
+(function (global) {
   'use strict';
-  var CLOUD_ROLES=['owner','manager','viewer','accommodation_viewer','transport_viewer'];
-  var accountUserId='',persistedCandidate='',candidateSource=null,activeId=null;
-  var decisions=Object.create(null);
-  function copy(value){return value==null?value:JSON.parse(JSON.stringify(value));}
-  function currentUserId(){var auth=global.SupabaseAuth&&global.SupabaseAuth.getState&&global.SupabaseAuth.getState();return String(auth&&auth.user&&auth.user.id||'');}
-  function denied(classification,id,reason,remoteId){return {ok:false,status:reason,classification:classification,localConferenceId:String(id||''),remoteConferenceId:String(remoteId||'')||null,authenticatedUserId:accountUserId||null,role:null,capabilities:{display:false,protectedRead:false,edit:false,sync:false},reason:reason};}
-  function syncAccount(){var next=currentUserId();if(next!==accountUserId){accountUserId=next;decisions=Object.create(null);activeId=null;}return accountUserId;}
-  function resetForAccount(userId){accountUserId=String(userId||'');decisions=Object.create(null);activeId=null;return getCurrentState();}
-  function capturePersistedCandidate(id,source){persistedCandidate=String(id||'');candidateSource=source||null;return persistedCandidate;}
-  function getPersistedCandidate(){return persistedCandidate;}
-  function authorizeCloud(input){input=input||{};syncAccount();var id=String(input.localConferenceId||''),remoteId=String(input.remoteConferenceId||''),userId=String(input.authenticatedUserId||''),canonical=input.canonicalAccess===true,role=String(input.role||''),canonicalCapabilities=input.capabilities||{};if(!id||!remoteId||!accountUserId||userId!==accountUserId||(!canonical&&CLOUD_ROLES.indexOf(role)<0)){var rejected=denied('unauthorized_linked',id,'cloud_authorization_invalid',remoteId);if(id)decisions[id]=rejected;return copy(rejected);}var editable=canonical?canonicalCapabilities.edit===true:['owner','manager'].indexOf(role)>=0;var syncable=canonical?canonicalCapabilities.sync===true:editable;var decision={ok:true,status:'authorized',classification:'authorized_cloud_linked',localConferenceId:id,remoteConferenceId:remoteId,authenticatedUserId:accountUserId,role:canonical?null:role,authority:canonical?'canonical':null,capabilities:{display:true,protectedRead:true,edit:editable,sync:syncable},reason:null};decisions[id]=decision;return copy(decision);}
-  function authorizeLocalOnly(appData,id){syncAccount();id=String(id||'');var record=appData&&appData.conferenceLifecycle&&appData.conferenceLifecycle.records&&appData.conferenceLifecycle.records[id];var provenance=String(record&&record.localOwnerUserId||'');if(!record||['unpublished','local_only','waiting_for_authorization'].indexOf(String(record.cloudLifecycle||''))<0||!accountUserId||provenance!==accountUserId){var rejected=denied('unverified_local_scope',id,'local_provenance_unverified');if(id)decisions[id]=rejected;return copy(rejected);}var decision={ok:true,status:'authorized',classification:'authorized_local_only',localConferenceId:id,remoteConferenceId:null,authenticatedUserId:accountUserId,role:'local_owner',capabilities:{display:true,protectedRead:false,edit:true,sync:false},reason:null};decisions[id]=decision;activeId=id;persistedCandidate=id;return copy(decision);}
-  function deactivate(id,classification,reason,remoteId){syncAccount();id=String(id||activeId||'');var decision=denied(classification||'unverified_local_scope',id,reason||'authorization_required',remoteId);if(id)decisions[id]=decision;if(activeId===id)activeId=null;return copy(decision);}
-  function activate(id){syncAccount();id=String(id||'');var decision=decisions[id];if(!decision||!decision.ok||!decision.capabilities.display)return false;activeId=id;persistedCandidate=id;return true;}
-  function getConferenceState(id){syncAccount();return copy(decisions[String(id||'')]||denied('unverified_local_scope',id,'authorization_unverified'));}
-  function getCurrentState(){syncAccount();return activeId?getConferenceState(activeId):denied('unverified_local_scope','','no_authorized_runtime_conference');}
-  function capability(id,name){var state=getConferenceState(id);return !!(state.ok&&state.capabilities&&state.capabilities[name]===true);}
-  function preparePersistedAppData(appData){var value=copy(appData);if(!value.currentConferenceId&&persistedCandidate)value.currentConferenceId=persistedCandidate;return value;}
-  function reconcileStartup(input){input=input||{};syncAccount();var data=input.appData||{},candidate=String(input.persistedCandidate||persistedCandidate||'');activeId=null;if(!candidate)return Promise.resolve(denied('unverified_local_scope','','no_persisted_candidate'));var conference=(Array.isArray(data.conferences)?data.conferences:[]).filter(function(item){return item&&String(item.id)===candidate;})[0];if(!conference)return Promise.resolve(deactivate(candidate,'unverified_local_scope','candidate_not_found'));var link=input.links&&typeof input.links.get==='function'?input.links.get(candidate):null;if(!link)return Promise.resolve(authorizeLocalOnly(data,candidate));var remoteId=String(link.remoteConferenceId||''),discovered=Array.isArray(input.discovered)?input.discovered:[],present=discovered.some(function(item){return item&&String(item.remoteConferenceId||item.id||'')===remoteId;});if(!present)return Promise.resolve(deactivate(candidate,'unauthorized_linked','conference_not_discovered',remoteId));if(typeof input.validateCloud!=='function')return Promise.resolve(deactivate(candidate,'unauthorized_linked','authorization_validator_unavailable',remoteId));return Promise.resolve(input.validateCloud(remoteId)).then(function(validated){if(!validated||!validated.ok||validated.status!=='authorized')return deactivate(candidate,'unauthorized_linked',validated&&validated.status||'conference_unavailable',remoteId);var decision=authorizeCloud({localConferenceId:candidate,remoteConferenceId:remoteId,authenticatedUserId:accountUserId,canonicalAccess:validated.data&&validated.data.canonicalAccess===true,capabilities:validated.data&&validated.data.capabilities});if(decision.ok)activate(candidate);return decision;}).catch(function(){return deactivate(candidate,'unauthorized_linked','authorization_failed',remoteId);});}
-  global.ConferenceActivationAuthorization=Object.freeze({resetForAccount:resetForAccount,capturePersistedCandidate:capturePersistedCandidate,getPersistedCandidate:getPersistedCandidate,authorizeCloud:authorizeCloud,authorizeLocalOnly:authorizeLocalOnly,reconcileStartup:reconcileStartup,deactivate:deactivate,activate:activate,getConferenceState:getConferenceState,getCurrentState:getCurrentState,getAccountUserId:function(){syncAccount();return accountUserId;},preparePersistedAppData:preparePersistedAppData,canDisplay:function(id){return capability(id,'display');},canReadProtected:function(id){return capability(id,'protectedRead');},canEdit:function(id){return capability(id,'edit');},canSync:function(id){return capability(id,'sync');}});
+
+  const SOURCE = 'conference_activation_authorization';
+
+  function normalizeId(value) {
+    const normalized = String(value || '').trim();
+    return normalized || null;
+  }
+
+  function buildDenied(reason, conferenceId) {
+    return {
+      ok: false,
+      active: false,
+      reason: String(reason || 'canonical_access_required'),
+      conferenceId: normalizeId(conferenceId),
+      role: null,
+      capabilities: null,
+      source: SOURCE,
+    };
+  }
+
+  function authorizeLocal({ conferenceId } = {}) {
+    const normalizedConferenceId = normalizeId(conferenceId);
+    if (!normalizedConferenceId) return buildDenied('conference_missing', conferenceId);
+    return {
+      ok: true,
+      active: true,
+      reason: 'local_conference',
+      conferenceId: normalizedConferenceId,
+      role: null,
+      capabilities: null,
+      source: SOURCE,
+    };
+  }
+
+  function authorizeCanonicalCloud({ conferenceId, canonicalAccess = false, capabilities = null } = {}) {
+    const normalizedConferenceId = normalizeId(conferenceId);
+    if (!normalizedConferenceId) return buildDenied('conference_missing', conferenceId);
+    if (canonicalAccess !== true) {
+      return buildDenied('canonical_access_required', normalizedConferenceId);
+    }
+    return {
+      ok: true,
+      active: true,
+      reason: 'canonical_access_granted',
+      conferenceId: normalizedConferenceId,
+      role: null,
+      capabilities: capabilities && typeof capabilities === 'object' ? capabilities : null,
+      source: SOURCE,
+    };
+  }
+
+  function authorizeCloud(input = {}) {
+    return authorizeCanonicalCloud(input);
+  }
+
+  function validateCloud(input = {}) {
+    return authorizeCanonicalCloud(input);
+  }
+
+  async function reconcileStartup({
+    conferenceId,
+    isLinked = false,
+    validateCloud: validateCloudCallback = null,
+    canonicalAccess = false,
+    capabilities = null,
+    onDeactivate = null,
+  } = {}) {
+    const normalizedConferenceId = normalizeId(conferenceId);
+    if (!normalizedConferenceId) return buildDenied('conference_missing', conferenceId);
+    if (!isLinked) return authorizeLocal({ conferenceId: normalizedConferenceId });
+
+    let decision;
+    if (typeof validateCloudCallback === 'function') {
+      decision = await validateCloudCallback({
+        conferenceId: normalizedConferenceId,
+        canonicalAccess,
+        capabilities,
+      });
+    } else {
+      decision = validateCloud({
+        conferenceId: normalizedConferenceId,
+        canonicalAccess,
+        capabilities,
+      });
+    }
+
+    if (decision && decision.ok === true && decision.active === true) {
+      return {
+        ...decision,
+        role: null,
+        source: SOURCE,
+      };
+    }
+
+    if (typeof onDeactivate === 'function') {
+      await onDeactivate({
+        conferenceId: normalizedConferenceId,
+        reason: (decision && decision.reason) || 'canonical_access_denied',
+      });
+    }
+    return buildDenied((decision && decision.reason) || 'canonical_access_denied', normalizedConferenceId);
+  }
+
+  global.ConferenceActivationAuthorization = Object.freeze({
+    authorizeLocal,
+    authorizeCloud,
+    validateCloud,
+    reconcileStartup,
+  });
 })(window);

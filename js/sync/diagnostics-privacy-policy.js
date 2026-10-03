@@ -1,15 +1,37 @@
-(function(global){
+(function (global) {
   'use strict';
-  function systemAccess(){var service=global.SystemAccessService;return service&&typeof service.getState==='function'?service.getState():{};}
-  function conferenceAccess(){var ui=global.ConferenceMembersUI;return ui&&typeof ui.getAccessState==='function'?ui.getAccessState():{};}
-  function isSystemOwner(){var access=systemAccess();return access.accountStatus==='approved'&&access.fresh===true&&access.isSystemOwner===true;}
-  function conferenceRole(){var access=conferenceAccess();return access.accessStatus==='available'?String(access.role||''):'';}
-  function canViewConferenceDiagnostics(){return isSystemOwner()||['owner','manager'].indexOf(conferenceRole())>=0;}
-  function canExportRescue(){return isSystemOwner()||conferenceRole()==='owner';}
-  global.DiagnosticsPrivacyPolicy=Object.freeze({
-    isDevelopment:function(){return !!(global.BrowserStorageNamespace&&global.BrowserStorageNamespace.environment==='development');},
-    isSystemOwner:isSystemOwner,conferenceRole:conferenceRole,
-    canViewConferenceDiagnostics:canViewConferenceDiagnostics,
-    canExportRescue:canExportRescue
+
+  function isSystemOwner() {
+    const administration = global.SystemOwnerAdministrationService;
+    if (administration && typeof administration.isCurrentUserSystemOwner === 'function') {
+      try {
+        return administration.isCurrentUserSystemOwner() === true;
+      } catch (_error) {
+        return false;
+      }
+    }
+    const access = global.CurrentAccountAccess || global.PlatformAccountAccess || null;
+    return Boolean(access && (access.isSystemOwner === true || access.systemOwner === true));
+  }
+
+  function canViewDiagnostics() {
+    return isSystemOwner();
+  }
+
+  function redact(value) {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) return value.map(redact);
+    if (typeof value !== 'object') return value;
+    const output = {};
+    Object.entries(value).forEach(([key, entry]) => {
+      if (/token|secret|password|credential|session/i.test(key)) return;
+      output[key] = redact(entry);
+    });
+    return output;
+  }
+
+  global.DiagnosticsPrivacyPolicy = Object.freeze({
+    canViewDiagnostics,
+    redact,
   });
 })(window);
