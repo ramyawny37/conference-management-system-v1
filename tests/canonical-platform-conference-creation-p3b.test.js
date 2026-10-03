@@ -12,12 +12,6 @@ const migrationPath='supabase/migrations/20260928140000_canonical_platform_confe
 const sql=fs.readFileSync(path.join(root,migrationPath),'utf8');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const creation=sql.match(/create function public\.create_canonical_conference\([\s\S]*?end \$\$;/i);
-const legacyFiles=[
-  'js/supabase/snapshot-sync.js',
-  'js/sync/conference-linking-service.js',
-  'js/storage/conference-publishing-engine.js',
-  'js/storage/conference-publish-recovery.js'
-];
 
 test('P3B has one Platform-authorized server creation path',()=>{
   assert.ok(creation);
@@ -54,12 +48,8 @@ test('existing ledger, deterministic replay and canonical audit are reused',()=>
   assert.doesNotMatch(sql,/create (?:table|schema).*audit/i);
 });
 
-test('legacy local publishing consumers and unrelated domains are outside P3B',()=>{
-  const legacyCall='device_guarded_create_organization_conference_idempotent';
-  assert.ok(read(legacyFiles[0]).includes(legacyCall),legacyFiles[0]);
-  for(const file of legacyFiles.slice(1)){
-    assert.ok(read(file).includes('createConferenceIdempotent'),file);
-  }
+test('retired local publishing consumers and unrelated domains are outside P3B',()=>{
+  for(const file of ['js/supabase/snapshot-sync.js','js/sync/conference-linking-service.js','js/storage/conference-publishing-engine.js','js/storage/conference-publish-recovery.js'])assert.equal(fs.existsSync(path.join(root,file)),false,file);
   assert.doesNotMatch(sql,/\b(?:reservations|warehouse)\./i);
   assert.doesNotMatch(sql,/platform\.people|conference_people|conference_snapshots|sync_operations|sync_conflicts/i);
   assert.doesNotMatch(sql,/js\/|\.html|\.css/);

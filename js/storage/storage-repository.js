@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
 
-  var snapshotWriteQueue = Promise.resolve();
+  var localWriteQueue = Promise.resolve();
 
   function cloneSnapshotData(appData){
     if(typeof global.structuredClone==='function'){
@@ -26,17 +26,7 @@
 
   function saveAppSnapshot(appData,options){
     options=options&&typeof options==='object'?options:{};
-    var activation=global.ConferenceActivationAuthorization;
-    var persistenceInput=activation&&
-      typeof activation.preparePersistedAppData==='function'
-      ?activation.preparePersistedAppData(appData):appData;
-    var platform=global.PlatformIntegration;
-    if(platform&&
-      typeof platform.prepareLegacyConferenceSerialization==='function'){
-      persistenceInput=platform.prepareLegacyConferenceSerialization(
-        persistenceInput
-      );
-    }
+    var persistenceInput=appData;
     var inspected=inspectSnapshot(persistenceInput);
     if(!inspected.ok){
       var serializationError=new Error(
@@ -46,7 +36,6 @@
       return Promise.reject(serializationError);
     }
     var queuedSnapshot=cloneSnapshotData(inspected.snapshot);
-    var localSaveResult=null;
     var previousSnapshotRecord=null;
     var persistenceMetadata=null;
     var arbitration=global.LocalPersistenceArbitration;
@@ -62,7 +51,7 @@
       }
       return Promise.resolve();
     }
-    var writeOperation = snapshotWriteQueue
+    var writeOperation = localWriteQueue
       .catch(function(){})
       .then(function(){
         if(typeof global.AppIndexedDB.getAppSnapshot!=='function')return null;
@@ -98,67 +87,11 @@
         return global.AppIndexedDB.saveAppSnapshot(queuedSnapshot,metadata);
       })
       .then(function(saveResult){
-        var integration=options.skipSyncQueue
-          ?null
-          :global.OfflineFirstIntegration;
-        if(!integration||
-          typeof integration.handleLocalSave!=='function'){
-          return saveResult;
-        }
-        return Promise.resolve()
-          .then(function(){
-            return integration.handleLocalSave(queuedSnapshot);
-          })
-          .catch(function(error){
-            return {ok:false,status:'error',error:{
-              code:error&&error.code||'SYNC_QUEUE_ENQUEUE_FAILED',
-              message:'The local sync operation could not be queued.'
-            }};
-          })
-          .then(function(result){
-            localSaveResult=result;
-            return saveResult;
-          });
-      })
-      .then(function(saveResult){
-        if(localSaveResult&&(
-          localSaveResult.ok===false||
-          localSaveResult.data&&
-          localSaveResult.data.reason==='QUEUE_ENQUEUE_FAILED'
-        )){
-          return Promise.resolve(restorePreviousSnapshot()).then(function(){
-            var queueError=new Error(
-              'The local sync operation could not be queued.'
-            );
-            queueError.code=localSaveResult.error&&localSaveResult.error.code||
-              'SYNC_QUEUE_ENQUEUE_FAILED';
-            queueError.sizeBytes=inspected.sizeBytes;
-            throw queueError;
-          });
-        }
         var templateSync=options.skipTemplateSync
           ?null:global.OrganizationTemplateSync;
         if(templateSync&&typeof templateSync.captureLocalSave==='function'){
           Promise.resolve(templateSync.captureLocalSave(queuedSnapshot))
             .catch(function(){return null;});
-        }
-        var queued=localSaveResult&&localSaveResult.ok===true&&
-          localSaveResult.status==='queued'&&
-          localSaveResult.data&&
-          ['enqueued','coalesced'].indexOf(
-            localSaveResult.data.queueStatus
-          )>=0;
-        var orchestrator=global.AutomaticSyncOrchestrator;
-        if(queued&&orchestrator){
-          var wakeResult=typeof orchestrator.wakeForLocalSave==='function'
-            ?orchestrator.wakeForLocalSave(options.orchestratorOptions)
-            :typeof orchestrator.schedule==='function'
-              ?orchestrator.schedule('local_save',options.orchestratorOptions)
-              :null;
-          if(!wakeResult||wakeResult.ok===false){
-            // Snapshot durability is already established. Mirror persistence
-            // must still run even when the optional wake request is declined.
-          }
         }
         var mirrorStatus={ok:true,status:'persisted',indexedDB:saveResult,
           persistenceMetadata:persistenceMetadata,mirror:{ok:true}};
@@ -177,7 +110,7 @@
         }
         return mirrorStatus;
       });
-    snapshotWriteQueue = writeOperation;
+    localWriteQueue = writeOperation;
     return writeOperation;
   }
 
@@ -190,11 +123,7 @@
   }
 
   function createLocalBackup(appData,reason){
-    var platform=global.PlatformIntegration;
-    var persistenceInput=platform&&
-      typeof platform.prepareLegacyConferenceSerialization==='function'
-      ?platform.prepareLegacyConferenceSerialization(appData):appData;
-    return global.AppIndexedDB.createLocalBackup(persistenceInput,reason);
+    return global.AppIndexedDB.createLocalBackup(appData,reason);
   }
 
   function getLocalBackups(conferenceId){

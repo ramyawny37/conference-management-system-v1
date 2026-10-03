@@ -22,7 +22,6 @@ const moduleAdapter=read('supabase/migrations/20260829130000_module_permission_c
 const warehouseGuarded=read('supabase/migrations/20260829140200_warehouse_v1_guarded_rpc.sql');
 const warehouseContract=read('js/supabase/warehouse-device-operation-contract.js');
 const browserContract=read('js/supabase/conference-device-operation-contract.js');
-const autoSync=read('tests/automatic-sync-orchestrator.test.js');
 
 const seed=functionBody(retirement,'platform_private.seed_access_reference_data');
 const hasPermissionFor=functionBody(retirement,'platform_private.has_permission_for');
@@ -120,8 +119,7 @@ test('device/session and SECURITY DEFINER boundaries remain closed',()=>{
   assert.match(retirement,/revoke all on function platform_private\.has_permission_for\(uuid,text,text,uuid\)[\s\S]*service_role/i);
 });
 
-test('automatic-sync blocker remains event/state based and untouched',()=>{
-  assert.match(autoSync,/async function waitForEvaluationToFinish[\s\S]*while\s*\([\s\S]*await new Promise/i);
+test('snapshot automatic-sync blocker is retired without changing Inventory authority',()=>{
   assert.doesNotMatch(retirement,/automatic.?sync|setTimeout|sleep/i);
   assert.doesNotMatch([platformFoundation,phase1c].join('\n'),/inventory\.[a-z][\s\S]{0,100}warehouse\.[a-z]|warehouse\.[a-z][\s\S]{0,100}inventory\.[a-z]/i);
 });

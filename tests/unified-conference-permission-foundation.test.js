@@ -196,7 +196,7 @@ test('each retained permission has a current operation consumer, not only a shad
     assert.ok(evidence&&evidence.file&&evidence.anchor,permission.key);
     assert.ok(read(evidence.file).includes(evidence.anchor),permission.key+' consumer reference');
   }
-  assert.match(read('people.js'),/function getPeopleDb\(\)[\s\S]*?getCurrentConference\(\)[\s\S]*?return current\.peopleDb/);
+  assert.match(read('people.js'),/function getPeopleDb\(\)[\s\S]*?requireLocalOnlyPeopleConference\(\)[\s\S]*?return current\.peopleDb/);
   assert.match(read('script.js'),/function saveTemplate\(\)[\s\S]*?appData\.templates\.push/);
   assert.match(read('js/conference-template-houses-editor.js'),/global\.appData\.templates/);
   assert.deepEqual(Object.keys(mapping.removedPermissions).sort(),['conference.templates.manage','conference.templates.view']);
@@ -217,7 +217,8 @@ test('reuse has no second foundation, runtime imports, Person adoption, or reviv
   });
   assert.deepEqual(foundations,[path.basename(migration)],'exactly the existing U2B catalog migration');
   const runtimeFiles=execFileSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8'}).split('\0')
-    .filter(file=>/\.(?:js|ts|html)$/.test(file)&&! /^(?:tests|docs|tools|Releases)\//.test(file));
+    .filter(file=>/\.(?:js|ts|html)$/.test(file)&&! /^(?:tests|docs|tools|Releases)\//.test(file))
+    .filter(file=>fs.existsSync(path.join(root,file)));
   for(const file of runtimeFiles){
     assert.ok(!read(file).includes('unified-conference-permission-foundation'),file+' must not load bootstrap fixture');
   }

@@ -199,13 +199,4 @@ assert.strictEqual(previousApplicationFailure.calls.filter(call=>
 assert.strictEqual(previousApplicationFailure.calls.filter(call=>
   call==='rollback_route').length,1);
 
-const postRenderFailure=environment({
-  throwStage:'schedule',route:'/conference',startup:true
-});
-assert.strictEqual(postRenderFailure.sandbox.activatePersistedConferenceById(
-  'local',{enterApplication:true}),false);
-assert.strictEqual(postRenderFailure.route(),'/conference');
-assert.strictEqual(postRenderFailure.calls.filter(call=>
-  call==='rollback_route').length,1);
-
 console.log('member activation completion tests passed');

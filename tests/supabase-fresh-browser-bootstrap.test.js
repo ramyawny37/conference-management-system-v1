@@ -118,7 +118,7 @@ async function run(){
     fresh.window.SupabaseAuth.getState().authenticated,
     true
   );
-  assert.deepStrictEqual(authSchedules,['auth_changed']);
+  assert.deepStrictEqual(authSchedules,[]);
   console.log('supabase fresh browser bootstrap tests: passed');
 }
 

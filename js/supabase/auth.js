@@ -106,14 +106,6 @@
     state.session=session||null;
     state.user=session&&session.user?session.user:null;
     var nextUserId=String(state.user&&state.user.id||'');
-    var orchestrator=global.AutomaticSyncOrchestrator;
-    var orchestratorState=orchestrator&&
-      typeof orchestrator.getState==='function'
-      ?orchestrator.getState():null;
-    if(previousUserId!==nextUserId&&orchestratorState&&
-      orchestratorState.started&&typeof orchestrator.schedule==='function'){
-      orchestrator.schedule('auth_changed');
-    }
     if(typeof global.updateLogoText==='function')global.updateLogoText();
     if(global.SyncSettingsUI&&
       typeof global.SyncSettingsUI.refreshAccountIdentity==='function'){

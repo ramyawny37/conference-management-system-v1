@@ -14,7 +14,6 @@ const migration='supabase/migrations/20261003120000_canonical_conference_discove
 const sql=read(migration);
 const capabilityMigration='supabase/migrations/20261003130000_canonical_discovery_activation_capabilities.sql';
 const capabilitySql=read(capabilityMigration);
-const snapshot=read('js/supabase/snapshot-sync.js');
 const discovery=read('js/supabase/canonical-conference-discovery.js');
 const startup=read('js/sync/startup-conference-discovery.js');
 const opening=read('js/sync/discovered-conference-open-service.js');
@@ -33,8 +32,7 @@ test('9 actor identity is supplied only by device context',()=>{assert.match(sql
 test('10 approved device and protected session are required',()=>{assert.match(sql,/require_current_approved_device\(p_actor_device_id\)/);assert.match(sql,/route_canonical_conference_operation/);});
 test('11 frontend discovery does not query conference_members',()=>{assert.doesNotMatch(discovery,/conference_members|\.from\(/);assert.doesNotMatch(startup,/listAvailableConferences/);});
 test('12 frontend discovery invokes the canonical operation',()=>{assert.match(discovery,/invokeModuleProtected\([\s\S]*list_accessible_conferences/);assert.match(edge,/conference\.add\('list_accessible_conferences'\)/);});
-test('13 temporary snapshot hydration remains after discovery',()=>assert.match(startup,/downloadSnapshot/));
-test('14 snapshot hydration is not the authorization predicate',()=>{assert.doesNotMatch(opening.slice(opening.indexOf('function validateAccess'),opening.indexOf('function snapshotFor')),/downloadSnapshot|conference_members|getCurrentAccess/);});
+test('13 discovery contains no snapshot hydration',()=>assert.doesNotMatch(startup+opening,/downloadSnapshot|conference_snapshots|SupabaseSnapshotSync/));
 test('15 local-only conference authorization remains isolated',()=>assert.match(activation,/function authorizeLocalOnly/));
 test('16 Reservations operation allowlist remains present',()=>assert.match(edge,/const reservations=new Set/));
 test('17 Warehouse operation allowlist remains present',()=>assert.match(edge,/const warehouse=new Set/));

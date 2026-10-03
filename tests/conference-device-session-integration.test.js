@@ -63,7 +63,8 @@ test("legacy Phase 1C contract stays aligned while canonical operations use the 
   const dispatcher=[...migration.matchAll(/when '([a-z0-9_]+)'(?:,'([a-z0-9_]+)')?(?:,'([a-z0-9_]+)')? then/g)].flatMap(match=>match.slice(1).filter(Boolean)).sort();
   assert.deepEqual(edgeOperations.filter(operation=>!canonical.has(operation)),declared);
   assert.deepEqual(edgeOperations.filter(operation=>canonical.has(operation)),[...canonical].sort());
-  assert.deepEqual(dispatcher,declared);
+  const retired=new Set(['device_guarded_apply_conference_snapshot','device_guarded_download_conference_snapshot','device_guarded_get_conference_snapshot_metadata','device_guarded_get_sync_conflict','device_guarded_list_sync_conflicts','device_guarded_resolve_sync_conflict']);
+  assert.deepEqual(dispatcher.filter(operation=>!retired.has(operation)),declared);
   for(const row of contract.EDGE_ONLY_PROTECTED.filter(row=>!round3g2.has(row.operation))){
     assert.ok(migration.includes("'"+row.signature+"'"),"missing exact revoke: "+row.signature);
   }

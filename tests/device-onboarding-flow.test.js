@@ -40,7 +40,8 @@ function startupPipelineContract(){
   const storageResetIndex=source.indexOf('window.applicationStorageReadyPromise=null;');
   assert(storageResetIndex>=0&&storageResetIndex<gateIndex,'auth/device gate must start before application storage');
   assert.match(source,/function completeApplicationStartup\(\)[\s\S]*initializeApplicationStorage\(\)/);
-  assert.match(source,/function completeAuthorizedApplicationStartup\(\)[\s\S]*StartupConferenceDiscovery[\s\S]*StartupQueueRecovery[\s\S]*AutomaticSyncOrchestrator\.start[\s\S]*restoreAuthorizedApplicationView\(\)/);
+  assert.match(source,/function completeAuthorizedApplicationStartup\(\)[\s\S]*StartupConferenceDiscovery[\s\S]*restoreAuthorizedApplicationView\(\)/);
+  assert.doesNotMatch(source,/StartupQueueRecovery|AutomaticSyncOrchestrator\.start/);
   assert(source.includes('completeApplicationStartup:completeAuthorizedApplicationStartup'),'gate release must resume the entire authorized startup pipeline');
 }
 

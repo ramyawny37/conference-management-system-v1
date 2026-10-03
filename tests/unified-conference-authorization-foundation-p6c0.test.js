@@ -50,10 +50,8 @@ test('one dispatcher and one device session remain shared by Conference, Warehou
 test('legacy role and boolean capability consumers remain explicitly temporary',()=>{
   const members=read('js/sync/conference-members-service.js');
   const activation=read('js/sync/conference-activation-authorization.js');
-  const queue=read('js/sync/conference-queue-integration.js');
   for(const capability of ['canManageMembers','canSync','canResolveConflicts','canAcquireLock'])assert.ok(members.includes(capability));
   assert.match(activation,/CLOUD_ROLES=\['owner','manager','viewer','accommodation_viewer','transport_viewer'\]/);
-  assert.match(queue,/\['owner','manager'\]/);
   assert.doesNotMatch(sql,/canManageMembers|canSync|canResolveConflicts|canAcquireLock/);
 });
 

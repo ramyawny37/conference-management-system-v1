@@ -252,35 +252,6 @@ function testPreviewUsesCandidate(api){
   assert.strictEqual(preview.replacement.willReplaceAllApplicationData,true);
 }
 
-function testCloudRisks(api){
-  var candidate=data();
-  var risks=api.detectFullRestoreCloudLinkRisks(candidate,{
-    syncLinks:[
-      {
-        localConferenceId:'conference-1',
-        remoteConferenceId:'remote-1'
-      },
-      {
-        localConferenceId:'conference-1',
-        remoteConferenceId:'remote-2'
-      },
-      {localConferenceId:'broken'}
-    ]
-  });
-  assert.strictEqual(
-    hasCode(risks,'CONFERENCE_HAS_EXISTING_CLOUD_LINK'),
-    true
-  );
-  assert.strictEqual(hasCode(risks,'DUPLICATE_CLOUD_LINK'),true);
-  assert.strictEqual(hasCode(risks,'MALFORMED_SYNC_LINK'),true);
-  assert.doesNotThrow(function(){
-    var malformed=api.detectFullRestoreCloudLinkRisks(candidate,{
-      syncLinks:'invalid'
-    });
-    assert.strictEqual(hasCode(malformed,'MALFORMED_SYNC_LINKS'),true);
-  });
-}
-
 async function testNoSideEffectsOrNetwork(){
   var calls=[];
   var loaded=load({
@@ -302,9 +273,6 @@ async function testNoSideEffectsOrNetwork(){
     supportedDataSchemaVersion:'2.0.0'
   });
   api.buildFullRestorePreview(data(),read.document,read.document.data.appData);
-  api.detectFullRestoreCloudLinkRisks(read.document.data.appData,{
-    syncLinks:[]
-  });
   assert.deepStrictEqual(calls,[]);
   assert.strictEqual(loaded.sandbox.appData,original);
   assert.deepStrictEqual(loaded.sandbox.appData,{sentinel:true});
@@ -318,7 +286,6 @@ async function run(){
   testCandidateCloneAndSchemas(api);
   testCandidateIds(api);
   testPreviewUsesCandidate(api);
-  testCloudRisks(api);
   await testNoSideEffectsOrNetwork();
   console.log('Full backup phase 3 tests passed.');
 }

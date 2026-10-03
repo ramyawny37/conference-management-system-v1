@@ -31,19 +31,15 @@
       lookupConferenceUser:function(conferenceId,email){return call('device_guarded_lookup_conference_user_by_email',{p_conference_id:conferenceId,p_email:email});},
       getConferenceLock:function(conferenceId){return call('device_guarded_get_conference_lock',{p_conference_id:conferenceId});},
       getConferenceCreationOperation:function(operationId){return call('device_guarded_get_conference_creation_operation',{p_operation_id:operationId});},
-      getSyncConflict:function(conflictId){return call('device_guarded_get_sync_conflict',{p_conflict_id:conflictId});},
-      listSyncConflicts:function(conferenceId,status,limit){return call('device_guarded_list_sync_conflicts',{p_conference_id:conferenceId,p_status:status,p_limit:limit});},
       addOrganizationMember:function(organizationId,targetUserId,operationId){return call('device_guarded_add_organization_member',{p_organization_id:organizationId,p_target_user_id:targetUserId,p_operation_id:operationId});},
       removeOrganizationMember:function(organizationId,targetUserId,operationId){return call('device_guarded_remove_organization_member',{p_organization_id:organizationId,p_target_user_id:targetUserId,p_operation_id:operationId});},
       changeOrganizationRole:function(organizationId,targetUserId,targetRole,operationId){return call('device_guarded_change_organization_role',{p_organization_id:organizationId,p_target_user_id:targetUserId,p_target_role:targetRole,p_operation_id:operationId});},
       addConferenceManager:function(conferenceId,targetUserId,operationId){return call('device_guarded_add_conference_manager',{p_conference_id:conferenceId,p_target_user_id:targetUserId,p_operation_id:operationId});},
       removeConferenceManager:function(conferenceId,targetUserId,operationId){return call('device_guarded_remove_conference_manager',{p_conference_id:conferenceId,p_target_user_id:targetUserId,p_operation_id:operationId});},
       createConference:function(operationId,requestedConferenceId,name,metadata){return call('device_guarded_create_conference_idempotent',{p_operation_id:operationId,p_requested_conference_id:requestedConferenceId,p_name:name,p_initial_metadata:metadata});},
-      applySnapshot:function(conferenceId,operationId,baseRevision,snapshot,schemaVersion,appVersion){return call('device_guarded_apply_conference_snapshot',{p_conference_id:conferenceId,p_operation_id:operationId,p_base_revision:baseRevision,p_snapshot:snapshot,p_schema_version:schemaVersion,p_app_version:appVersion});},
       acquireConferenceLock:function(conferenceId,lockToken,ttlSeconds){return call('device_guarded_acquire_conference_lock',{p_conference_id:conferenceId,p_lock_token:lockToken,p_ttl_seconds:ttlSeconds});},
       renewConferenceLock:function(conferenceId,lockToken,ttlSeconds){return call('device_guarded_renew_conference_lock',{p_conference_id:conferenceId,p_lock_token:lockToken,p_ttl_seconds:ttlSeconds});},
-      releaseConferenceLock:function(conferenceId,lockToken){return call('device_guarded_release_conference_lock',{p_conference_id:conferenceId,p_lock_token:lockToken});},
-      resolveSyncConflict:function(conflictId,conferenceId,resolutionOperationId,expectedRevision,strategy,resolvedSnapshot,schemaVersion,appVersion){return call('device_guarded_resolve_sync_conflict',{p_conflict_id:conflictId,p_conference_id:conferenceId,p_resolution_operation_id:resolutionOperationId,p_expected_revision:expectedRevision,p_strategy:strategy,p_resolved_snapshot:resolvedSnapshot,p_schema_version:schemaVersion,p_app_version:appVersion});}
+      releaseConferenceLock:function(conferenceId,lockToken){return call('device_guarded_release_conference_lock',{p_conference_id:conferenceId,p_lock_token:lockToken});}
     });
   }
   global.P03CStagedDeviceGuardedRuntime=Object.freeze({create:create});

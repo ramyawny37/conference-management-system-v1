@@ -7,19 +7,12 @@
   var DATABASE_NAME = namespace.databaseName(
     'conference_manager_v3'
   );
-  var DATABASE_VERSION = 6;
+  var DATABASE_VERSION = 7;
   var STORE_NAMES = Object.freeze({
     conferences: 'conferences',
     rooms: 'rooms',
-    pendingOperations: 'pending_operations',
-    syncMetadata: 'sync_metadata',
-    conflicts: 'conflicts',
     deviceSettings: 'device_settings',
     localBackups: 'local_backups',
-    syncOperationsQueue: 'sync_operations_queue',
-    pendingRemoteApplications: 'pending_remote_applications',
-    conflictResolutionDrafts: 'conflict_resolution_drafts',
-    conflictResolutionBackups: 'conflict_resolution_backups',
     organizationMembershipPendingOperations:
       'organization_membership_pending_operations',
     organizationTemplateOperations:
@@ -55,6 +48,13 @@
   }
 
   function upgradeDatabase(db,upgradeTransaction){
+    [
+      'pending_operations','sync_metadata','conflicts','sync_operations_queue',
+      'pending_remote_applications','conflict_resolution_drafts',
+      'conflict_resolution_backups'
+    ].forEach(function(name){
+      if(db.objectStoreNames.contains(name))db.deleteObjectStore(name);
+    });
     ensureStore(db,upgradeTransaction,STORE_NAMES.conferences,{keyPath:'conferenceId'},[
       {name:'status',keyPath:'status'},
       {name:'syncStatus',keyPath:'syncStatus'}
@@ -65,47 +65,11 @@
       {name:'conferenceFloor',keyPath:['conferenceId','floorId']},
       {name:'conferenceSyncStatus',keyPath:['conferenceId','syncStatus']}
     ]);
-    ensureStore(db,upgradeTransaction,STORE_NAMES.pendingOperations,{keyPath:'operationId'},[
-      {name:'conferenceStatus',keyPath:['conferenceId','status']},
-      {name:'createdAt',keyPath:'createdAt'}
-    ]);
-    ensureStore(db,upgradeTransaction,STORE_NAMES.syncMetadata,{keyPath:'conferenceId'});
-    ensureStore(db,upgradeTransaction,STORE_NAMES.conflicts,{keyPath:'conflictId'},[
-      {name:'conferenceStatus',keyPath:['conferenceId','resolutionStatus']},
-      {name:'operationId',keyPath:'operationId'}
-    ]);
     ensureStore(db,upgradeTransaction,STORE_NAMES.deviceSettings,{keyPath:'key'});
     ensureStore(db,upgradeTransaction,STORE_NAMES.localBackups,{keyPath:'backupId'},[
       {name:'conferenceId',keyPath:'conferenceId'},
       {name:'conferenceCreatedAt',keyPath:['conferenceId','createdAt']}
     ]);
-    ensureStore(
-      db,
-      upgradeTransaction,
-      STORE_NAMES.syncOperationsQueue,
-      {keyPath:'operationId'},
-      [
-        {name:'status',keyPath:'status'},
-        {name:'conferenceId',keyPath:'conferenceId'},
-        {name:'createdAt',keyPath:'createdAt'},
-        {name:'nextAttemptAt',keyPath:'nextAttemptAt'}
-      ]
-    );
-    ensureStore(db,upgradeTransaction,STORE_NAMES.pendingRemoteApplications,
-      {keyPath:'localConferenceId'},[
-        {name:'status',keyPath:'status'},
-        {name:'remoteConferenceId',keyPath:'remoteConferenceId'}
-      ]);
-    ensureStore(db,upgradeTransaction,STORE_NAMES.conflictResolutionDrafts,
-      {keyPath:'localConferenceId'},[
-        {name:'status',keyPath:'status'},
-        {name:'conflictId',keyPath:'conflictId'}
-      ]);
-    ensureStore(db,upgradeTransaction,STORE_NAMES.conflictResolutionBackups,
-      {keyPath:'backupId'},[
-        {name:'localConferenceId',keyPath:'localConferenceId'},
-        {name:'conferenceCreatedAt',keyPath:['localConferenceId','createdAt']}
-      ]);
     ensureStore(db,upgradeTransaction,
       STORE_NAMES.organizationMembershipPendingOperations,
       {keyPath:['authenticatedUserId','operationId']},[

@@ -193,8 +193,8 @@
         "conference.sync"
       ],
       "consumerEvidence": {
-        "file": "js/sync/sync-processor.js",
-        "anchor": "snapshotSync.uploadSnapshot(uploadInput)"
+        "file": "supabase/migrations/20261003130000_canonical_discovery_activation_capabilities.sql",
+        "anchor": "'conference.sync.write'"
       }
     },
     {
@@ -212,8 +212,8 @@
         "conference.resolve_conflict"
       ],
       "consumerEvidence": {
-        "file": "js/sync/conflict-executor.js",
-        "anchor": "'device_guarded_resolve_sync_conflict'"
+        "file": "supabase/migrations/20261009120000_retire_linked_whole_snapshot_infrastructure.sql",
+        "anchor": "'conference.conflict.resolve'"
       }
     },
     {

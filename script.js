@@ -388,10 +388,6 @@ function setCurrentConferenceById(id, options){
     Object.prototype.hasOwnProperty.call(currentConferenceRuntimeAccessRoles,id)
       ?currentConferenceRuntimeAccessRoles[id]:null;
   appData.currentConferenceId = next.id;
-  if(window.AutomaticSyncOrchestrator&&
-    typeof window.AutomaticSyncOrchestrator.schedule==='function'){
-    window.AutomaticSyncOrchestrator.schedule('conference_changed');
-  }
   setCurrentConference(next);
   if(!saveCurrentConferenceSelection())return false;
   syncCurrentConferenceRefs();
@@ -782,16 +778,6 @@ function activatePersistedConferenceById(id,options){
       return false;
     }
   }
-  if(options.alreadyPersisted!==true&&window.AutomaticSyncOrchestrator&&
-    typeof window.AutomaticSyncOrchestrator.schedule==='function'){
-    if(!runMemberActivationStep('schedule_conference_changed',function(){
-      window.AutomaticSyncOrchestrator.schedule('conference_changed');
-    }).ok){
-      rollbackCanonicalConferenceApplicationEntry(entry);
-      traceMemberActivation('activation_return','return','step_failed');
-      return false;
-    }
-  }
   traceMemberActivation('activation_return','completed',null);
   return true;
 }
@@ -819,31 +805,6 @@ function closeFullRestorePreflight(){
   var confirmation=ge('fullRestoreConfirmationModal');
   if(confirmation)confirmation.remove();
   fullRestorePreflightState=null;
-}
-function readFullRestoreSyncLinks(){
-  var result={syncLinks:[],warnings:[]};
-  try{
-    var raw=localStorage.getItem(
-      (window.BrowserStorageNamespace||browserStorageNamespace)
-        .key('conference_manager_sync_links')
-    );
-    if(!raw)return result;
-    var parsed=JSON.parse(raw);
-    if(!parsed||typeof parsed!=='object'){
-      result.warnings.push({
-        code:'SYNC_LINKS_READ_INVALID',
-        message:'تعذر فهم بيانات روابط المزامنة المحلية.'
-      });
-      return result;
-    }
-    result.syncLinks=parsed;
-  }catch(error){
-    result.warnings.push({
-      code:'SYNC_LINKS_READ_FAILED',
-      message:'تعذر قراءة روابط المزامنة المحلية، واستمر فحص النسخة بدونها.'
-    });
-  }
-  return result;
 }
 function fullRestorePreviewCountRows(preview){
   var rows=[
@@ -1013,136 +974,6 @@ function executeConfirmedFullRestore(){
     console.error('تعذر تنفيذ الاستعادة الكاملة:',error);
   });
 }
-function closePostRestoreCloudReviewModal(){
-  var modal=ge('postRestoreCloudReviewModal');
-  if(modal)modal.remove();
-}
-function readPostRestoreSyncLinksStrict(){
-  var raw=localStorage.getItem(
-    (window.BrowserStorageNamespace||browserStorageNamespace)
-      .key('conference_manager_sync_links')
-  );
-  if(!raw)return {};
-  var parsed=JSON.parse(raw);
-  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)){
-    throw new Error('FULL_RESTORE_SYNC_LINKS_MALFORMED');
-  }
-  return parsed;
-}
-function showPostRestoreCloudReviewBanner(){
-  var existing=ge('postRestoreCloudReviewBanner');
-  if(existing)return;
-  var banner=document.createElement('div');
-  banner.id='postRestoreCloudReviewBanner';
-  banner.className='update-bar';
-  banner.style.display='flex';
-  banner.innerHTML='<span>مراجعة الربط السحابي بعد الاستعادة مطلوبة. المزامنة متوقفة مؤقتًا.</span>'+
-    '<button class="btn btn-orange btn-sm" onclick="showPostRestoreCloudReviewModal()">فتح المراجعة</button>';
-  document.body.appendChild(banner);
-}
-function postRestoreAffectedNames(review){
-  var names=[];
-  (review.affectedLinks||[]).forEach(function(link){
-    var conference=(appData.conferences||[]).find(function(item){
-      return item&&item.id===link.localConferenceId;
-    });
-    names.push(conference&&conference.name||link.localConferenceId);
-  });
-  return names;
-}
-function showPostRestoreCloudReviewModal(){
-  closePostRestoreCloudReviewModal();
-  var service=window.FullBackupService;
-  var markerResult=service.getFullRestoreCloudReviewMarker();
-  var review=null;
-  var readError=null;
-  try{
-    var links=readPostRestoreSyncLinksStrict();
-    if(markerResult.malformed){
-      throw new Error(markerResult.errorCode);
-    }
-    review=service.buildPostRestoreCloudReview(
-      appData,
-      links,
-      markerResult.marker
-    );
-  }catch(error){
-    readError=error;
-  }
-  var modal=document.createElement('div');
-  modal.id='postRestoreCloudReviewModal';
-  modal.className='overlay app-modal';
-  var html='<div class="modal" style="max-width:680px">'+
-    '<div class="mhead"><span>مراجعة الربط السحابي بعد الاستعادة</span></div>'+
-    '<div class="mbody"><div class="sync-settings-message">'+
-    'تمت استعادة نسخة احتياطية كاملة. أوقف البرنامج المزامنة مؤقتًا حتى لا تُرفع البيانات المستعادة إلى مؤتمرات سحابية مرتبطة سابقًا.</div>';
-  if(readError){
-    html+='<div class="sync-settings-message sync-settings-error">'+
-      'تعذر قراءة عقد الروابط السحابية بأمان. بقيت المزامنة متوقفة ولم يتم تغيير الروابط.</div>';
-  }else{
-    var names=postRestoreAffectedNames(review);
-    html+='<div class="modal-section">'+
-      '<div><strong>المؤتمرات المستعادة:</strong> '+review.restoredConferenceIds.length+'</div>'+
-      '<div><strong>الروابط المتأثرة:</strong> '+review.affectedLinks.length+'</div>'+
-      '<div><strong>الروابط غير المتأثرة:</strong> '+review.unaffectedLinks.length+'</div>'+
-      '<div><strong>الروابط غير الصالحة:</strong> '+review.malformedLinks.length+'</div>'+
-      (names.length?'<div><strong>المؤتمرات المتأثرة:</strong> '+esc(names.join('، '))+'</div>':'')+
-      '</div><div class="sync-settings-message">'+
-      'ستتم مراجعة عمليات المزامنة المحلية القديمة أولًا. لن تُعزل إلا العمليات التي يثبت أنها لم تُنفذ، وستبقى المزامنة متوقفة إذا تعذر إثبات حالة أي عملية. لن تُحذف أي بيانات من Supabase.</div>';
-  }
-  html+='<div id="postRestoreCloudReviewStatus" class="sync-settings-message" style="display:none"></div>'+
-    '<div class="row" style="margin-top:12px">'+
-    '<button id="completePostRestoreCloudReviewButton" class="btn btn-orange" '+
-    (readError?'disabled':'onclick="completePostRestoreCloudReviewFromUI()"')+
-    '>مراجعة العمليات وإلغاء الروابط القديمة</button>'+
-    '<button class="btn btn-gray" onclick="closePostRestoreCloudReviewModal()">المراجعة لاحقًا</button>'+
-    '</div></div></div>';
-  modal.innerHTML=html;
-  document.body.appendChild(modal);
-}
-function completePostRestoreCloudReviewFromUI(){
-  var button=ge('completePostRestoreCloudReviewButton');
-  var status=ge('postRestoreCloudReviewStatus');
-  if(button)button.disabled=true;
-  if(status){
-    status.style.display='block';
-    status.classList.remove('sync-settings-error');
-    status.textContent='جارٍ تنظيف الروابط المحلية المتأثرة...';
-  }
-  window.FullBackupService.completePostRestoreCloudReview({
-    currentAppData:appData
-  }).then(function(result){
-    if(!result.success){
-      if(button)button.disabled=false;
-      if(status){
-        status.classList.add('sync-settings-error');
-        if(result.errorCode==='FULL_RESTORE_QUEUE_REVIEW_REQUIRED'){
-          var queueReview=result.queueReview||{};
-          var inspectionCount=(queueReview.requiresInspection||[]).length;
-          var unresolvedCount=(queueReview.unresolved||[]).length;
-          status.textContent='بقيت المزامنة متوقفة بأمان. توجد '+
-            (inspectionCount+unresolvedCount)+
-            ' عملية لم يمكن إثبات حالتها بعد؛ أعد المحاولة بعد استعادة الاتصال والجلسة المعتمدة.';
-        }else{
-          status.textContent='تعذر إكمال مراجعة الروابط بأمان: '+
-            result.errorCode;
-        }
-      }
-      return;
-    }
-    var banner=ge('postRestoreCloudReviewBanner');
-    if(banner)banner.remove();
-    if(status){
-      status.textContent=result.affectedLinkCount
-        ?'تم إلغاء الروابط المحلية القديمة. يمكنك إعادة الربط يدويًا لاحقًا.'
-        :'تمت مراجعة الربط السحابي، ولا توجد روابط متعارضة.';
-    }
-    showToast(result.affectedLinkCount
-      ?'✅ تم إلغاء الروابط المحلية القديمة واستكمال التشغيل.'
-      :'✅ تمت مراجعة الربط السحابي، ولا توجد روابط متعارضة.');
-    setTimeout(closePostRestoreCloudReviewModal,1200);
-  });
-}
 function inspectFullApplicationBackup(event){
   var input=event&&event.target;
   var file=input&&input.files&&input.files[0];
@@ -1162,12 +993,6 @@ function inspectFullApplicationBackup(event){
       readResult.document,
       candidate.candidateAppData
     );
-    var linkRead=readFullRestoreSyncLinks();
-    preview.risks=service.detectFullRestoreCloudLinkRisks(
-      candidate.candidateAppData,
-      {syncLinks:linkRead.syncLinks}
-    );
-    preview.warnings=linkRead.warnings;
     showFullRestorePreflightModal({
       file:readResult,
       candidate:candidate,
@@ -8890,10 +8715,6 @@ function renderSettings(){
     }
     return;
   }
-  if(window.ConferenceSyncUI&&
-    typeof window.ConferenceSyncUI.renderSection==='function'){
-    h+=window.ConferenceSyncUI.renderSection({localConference:current});
-  }
   if(window.ConferenceMembersUI&&
     typeof window.ConferenceMembersUI.renderSection==='function'){
     var membershipLink=current&&window.ConferenceLinkStore&&
@@ -8909,18 +8730,6 @@ function renderSettings(){
   if(window.OrganizationMembersUI&&
     typeof window.OrganizationMembersUI.renderSection==='function'){
     h+=window.OrganizationMembersUI.renderSection({});
-  }
-  if(window.ConflictResolutionUI&&
-    typeof window.ConflictResolutionUI.renderSection==='function'){
-    h+=window.ConflictResolutionUI.renderSection({localConference:current});
-  }
-  if(window.RealtimeLocksUI&&
-    typeof window.RealtimeLocksUI.renderSection==='function'){
-    h+=window.RealtimeLocksUI.renderSection({localConference:current});
-  }
-  if(window.WrongRemoteBindingRepairUI&&
-    typeof window.WrongRemoteBindingRepairUI.render==='function'){
-    h+=window.WrongRemoteBindingRepairUI.render();
   }
   h += renderMigrationAuditSection();
   if (!current) {
@@ -8953,12 +8762,6 @@ function renderSettings(){
   h+='<div><label class="lbl">المؤتمر الحالي</label><div class="settings-current-conference">'+esc(current?current.name:'')+' <span>'+conferenceStatusText(current)+'</span></div></div>';
   h+='</div></section>';
   h+=renderConferenceBrandingSettings();
-  if(window.ConferenceOperationalUI&&
-    typeof window.ConferenceOperationalUI.renderSection==='function'){
-    h+=window.ConferenceOperationalUI.renderSection({
-      localConference:getCurrentConference()
-    });
-  }
   h+=renderActivityLogSection();
   h+='<section class="settings-section settings-conference-management"><div class="settings-section-title">إدارة المؤتمر</div><div class="settings-action-groups">';
   h+='<div class="settings-action-group"><div class="settings-action-group-title">إدارة</div><div class="settings-actions-grid">';
@@ -10779,72 +10582,19 @@ function restoreAuthorizedApplicationView(){
   recordStartupStage('view_restore','completed');
   return true;
 }
-function traceRealtimeStartup(){
-  recordStartupStage('realtime','started');
-  var manager=window.ConferenceRealtimeManager;
-  if(!manager||typeof manager.subscribe!=='function')return;
-  if(typeof window.startupRealtimeTraceUnsubscribe==='function'){
-    window.startupRealtimeTraceUnsubscribe();
-  }
-  window.startupRealtimeTraceUnsubscribe=manager.subscribe(function(state){
-    if(!state)return;
-    if(state.status==='subscribed'){
-      recordStartupStage('realtime','subscribed');
-    }else if(state.status==='error'){
-      recordStartupStage('realtime','failed',state.lastError&&state.lastError.code||'REALTIME_FAILED');
-    }else return;
-    if(typeof window.startupRealtimeTraceUnsubscribe==='function'){
-      window.startupRealtimeTraceUnsubscribe();
-      window.startupRealtimeTraceUnsubscribe=null;
-    }
-  });
-}
 function completeAuthorizedApplicationStartup(){
   recordStartupStage('auth','passed');
   recordStartupStage('account','passed');
   recordStartupStage('device','passed');
-  var cloudReviewPending=false;
   return Promise.resolve(completeApplicationStartup()).then(function(){
     return initializePlatformAdministrationContext();
   }).then(function(){
-    try{
-      cloudReviewPending=!!(window.FullBackupService&&typeof window.FullBackupService.isFullRestoreCloudReviewPending==='function'&&window.FullBackupService.isFullRestoreCloudReviewPending());
-    }catch(error){
-      cloudReviewPending=true;
-    }
-    if(cloudReviewPending){
-      console.warn('تم إيقاف المزامنة مؤقتًا لحين مراجعة روابط النسخة المستعادة.');
-      showPostRestoreCloudReviewBanner();
-      setTimeout(showPostRestoreCloudReviewModal,0);
-      recordStartupStage('discovery','skipped','CLOUD_REVIEW_PENDING');
-      return;
-    }
     recordStartupStage('discovery','started');
     var discovery=window.StartupConferenceDiscovery&&typeof window.StartupConferenceDiscovery.refresh==='function'
       ?window.StartupConferenceDiscovery.refresh():Promise.resolve({ok:true,status:'unavailable'});
     return Promise.resolve(discovery).then(function(result){requireStartupResult('discovery',result);recordStartupStage('discovery','completed');var authorization=window.ConferenceActivationAuthorization,openService=window.DiscoveredConferenceOpenService;return authorization.reconcileStartup({appData:appData,persistedCandidate:authorization.getPersistedCandidate(),discovered:result&&result.data&&result.data.conferences||[],links:window.ConferenceLinkStore,validateCloud:function(remoteId){return openService.validateAuthorization(remoteId);}}).then(function(decision){appData.currentConferenceId=decision&&decision.ok?decision.localConferenceId:null;return result;});}).catch(function(error){if(!(error&&error.startupStage))recordStartupStage('discovery','failed',error&&error.message||'DISCOVERY_FAILED');throw error;});
   }).then(function(){
-    if(cloudReviewPending){recordStartupStage('linking','skipped','CLOUD_REVIEW_PENDING');return;}
-    recordStartupStage('linking','started');
-    var linking=window.AutomaticConferenceLinking&&typeof window.AutomaticConferenceLinking.initialize==='function'
-      ?window.AutomaticConferenceLinking.initialize():{ok:true,status:'unavailable'};
-    requireStartupResult('linking',linking);
-    return Promise.resolve(linking&&linking.promise).then(function(result){requireStartupResult('linking',result);recordStartupStage('linking','completed');}).catch(function(error){if(!(error&&error.startupStage))recordStartupStage('linking','failed',error&&error.message||'LINKING_FAILED');throw error;});
-  }).then(function(){
-    if(cloudReviewPending){recordStartupStage('queue_recovery','skipped','CLOUD_REVIEW_PENDING');return;}
-    recordStartupStage('queue_recovery','started');
-    var recovery=window.StartupQueueRecovery&&typeof window.StartupQueueRecovery.run==='function'
-      ?window.StartupQueueRecovery.run():Promise.resolve({ok:true,status:'unavailable'});
-    return Promise.resolve(recovery).then(function(result){requireStartupResult('queue_recovery',result);recordStartupStage('queue_recovery','completed');}).catch(function(error){if(!(error&&error.startupStage))recordStartupStage('queue_recovery','failed',error&&error.message||'QUEUE_RECOVERY_FAILED');throw error;});
-  }).then(function(){
-    if(cloudReviewPending){recordStartupStage('orchestrator','skipped','CLOUD_REVIEW_PENDING');return restoreAuthorizedApplicationView();}
-    recordStartupStage('orchestrator','started');
-    return Promise.resolve().then(function(){
-      var result=window.AutomaticSyncOrchestrator&&typeof window.AutomaticSyncOrchestrator.start==='function'
-        ?window.AutomaticSyncOrchestrator.start():{ok:true,status:'unavailable'};
-      requireStartupResult('orchestrator',result);
-      recordStartupStage('orchestrator','completed');
-    }).catch(function(error){if(!(error&&error.startupStage))recordStartupStage('orchestrator','failed',error&&error.message||'ORCHESTRATOR_FAILED');throw error;}).then(function(){traceRealtimeStartup();return restoreAuthorizedApplicationView();});
+    return restoreAuthorizedApplicationView();
   });
 }
 window.applicationStorageReadyPromise=null;

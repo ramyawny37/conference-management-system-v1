@@ -44,7 +44,6 @@ assert.strictEqual(development.databaseName('conference_manager_v3'),
 const staleLink={
   localConferenceId:'e711a3ba-fea3-416a-ba1d-7caf4c3e931e',
   remoteConferenceId:'78b1b30a-6ef9-4f8c-89e7-fb71d4b6b9aa',
-  knownRevision:47,
   linkStatus:'linked'
 };
 const legacyRaw=JSON.stringify({[staleLink.localConferenceId]:staleLink});
@@ -63,13 +62,12 @@ assert.deepStrictEqual(
 const newLink={
   localConferenceId:'11111111-1111-4111-8111-111111111111',
   remoteConferenceId:'22222222-2222-4222-8222-222222222222',
-  knownRevision:0,
   linkStatus:'linked'
 };
 assert.strictEqual(linkSandbox.ConferenceLinkStore.save(newLink).ok,true);
 assert.strictEqual(storage.values.conference_manager_sync_links,legacyRaw,
   'Development writes must not alter the Production legacy link key');
-assert.ok(storage.values[prefix+'conference_manager_sync_links']);
+assert.ok(storage.values[prefix+'conference_manager_canonical_links_v2']);
 
 const idStorage=memoryStorage({
   conference_manager_device_identity:JSON.stringify({
@@ -149,15 +147,9 @@ const activeSources=[
   'js/supabase/runtime-config.js',
   'js/supabase/system-access-service.js',
   'js/warehouse/current-store-context.js',
-  'js/sync/automatic-sync-preferences.js',
   'js/sync/conference-link-store.js',
   'js/sync/conference-linking-attempt-store.js',
   'js/sync/device-authorization-operation-repository.js',
-  'js/sync/link-status-diagnostic-store.js',
-  'js/sync/legacy-conference-organization-assignment-attempt-store.js',
-  'js/sync/remote-update-store.js',
-  'js/sync/wrong-remote-binding-repair-service.js',
-  'js/sync/wrong-remote-binding-repair-store.js'
 ];
 activeSources.forEach(file=>{
   const source=read(file);

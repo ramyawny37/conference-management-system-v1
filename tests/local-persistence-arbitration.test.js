@@ -187,10 +187,7 @@ function repositoryEnvironment(settings={}){
       saveAppSnapshot(value,meta){calls.push(['save','conferences',meta.generation]);if(settings.indexedFailure)return Promise.reject(new Error('INDEXED_WRITE_FAILED'));current={conferenceId:'**app_snapshot**',data:clone(value),persistenceMetadata:clone(meta)};return Promise.resolve(clone(current));},
       putRecord(store,value){calls.push(['rollback',store,clone(value)]);current=clone(value);return Promise.resolve();},
       deleteAppSnapshot(){calls.push(['deleteSnapshot']);current=null;return Promise.resolve();}
-    },
-    OfflineFirstIntegration:{handleLocalSave(){return Promise.resolve(settings.queueFailure
-      ?{ok:false,error:{code:'SYNC_QUEUE_ENQUEUE_FAILED'}}
-      :{ok:true,status:'queued',data:{queueStatus:'enqueued'}});}}
+    }
   };
   if(settings.sanitize){
     window.ConferenceActivationAuthorization={preparePersistedAppData(value){
@@ -212,13 +209,6 @@ async function testWrites(){
     /INDEXED_WRITE_FAILED/);
   assert.strictEqual(env.calls.some(call=>call[0]==='localStorage'),false);
 
-  env=repositoryEnvironment({queueFailure:true});
-  await assert.rejects(env.window.StorageRepository.saveAppSnapshot(payload('new')),
-    error=>error.code==='SYNC_QUEUE_ENQUEUE_FAILED');
-  const rollback=env.calls.find(call=>call[0]==='rollback');
-  assert.deepStrictEqual(rollback[2],env.previous);
-  assert.strictEqual(env.calls.some(call=>call[0]==='localStorage'),false);
-
   env=repositoryEnvironment({localFailure:true});
   const degraded=await env.window.StorageRepository.saveAppSnapshot(payload('new'),{skipSyncQueue:true});
   assert.strictEqual(degraded.status,'persisted_mirror_degraded');
@@ -233,15 +223,6 @@ async function testWrites(){
   assert.strictEqual(env.values.has(
     'development:app:local_persistence_metadata_v1'),false);
   assert.strictEqual(env.calls.filter(call=>call[0]==='save').length,1);
-
-  env=repositoryEnvironment({sanitize:true});
-  const saved=await env.window.StorageRepository.saveAppSnapshot(
-    payload('sanitized','candidate'),{skipSyncQueue:true});
-  const storedPayload=JSON.parse(env.values.get('app'));
-  const storedMetadata=JSON.parse(env.values.get('development:app:local_persistence_metadata_v1'));
-  assert.strictEqual(storedPayload.currentConferenceId,null);
-  const verified=await env.window.LocalPersistenceArbitration.verifyMetadata(storedPayload,storedMetadata);
-  assert.strictEqual(verified.trusted,true);
 
   const cyclic=payload('cyclic');cyclic.self=cyclic;
   const cyclicEnv=repositoryEnvironment();

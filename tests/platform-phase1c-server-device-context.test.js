@@ -33,10 +33,10 @@ test("dispatcher alone establishes context and denies actor-device overrides",()
   assert.doesNotMatch(migration,/grant execute[^;]+validated_phase1c_device_authorization[^;]+to/i);
 });
 
-test("59 guarded and 2 Platform-admin operations retain the 61-operation boundary",()=>{
-  assert.equal(contract.EDGE_ONLY_PROTECTED.length,61);
+test("53 guarded and 2 Platform-admin operations retain the post-snapshot boundary",()=>{
+  assert.equal(contract.EDGE_ONLY_PROTECTED.length,55);
   assert.equal(contract.EDGE_ONLY_PROTECTED.filter(x=>platformAdmin.has(x.operation)).length,2);
-  assert.equal(contract.EDGE_ONLY_PROTECTED.filter(x=>!platformAdmin.has(x.operation)).length,59);
+  assert.equal(contract.EDGE_ONLY_PROTECTED.filter(x=>!platformAdmin.has(x.operation)).length,53);
   assert.match(migration,/validated_phase1c_device_authorization\(current_user_id,p_actor_device_id\)/);
   assert.match(migration,/validated_phase1c_device_authorization\([\s\S]*p_user_id/);
   assert.match(migration,/grant execute on function platform\.execute_conference_device_operation[^;]+to service_role/i);
@@ -62,7 +62,7 @@ test("runtime handoff sources are removed and native enrollment contains no devi
     assert.doesNotMatch(fs.readFileSync(file,"utf8"),/f9306733-612d-433f-a38e-5d72855c2fe3/i,file);
 });
 
-test("DIRECT EDGE INTERNAL POLICY cardinalities are 7/61/16/9 with 10 legacy mutation internals",()=>{
-  assert.deepEqual([contract.DIRECT_BROWSER_REQUIRED.length,contract.EDGE_ONLY_PROTECTED.length,contract.INTERNAL_ONLY.length,contract.POLICY_HELPER_BROWSER_READ.length],[7,61,16,9]);
+test("DIRECT EDGE INTERNAL POLICY cardinalities reflect snapshot retirement",()=>{
+  assert.deepEqual([contract.DIRECT_BROWSER_REQUIRED.length,contract.EDGE_ONLY_PROTECTED.length,contract.INTERNAL_ONLY.length,contract.POLICY_HELPER_BROWSER_READ.length],[7,55,16,9]);
   assert.equal(contract.INTERNAL_ONLY.filter(x=>!/device_session|device_ownership_handoff|execute_(?:conference_)?device_operation|require_exact_jsonb_keys/.test(x)).length,10);
 });

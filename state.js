@@ -255,6 +255,12 @@ function save(options){
     notifyPersistenceFailure('تعذر حفظ البيانات على الجهاز. قد تكون مساحة التخزين ممتلئة. لم يتم تأكيد حفظ آخر تعديل.');
     return false;
   }
+  var linkedConference=currentConference&&window.ConferenceLinkStore&&
+    typeof window.ConferenceLinkStore.get==='function'
+      ?window.ConferenceLinkStore.get(String(currentConference.id||'')):null;
+  if(linkedConference&&linkedConference.remoteConferenceId){
+    return true;
+  }
   if(window.StorageRepository&&
     typeof window.StorageRepository.saveAppSnapshot==='function'){
     window.StorageRepository.saveAppSnapshot(
@@ -295,6 +301,12 @@ function saveCurrentConferenceSelection(){
   }catch(e){
     applicationStorageState.lastStorageError=e;
     return false;
+  }
+  var selectedLink=window.ConferenceLinkStore&&
+    typeof window.ConferenceLinkStore.get==='function'
+      ?window.ConferenceLinkStore.get(String(appData.currentConferenceId||'')):null;
+  if(selectedLink&&selectedLink.remoteConferenceId){
+    return true;
   }
   if(window.StorageRepository&&
     typeof window.StorageRepository.saveAppSnapshot==='function'){

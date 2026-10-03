@@ -4,103 +4,6 @@
 
   var busy=false;
   var explicitConnectivity='unknown';
-  var orchestratorSubscribed=false;
-  var lastRenderedSyncFingerprint=null;
-  var orphanedCleanupDetails=Object.create(null);
-  var orphanedCleanupDetailsLoading=Object.create(null);
-  var RENDERED_CONFERENCE_STATES=Object.freeze([
-    'needs_resolution',
-    'finalizing_conflict',
-    'pending_local_application',
-    'linked',
-    'error'
-  ]);
-
-  function currentConference(){
-    return typeof global.getCurrentConference==='function'
-      ?global.getCurrentConference()
-      :null;
-  }
-
-  function storedConferenceState(link){
-    if(!link)return 'local_only';
-    if(link.linkStatus==='needs_resolution'||
-      ['active','pending','reviewed','changed'].indexOf(
-        link.conflictStatus
-      )>=0){
-      return 'needs_resolution';
-    }
-    if(link.pendingLocalApplication===true||
-      link.linkStatus==='server_selected_pending_local_apply'){
-      return 'pending_local_application';
-    }
-    return link.linkStatus==='linked'?'linked':'local_only';
-  }
-
-  function syncStateFingerprint(state,localConferenceId){
-    var store=global.ConferenceLinkStore;
-    var link=store&&typeof store.get==='function'
-      ?store.get(localConferenceId)
-      :null;
-    link=link||{};
-    var realtimeManager=global.ConferenceRealtimeManager;
-    var realtimeState=realtimeManager&&
-      typeof realtimeManager.getState==='function'
-      ?realtimeManager.getState(localConferenceId):null;
-    realtimeState=realtimeState||{};
-    return [
-      String(localConferenceId),
-      String(state&&state.conferenceState||''),
-      String(link.remoteConferenceId||''),
-      String(link.linkStatus||''),
-      String(link.conflictStatus||''),
-      String(link.pendingLocalApplication===true),
-      String(link.knownRevision==null?'':link.knownRevision),
-      String(link.actualRevision==null?'':link.actualRevision),
-      String(realtimeState.status||''),
-      String(realtimeState.generation==null?'':realtimeState.generation),
-      String(realtimeState.cloudConferenceId||''),
-      String(realtimeState.lastError&&realtimeState.lastError.code||'')
-    ].join('|');
-  }
-
-  function handleOrchestratorState(state){
-    if(!state||RENDERED_CONFERENCE_STATES.indexOf(
-      state.conferenceState
-    )<0)return;
-    var conference=currentConference();
-    if(!conference)return;
-    var localConferenceId=String(conference.id||'');
-    if(!localConferenceId)return;
-    var scopedConferenceId=state.linkedConferenceId||
-      state.activeConferenceId||null;
-    if(scopedConferenceId&&String(scopedConferenceId)!==
-      localConferenceId)return;
-    var store=global.ConferenceLinkStore;
-    var link=store&&typeof store.get==='function'
-      ?store.get(localConferenceId)
-      :null;
-    var storedState=storedConferenceState(link);
-    if(!scopedConferenceId&&state.conferenceState!=='error'&&
-      state.conferenceState!=='finalizing_conflict'&&
-      state.conferenceState!==storedState){
-      return;
-    }
-    var fingerprint=syncStateFingerprint(
-      state,localConferenceId
-    );
-    if(fingerprint===lastRenderedSyncFingerprint)return;
-    lastRenderedSyncFingerprint=fingerprint;
-    rerender();
-  }
-
-  function ensureOrchestratorSubscription(){
-    if(orchestratorSubscribed)return;
-    var orchestrator=global.AutomaticSyncOrchestrator;
-    if(!orchestrator||typeof orchestrator.subscribe!=='function')return;
-    orchestratorSubscribed=true;
-    orchestrator.subscribe(handleOrchestratorState);
-  }
 
   function escapeHtml(value){
     return String(value==null?'':value)
@@ -125,16 +28,6 @@
       :{initialized:false,authenticated:false,user:null};
   }
 
-  function getAutomaticSyncPreferences(){
-    var api=global.AutomaticSyncPreferences;
-    return api&&typeof api.get==='function'
-      ?api.get()
-      :{
-        cloudSyncEnabled:false,
-        automaticLinkingEnabled:true,
-        automaticSyncEnabled:true
-      };
-  }
 
   function getDevice(){
     var api=global.SupabaseDeviceIdentity;
@@ -157,64 +50,6 @@
       (positive?'sync-settings-ok':'sync-settings-muted')+'">'+
       escapeHtml(text)+'</span>';
   }
-  function renderMemberRuntimeDiagnostics(){
-    var privacy=global.DiagnosticsPrivacyPolicy;
-    if(!privacy||typeof privacy.canViewConferenceDiagnostics!=='function'||
-      !privacy.canViewConferenceDiagnostics())return '';
-    var service=global.MemberRuntimeDiagnostics;
-    var state=service&&typeof service.read==='function'?service.read():{};
-    var fields=service&&Array.isArray(service.fields)?service.fields:[];
-    var html='<section class="settings-section sync-settings-section" '+
-      'data-runtime-build="'+RUNTIME_BUILD_REVISION+'">';
-    html+='<div class="settings-section-title">تشخيص مزامنة هذا الجهاز</div>';
-    html+='<div class="sync-settings-panel"><table class="settings-table"><tbody>';
-    fields.forEach(function(field){
-      var value=state[field];
-      if(value&&typeof value==='object')value=JSON.stringify(value);
-      if(value===null||value===undefined||value==='')value='—';
-      html+='<tr><td dir="ltr">'+escapeHtml(field)+'</td><td dir="ltr">'+
-        escapeHtml(String(value))+'</td></tr>';
-    });
-    var rescueButton=typeof privacy.canExportRescue==='function'&&
-      privacy.canExportRescue()
-      ?'<button type="button" class="btn btn-blue btn-sm" '+
-        'onclick="SyncSettingsUI.exportDeviceRescueBundle()">'+
-        'تصدير حزمة إنقاذ هذا الجهاز</button>':'';
-    html+='</tbody></table><div class="sync-settings-actions">'+rescueButton+
-      '<button type="button" class="btn btn-gray btn-sm" '+
-      'onclick="SyncSettingsUI.refreshAccommodationLockDiagnostics()">تحديث تشخيص قفل التسكين</button>'+
-      '<button type="button" class="btn btn-red btn-sm" '+
-      'onclick="SyncSettingsUI.releaseOwnedAccommodationLock()">تحرير القفل المملوك لهذا الجهاز</button>'+
-      '<button type="button" class="btn btn-gray btn-sm" '+
-      'onclick="MemberRuntimeDiagnostics.clearPersistentLinkStatusTrace()">'+
-      'مسح سجل تشخيص Link</button></div></div></section>';
-    return html;
-  }
-
-  function exportDeviceRescueBundle(){
-    var service=global.DeviceRescueExport;
-    if(!service||typeof service.exportCurrentConference!=='function'){
-      if(typeof global.showToast==='function'){
-        global.showToast('تعذر تشغيل أداة تصدير حزمة الإنقاذ.','#E74C3C');
-      }
-      return Promise.resolve(false);
-    }
-    return service.exportCurrentConference().then(function(result){
-      if(typeof global.showToast==='function'){
-        global.showToast('تم تصدير حزمة إنقاذ هذا الجهاز: '+result.fileName);
-      }
-      return result;
-    }).catch(function(error){
-      if(typeof global.console!=='undefined'&&global.console.error){
-        global.console.error('تعذر تصدير حزمة إنقاذ هذا الجهاز:',error);
-      }
-      if(typeof global.showToast==='function'){
-        global.showToast('تعذر تصدير حزمة إنقاذ هذا الجهاز.','#E74C3C');
-      }
-      return false;
-    });
-  }
-
   function renderTemplateDiagnosticExport(){
     return '<section class="settings-section sync-settings-section">'+
       '<div class="settings-section-title">تشخيص القوالب المحلية</div>'+
@@ -264,11 +99,9 @@
   }
 
   function renderSection(){
-    ensureOrchestratorSubscription();
     var config=getConfigState();
     var auth=getAuthState();
     var device=getDevice();
-    var preferences=getAutomaticSyncPreferences();
     var identity=global.SupabaseAuth&&
       typeof global.SupabaseAuth.getAccountIdentity==='function'
       ?global.SupabaseAuth.getAccountIdentity()
@@ -276,8 +109,6 @@
     var email=identity.email;
     var accountName=identity.label;
     var html=renderTemplateDiagnosticExport();
-    html+=renderMemberRuntimeDiagnostics();
-    html+=renderOrphanedCleanup();
     html+=renderLocalTemplateCopyCleanup();
     html+=renderRejectedSharedTemplateCleanup();
     html+=renderPartialTemplateStateCleanup();
@@ -349,55 +180,9 @@
       escapeHtml(device&&device.deviceName||'')+'" placeholder="جهاز المكتب">';
     html+='<button class="btn btn-green btn-sm" onclick="SyncSettingsUI.saveDeviceName()">حفظ اسم الجهاز</button>';
     html+='<div id="sync_device_message" class="sync-settings-message"></div></div>';
-    html+='<div class="sync-settings-panel"><h3>خيارات المزامنة</h3>';
-    html+='<label class="lbl"><input id="sync_cloud_enabled" type="checkbox" '+
-      (preferences.cloudSyncEnabled?'checked ':'')+
-      'onchange="SyncSettingsUI.saveAutomaticSyncPreferences()"> تفعيل المزامنة السحابية</label>';
-    html+='<label class="lbl"><input id="sync_automatic_linking_enabled" type="checkbox" '+
-      (preferences.automaticLinkingEnabled?'checked ':'')+
-      'onchange="SyncSettingsUI.saveAutomaticSyncPreferences()"> تفعيل الربط التلقائي</label>';
-    html+='<label class="lbl"><input id="sync_automatic_sync_enabled" type="checkbox" '+
-      (preferences.automaticSyncEnabled?'checked ':'')+
-      'onchange="SyncSettingsUI.saveAutomaticSyncPreferences()"> تفعيل المزامنة التلقائية</label>';
-    html+='<div id="sync_preferences_message" class="sync-settings-message"></div></div>';
     html+='</div>';
     html+='</section>';
     return html;
-  }
-
-  function renderOrphanedCleanup(){
-    var conference=currentConference();
-    var service=global.OrphanedConferenceCleanup;
-    if(!conference||!service||typeof service.inspect!=='function')return '';
-    var inspected=service.inspect(conference.id);
-    if(!inspected||inspected.ok!==true||
-      ['orphan_confirmed','confirmed_local_unpublished',
-        'confirmed_linked_orphan'].indexOf(inspected.status)<0)return '';
-    var id=String(conference.id||'');
-    var details=orphanedCleanupDetails[id]||null;
-    if(!details&&!orphanedCleanupDetailsLoading[id]&&
-      typeof service.inspectDetails==='function'){
-      orphanedCleanupDetailsLoading[id]=true;
-      service.inspectDetails(id).then(function(result){
-        if(result&&result.ok===true)orphanedCleanupDetails[id]=result;
-      }).finally(function(){
-        orphanedCleanupDetailsLoading[id]=false;
-        rerender();
-      });
-    }
-    var queueCount=details&&details.data
-      ?Number(details.data.pendingQueueCount||0):null;
-    var queueWarning=queueCount>0
-      ?'<div class="settings-summary-note"><strong>تحذير:</strong> توجد '+
-        escapeHtml(queueCount)+' عملية محلية غير مرفوعة. سيتم حذفها نهائيًا من هذا الجهاز فقط ولن يتم تشغيلها أو رفعها.</div>'
-      :'';
-    return '<section class="settings-section sync-settings-section">'+
-      '<div class="settings-section-title">نسخة محلية لمؤتمر غير متاح</div>'+
-      '<div class="settings-summary-note">تعذر إثبات صلاحية الوصول إلى المؤتمر السحابي. يمكن إزالة نسخته المحلية من هذا الجهاز فقط.</div>'+
-      queueWarning+
-      '<button class="btn btn-red" onclick="SyncSettingsUI.removeOrphanedConference()">إزالة النسخة المحلية لهذا المؤتمر</button>'+
-      '<div id="orphaned_cleanup_message" class="sync-settings-message"></div>'+
-      '</section>';
   }
 
   function renderTestHouseTemplateCleanup(){
@@ -536,12 +321,6 @@
       global.StartupAccessGate.clearAuthDraft();
     }
   }
-  function scheduleAuthChanged(){
-    if(global.AutomaticSyncOrchestrator&&
-      typeof global.AutomaticSyncOrchestrator.schedule==='function'){
-      global.AutomaticSyncOrchestrator.schedule('auth_changed');
-    }
-  }
 
   function applyStartupAuthBusyState(){
     if(!global.document||
@@ -578,55 +357,6 @@
       button.disabled=busy;
     });
     applyStartupAuthBusyState();
-  }
-
-  function removeOrphanedConference(){
-    if(busy)return Promise.resolve({ok:false,status:'busy'});
-    var conference=currentConference();
-    var service=global.OrphanedConferenceCleanup;
-    if(!conference||!service||typeof service.cleanup!=='function'){
-      return Promise.resolve({ok:false,status:'cleanup_unavailable'});
-    }
-    setBusy(true);
-    var id=String(conference.id||'');
-    var details=typeof service.inspectDetails==='function'
-      ?service.inspectDetails(id):Promise.resolve(service.inspect(id));
-    return details.then(function(inspected){
-      if(!inspected||inspected.ok!==true)return inspected;
-      var queueCount=Number(inspected.data&&
-        inspected.data.pendingQueueCount||0);
-      var warning='سيتم حذف النسخة المحلية لهذا المؤتمر من هذا الجهاز فقط. لن يتم حذف أي بيانات سحابية، ولن يتم حذف الحساب أو المؤسسة، ولن تتغير هوية الجهاز أو جلسة تسجيل الدخول.';
-      if(queueCount>0){
-        warning+=' توجد '+queueCount+
-          ' عملية محلية غير مرفوعة وسيتم حذفها نهائيًا من هذا الجهاز فقط دون تشغيلها أو رفعها.';
-      }
-      warning+=' هل تريد المتابعة؟';
-      if(!global.confirm||global.confirm(warning)!==true){
-        return {ok:false,status:'cancelled'};
-      }
-      return service.cleanup(id);
-    }).then(function(result){
-      if(!result||result.ok!==true){
-        if(result&&result.status==='cancelled')return result;
-        message('orphaned_cleanup_message',
-          'تعذر إزالة النسخة المحلية بأمان: '+
-          String(result&&result.error&&result.error.code||result&&result.status||'error'),
-          true);
-        return result;
-      }
-      if(typeof global.syncCurrentConferenceRefs==='function'){
-        global.syncCurrentConferenceRefs();
-      }
-      delete orphanedCleanupDetails[id];
-      if(typeof global.showSelectConferenceModal==='function'){
-        global.showSelectConferenceModal();
-      }
-      if(typeof global.renderSettings==='function')global.renderSettings();
-      if(typeof global.showToast==='function'){
-        global.showToast('تمت إزالة النسخة المحلية للمؤتمر فقط.');
-      }
-      return result;
-    }).finally(function(){setBusy(false);});
   }
 
   function cleanupTestHouseTemplates(){
@@ -869,7 +599,6 @@
       if(passwordElement)passwordElement.value='';
       if(result&&result.success){
         clearStartupAuthDraft();
-        scheduleAuthChanged();
         rerender();
         return global.StartupAccessGate&&typeof global.StartupAccessGate.evaluate==='function'
           ?global.StartupAccessGate.evaluate():null;
@@ -914,7 +643,6 @@
       showSignUpDiagnostics(null);
       var session=result.data&&result.data.session;
       if(session){
-        scheduleAuthChanged();
         rerender();
         return;
       }
@@ -933,25 +661,13 @@
   function signOut(){
     if(global.PlatformDeviceSession&&typeof global.PlatformDeviceSession.clear==='function')global.PlatformDeviceSession.clear();
     if(busy||!global.SupabaseAuth)return;
-    if(global.RealtimeLocksUI&&
-      typeof global.RealtimeLocksUI.hasOwnedLock==='function'&&
-      global.RealtimeLocksUI.hasOwnedLock()&&global.confirm&&
-      !global.confirm(
-        'هذا الجهاز يملك قفلًا ساريًا. تسجيل الخروج لن يحرره تلقائيًا. هل تريد المتابعة؟'
-      ))return;
     setBusy(true);
     var editLockCleanup=global.ConferenceEditLockManager&&
       typeof global.ConferenceEditLockManager.release==='function'
       ?Promise.resolve(global.ConferenceEditLockManager.release())
         .catch(function(){return {ok:false,status:'release_failed_ttl_fallback'};})
       :Promise.resolve();
-    var cleanup=Promise.resolve(editLockCleanup).then(function(){
-      return global.ConferenceOperationalUI&&
-        typeof global.ConferenceOperationalUI.logoutCleanup==='function'
-        ?global.ConferenceOperationalUI.logoutCleanup()
-        :Promise.resolve();
-    });
-    Promise.resolve(cleanup).then(function(){
+    Promise.resolve(editLockCleanup).then(function(){
       return global.SupabaseAuth.signOut();
     }).then(function(result){
       if(result&&result.success){
@@ -960,7 +676,6 @@
           ?global.PlatformIntegration.logout():Promise.resolve();
         return Promise.resolve(platformLogout).then(function(){
           clearStartupAuthDraft();
-          scheduleAuthChanged();
           rerender();
         });
       }
@@ -991,38 +706,6 @@
       !result.success);
   }
 
-  function saveAutomaticSyncPreferences(){
-    var api=global.AutomaticSyncPreferences;
-    if(!api||typeof api.set!=='function')return;
-    var current=getAutomaticSyncPreferences();
-    var cloud=element('sync_cloud_enabled');
-    var linking=element('sync_automatic_linking_enabled');
-    var automatic=element('sync_automatic_sync_enabled');
-    var saved=api.set({
-      cloudSyncEnabled:cloud?cloud.checked:current.cloudSyncEnabled,
-      automaticLinkingEnabled:linking
-        ?linking.checked
-        :current.automaticLinkingEnabled,
-      automaticSyncEnabled:automatic
-        ?automatic.checked
-        :current.automaticSyncEnabled
-    });
-    if(!saved||!saved.ok){
-      var persisted=getAutomaticSyncPreferences();
-      if(cloud)cloud.checked=persisted.cloudSyncEnabled;
-      if(linking)linking.checked=persisted.automaticLinkingEnabled;
-      if(automatic)automatic.checked=persisted.automaticSyncEnabled;
-    }
-    message(
-      'sync_preferences_message',
-      saved&&saved.ok
-        ?'تم حفظ خيارات المزامنة.'
-        :'تعذر حفظ خيارات المزامنة.',
-      !(saved&&saved.ok)
-    );
-    return saved;
-  }
-
   function setConnectivity(value){
     explicitConnectivity=value==='online'||value==='offline'
       ?value
@@ -1049,16 +732,13 @@
     signOut:signOut,
     refreshAuthState:refreshAuthState,
     saveDeviceName:saveDeviceName,
-    exportDeviceRescueBundle:exportDeviceRescueBundle,
     exportTemplateDiagnostics:exportTemplateDiagnostics,
     refreshAccommodationLockDiagnostics:refreshAccommodationLockDiagnostics,
     releaseOwnedAccommodationLock:releaseOwnedAccommodationLock,
-    removeOrphanedConference:removeOrphanedConference,
     cleanupLocalTemplateCopy:cleanupLocalTemplateCopy,
     cleanupRejectedSharedTemplate:cleanupRejectedSharedTemplate,
     cleanupPartialTemplateState:cleanupPartialTemplateState,
     cleanupTestHouseTemplates:cleanupTestHouseTemplates,
-    saveAutomaticSyncPreferences:saveAutomaticSyncPreferences,
     setConnectivity:setConnectivity,
     applyStartupAuthBusyState:applyStartupAuthBusyState,
     getState:getState

@@ -84,12 +84,11 @@ test('canonical downstream remains isolated and no replacement owner is introduc
   assert.match(permission,/Local-only legacy Accommodation/);
 });
 
-test('dead duplicate runtime is absent while historical readers and Reservations remain',()=>{
+test('dead duplicate and linked snapshot recovery runtime are absent while Reservations remain',()=>{
   assert.equal(fs.existsSync('tmp_script.js'),false);
   assert.doesNotMatch(index,/tmp_script/);
   assert.doesNotMatch(serviceWorker,/tmp_script/);
-  assert.equal(fs.existsSync('js/recovery/recovery-preview-service.js'),true);
-  assert.match(fs.readFileSync('js/recovery/recovery-preview-service.js','utf8'),/peopleDb[\s\S]*room&&room\.guests[\s\S]*room&&room\.children/);
+  assert.equal(fs.existsSync('js/recovery/recovery-preview-service.js'),false);
   assert.equal(fs.existsSync('modules/reservations'),true);
   assert.equal(fs.existsSync('supabase/migrations/20260909160000_reservations_conference_lifecycle_round1.sql'),true);
 });
