@@ -1,0 +1,73 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+const {execFileSync}=require('node:child_process');
+const test=require('node:test');
+const root=path.join(__dirname,'..');
+const migration=path.join(root,'supabase/migrations/20261008120000_reservations_canonical_conference_integration.sql');
+const pgApp='/Applications/Postgres.app/Contents/Versions/latest/bin';
+const pgBin=fs.existsSync(path.join(pgApp,'psql'))?pgApp:'';
+const database=`reservations_c1b1_${process.pid}_${Date.now()}`;
+const connection=['-h',process.env.PGHOST||'/tmp','-p',process.env.PGPORT||'5432','-U',process.env.PGUSER||os.userInfo().username];
+function command(name,args){return execFileSync(pgBin?path.join(pgBin,name):name,[...connection,...args],{encoding:'utf8',stdio:'pipe'}).trim();}
+function query(sql){return command('psql',['-X','-v','ON_ERROR_STOP=1','-At','-d',database,'-c',sql]);}
+
+test('C1B.1 migration executes and clean bookings use canonical participation and accommodation',()=>{
+  command('createdb',[database]);
+  try{
+    query(`create schema reservations;create schema reservations_private;create schema platform;create schema platform_private;create extension if not exists pgcrypto;
+      create table platform.people(id uuid primary key default gen_random_uuid(),full_name text,phone text,gender text,date_of_birth date,church text);
+      create table public.conference_participations(id uuid primary key default gen_random_uuid(),conference_id uuid not null,person_id uuid not null,status text default 'active',unique(id,conference_id));
+      create table public.conference_accommodation_houses(id uuid primary key,conference_id uuid,name text,unique(conference_id,id));
+      create table public.conference_accommodation_floors(id uuid primary key,conference_id uuid,house_id uuid,name text,unique(conference_id,id));
+      create table public.conference_accommodation_rooms(id uuid primary key,conference_id uuid,floor_id uuid,room_number text,unique(conference_id,id));
+      create table public.conference_accommodation_occupancies(id uuid primary key default gen_random_uuid(),conference_id uuid,room_id uuid,participation_id uuid,unique(participation_id));
+      create table reservations.events(id uuid primary key,conference_id uuid,organization_id uuid,scope_partition_id uuid,scope_type text default 'conference',revision bigint default 1,updated_at timestamptz,updated_by uuid);
+      create table reservations.participants(id uuid primary key,full_name text,phone text,church text);
+      create table reservations.bookings(id uuid primary key,participant_id uuid,event_id uuid);
+      create table reservations.conference_person_links(booking_id uuid primary key,participant_id uuid not null,conference_id uuid not null,conference_person_id uuid not null,created_at timestamptz default now(),unique(conference_id,conference_person_id));
+      create table reservations.event_periods(scope_partition_id uuid);create table reservations.booking_types(scope_partition_id uuid);
+      create table reservations.payments(scope_partition_id uuid);create table reservations.attendance_records(scope_partition_id uuid);
+      create table reservations.operational_reviews(scope_partition_id uuid);create table reservations.booking_number_counters(scope_partition_id uuid);
+      create table reservations.scope_partition_links(old_scope_partition_id uuid,new_scope_partition_id uuid,event_id uuid,conference_id uuid,organization_id uuid,operation_id uuid,linked_by uuid);
+      create table public.conference_snapshots(conference_id uuid primary key,data jsonb);
+      create table public.sync_operations(operation_id uuid primary key);
+      create function public.create_conference_participation_with_person(device uuid,operation_id uuid,conference uuid,full_name text,phone text,gender text,date_of_birth date,church text) returns jsonb language plpgsql as $$declare person uuid;participation uuid;begin insert into platform.people(full_name,phone,gender,date_of_birth,church) values(full_name,phone,gender,date_of_birth,church) returning id into person;insert into public.conference_participations(conference_id,person_id) values(conference,person) returning id into participation;return jsonb_build_object('participationId',participation);end$$;
+      create function reservations_private.standalone_accommodation_not_applicable(id uuid) returns jsonb language sql as $$select jsonb_build_object('bookingId',id,'applicable',false)$$;
+      create function platform_private.require_exact_jsonb_keys(args jsonb,required text[]) returns void language sql as $$select$$;
+      create function reservations_private.conference_context(device uuid,conference uuid,permission text) returns jsonb language sql as $$select jsonb_build_object('actorUserId','90000000-0000-4000-8000-000000000001','actorDeviceId',device,'organizationId','90000000-0000-4000-8000-000000000002')$$;
+      create function reservations_private.begin_operation(operation_id uuid,context jsonb,name text,args jsonb) returns jsonb language sql as $$select null::jsonb$$;
+      create function reservations_private.audit(context jsonb,action text,entity text,entity_id uuid,operation_id uuid,old_values jsonb,new_values jsonb) returns void language sql as $$select$$;
+      create function reservations_private.complete_operation(operation_id uuid,context jsonb,name text,args jsonb,result jsonb) returns jsonb language sql as $$select result$$;
+      create function reservations_private.project_booking_to_conference_pre_scope_partition(id uuid,operation_id uuid,context jsonb) returns jsonb language sql as $$select data from public.conference_snapshots limit 1$$;
+      create function reservations_private.project_booking_to_conference(id uuid,operation_id uuid,context jsonb) returns jsonb language sql as $$select reservations_private.project_booking_to_conference_pre_scope_partition(id,operation_id,context)$$;
+      create function reservations_private.link_standalone_event_to_conference(p_device_id uuid,p_args jsonb) returns jsonb language sql as $$select reservations_private.project_booking_to_conference((p_args->>'p_booking_id')::uuid,(p_args->>'p_operation_id')::uuid,'{}')$$;
+      create function reservations.mutate(device uuid,operation text,args jsonb) returns jsonb language plpgsql as $$begin return jsonb_build_object('conferencePerson',reservations_private.project_booking_to_conference((args->>'p_booking_id')::uuid,(args->>'p_operation_id')::uuid,jsonb_build_object('actorDeviceId',device)));end$$;
+      create function reservations_private.read_scoped(p_device_id uuid,p_operation text,p_args jsonb) returns jsonb language plpgsql as $$declare v_context jsonb:='{}';v_booking_id uuid:=(p_args->>'p_booking_id')::uuid;v_snapshot jsonb;begin if p_operation='get_booking_detail' then return '{}'::jsonb; elsif p_operation='get_booking_accommodation' then select data into v_snapshot from public.conference_snapshots limit 1;return coalesce(v_snapshot,'{}'); elsif p_operation='get_dashboard_summary' then return '{}'::jsonb;end if;return '{}'::jsonb;end$$;`);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',migration]);
+    const conference='10000000-0000-4000-8000-000000000001',participant='20000000-0000-4000-8000-000000000001',event='30000000-0000-4000-8000-000000000001',booking='40000000-0000-4000-8000-000000000001',operation='50000000-0000-4000-8000-000000000001',device='60000000-0000-4000-8000-000000000001';
+    query(`insert into reservations.events values('${event}','${conference}');insert into reservations.participants values('${participant}','Clean Person','01234567','Church');insert into reservations.bookings values('${booking}','${participant}','${event}');`);
+    const call=`select reservations.mutate('${device}','create_booking',jsonb_build_object('p_booking_id','${booking}','p_operation_id','${operation}'))`;
+    assert.match(query(call),/conferenceParticipationId/);
+    assert.match(query(call),/conferenceParticipationId/);
+    assert.equal(query('select count(*) from public.conference_participations'),'1');
+    assert.equal(query('select count(*) from reservations.conference_person_links'),'1');
+    assert.equal(query('select count(*) from public.conference_snapshots'),'0');
+    assert.equal(query('select count(*) from public.sync_operations'),'0');
+    assert.equal(query(`select reservations_private.get_booking_accommodation_canonical('${booking}')`),`{"linked": true, "bookingId": "${booking}", "accommodated": false, "conferenceId": "${conference}", "readyForAccommodation": true, "conferenceParticipationId": "${query('select conference_participation_id from reservations.conference_person_links')}"}`);
+    const participation=query('select conference_participation_id from reservations.conference_person_links');
+    query(`insert into public.conference_accommodation_houses values('70000000-0000-4000-8000-000000000001','${conference}','House');insert into public.conference_accommodation_floors values('71000000-0000-4000-8000-000000000001','${conference}','70000000-0000-4000-8000-000000000001','Floor');insert into public.conference_accommodation_rooms values('72000000-0000-4000-8000-000000000001','${conference}','71000000-0000-4000-8000-000000000001','1'),('72000000-0000-4000-8000-000000000002','${conference}','71000000-0000-4000-8000-000000000001','2');insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id) values('${conference}','72000000-0000-4000-8000-000000000001','${participation}');`);
+    assert.match(query(`select reservations_private.get_booking_accommodation_canonical('${booking}')`),/"roomNumber": "1"/);
+    query(`update public.conference_accommodation_occupancies set room_id='72000000-0000-4000-8000-000000000002' where participation_id='${participation}'`);
+    assert.match(query(`select reservations_private.get_booking_accommodation_canonical('${booking}')`),/"roomNumber": "2"/);
+    query(`delete from public.conference_accommodation_occupancies where participation_id='${participation}'`);
+    assert.match(query(`select reservations_private.get_booking_accommodation_canonical('${booking}')`),/"accommodated": false/);
+    assert.equal(query(`select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in('reservations','reservations_private') and p.prokind='f' and pg_get_functiondef(p.oid) like '%conference_snapshots%'`),'0');
+    assert.equal(query(`select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in('reservations','reservations_private') and p.prokind='f' and pg_get_functiondef(p.oid) like '%public.sync_operations%'`),'0');
+    assert.equal(query(`select to_regprocedure('reservations_private.project_booking_to_conference(uuid,uuid,jsonb)') is null`),'t');
+    assert.match(query(`select pg_get_functiondef('reservations.mutate(uuid,text,jsonb)'::regprocedure)`),/link_booking_to_canonical_participation/);
+    assert.doesNotMatch(query(`select pg_get_functiondef('reservations_private.link_standalone_event_to_conference(uuid,jsonb)'::regprocedure)`),/link_booking_to_canonical_participation|project_booking_to_conference/);
+  } finally {command('dropdb',['--if-exists',database]);}
+});
