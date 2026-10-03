@@ -1,37 +1,34 @@
-(function (global) {
+(function(global){
   'use strict';
 
-  function isSystemOwner() {
-    const administration = global.SystemOwnerAdministrationService;
-    if (administration && typeof administration.isCurrentUserSystemOwner === 'function') {
-      try {
-        return administration.isCurrentUserSystemOwner() === true;
-      } catch (_error) {
-        return false;
-      }
-    }
-    const access = global.CurrentAccountAccess || global.PlatformAccountAccess || null;
-    return Boolean(access && (access.isSystemOwner === true || access.systemOwner === true));
+  function systemAccess(){
+    var service=global.SystemAccessService;
+    return service&&typeof service.getState==='function'?service.getState():{};
   }
 
-  function canViewDiagnostics() {
+  function isSystemOwner(){
+    var access=systemAccess();
+    return access.accountStatus==='approved'&&
+      access.fresh===true&&
+      access.isSystemOwner===true;
+  }
+
+  function canViewConferenceDiagnostics(){
     return isSystemOwner();
   }
 
-  function redact(value) {
-    if (value === null || value === undefined) return value;
-    if (Array.isArray(value)) return value.map(redact);
-    if (typeof value !== 'object') return value;
-    const output = {};
-    Object.entries(value).forEach(([key, entry]) => {
-      if (/token|secret|password|credential|session/i.test(key)) return;
-      output[key] = redact(entry);
-    });
-    return output;
+  function canExportRescue(){
+    return isSystemOwner();
   }
 
-  global.DiagnosticsPrivacyPolicy = Object.freeze({
-    canViewDiagnostics,
-    redact,
+  global.DiagnosticsPrivacyPolicy=Object.freeze({
+    isDevelopment:function(){
+      return !!(global.BrowserStorageNamespace&&
+        global.BrowserStorageNamespace.environment==='development');
+    },
+    isSystemOwner:isSystemOwner,
+    conferenceRole:function(){return '';},
+    canViewConferenceDiagnostics:canViewConferenceDiagnostics,
+    canExportRescue:canExportRescue
   });
 })(window);

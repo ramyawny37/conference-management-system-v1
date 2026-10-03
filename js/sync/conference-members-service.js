@@ -3,35 +3,39 @@
 
   const RETIRED_STATUS = 'conference_role_membership_retired';
 
-  function retiredResult() {
-    return {
+  function result() {
+    return Promise.resolve({
       ok: false,
+      status: RETIRED_STATUS,
+      data: null,
+      error: null,
+    });
+  }
+
+  function getState() {
+    return {
       status: RETIRED_STATUS,
       role: null,
       canManageMembers: false,
       canSync: false,
       canResolveConflicts: false,
       canAcquireLock: false,
-      members: [],
     };
-  }
-
-  async function getMyAccess() {
-    return retiredResult();
-  }
-
-  async function listMembers() {
-    return retiredResult();
-  }
-
-  async function manageMember() {
-    return retiredResult();
   }
 
   global.ConferenceMembersService = Object.freeze({
     RETIRED_STATUS,
-    getMyAccess,
-    listMembers,
-    manageMember,
+    getCurrentAccess: result,
+    listMembers: result,
+    lookupUser: result,
+    addMember: result,
+    changeRole: result,
+    removeMember: result,
+    addManager: result,
+    removeManager: result,
+    getState,
+    resetForTests: function resetForTests() {
+      return { ok: true, status: 'reset' };
+    },
   });
 })(window);

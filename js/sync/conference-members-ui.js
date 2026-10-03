@@ -3,29 +3,41 @@
 
   const MESSAGE = 'تتم إدارة الوصول وصلاحيات المؤتمر من نظام صلاحيات المنصة الموحد.';
 
-  function render(container) {
-    const target = typeof container === 'string' ? document.querySelector(container) : container;
-    if (!target) return false;
-    target.innerHTML = `<div class="empty-state"><strong>صلاحيات المؤتمر موحدة</strong><p>${MESSAGE}</p></div>`;
-    return true;
-  }
-
-  function getState() {
-    return Object.freeze({
+  function state() {
+    return {
+      accessStatus: 'retired',
       role: null,
       canManageMembers: false,
       members: [],
       retired: true,
       message: MESSAGE,
-    });
+    };
+  }
+
+  function renderSection() {
+    return '<section id="conference_members_section" class="settings-section sync-settings-section conference-members-section">' +
+      '<div class="settings-section-title">صلاحيات المؤتمر</div>' +
+      '<div id="conference_members_content" class="settings-empty-state">' + MESSAGE + '</div>' +
+      '</section>';
+  }
+
+  function retired() {
+    return Promise.resolve({ ok: false, status: 'conference_role_membership_retired' });
   }
 
   global.ConferenceMembersUI = Object.freeze({
-    render,
-    getState,
-    refresh: async function refresh(container) {
-      render(container);
-      return getState();
+    renderSection,
+    refresh: retired,
+    lookup: retired,
+    addMember: retired,
+    changeRole: retired,
+    removeMember: retired,
+    addManager: retired,
+    removeManager: retired,
+    getAccessState: state,
+    getState: state,
+    resetForTests: function resetForTests() {
+      return { ok: true, status: 'reset' };
     },
   });
 })(window);
