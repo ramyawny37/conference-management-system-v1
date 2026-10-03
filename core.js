@@ -1542,7 +1542,6 @@ function applyTemplate(id){
 }
 
 function archiveCurrentConference(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('archiveCurrentConference',null))return false;
   updateCurrentConferenceData();
   var current = getCurrentConference();
   if(!current) return;

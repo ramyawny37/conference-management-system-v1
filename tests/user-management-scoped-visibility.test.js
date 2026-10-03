@@ -22,7 +22,6 @@ assert.match(service,/getActorCapabilities/);
 assert.match(service,/canOpenUserManagement/);
 assert.match(ui,/if\(caps\.canViewAccount\)/);
 assert.match(ui,/if\(caps\.canViewOrganization\)/);
-assert.match(ui,/if\(caps\.canViewConferences\)/);
 assert.match(ui,/if\(caps\.canViewDevices\)/);
 assert.doesNotMatch(ui,/\.from\s*\(|\.insert\s*\(|\.update\s*\(|\.delete\s*\(/);
 assert.match(app,/canOpenUserManagement===true/);

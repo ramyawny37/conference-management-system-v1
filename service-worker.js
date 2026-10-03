@@ -69,8 +69,6 @@ const CORE_ASSETS = [
   './js/supabase/first-system-bootstrap-service.js?rev=first-owner-bootstrap-hardening-v1',
   './js/sync/startup-access-gate.js?rev=revoked-rerequest-error-code-v1',
   './js/sync/conference-link-store.js',
-  './js/sync/conference-permission-contract.js?rev=permission-contract-phase2a-v1',
-  './js/sync/conference-permission-resolver.js?rev=development-3-4-0-platform-foundation-v1',
   './js/sync/conference-activation-authorization.js?rev=runtime-authorization-phase1-v1',
   './js/sync/system-access-administration-attempt-store.js?rev=user-account-administration-v1',
   './js/supabase/account-administration-service.js?rev=admin-session-boundary-v1',

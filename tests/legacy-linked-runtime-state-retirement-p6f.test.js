@@ -8,7 +8,6 @@ const core=fs.readFileSync('core.js','utf8');
 const people=fs.readFileSync('people.js','utf8');
 const script=fs.readFileSync('script.js','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
-const permission=fs.readFileSync('js/sync/conference-permission-contract.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const serviceWorker=fs.readFileSync('service-worker.js','utf8');
 
@@ -80,8 +79,6 @@ test('canonical downstream remains isolated and no replacement owner is introduc
   const canonicalIntegration=integration.slice(integration.indexOf('function accommodationPerson'),integration.indexOf('function moduleIdFromRoute'));
   assert.doesNotMatch(canonicalIntegration,/peopleDb|conference_snapshots|localStorage|indexedDB|room\.guests|room\.children/i);
   assert.doesNotMatch(script,/mirrorCanonical|canonicalToLegacy|legacyParticipantService|legacyAccommodationService/);
-  assert.match(permission,/Local-only legacy People permission/);
-  assert.match(permission,/Local-only legacy Accommodation/);
 });
 
 test('dead duplicate and linked snapshot recovery runtime are absent while Reservations remain',()=>{

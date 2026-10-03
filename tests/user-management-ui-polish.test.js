@@ -11,17 +11,14 @@ const css=fs.readFileSync(path.join(root,'style.css'),'utf8');
   'user-management-item-card','user-management-device-meta',
   'user-management-current-device','user-management-skeleton'
 ].forEach(name=>assert.ok(ui.includes(name)||css.includes('.'+name),name));
-['لا توجد مؤسسة.','لا توجد مؤتمرات.','لا توجد أجهزة.']
+['لا توجد مؤسسة.','لا توجد أجهزة.']
   .forEach(text=>assert.ok(ui.includes(text),text));
 assert.match(ui,/onchange="UserManagementUI\.selectOrganizationRole/);
 assert.match(ui,/onclick="UserManagementUI\.manageOrganization[^\n]+حفظ الدور/);
-assert.match(ui,/onchange="UserManagementUI\.selectConferenceRole/);
 assert.match(ui,/<label for="user_management_filter">حالة الحساب<\/label>/);
 assert.match(ui,/function manageDevice[\s\S]*?refreshDeviceAdministration/);
 assert.match(ui,/refreshSelectedUserDevices:refreshSelectedUserDevices/);
-assert.match(ui,/onclick="UserManagementUI\.manageConference[^\n]+>حفظ</);
 assert.doesNotMatch(ui,/onchange="UserManagementUI\.manageOrganization/);
-assert.doesNotMatch(ui,/onchange="UserManagementUI\.manageConference/);
 assert.match(css,/@media\(max-width:760px\)/);
 assert.match(css,/overflow-wrap:anywhere/);
 assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);

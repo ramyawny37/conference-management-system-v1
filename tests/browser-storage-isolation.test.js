@@ -103,11 +103,6 @@ function exportedDatabaseName(file,exportName){
 assert.strictEqual(exportedDatabaseName(
   'js/storage/indexeddb.js','AppIndexedDB'
 ),prefix+'conference_manager_v3');
-assert.strictEqual(exportedDatabaseName(
-  'js/sync/conference-membership-attempt-store.js',
-  'ConferenceMembershipAttemptStore'
-),prefix+'conference_manager_membership_attempts');
-
 const index=read('index.html');
 assert.ok(index.indexOf('js/storage/environment-namespace.js')<
   index.indexOf('js/storage/indexeddb.js'));

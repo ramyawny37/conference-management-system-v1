@@ -34,7 +34,7 @@ var ui=sandbox.window.UserManagementUI;
   assert.ok(masterAndDetail.includes('First Real User'));
   assert.ok(masterAndDetail.includes('Second Real User'));
   assert.ok(masterAndDetail.includes('Development Organization'));
-  assert.ok(masterAndDetail.includes('Development Conference'));
+  assert.ok(!masterAndDetail.includes('Development Conference'));
   assert.ok(masterAndDetail.includes('Development Device'));
   partialSecond=true;
   await ui.selectUser(second);

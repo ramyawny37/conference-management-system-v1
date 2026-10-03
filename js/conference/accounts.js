@@ -3126,7 +3126,6 @@ function buildFinancialReportPrintHtml(model){
 }
 
 function printConferenceFinancialReport(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('printConferenceFinancialReport',null))return false;
   var options=normalizeFinancialReportOptions(getFinancialReportOptionsDraft());
   var model=buildConferenceFinancialReportModel(options);
   var printHtml=buildFinancialReportPrintHtml(model);
@@ -3151,7 +3150,6 @@ function printConferenceFinancialReport(){
 }
 
 function saveConferenceFinancialReportAsPdf(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveConferenceFinancialReportAsPdf',null))return false;
   if(typeof showToast==='function'){
     showToast('اختر «حفظ بتنسيق PDF» من نافذة الطباعة.','#6C3483');
   }
@@ -3378,7 +3376,6 @@ function createFinancialReportWorksheet(sheetData){
 }
 
 function exportConferenceFinancialReportToExcel(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('exportConferenceFinancialReportToExcel',null))return false;
   if(typeof XLSX==='undefined'||!XLSX.utils){
     if(typeof showToast==='function')showToast('مكتبة تصدير Excel غير متاحة محليًا.','#E74C3C');
     return false;
@@ -3474,7 +3471,6 @@ function removeFinancialItemDraft(itemId){
 function saveFinancialItemsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
-  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveFinancialItemsSettings',null))return false;
   var draft=getFinancialItemsDraft();
   var normalized=normalizeFinancialItems(draft);
   if(getCanonicalConferenceFinance(conference)){
@@ -3639,7 +3635,6 @@ function removeIncomeItemDraft(itemId){
 function saveIncomeItemsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
-  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveIncomeItemsSettings',null))return false;
   var normalized=normalizeIncomeItems(getIncomeItemsDraft());
   if(getCanonicalConferenceFinance(conference)){
     saveCanonicalFinanceCollection(conference,'INCOME',normalized.enabled,normalized.items,function(){resetIncomeItemsDraftFromSaved();renderAccounts();showToast('✅ تم حفظ الإيرادات')},function(){showToast('تعذر حفظ الإيرادات.','#E74C3C')});
@@ -3793,7 +3788,6 @@ function removeSettlementDraft(itemId){
 function saveSettlementsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
-  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveSettlementsSettings',null))return false;
   var normalized=normalizeSettlements(getSettlementsDraft());
   if(getCanonicalConferenceFinance(conference)){
     saveCanonicalFinanceCollection(conference,'SETTLEMENT',normalized.enabled,normalized.items,function(){resetSettlementsDraftFromSaved();renderAccounts();showToast('✅ تم حفظ التسويات النهائية')},function(){showToast('تعذر حفظ التسويات النهائية.','#E74C3C')});
@@ -4019,7 +4013,6 @@ function readNullableAccountInteger(inputId,label){
 }
 
 function saveAccommodationDefaults(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAccommodationDefaults',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
   var roomRate=readNullableAccountNumber('accounts_default_room_rate','سعر الغرفة');
@@ -4097,7 +4090,6 @@ function renderAirConditioningAccountsSettings(){
 }
 
 function saveAirConditioningDefaults(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAirConditioningDefaults',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
   var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
@@ -4152,7 +4144,6 @@ function renderMealsAccountsSettings(){
 }
 
 function saveMealsDefaults(){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveMealsDefaults',null))return false;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
   var prices={};
@@ -4270,7 +4261,6 @@ function readInheritedAccountValue(inputId,type){
 }
 
 function saveAccommodationHouseSettings(houseId){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAccommodationHouseSettings',null))return false;
   var conference=getCurrentConference();
   if(!conference)return;
   var domKey=getAccountsDomKey(houseId);
@@ -4393,7 +4383,6 @@ function renderAirConditioningHouseSettings(houseContext){
 }
 
 function saveAirConditioningHouseSettings(houseId){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAirConditioningHouseSettings',null))return false;
   var conference=getCurrentConference();
   if(!conference)return;
   var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
@@ -4547,7 +4536,6 @@ function isAccommodationRoomSettingsEmpty(settings){
 }
 
 function saveAccommodationRoomSettings(houseId,roomId){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAccommodationRoomSettings',null))return false;
   var conference=getCurrentConference();
   if(!conference)return;
   var method=readInheritedAccountValue('account_room_method','select');
@@ -4675,7 +4663,6 @@ function isAirConditioningRoomSettingsEmpty(settings){
 }
 
 function saveAirConditioningRoomSettings(houseId,roomId){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveAirConditioningRoomSettings',null))return false;
   var conference=getCurrentConference();
   if(!conference)return;
   var canonical=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
@@ -4919,7 +4906,6 @@ function isMealsDaySettingsEmpty(settings){
 }
 
 function saveMealsDaySettings(day){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveMealsDaySettings',null))return false;
   var conference=getCurrentConference();
   if(!conference)return;
   var adults=readNullableAccountInteger('meals_day_adults_'+day,'عدد البالغين');
@@ -4959,7 +4945,6 @@ function saveMealsDaySettings(day){
 }
 
 function clearMealsDaySettings(day){
-  if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('clearMealsDaySettings',null))return false;
   if(!confirm('هل تريد إلغاء تخصيص وجبات هذا اليوم؟ لن تتغير بيانات المطعم أو الأشخاص.'))return;
   var conference=getCurrentConference();
   var meals=getMealsAccounts();
@@ -5127,7 +5112,6 @@ function saveFinancialV3Adjustment(){
   var canonicalFinance=getCanonicalConferenceFinance(conference);
   if(!canonicalFinance){if(typeof normalizeFinancialV3==='function')conference.financialV3=normalizeFinancialV3(conference.financialV3);conference.financialV3=conference.financialV3||{enabled:true,adjustments:[]};}
   var draft=getFinancialV3Draft();
-  if(!canonicalFinance&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('saveFinancialV3Adjustment',draft.editingId?'update':'create'))return false;
   var amount=Number(draft.amount);
   if(!isFinite(amount)||amount<0){
     showToast('يرجى إدخال مبلغ صحيح.','#E74C3C');
@@ -5173,7 +5157,6 @@ function deleteFinancialV3Adjustment(adjustmentId){
   if(!confirm('هل تريد حذف هذا التعديل المالي؟'))return;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference)return;
-  if(!getCanonicalConferenceFinance(conference)&&window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('deleteFinancialV3Adjustment',null))return false;
   if(getCanonicalConferenceFinance(conference)){
     window.CanonicalConferenceFinance.mutate(conference.id,'ADJUSTMENT','DELETE',adjustmentId,{}).then(function(){if(financialV3Draft&&financialV3Draft.editingId===adjustmentId)resetFinancialV3DraftFromSaved();renderAccounts();showToast('تم حذف التعديل المالي.')}).catch(function(){showToast('تعذر حذف التعديل المالي.','#E74C3C')});
     return;
