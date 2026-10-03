@@ -1,7 +1,8 @@
 (function(global){
   'use strict';
-  // P6C1 compatibility shell. The former role-derived resolver/shadow gate
-  // must never grant or block runtime mutations; canonical platform guards own authorization.
+  // P6C1 retirement shell. Conference authorization belongs exclusively to
+  // canonical Platform permission guards. This object is temporarily retained
+  // only for diagnostics callers while its remaining consumers are removed.
   function deniedResult(handler){
     return Object.freeze({handler:handler||null,scope:null,section:null,action:null,
       role:null,allowed:false,enforcementEnabled:false,shouldProceed:true,status:'retired'});
@@ -16,5 +17,4 @@
     getDiagnostics:function(){return [];},
     resetDiagnostics:function(){}
   });
-  global.ConferencePermissionShadowGate=function(){return true;};
 })(window);
