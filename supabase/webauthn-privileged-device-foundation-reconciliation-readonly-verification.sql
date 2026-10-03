@@ -468,8 +468,6 @@ with expected_triggers(table_name,trigger_name,function_name) as (values
   ('require_conference_member_organization_membership()'),
   ('prevent_conference_member_organization_removal()'),
   ('prevent_invalid_conference_organization_change()'),
-  ('device_guarded_apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)'),
-  ('device_guarded_resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)'),
   ('device_guarded_manage_system_user(uuid,uuid,uuid,text,boolean)')
 )
 select

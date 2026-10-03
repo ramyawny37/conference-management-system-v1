@@ -4,6 +4,7 @@ var appData = {
   version: '2.0.0',
   currentConferenceId: null,
   conferences: [],
+  conferenceLifecycle: { schemaVersion: 1, records: {} },
   templates: [],
   archives: [],
   backups: [],
@@ -116,22 +117,6 @@ function isValidStoredAppData(value){
     Array.isArray(value.conferences));
 }
 
-function readLocalStorageAppData(){
-  var raw=localStorage.getItem(SK);
-  if(!raw)return null;
-  var parsed=JSON.parse(raw);
-  var loadedAppData=null;
-  if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&parsed.appData){
-    loadedAppData=parsed.appData;
-  }else if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&
-    Array.isArray(parsed.conferences)){
-    loadedAppData=parsed;
-  }else if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)){
-    loadedAppData=buildAppDataFromLegacy(parsed);
-  }
-  return isValidStoredAppData(loadedAppData)?loadedAppData:null;
-}
-
 function restoreSafeSingleCurrentConferenceSelection(target){
   // A local record is not authorization. Sole-conference restoration remains
   // deliberately inactive until the centralized runtime gate approves it.
@@ -156,7 +141,7 @@ function initializeApplicationStorage(){
   if(storageInitializationPromise)return storageInitializationPromise;
 
   var defaults=cloneApplicationStorageData(appData);
-  var arbitration=window.LocalPersistenceArbitration;
+  var repository=window.StorageRepository;
   var platformIntegration=window.PlatformIntegration;
   var managedPlatformApproved=!!(platformIntegration&&
     typeof platformIntegration.isManagedOrigin==='function'&&
@@ -175,29 +160,16 @@ function initializeApplicationStorage(){
     :Promise.resolve();
   storageInitializationPromise=Promise.resolve(deviceApproval)
     .then(function(){
-      if(!arbitration||typeof arbitration.inspect!=='function'){
-        throw new Error('LOCAL_PERSISTENCE_ARBITRATION_UNAVAILABLE');
+      if(!repository||typeof repository.getAppData!=='function'){
+        throw new Error('LOCAL_PERSISTENCE_UNAVAILABLE');
       }
-      return arbitration.inspect({
-        indexedDB:window.AppIndexedDB,
-        localStorage:window.localStorage,
-        storageKey:SK
+      return repository.getAppData().then(function(record){
+        if(!record)return {source:'defaults',data:defaults};
+        if(!window.AppIndexedDB.validateAppDataRecord(record).valid){
+          throw new Error('LOCAL_PERSISTENCE_INVALID');
+        }
+        return {source:'indexeddb',data:record.data,savedAt:record.savedAt||null};
       });
-    })
-    .then(function(result){
-      if(!result.ok){
-        var error=new Error(result.code||'LOCAL_PERSISTENCE_RECOVERY_REQUIRED');
-        error.code=result.code||'LOCAL_PERSISTENCE_RECOVERY_REQUIRED';
-        error.persistenceResult=result;
-        throw error;
-      }
-      if(!result.selected)return {source:'defaults',data:defaults};
-      return {
-        source:result.selected.source,
-        data:result.selected.payload,
-        savedAt:result.selected.record&&result.selected.record.savedAt||null,
-        persistenceStatus:result.status
-      };
     })
     .then(function(selection){
       var persistedCandidate=String(selection.data.currentConferenceId||'');
@@ -262,10 +234,10 @@ function save(options){
     return true;
   }
   if(window.StorageRepository&&
-    typeof window.StorageRepository.saveAppSnapshot==='function'){
-    window.StorageRepository.saveAppSnapshot(
+    typeof window.StorageRepository.saveAppData==='function'){
+    window.StorageRepository.saveAppData(
       persistedData,
-      options.skipSyncQueue===true?{skipSyncQueue:true}:undefined
+      undefined
     )
       .then(function(result){
         applicationStorageState.lastIndexedDbSaveAt=new Date().toISOString();
@@ -282,7 +254,7 @@ function save(options){
         console.warn('تعذر حفظ النسخة الاحتياطية في IndexedDB:',indexedDbError);
       });
   }else{
-    var repositoryError=new Error('Application snapshot repository is unavailable.');
+    var repositoryError=new Error('Application persistence repository is unavailable.');
     repositoryError.code='LOCAL_PERSISTENCE_REPOSITORY_UNAVAILABLE';
     applicationStorageState.lastStorageError=repositoryError;
     notifyPersistenceFailure('تعذر حفظ البيانات على الجهاز. قد تكون مساحة التخزين ممتلئة. لم يتم تأكيد حفظ آخر تعديل.');
@@ -309,8 +281,8 @@ function saveCurrentConferenceSelection(){
     return true;
   }
   if(window.StorageRepository&&
-    typeof window.StorageRepository.saveAppSnapshot==='function'){
-    window.StorageRepository.saveAppSnapshot(persistedData,{skipSyncQueue:true})
+    typeof window.StorageRepository.saveAppData==='function'){
+    window.StorageRepository.saveAppData(persistedData)
       .then(function(result){
         applicationStorageState.lastIndexedDbSaveAt=new Date().toISOString();
         if(result&&result.mirror&&result.mirror.ok){
@@ -321,7 +293,7 @@ function saveCurrentConferenceSelection(){
         applicationStorageState.lastStorageError=indexedDbError;
       });
   }else{
-    var repositoryError=new Error('Application snapshot repository is unavailable.');
+    var repositoryError=new Error('Application persistence repository is unavailable.');
     repositoryError.code='LOCAL_PERSISTENCE_REPOSITORY_UNAVAILABLE';
     applicationStorageState.lastStorageError=repositoryError;
     return false;
@@ -391,34 +363,4 @@ function logStorageUsageReport(){
     templates:report.templatesCount
   });
   return report;
-}
-
-function load(){
-  var previousAppData=appData;
-  try{
-    var r=localStorage.getItem(SK);
-    if(r){
-      var d=JSON.parse(r);
-      var loadedAppData=null;
-      if(d&&typeof d==='object'&&!Array.isArray(d)&&d.appData) loadedAppData=d.appData;
-      else if(d&&typeof d==='object'&&!Array.isArray(d)&&Array.isArray(d.conferences)) loadedAppData=d;
-      else if(d&&typeof d==='object'&&!Array.isArray(d)) loadedAppData=buildAppDataFromLegacy(d);
-      if(!loadedAppData||typeof loadedAppData!=='object'||Array.isArray(loadedAppData)||!Array.isArray(loadedAppData.conferences)){
-        throw new Error('INVALID_STORED_APP_DATA');
-      }
-      appData=loadedAppData;
-      normalizeAppData();
-      updateLogoText();
-      var current = getCurrentConference();
-      if(current) setCurrentConference(current);
-    } else {
-      normalizeAppData();
-    }
-    return true;
-  }catch(e){
-    appData=previousAppData;
-    console.error('تعذر قراءة بيانات التطبيق المحفوظة:',e);
-    notifyPersistenceFailure('تعذر قراءة البيانات المحفوظة على الجهاز. سيتم تجاهل البيانات التالفة والاستمرار بأمان.');
-    return false;
-  }
 }

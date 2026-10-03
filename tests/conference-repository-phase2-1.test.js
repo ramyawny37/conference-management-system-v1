@@ -21,10 +21,10 @@ var sandbox={
     setItem:function(){throw new Error('UNEXPECTED_WRITE');}
   },
   AppIndexedDB:{
-    getAppSnapshot:function(){
+    getAppData:function(){
       throw new Error('UNEXPECTED_INDEXEDDB_READ');
     },
-    saveAppSnapshot:function(){
+    saveAppData:function(){
       throw new Error('UNEXPECTED_INDEXEDDB_WRITE');
     }
   },

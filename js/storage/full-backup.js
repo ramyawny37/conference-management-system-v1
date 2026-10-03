@@ -1,22 +1,14 @@
 (function(global){
   'use strict';
 
-  var namespace=global.BrowserStorageNamespace||{
-    key:function(name){return name;}
-  };
   var BACKUP_TYPE='conference-manager-full-backup';
   var FORMAT_VERSION=1;
   var MAXIMUM_FILE_SIZE=100*1024*1024;
-  var storageKey=namespace.key;
-  var FULL_RESTORE_STORAGE_KEY=storageKey('conf_v5');
   var restoreInProgress=false;
   var EXCLUDED=Object.freeze([
     'supabaseConfig',
     'supabaseSession',
-    'deviceIdentity',
-    'syncLinks',
-    'syncQueue',
-    'transientConflictState'
+    'deviceIdentity'
   ]);
   var FORBIDDEN_KEYS=Object.freeze({
     '__proto__':true,
@@ -27,7 +19,6 @@
     supabaseConfig:true,
     supabaseSession:true,
     deviceIdentity:true,
-    syncLinks:true,
     accessToken:true,
     refreshToken:true,
     serviceRoleKey:true
@@ -150,11 +141,14 @@
   function buildFullBackupDocument(appData,options){
     options=isPlainObject(options)?options:{};
     requireBuildInput(appData);
-    var platform=global.PlatformIntegration;
-    var serializationInput=platform&&
-      typeof platform.prepareLegacyConferenceSerialization==='function'
-      ?platform.prepareLegacyConferenceSerialization(appData):appData;
-    var clonedAppData=cloneFullBackupValue(serializationInput);
+    var clonedAppData=cloneFullBackupValue(appData);
+    var links=global.ConferenceLinkStore;
+    var currentConferenceWasLinked=!!(clonedAppData.currentConferenceId&&links&&
+      typeof links.get==='function'&&links.get(clonedAppData.currentConferenceId));
+    clonedAppData.conferences=clonedAppData.conferences.filter(function(conference){
+      return !(conference&&links&&typeof links.get==='function'&&links.get(conference.id));
+    });
+    if(currentConferenceWasLinked)clonedAppData.currentConferenceId=null;
     if(!hasOwn(clonedAppData,'currentConferenceId')){
       clonedAppData.currentConferenceId=null;
     }
@@ -840,13 +834,11 @@
     options=isPlainObject(options)?options:{};
     return {
       repository:options.repository||global.StorageRepository,
-      storage:options.storage||global.localStorage,
       normalizer:options.normalizeCandidate||
         global.normalizeAppDataCandidate,
       applyAppData:options.applyAppData||function(value){
         global.appData=value;
-      },
-      storageKey:options.storageKey||FULL_RESTORE_STORAGE_KEY
+      }
     };
   }
 
@@ -893,7 +885,6 @@
   function readRestorePersistenceContext(dependencies){
     return {
       indexedDbWritten:false,
-      localStorageWritten:false,
       globalApplyAttempted:false,
       globalApplied:false
     };
@@ -904,19 +895,11 @@
     var context=options&&options.rollbackContext;
     if(!context)context=readRestorePersistenceContext(dependencies);
     if(!dependencies.repository||
-      typeof dependencies.repository.saveAppSnapshot!=='function'||
-      typeof dependencies.repository.getAppSnapshot!=='function'){
+      typeof dependencies.repository.saveAppData!=='function'||
+      typeof dependencies.repository.getAppData!=='function'){
       return Promise.reject(codedError(
         'FULL_RESTORE_PERSISTENCE_UNAVAILABLE',
-        'The application snapshot persistence API is unavailable.'
-      ));
-    }
-    if(!dependencies.storage||
-      typeof dependencies.storage.setItem!=='function'||
-      typeof dependencies.storage.getItem!=='function'){
-      return Promise.reject(codedError(
-        'FULL_RESTORE_LOCAL_STORAGE_UNAVAILABLE',
-        'Local storage is unavailable.'
+        'The application persistence API is unavailable.'
       ));
     }
     var candidate=cloneFullBackupValue(candidateAppData);
@@ -928,36 +911,22 @@
         'The restore candidate could not be serialized.'
       ));
     }
-    var repositorySaveResult=null;
     return Promise.resolve().then(function(){
-      return dependencies.repository.saveAppSnapshot(candidate,{
-        skipSyncQueue:true,
+      return dependencies.repository.saveAppData(candidate,{
         skipTemplateSync:true,
         source:'full_restore'
       });
-    }).then(function(saveResult){
-      repositorySaveResult=saveResult;
+    }).then(function(){
       context.indexedDbWritten=true;
-      context.localStorageWritten=!(saveResult&&saveResult.mirror&&
-        saveResult.mirror.ok===false);
-      return dependencies.repository.getAppSnapshot();
-    }).then(function(snapshot){
+      return dependencies.repository.getAppData();
+    }).then(function(record){
       var indexedJson;
       try{
-        indexedJson=JSON.stringify(snapshot&&snapshot.data);
+        indexedJson=JSON.stringify(record&&record.data);
       }catch(error){
         indexedJson='';
       }
-      var localJson=null;
-      try{
-        if(context.localStorageWritten){
-          localJson=dependencies.storage.getItem(dependencies.storageKey);
-        }
-      }catch(error){
-        localJson=null;
-      }
-      if(!snapshot||!isPlainObject(snapshot.data)||!indexedJson||
-        context.localStorageWritten&&localJson!==indexedJson){
+      if(!record||!isPlainObject(record.data)||!indexedJson){
         var verificationError=codedError(
           'FULL_RESTORE_VERIFICATION_MISMATCH',
           'The persisted restore candidate did not match the source.'
@@ -967,10 +936,8 @@
       }
       return {
         indexedDb:true,
-        localStorage:context.localStorageWritten,
         verified:true,
-        data:cloneFullBackupValue(snapshot.data),
-        mirror:repositorySaveResult&&repositorySaveResult.mirror||null,
+        data:cloneFullBackupValue(record.data),
         rollbackContext:context
       };
     }).catch(function(error){
@@ -989,11 +956,10 @@
     var previous=cloneFullBackupValue(previousAppData);
     var indexedPromise=Promise.resolve().then(function(){
       if(!dependencies.repository||
-        typeof dependencies.repository.saveAppSnapshot!=='function'){
+        typeof dependencies.repository.saveAppData!=='function'){
         throw new Error('ROLLBACK_INDEXEDDB_UNAVAILABLE');
       }
-      return dependencies.repository.saveAppSnapshot(previous,{
-        skipSyncQueue:true,
+      return dependencies.repository.saveAppData(previous,{
         source:'full_restore_rollback'
       });
     }).catch(function(error){

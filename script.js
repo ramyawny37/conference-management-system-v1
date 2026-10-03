@@ -191,7 +191,7 @@ function restoreBackup(id){
   if(restoredAuthorization){
     restoredAuthorization.capturePersistedCandidate(restoredCandidate,'backup');
     restoredAuthorization.deactivate(restoredCandidate,
-      'unverified_legacy_unscoped','backup_authorization_unverified');
+      'unverified_local_scope','backup_authorization_unverified');
   }
   appData.currentConferenceId=null;
   if(!save())return false;
@@ -223,7 +223,7 @@ function restoreArchive(id){
     window.ConferenceActivationAuthorization.capturePersistedCandidate(
       restored.id,'archive');
     window.ConferenceActivationAuthorization.deactivate(restored.id,
-      'unverified_legacy_unscoped','archive_authorization_unverified');
+      'unverified_local_scope','archive_authorization_unverified');
   }
   appData.currentConferenceId = null;
   if(!save())return false;
@@ -251,7 +251,7 @@ function hydrateCanonicalConferenceCore(localConferenceId,options){
   options=options||{};
   var link=getCanonicalConferenceCoreLink(localConferenceId);
   if(!link||!link.remoteConferenceId){
-    return Promise.resolve({status:'legacy_local'});
+    return Promise.resolve({status:'local_only'});
   }
   var integration=window.PlatformIntegration;
   if(!integration||typeof integration.hydrateConferenceCore!=='function'){
@@ -272,7 +272,7 @@ function hydrateCanonicalConferenceCore(localConferenceId,options){
 function hydrateCanonicalConferenceParticipations(localConferenceId,options){
   options=options||{};
   var link=getCanonicalConferenceCoreLink(localConferenceId);
-  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'local_only'});
   var integration=window.PlatformIntegration;
   if(!integration||typeof integration.hydrateConferenceParticipations!=='function'){
     return Promise.reject({code:'CANONICAL_CONFERENCE_PARTICIPATIONS_UNAVAILABLE'});
@@ -289,7 +289,7 @@ function hydrateCanonicalConferenceParticipations(localConferenceId,options){
 function hydrateCanonicalConferenceBranding(localConferenceId,options){
   options=options||{};
   var link=getCanonicalConferenceCoreLink(localConferenceId);
-  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'local_only'});
   var integration=window.PlatformIntegration;
   if(!integration||typeof integration.hydrateConferenceBranding!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_BRANDING_UNAVAILABLE'});
   return integration.hydrateConferenceBranding(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
@@ -314,14 +314,14 @@ function hydrateCanonicalConferenceBranding(localConferenceId,options){
 function hydrateCanonicalConferenceActivity(localConferenceId,options){
   options=options||{};
   var link=getCanonicalConferenceCoreLink(localConferenceId),integration=window.PlatformIntegration;
-  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'local_only'});
   if(!integration||typeof integration.hydrateConferenceActivity!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_ACTIVITY_UNAVAILABLE'});
   return integration.hydrateConferenceActivity(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){renderActivityLog();return result}).catch(function(error){if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل سجل العمليات.','#E74C3C');throw error});
 }
 function hydrateCanonicalConferenceAccommodation(localConferenceId,options){
   options=options||{};
   var link=getCanonicalConferenceCoreLink(localConferenceId);
-  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'legacy_local'});
+  if(!link||!link.remoteConferenceId)return Promise.resolve({status:'local_only'});
   var integration=window.PlatformIntegration;
   if(!integration||typeof integration.hydrateConferenceAccommodation!=='function')return Promise.reject({code:'CANONICAL_CONFERENCE_ACCOMMODATION_UNAVAILABLE'});
   return integration.hydrateConferenceAccommodation(String(localConferenceId),String(link.remoteConferenceId)).then(function(result){
@@ -344,12 +344,12 @@ function hydrateCanonicalConferenceAccommodation(localConferenceId,options){
 }
 function hydrateCanonicalConferenceTransport(localConferenceId,options){
   options=options||{};
-  if(!window.CanonicalConferenceTransport||!window.CanonicalConferenceTransport.isLinked(localConferenceId))return Promise.resolve({status:'legacy_local'});
+  if(!window.CanonicalConferenceTransport||!window.CanonicalConferenceTransport.isLinked(localConferenceId))return Promise.resolve({status:'local_only'});
   return window.CanonicalConferenceTransport.hydrate(String(localConferenceId)).then(function(result){var current=getCurrentConference();if(current&&String(current.id)===String(localConferenceId)&&typeof renderTransports==='function')renderTransports();return result;}).catch(function(error){if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل بيانات المواصلات المعتمدة.','#E74C3C');throw error;});
 }
 function hydrateCanonicalConferenceRestaurant(localConferenceId,options){
   options=options||{};
-  if(!window.CanonicalConferenceRestaurant||!window.CanonicalConferenceRestaurant.isLinked(localConferenceId))return Promise.resolve({status:'legacy_local'});
+  if(!window.CanonicalConferenceRestaurant||!window.CanonicalConferenceRestaurant.isLinked(localConferenceId))return Promise.resolve({status:'local_only'});
   return window.CanonicalConferenceRestaurant.hydrate(String(localConferenceId)).then(function(result){var current=getCurrentConference();if(current&&String(current.id)===String(localConferenceId)&&typeof renderAccounts==='function')renderAccounts();return result;}).catch(function(error){if(options.silent!==true&&typeof showToast==='function')showToast('تعذر تحميل بيانات المطعم المعتمدة.','#E74C3C');throw error;});
 }
 function setCurrentConferenceById(id, options){
@@ -376,8 +376,6 @@ function setCurrentConferenceById(id, options){
   var conferences = appData.conferences || [];
   for (var i = 0; i < conferences.length; i++) {
     if (conferences[i].id === id) {
-      if(typeof isConferenceImportRecoveryPending==='function'&&
-        isConferenceImportRecoveryPending(appData,id))return;
       next = conferences[i];
       break;
     }
@@ -617,11 +615,7 @@ function exportJsonFile(){
   if(window.ConferencePermissionShadowGate&&!window.ConferencePermissionShadowGate('exportJsonFile',null))return false;
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   updateCurrentConferenceData();
-  var serializationInput=window.PlatformIntegration&&
-    typeof window.PlatformIntegration.prepareLegacyConferenceSerialization==='function'
-    ?window.PlatformIntegration.prepareLegacyConferenceSerialization(appData)
-    :appData;
-  var data=JSON.stringify(serializationInput,null,2);
+  var data=JSON.stringify(appData,null,2);
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data],{type:'application/json;charset=utf-8'}));
   a.download='conference_'+new Date().toISOString().slice(0,10)+'.json';
@@ -1010,7 +1004,6 @@ function inspectFullApplicationBackup(event){
 function createConferenceFromObject(data, name){
   data=data&&typeof data==='object'?data:{};
   var confObj=deepClone(data);
-  var legacyRooms=Array.isArray(confObj.rooms)?confObj.rooms:[];
   var conferenceName=name||confObj.name||(confObj.conf&&confObj.conf.name)||'المؤتمر';
   confObj.id=confObj.id||uid();
   confObj.name=conferenceName;
@@ -1018,9 +1011,7 @@ function createConferenceFromObject(data, name){
   confObj.endDate=confObj.endDate||(confObj.conf&&confObj.conf.endDate)||'';
   confObj.days=confObj.days||(confObj.conf&&confObj.conf.days)||1;
   confObj.conf=confObj.conf||{name:conferenceName,startDate:confObj.startDate,endDate:confObj.endDate,days:confObj.days};
-  confObj.houses=Array.isArray(confObj.houses)&&confObj.houses.length
-    ? confObj.houses
-    : convertLegacyRoomsToHouses(legacyRooms,conferenceName);
+  confObj.houses=Array.isArray(confObj.houses)?confObj.houses:[];
   confObj.transports=Array.isArray(confObj.transports)?confObj.transports:[];
   confObj.restaurant=confObj.restaurant||createDefaultRestaurant();
   confObj.status=confObj.status||'active';
@@ -1031,35 +1022,12 @@ function createConferenceFromObject(data, name){
   normalizeConference(confObj);
   return confObj;
 }
-function buildAppDataFromLegacy(raw){
-  var legacy = {
-    conf: raw.conf || raw,
-    houses: Array.isArray(raw.houses) ? raw.houses : [],
-    rooms: raw.rooms || [],
-    transports: raw.transports || [],
-    restaurant: raw.restaurant || createDefaultRestaurant(),
-    restaurantV3: raw.restaurantV3 || createDefaultRestaurantV3()
-  };
-  return {
-    version: '2.0.0',
-    currentConferenceId: null,
-    conferences: [createConferenceFromObject(legacy)],
-    templates: [],
-    archives: [],
-    backups: [],
-    houseTemplates: [],
-    peopleDb: { version: '1.0.0', people: [] },
-    trash: { templates: [], archives: [], backups: [], houseTemplates: [], rooms: [] }
-  };
-}
-
 function isImportableConferenceObject(value){
   if(!value||typeof value!=='object'||Array.isArray(value))return false;
   var hasIdentity=!!(value.id||value.name||(value.conf&&value.conf.name));
   var hasConferenceData=!!(
     value.conf||
     Array.isArray(value.houses)||
-    Array.isArray(value.rooms)||
     Array.isArray(value.transports)||
     value.restaurant||
     value.startDate||
@@ -1144,7 +1112,7 @@ function importSingleConferenceData(importedData){
     window.ConferenceActivationAuthorization.capturePersistedCandidate(
       importedConference.id,'import');
     window.ConferenceActivationAuthorization.deactivate(importedConference.id,
-      'unverified_legacy_unscoped','import_authorization_unverified');
+      'unverified_local_scope','import_authorization_unverified');
   }
   appData.currentConferenceId=null;
   if(!save()){
@@ -7501,11 +7469,7 @@ function openDiscoveredConferenceFromStartup(remoteConferenceId){
 
 function getStartupConferenceViewModel(){
   var localConferences=Array.isArray(appData&&appData.conferences)
-    ?appData.conferences.filter(function(conference){
-      return !conference||
-        typeof isConferenceImportRecoveryPending!=='function'||
-        !isConferenceImportRecoveryPending(appData,conference.id);
-    }):[];
+    ?appData.conferences.slice():[];
   var merged=localConferences.slice();
   var remoteIds=Object.create(null);
   localConferences.forEach(function(conference,index){
@@ -7637,9 +7601,7 @@ function showSelectConferenceModal(){
 
 function openCompletedConferencesModal(){
   var completedConfs = (appData.conferences || []).filter(function(conf){
-    return conf.status === 'completed'&&
-      (typeof isConferenceImportRecoveryPending!=='function'||
-        !isConferenceImportRecoveryPending(appData,conf.id));
+    return conf.status === 'completed';
   });
   if(!completedConfs.length){
     alert('لا توجد مؤتمرات سابقة متاحة.');
@@ -8434,211 +8396,6 @@ function renderAirConditioningV3Settings(conference){
   return html;
 }
 
-var migrationAuditReport = null;
-var migrationAuditFilter = 'all';
-var migrationAuditExpandedCodes = {};
-
-function runMigrationAudit(){
-  if(!window.MigrationAudit||typeof window.MigrationAudit.auditAppData!=='function')return false;
-  migrationAuditReport = window.MigrationAudit.auditAppData(appData);
-  renderSettings();
-  return true;
-}
-
-function setMigrationAuditFilter(filter){
-  migrationAuditFilter = filter==='errors'||filter==='warnings'?filter:'all';
-  renderSettings();
-}
-
-function toggleMigrationAuditCode(code,issueType){
-  try{code=decodeURIComponent(code)}catch(error){}
-  var key=issueType+':'+code;
-  migrationAuditExpandedCodes[key]=!migrationAuditExpandedCodes[key];
-  renderSettings();
-}
-
-function renderMigrationAuditIssue(issue){
-  var location = [];
-  if(issue.houseId)location.push('البيت: '+esc(issue.houseId));
-  if(issue.floorId)location.push('الدور: '+esc(issue.floorId));
-  if(issue.roomId)location.push('الغرفة: '+esc(issue.roomId));
-  if(issue.entityId)location.push('entityId: '+esc(issue.entityId));
-  if(issue.personId)location.push('personId: '+esc(issue.personId));
-  return '<div class="settings-list-item"><div><div style="font-weight:700">'+esc(issue.message||'')+'</div>'+
-    '<div style="font-size:10px;color:#5a7a9a;margin-top:3px"><code>'+esc(issue.code||'')+'</code>'+
-    (location.length?' · '+location.join(' · '):'')+'</div></div></div>';
-}
-
-function renderMigrationAuditIssueList(issues,title){
-  var h='<div style="margin-top:10px"><div style="font-size:12px;font-weight:800;color:#1f4e79;margin-bottom:6px">'+esc(title)+'</div>';
-  if(!issues.length)return h+'<div class="settings-empty-state">لا توجد نتائج في هذا القسم.</div></div>';
-  h+='<div class="settings-list">';
-  issues.forEach(function(issue){ h+=renderMigrationAuditIssue(issue); });
-  return h+'</div></div>';
-}
-
-function groupMigrationAuditIssuesByCode(report,type){
-  var groups={};
-  var issues=(report[type]||[]).map(function(issue){
-    return {issue:issue,conferenceName:''};
-  });
-  (report.conferences||[]).forEach(function(conference){
-    (conference[type]||[]).forEach(function(issue){
-      issues.push({
-        issue: issue,
-        conferenceName: conference.conferenceName||conference.conferenceId||'مؤتمر بدون اسم'
-      });
-    });
-  });
-  issues.forEach(function(entry){
-    var code=entry.issue.code||'UNKNOWN';
-    if(!groups[code])groups[code]=[];
-    groups[code].push(entry);
-  });
-  return groups;
-}
-
-function renderMigrationAuditDetailValue(value,seen,depth){
-  seen=seen||[];
-  depth=depth||0;
-  if(value===undefined||value===null||value==='')return '<span style="color:#8799aa">—</span>';
-  if(typeof value!=='object')return '<span>'+esc(String(value))+'</span>';
-  if(seen.indexOf(value)!==-1)return '<span style="color:#8799aa">قيمة متكررة داخليًا</span>';
-  if(depth>=6)return '<span style="color:#8799aa">تفاصيل متداخلة بعمق</span>';
-  var nextSeen=seen.concat([value]);
-  if(Array.isArray(value)){
-    if(!value.length)return '<span style="color:#8799aa">مصفوفة فارغة</span>';
-    return '<ul style="margin:4px 0;padding-right:18px">'+value.map(function(item){
-      return '<li>'+renderMigrationAuditDetailValue(item,nextSeen,depth+1)+'</li>';
-    }).join('')+'</ul>';
-  }
-  var keys=Object.keys(value);
-  if(!keys.length)return '<span style="color:#8799aa">كائن فارغ</span>';
-  return '<dl style="margin:4px 0;display:grid;grid-template-columns:minmax(90px,auto) 1fr;gap:4px 8px">'+keys.map(function(key){
-    return '<dt style="font-weight:700">'+esc(key)+'</dt><dd style="margin:0;min-width:0;overflow-wrap:anywhere">'+
-      renderMigrationAuditDetailValue(value[key],nextSeen,depth+1)+'</dd>';
-  }).join('')+'</dl>';
-}
-
-function renderMigrationAuditExpandedIssue(entry){
-  var issue=entry.issue||{};
-  var fields=[
-    ['اسم المؤتمر',entry.conferenceName],
-    ['conferenceId',issue.conferenceId],
-    ['houseId',issue.houseId],
-    ['floorId',issue.floorId],
-    ['roomId',issue.roomId],
-    ['entityId',issue.entityId],
-    ['personId',issue.personId]
-  ].filter(function(field){
-    return field[1]!==undefined&&field[1]!==null&&field[1]!=='';
-  });
-  var h='<div class="settings-list-item" style="align-items:stretch"><div style="width:100%">';
-  h+='<div style="font-weight:700">'+esc(issue.message||'')+'</div>';
-  if(fields.length){
-    h+='<dl style="margin:7px 0 0;display:grid;grid-template-columns:minmax(105px,auto) 1fr;gap:4px 8px">';
-    fields.forEach(function(field){
-      h+='<dt style="font-weight:700;color:#5a7a9a">'+esc(field[0])+'</dt><dd style="margin:0;overflow-wrap:anywhere">'+esc(String(field[1]))+'</dd>';
-    });
-    h+='</dl>';
-  }
-  if(issue.details!==undefined&&issue.details!==null){
-    h+='<div style="margin-top:8px;padding-top:7px;border-top:1px solid #e7eef5"><strong>التفاصيل</strong>'+
-      renderMigrationAuditDetailValue(issue.details,[],0)+'</div>';
-  }
-  return h+'</div></div>';
-}
-
-function renderMigrationAuditCodeCounts(groups,title,issueType){
-  var codes=Object.keys(groups).sort();
-  var h='<div style="margin-top:10px"><div style="font-size:12px;font-weight:800;color:#1f4e79;margin-bottom:6px">'+esc(title)+'</div>';
-  if(!codes.length)return h+'<div class="settings-empty-state">لا توجد أكواد.</div></div>';
-  h+='<div class="settings-list">';
-  codes.forEach(function(code){
-    var key=issueType+':'+code;
-    var expanded=!!migrationAuditExpandedCodes[key];
-    var encodedCode=encodeURIComponent(code);
-    h+='<div style="border:1px solid #e7eef5;border-radius:10px;background:#fbfdff;overflow:hidden">';
-    h+='<button type="button" class="settings-branding-toggle" aria-expanded="'+(expanded?'true':'false')+'" onclick="toggleMigrationAuditCode(\''+encodedCode+'\',\''+issueType+'\')">';
-    h+='<span><code>'+esc(code)+'</code> <b class="settings-count-badge">'+groups[code].length+'</b> <small style="color:#647b91">'+(issueType==='errors'?'خطأ':'تحذير')+'</small></span>';
-    h+='<span class="settings-branding-toggle-arrow" aria-hidden="true">'+(expanded?'▲':'▼')+'</span></button>';
-    if(expanded){
-      h+='<div style="padding:9px"><div class="settings-list">';
-      groups[code].forEach(function(entry){h+=renderMigrationAuditExpandedIssue(entry);});
-      h+='</div></div>';
-    }
-    h+='</div>';
-  });
-  return h+'</div></div>';
-}
-
-function renderMigrationAuditSection(){
-  if(!window.DiagnosticsPrivacyPolicy||
-    !window.DiagnosticsPrivacyPolicy.canViewConferenceDiagnostics())return '';
-  var h='<section class="settings-section"><div class="settings-section-title">فحص جاهزية المزامنة</div>';
-  h+='<div class="settings-branding-actions"><button class="btn btn-blue" onclick="runMigrationAudit()">تشغيل الفحص</button></div>';
-  if(!migrationAuditReport){
-    return h+'<div class="settings-empty-state" style="margin-top:10px">لم يتم تشغيل الفحص بعد.</div></section>';
-  }
-
-  var report=migrationAuditReport;
-  var summaryCards=[
-    ['الحالة',report.valid?'جاهز للمزامنة':'يحتاج إصلاح'],
-    ['المؤتمرات',report.summary.conferences],
-    ['الأخطاء',report.summary.errors],
-    ['التحذيرات',report.summary.warnings],
-    ['البيوت',report.stats.houses],
-    ['الأدوار',report.stats.floors],
-    ['الغرف',report.stats.rooms],
-    ['الأشخاص',report.stats.people],
-    ['النزلاء',report.stats.guests],
-    ['الأطفال',report.stats.children]
-  ];
-  h+='<div class="settings-summary-grid" style="margin-top:10px">';
-  summaryCards.forEach(function(card){
-    h+='<div class="settings-summary-card"><strong>'+esc(String(card[1]))+'</strong><span>'+esc(card[0])+'</span></div>';
-  });
-  var errorCodeGroups=groupMigrationAuditIssuesByCode(report,'errors');
-  var warningCodeGroups=groupMigrationAuditIssuesByCode(report,'warnings');
-  var conferencesWithErrors=report.conferences.filter(function(conference){
-    return conference.errors.length>0;
-  }).map(function(conference){
-    return conference.conferenceName||conference.conferenceId||'مؤتمر بدون اسم';
-  });
-  h+='</div><div class="settings-branding-actions">';
-  h+='<button class="btn '+(migrationAuditFilter==='all'?'btn-purple':'btn-gray')+' btn-sm" onclick="setMigrationAuditFilter(\'all\')">الكل</button>';
-  h+='<button class="btn '+(migrationAuditFilter==='errors'?'btn-purple':'btn-gray')+' btn-sm" onclick="setMigrationAuditFilter(\'errors\')">الأخطاء فقط</button>';
-  h+='<button class="btn '+(migrationAuditFilter==='warnings'?'btn-purple':'btn-gray')+' btn-sm" onclick="setMigrationAuditFilter(\'warnings\')">التحذيرات فقط</button></div>';
-  if(migrationAuditFilter!=='warnings'){
-    h+=renderMigrationAuditCodeCounts(errorCodeGroups,'أكواد الأخطاء','errors');
-    h+='<div style="margin-top:10px"><div style="font-size:12px;font-weight:800;color:#1f4e79;margin-bottom:6px">المؤتمرات التي بها أخطاء</div>';
-    h+=conferencesWithErrors.length
-      ? '<div class="settings-list">'+conferencesWithErrors.map(function(name){return '<div class="settings-list-item"><div>'+esc(name)+'</div></div>';}).join('')+'</div></div>'
-      : '<div class="settings-empty-state">لا توجد مؤتمرات بها أخطاء.</div></div>';
-  }
-  if(migrationAuditFilter!=='errors'){
-    h+=renderMigrationAuditCodeCounts(warningCodeGroups,'أكواد التحذيرات','warnings');
-  }
-
-  if(migrationAuditFilter!=='warnings'&&(report.errors||[]).length){
-    h+=renderMigrationAuditIssueList(report.errors,'أخطاء عامة');
-  }
-  if(migrationAuditFilter!=='errors'&&(report.warnings||[]).length){
-    h+=renderMigrationAuditIssueList(report.warnings,'تحذيرات عامة');
-  }
-  report.conferences.forEach(function(conference){
-    var errors=migrationAuditFilter==='warnings'?[]:conference.errors;
-    var warnings=migrationAuditFilter==='errors'?[]:conference.warnings;
-    h+='<div style="margin-top:12px;padding:11px;border:1px solid #e4edf5;border-radius:11px;background:#fbfdff">';
-    h+='<div style="font-weight:800;color:#1f4e79">'+esc(conference.conferenceName||conference.conferenceId||'مؤتمر بدون اسم')+'</div>';
-    h+='<div style="font-size:10px;color:#647b91;margin-top:3px">الأخطاء: '+conference.errors.length+' · التحذيرات: '+conference.warnings.length+'</div>';
-    if(migrationAuditFilter!=='warnings')h+=renderMigrationAuditIssueList(errors,'الأخطاء');
-    if(migrationAuditFilter!=='errors')h+=renderMigrationAuditIssueList(warnings,'التحذيرات');
-    h+='</div>';
-  });
-  return h+'</section>';
-}
-
 function renderSettings(){
   var current = getCurrentConference();
   var activeSettingsTab = settingsTab || 'general';
@@ -8731,7 +8488,6 @@ function renderSettings(){
     typeof window.OrganizationMembersUI.renderSection==='function'){
     h+=window.OrganizationMembersUI.renderSection({});
   }
-  h += renderMigrationAuditSection();
   if (!current) {
     h += '<div class="settings-empty-state">يرجى اختيار مؤتمر أو إنشاء مؤتمر جديد أولًا لعرض هذا القسم.</div></div>';
     ge('tab6').innerHTML = h;

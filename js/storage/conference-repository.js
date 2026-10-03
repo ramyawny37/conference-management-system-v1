@@ -372,22 +372,6 @@
         issue('APP_DATA_CLONE_FAILED','appData')
       ]);
     }
-    if(!candidate.conferenceLifecycle){
-      var prepared=prepareAppData(candidate,{
-        classifyConference:function(){
-          return {
-            localLifecycle:'active',
-            cloudLifecycle:'local_only',
-            localContentVersion:0
-          };
-        }
-      });
-      if(!prepared.ok){
-        return outcome(false,'legacy_compatibility_failed',null,
-          prepared.issues);
-      }
-      candidate=prepared.data;
-    }
     var currentValidation=validateRepositoryState(
       candidate.conferenceLifecycle,
       candidate.conferences.map(function(item){return item.id;})
@@ -403,11 +387,7 @@
     if(!created.ok)return created;
     candidate.conferences.push(clone(conference));
     candidate.conferenceLifecycle.records[conference.id]=created.data;
-    return outcome(true,
-      appData.conferenceLifecycle
-        ?'local_conference_added'
-        :'local_conference_added_with_legacy_compatibility',
-      candidate,[]);
+    return outcome(true,'local_conference_added',candidate,[]);
   }
 
   function getContract(){

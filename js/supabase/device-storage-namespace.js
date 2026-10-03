@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
 
-  var LEGACY_DATABASE='platform-device-ownership-v1';
+  var DATABASE_PREFIX='platform-device-ownership-v1';
 
   function projectRefFromUrl(value){
     try{
@@ -25,31 +25,17 @@
   }
 
   function databaseName(){
-    return LEGACY_DATABASE+':'+requireProjectRef();
+    return DATABASE_PREFIX+':'+requireProjectRef();
   }
 
   function identityKey(userId){
     return 'device-identity:'+requireProjectRef()+':'+String(userId||'');
   }
 
-  function legacyIdentityKey(){
-    var namespace=global.BrowserStorageNamespace||{key:function(name){return name;}};
-    return namespace.key('conference_manager_device_identity');
-  }
-
-  function canAdoptLegacy(){
-    var namespace=global.BrowserStorageNamespace||{};
-    var value=projectRef();
-    return !!(value&&namespace.environment==='development'&&namespace.projectRef===value);
-  }
-
   global.PlatformDeviceStorageNamespace=Object.freeze({
     projectRefFromUrl:projectRefFromUrl,
     projectRef:projectRef,
     databaseName:databaseName,
-    identityKey:identityKey,
-    legacyDatabaseName:function(){return LEGACY_DATABASE;},
-    legacyIdentityKey:legacyIdentityKey,
-    canAdoptLegacy:canAdoptLegacy
+    identityKey:identityKey
   });
 })(window);

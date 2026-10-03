@@ -17,7 +17,6 @@ var conference={id:'c1',houses:[{id:'h1',floors:[{id:'f1',rooms:[
 ]}]}],accommodationDisplayedRoomIds:[]};
 var conferenceEditAuthorized=false;
 var sandbox={window:null,appData:{currentConferenceId:'c1',conferences:[conference]},
-  isConferenceImportRecoveryPending:function(){return false;},
   ConferenceActivationAuthorization:{canEdit:function(id){
     return conferenceEditAuthorized&&id==='c2';
   }},

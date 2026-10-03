@@ -59,18 +59,16 @@
   }
   function normalizeCapabilities(value){
     value=value||{};
-    var legacy=!Object.prototype.hasOwnProperty.call(value,'canOpenUserManagement')&&
-      !Object.prototype.hasOwnProperty.call(value,'canViewAccount');
-    return {canOpenUserManagement:legacy||value.canOpenUserManagement===true,
-      canViewAccount:legacy||value.canViewAccount===true,
-      canManageAccount:legacy||value.canManageAccount===true,
-      canViewOrganization:legacy||value.canViewOrganization===true,
-      canManageOrganizationMembers:legacy||value.canManageOrganizationMembers===true,
-      canManageOrganizationRoles:legacy||value.canManageOrganizationRoles===true,
-      canViewConferences:legacy||value.canViewConferences===true,
-      canManageConferenceMembership:legacy||value.canManageConferenceMembership===true,
-      canViewDevices:legacy||value.canViewDevices===true,
-      canManageDevices:legacy||value.canManageDevices===true};
+    return {canOpenUserManagement:value.canOpenUserManagement===true,
+      canViewAccount:value.canViewAccount===true,
+      canManageAccount:value.canManageAccount===true,
+      canViewOrganization:value.canViewOrganization===true,
+      canManageOrganizationMembers:value.canManageOrganizationMembers===true,
+      canManageOrganizationRoles:value.canManageOrganizationRoles===true,
+      canViewConferences:value.canViewConferences===true,
+      canManageConferenceMembership:value.canManageConferenceMembership===true,
+      canViewDevices:value.canViewDevices===true,
+      canManageDevices:value.canManageDevices===true};
   }
   function getCachedActorCapabilities(){return actorCapabilities;}
   function getActorCapabilities(options){

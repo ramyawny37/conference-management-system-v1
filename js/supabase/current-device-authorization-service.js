@@ -6,7 +6,7 @@
   function result(ok,status,data,error){return {ok:ok,status:status,data:data||null,error:error||null};}
   function dependencies(options){options=options||{};return {clientLayer:options.clientLayer||global.SupabaseClientLayer,auth:options.auth||global.SupabaseAuth,identity:options.identity||global.SupabaseDeviceIdentity,repository:options.repository||global.DeviceAuthorizationOperationRepository,crypto:options.crypto||global.crypto};}
   function ready(){var integration=global.PlatformIntegration;return integration&&typeof integration.awaitAuthorizationReady==='function'?integration.awaitAuthorizationReady():Promise.resolve({ready:true,platform:false});}
-  function identitySource(identity){var integration=global.PlatformIntegration,platform=integration&&integration.getDeviceIdentity&&integration.getDeviceIdentity();return platform&&identity&&platform.id===identity.id?(integration.getDeviceIdentitySource&&integration.getDeviceIdentitySource()||'platform_context'):identity?'browser_local_fallback':'none';}
+  function identitySource(identity){var integration=global.PlatformIntegration,platform=integration&&integration.getDeviceIdentity&&integration.getDeviceIdentity();return platform&&identity&&platform.id===identity.id?(integration.getDeviceIdentitySource&&integration.getDeviceIdentitySource()||'platform_context'):identity?'browser_key':'none';}
   function traceResolution(identity){var integration=global.PlatformIntegration;if(integration&&typeof integration.recordDeviceResolution==='function')integration.recordDeviceResolution(identity&&identity.id,identitySource(identity));}
   function accountApproved(){var state=global.SystemAccessService&&global.SystemAccessService.getState&&global.SystemAccessService.getState(),status=state&&state.accountStatus;return status==='approved'?true:status==='pending'||status==='blocked'?false:null;}
   function safeCode(error,fallback){return String(error&&error.code||fallback||'RPC_FAILED').replace(/[^A-Za-z0-9_.-]/g,'').slice(0,80)||'RPC_FAILED';}
@@ -21,7 +21,7 @@
       var platformCurrent=ctx.d.identity&&ctx.d.identity.getOrCreate&&ctx.d.identity.getOrCreate({authenticatedUserId:ctx.userId});traceResolution(platformCurrent);return Promise.resolve(result(!!platformCurrent,platformCurrent?'ready':'unavailable',{identity:platformCurrent}));
     }
     var current=ctx.d.identity&&ctx.d.identity.getCurrent&&ctx.d.identity.getCurrent({authenticatedUserId:ctx.userId});if(current)return Promise.resolve(result(true,'ready',{identity:current}));
-    var created=ctx.d.identity&&ctx.d.identity.getOrCreate&&ctx.d.identity.getOrCreate({authenticatedUserId:ctx.userId,legacyOwnershipResolved:true});return Promise.resolve(result(!!created,created?'created':'unavailable',{identity:created}));
+    var created=ctx.d.identity&&ctx.d.identity.getOrCreate&&ctx.d.identity.getOrCreate({authenticatedUserId:ctx.userId});return Promise.resolve(result(!!created,created?'created':'unavailable',{identity:created}));
   }
   function initializeIdentity(options){return ready().then(function(){return initializeIdentityReady(options);});}
   function rpcError(error,fallback){return safeError(error,fallback);}

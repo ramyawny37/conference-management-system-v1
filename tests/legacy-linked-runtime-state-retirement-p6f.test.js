@@ -63,7 +63,7 @@ test('linked runtime normalization cannot hydrate or mirror legacy People and Ac
   assert.match(appNormalizer,/!linkedRuntime&&typeof normalizeConferencePeopleReferences/);
   assert.match(conferenceNormalizer,/linkedRuntime[\s\S]*if\(!linkedRuntime\)confObj\.houses/);
   assert.match(conferenceNormalizer,/if\(!linkedRuntime\)\{[\s\S]*confObj\.peopleDb/);
-  assert.match(conferenceNormalizer,/if\(!linkedRuntime\)migrateToV3/);
+  assert.doesNotMatch(conferenceNormalizer,/migrateToV3|convertLegacyRoomsToHouses/);
 });
 
 test('legacy Accommodation mutation surface is explicitly local-only',()=>{

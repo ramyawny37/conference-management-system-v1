@@ -142,7 +142,6 @@ assert.notStrictEqual(developmentCache,productionCache);
 
 const activeSources=[
   'state.js',
-  'js/storage/full-backup.js',
   'js/supabase/device-identity.js',
   'js/supabase/runtime-config.js',
   'js/supabase/system-access-service.js',

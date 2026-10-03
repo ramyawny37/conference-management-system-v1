@@ -13,7 +13,7 @@ test('C1A.1 owns place in Conference Core without legacy migration',()=>{
   assert.match(migration,/alter table public\.conferences[\s\S]*add column place text not null default ''/);
   assert.match(migration,/char_length\(place\)<=500/);
   assert.match(migration,/place'',v_conference\.place/);
-  assert.doesNotMatch(migration,/conference_snapshots|conf\.place|activityLog|saveAppSnapshot|\bsave\(\)/);
+  assert.doesNotMatch(migration,/conference_snapshots|conf\.place|activityLog|saveAppData|\bsave\(\)/);
   assert.equal((migration.match(/add column place/g)||[]).length,1);
 });
 

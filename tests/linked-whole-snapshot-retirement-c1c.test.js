@@ -18,9 +18,9 @@ test('retired snapshot-only files and cache entries are absent',()=>{
 });
 test('local-only persistence remains while linked save exits before persistence',()=>{
   const repository=read('js/storage/storage-repository.js');
-  assert.match(repository,/AppIndexedDB\.saveAppSnapshot/);
+  assert.match(repository,/persistence\.saveAppData/);
   assert.doesNotMatch(repository,/OfflineFirstIntegration|AutomaticSyncOrchestrator|operationType/);
-  assert.match(read('state.js'),/linkedConference&&linkedConference\.remoteConferenceId[\s\S]*?return true;[\s\S]*?StorageRepository\.saveAppSnapshot/);
+  assert.match(read('state.js'),/linkedConference&&linkedConference\.remoteConferenceId[\s\S]*?return true;[\s\S]*?StorageRepository\.saveAppData/);
 });
 test('canonical link records carry identity only, without whole-document conflict authority',()=>{
   const links=read('js/sync/conference-link-store.js');

@@ -157,6 +157,15 @@ assert.match(migration,/P0_3C_ENFORCEMENT_MUST_REMAIN_DISABLED/);
 assert.doesNotMatch(migration,/revoke[^;]*on function public\.(?!device_guarded_|get_my_device_aware_system_access)/i,'P0.3C must leave legacy grants unchanged');
 
 ['expected_function_count','exact_identity_arguments','common_protected_owner','security_definer','search_path_valid','public_execute','anon_execute','authenticated_execute','internal_only','enforcement_remains_disabled','P0.3E legacy grants unchanged baseline'].forEach(function(term){assert.ok(verification.includes(term),'verification missing '+term);});
-Object.keys(guarded).forEach(function(name){assert.ok(verification.includes('public.'+name+'('+guarded[name]+')'),'verification allowlist missing '+name);});
+var retiredVerificationRoutines=new Set([
+  'device_guarded_get_conference_snapshot_metadata',
+  'device_guarded_download_conference_snapshot',
+  'device_guarded_apply_conference_snapshot',
+  'device_guarded_get_sync_conflict',
+  'device_guarded_list_sync_conflicts',
+  'device_guarded_resolve_sync_conflict'
+]);
+Object.keys(guarded).filter(function(name){return !retiredVerificationRoutines.has(name);}).forEach(function(name){assert.ok(verification.includes('public.'+name+'('+guarded[name]+')'),'verification allowlist missing '+name);});
+retiredVerificationRoutines.forEach(function(name){assert.ok(!verification.includes(name),'retired verification routine remains '+name);});
 
-console.log('device guarded RPC contract tests: passed (26 exact guarded signatures; 11 ordered mutations; direct-read compatibility; exact grants)');
+console.log('device guarded RPC history and current verification contract tests: passed');

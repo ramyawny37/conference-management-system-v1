@@ -35,7 +35,7 @@ function runtime(remoteRows,settings){
   })};
   window.OrganizationManagementService={list:()=>Promise.resolve({ok:true,data:{organizations:settings.organizations||[{organizationId:ORG_A,status:'active',displayName:'A',role:'organization_admin'},{organizationId:ORG_B,status:'active',displayName:'B',role:'organization_owner'}]}})};
   window.AppIndexedDB={stores:{libraryTemplateContentOperations:'content',organizationTemplateAccessOperations:'access'},getAllRecords:name=>Promise.resolve(stores[name].slice()),putRecord:(name,row)=>{const i=stores[name].findIndex(x=>x.operationId===row.operationId);if(i<0)stores[name].push(row);else stores[name][i]=row;return Promise.resolve();},deleteRecord:(name,id)=>{const i=stores[name].findIndex(x=>x.operationId===id);if(i>=0)stores[name].splice(i,1);return Promise.resolve();}};
-  window.StorageRepository={getAppSnapshot:()=>Promise.resolve({data:window.appData}),saveAppSnapshot:(value,options)=>{saveCalls.push(options);window.appData=value;return Promise.resolve({ok:true});}};
+  window.StorageRepository={getAppData:()=>Promise.resolve({data:window.appData}),saveAppData:(value,options)=>{saveCalls.push(options);window.appData=value;return Promise.resolve({ok:true});}};
   vm.runInNewContext(source,{window,console});
   return {window,stores,rpcCalls,saveCalls,localSnapshotWrites};
 }
@@ -50,77 +50,6 @@ function runtime(remoteRows,settings){
   await new Promise(resolve=>setTimeout(resolve,0));
   assert(r.rpcCalls.some(call=>call.name==='apply_library_template_content_operation'&&call.args.p_base_revision===4));
 
-  r=runtime([]);r.window.appData.houseTemplates=[{id:'legacy',name:'Legacy',floors:[]}];
-  assert.equal(r.window.OrganizationTemplateSync.canEditHouseTemplate('legacy'),true,
-    'ownerless local-only template remains editable');
-  const refreshed=await r.window.OrganizationTemplateSync.refresh();
-  assert.equal(refreshed.status,'adoption_required');
-  assert.equal(r.rpcCalls.filter(call=>call.name.includes('apply_')).length,0,'refresh must not adopt implicitly');
-  const adopted=await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A,ORG_B]);
-  assert.equal(adopted.ok,true);
-  assert.equal(r.rpcCalls.filter(call=>call.name==='apply_library_template_content_operation').length,1,'content is created once');
-  assert.equal(r.rpcCalls.filter(call=>call.name==='apply_organization_template_access_operation').length,2,'one association per selected organization');
-  assert.deepEqual(Array.from(r.window.appData.houseTemplates[0].accessibleOrganizationIds),[ORG_A,ORG_B]);
-  assert(r.saveCalls.every(options=>options&&options.skipSyncQueue===true&&options.skipTemplateSync===true));
-  assert.strictEqual(r.localSnapshotWrites.length,0,
-    'repository owns the application snapshot mirror');
-  await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A,ORG_B]);
-  assert.equal(r.rpcCalls.filter(call=>call.name==='apply_library_template_content_operation').length,1,'replay is idempotent');
-
-  r=runtime([],{organizations:[]});r.window.appData.houseTemplates=[{id:'no-org',name:'No organization'}];
-  assert.equal((await r.window.OrganizationTemplateSync.refresh()).status,'organization_scope_missing');
-  assert.equal((await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A])).status,'organization_selection_required');
-
-  r=runtime([]);r.window.appData.houseTemplates=[{name:'No ID',floors:[]}];r.window.appData.templates=[{id:'conference',name:'Conference'}];
-  await r.window.OrganizationTemplateSync.refresh();
-  await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A]);
-  assert(r.window.appData.houseTemplates[0].id,'legacy identity must be stable before queueing');
-  assert.equal(r.rpcCalls.filter(call=>call.name==='apply_library_template_content_operation'&&call.args.p_template_type==='conference').length,1);
-  assert.equal(r.window.appData.conferences.length,0,'template adoption must not mutate conferences');
-
-  r=runtime([],{failAccess:1});r.window.appData.houseTemplates=[{id:'retry',name:'Retry'}];
-  await r.window.OrganizationTemplateSync.refresh();
-  const partial=await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A,ORG_B]);
-  assert.equal(partial.status,'adoption_partial');
-  assert.equal(r.stores.content.length,0);
-  assert.equal(r.stores.access.length,1);
-  const replay=await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A,ORG_B]);
-  assert.equal(replay.ok,true);
-  assert.equal(r.stores.access.length,0);
-  assert.deepEqual(Array.from(r.window.appData.houseTemplates[0].accessibleOrganizationIds).sort(),[ORG_A,ORG_B]);
-
-  r=runtime([],{failContent:1});r.window.appData.houseTemplates=[{id:'blocked',name:'Blocked'}];
-  await r.window.OrganizationTemplateSync.refresh();
-  const blocked=await r.window.OrganizationTemplateSync.adoptLegacyTemplates([ORG_A]);
-  assert.equal(blocked.status,'adoption_partial');
-  assert.equal(r.rpcCalls.filter(call=>call.name==='apply_organization_template_access_operation').length,0,'failed content must never receive access associations');
-
-  r=runtime([],{organizations:[{
-    organizationId:ORG_A,status:'active',displayName:'Member',role:'member'
-  }]});
-  r.window.appData.houseTemplates=[{id:'member-blocked',name:'Must Stay',
-    cloudSyncStatus:'synced',accessibleOrganizationIds:[]}];
-  r.stores.access.push({operationId:'existing-unknown',
-    templateType:'house',templateId:'member-blocked',action:'grant',
-    organizationId:ORG_A,status:'unknown',lastErrorCode:'42501',
-    createdAt:'2026-08-11T00:00:00.000Z'});
-  await r.window.OrganizationTemplateSync.refresh();
-  assert.equal(r.rpcCalls.filter(call=>
-    call.name==='apply_organization_template_access_operation').length,0);
-  assert.equal(r.stores.access.length,1);
-  assert.equal(r.stores.access[0].status,'unknown');
-  const beforeMember=JSON.stringify(r.window.appData);
-  const beforeSaves=r.saveCalls.length;
-  const beforeRpc=r.rpcCalls.length;
-  const memberResult=await r.window.OrganizationTemplateSync
-    .adoptLegacyTemplates([ORG_A]);
-  assert.equal(memberResult.status,'not_authorized');
-  assert.equal(JSON.stringify(r.window.appData),beforeMember);
-  assert.equal(r.saveCalls.length,beforeSaves);
-  assert.equal(r.rpcCalls.length,beforeRpc);
-  assert.equal(r.stores.content.length,0);
-  assert.equal(r.stores.access.length,1);
-  assert.equal(r.stores.access[0].operationId,'existing-unknown');
 
   r=runtime([]);r.window.appData.houseTemplates=[{id:'previously-cloud',name:'Old',accessibleOrganizationIds:[ORG_A],cloudRevision:2}];
   await r.window.OrganizationTemplateSync.refresh();

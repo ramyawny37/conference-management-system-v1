@@ -38,19 +38,7 @@
     if(memoryIdentities[currentUserId])return memoryIdentities[currentUserId];
     var existing=read(storageKey(currentUserId),options);
     if(existing){memoryIdentities[currentUserId]=existing;return existing;}
-    var namespace=storageNamespace(),legacy=namespace&&namespace.canAdoptLegacy()?read(namespace.legacyIdentityKey(),options):null;
-    if(legacy&&options.legacyOwnershipResolved!==true)return null;
     var identity=createIdentity(options);memoryIdentities[currentUserId]=identity;write(storageKey(currentUserId),identity,options);return identity;
-  }
-  function getLegacyCandidate(options){var namespace=storageNamespace();return namespace&&namespace.canAdoptLegacy()?read(namespace.legacyIdentityKey(),options):null;}
-  function adoptLegacyForCurrentUser(identity,options){
-    options=options&&typeof options==='object'?options:{};var currentUserId=userId(options);
-    var namespace=storageNamespace();
-    if(!namespace||!namespace.canAdoptLegacy()||!currentUserId||!isValidIdentity(identity))return {success:false,reason:'DEVICE_IDENTITY_ADOPTION_INVALID'};
-    var existing=read(storageKey(currentUserId),options);
-    if(existing){memoryIdentities[currentUserId]=existing;return {success:true,identity:existing,status:'preserved'};}
-    memoryIdentities[currentUserId]=identity;
-    return write(storageKey(currentUserId),identity,options)?{success:true,identity:identity,status:'adopted'}:{success:false,reason:'DEVICE_IDENTITY_STORAGE_FAILED'};
   }
   function reconcileProvedIdentity(identity,options){
     options=options&&typeof options==='object'?options:{};var currentUserId=userId(options);
@@ -79,5 +67,5 @@
     return {success:true,status:'reset'};
   }
 
-  global.SupabaseDeviceIdentity=Object.freeze({getOrCreate:getOrCreate,getCurrent:getCurrent,setDeviceName:setDeviceName,getLegacyCandidate:getLegacyCandidate,adoptLegacyForCurrentUser:adoptLegacyForCurrentUser,reconcileProvedIdentity:reconcileProvedIdentity,resetCurrent:resetCurrent,getStorageKeyForUser:storageKey});
+  global.SupabaseDeviceIdentity=Object.freeze({getOrCreate:getOrCreate,getCurrent:getCurrent,setDeviceName:setDeviceName,reconcileProvedIdentity:reconcileProvedIdentity,resetCurrent:resetCurrent,getStorageKeyForUser:storageKey});
 })(window);

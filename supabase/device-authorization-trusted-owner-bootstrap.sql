@@ -141,23 +141,17 @@ begin
       to_regprocedure('public.device_guarded_get_conference_lock(uuid,uuid)'),
       to_regprocedure('public.device_guarded_get_my_conference_membership(uuid,uuid)'),
       to_regprocedure('public.device_guarded_list_available_conferences(uuid)'),
-      to_regprocedure('public.device_guarded_get_conference_snapshot_metadata(uuid,uuid)'),
-      to_regprocedure('public.device_guarded_download_conference_snapshot(uuid,uuid)'),
       to_regprocedure('public.device_guarded_get_conference_creation_operation(uuid,uuid)'),
-      to_regprocedure('public.device_guarded_get_sync_conflict(uuid,uuid)'),
-      to_regprocedure('public.device_guarded_list_sync_conflicts(uuid,uuid,text,integer)'),
       to_regprocedure('public.device_guarded_add_organization_member(uuid,uuid,uuid,uuid)'),
       to_regprocedure('public.device_guarded_remove_organization_member(uuid,uuid,uuid,uuid)'),
       to_regprocedure('public.device_guarded_change_organization_role(uuid,uuid,uuid,text,uuid)'),
       to_regprocedure('public.device_guarded_add_conference_manager(uuid,uuid,uuid,uuid)'),
       to_regprocedure('public.device_guarded_remove_conference_manager(uuid,uuid,uuid,uuid)'),
       to_regprocedure('public.device_guarded_create_conference_idempotent(uuid,uuid,uuid,text,jsonb)'),
-      to_regprocedure('public.device_guarded_apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)'),
       to_regprocedure('public.device_guarded_acquire_conference_lock(uuid,uuid,uuid,integer)'),
       to_regprocedure('public.device_guarded_renew_conference_lock(uuid,uuid,uuid,integer)'),
-      to_regprocedure('public.device_guarded_release_conference_lock(uuid,uuid,uuid)'),
-      to_regprocedure('public.device_guarded_resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)')
-    ]::regprocedure[]) as expected(oid) where expected.oid is not null) <> 27 then
+      to_regprocedure('public.device_guarded_release_conference_lock(uuid,uuid,uuid)')
+    ]::regprocedure[]) as expected(oid) where expected.oid is not null) <> 21 then
     raise exception 'P0_3D_P0_3C_EXACT_SIGNATURE_MISSING';
   end if;
 

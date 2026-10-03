@@ -34,8 +34,8 @@ test('B4A has replay, revision, audit and explicit ACL protection',()=>{
   assert.match(sql,/revoke all on function[\s\S]*public\.mutate_conference_accommodation_pricing[\s\S]*from public,anon,authenticated,service_role/);
 });
 
-test('linked persistence excludes legacy Accommodation pricing while local normalization remains',()=>{
-  assert.match(integration,/delete conference\.accommodationV3/);
+test('linked persistence has no legacy Accommodation serializer while local normalization remains',()=>{
+  assert.doesNotMatch(integration,/prepareLegacyConferenceSerialization|delete conference\.accommodationV3/);
   assert.match(core,/state&&state\.pricing\?state\.pricing:createDefaultAccommodationV3\(\)/);
   assert.match(core,/conference\.accommodationV3=normalizeAccommodationV3/);
 });

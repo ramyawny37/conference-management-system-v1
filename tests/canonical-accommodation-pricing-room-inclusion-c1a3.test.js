@@ -14,7 +14,7 @@ test('C1A.3 persists exclusions only under the existing Accommodation Pricing ow
   assert.match(sql,/create table public\.conference_accommodation_pricing_room_exclusions/);
   assert.match(sql,/primary key\(conference_id,room_id\)/);assert.match(sql,/references public\.conference_accommodation_rooms\(conference_id,id\)[\s\S]*on delete cascade/);
   assert.ok(sql.includes("''includedInPricing'',not exists"));assert.match(sql,/EXCLUDE_ROOM/);assert.match(sql,/REMOVE_ROOM_EXCLUSION/);
-  assert.doesNotMatch(sql,/accommodationDisplayedRoomIds|displayedRoomIds|includedRoomIds|conference_snapshots|activityLog|saveAppSnapshot|\bsave\(/);
+  assert.doesNotMatch(sql,/accommodationDisplayedRoomIds|displayedRoomIds|includedRoomIds|conference_snapshots|activityLog|saveAppData|\bsave\(/);
   assert.doesNotMatch(sql,/create table[^;]*(ledger|operation)|jsonb[^;]*(exclusion|room.inclusion)/i);
 });
 

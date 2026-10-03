@@ -37,8 +37,7 @@ test('linked canonical state never projects back into the legacy Conference docu
   assert.equal(api.getConferenceBrandingState('local').branding.banner,'data:image/jpeg;base64,YQ==');
   assert.equal(api.getConferenceAccommodationState('local').houses[0].floors[0].rooms[1].includedInPricing,false);
   assert.equal(api.getConferenceActivityState('local').items[0].title,'T');
-  const serialized=api.prepareLegacyConferenceSerialization(env.sandbox.appData).conferences[0];
-  for(const key of ['conf','branding','accommodationDisplayedRoomIds','activityLog','peopleDb','houses'])assert.equal(serialized[key],undefined);
+  assert.equal(api.prepareLegacyConferenceSerialization,undefined);
 });
 
 test('linked Branding and room inclusion mutate only protected canonical operations',async()=>{
@@ -64,8 +63,8 @@ test('linked consumers use canonical Branding, inclusion, history, and best-effo
   assert.doesNotMatch(migration,/old_values|new_values[^,)]/);
 });
 
-test('linked migration and save paths retain explicit local-only boundaries',()=>{
-  assert.match(read('core.js'),/if\(!linkedRuntime\)migrateToV3\(confObj\)/);
+test('linked save paths retain explicit local-only boundaries without old-data migration',()=>{
+  assert.doesNotMatch(read('core.js'),/migrateToV3|convertLegacyRoomsToHouses/);
   assert.match(script,/if\(!current\|\|!getCanonicalConferenceCoreLink\(current\.id\)\)addActivityLog\('card_printed'/);
   assert.match(script,/if\(getCanonicalConferenceCoreLink\(conference\.id\)\)return false/);
   assert.doesNotMatch(integration,/projectConferenceCore|legacyCoreCache/);

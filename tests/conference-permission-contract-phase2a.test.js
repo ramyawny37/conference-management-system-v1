@@ -66,8 +66,8 @@ assert.ok(contract.mutationCatalog.every(function(item){
 }));
 var completeCatalog=contract.mutationCatalog.concat(contract.conferenceMutationCatalog);
 var handlerNames=completeCatalog.map(function(item){return item.handler;});
-assert.strictEqual(completeCatalog.length,117);
-assert.strictEqual(new Set(handlerNames).size,117);
+assert.strictEqual(completeCatalog.length,116);
+assert.strictEqual(new Set(handlerNames).size,116);
 assert.strictEqual(handlerNames.filter(function(name){return name==='saveSettings';}).length,1);
 ['saveHouse','saveTransport','saveFinancialV3Adjustment',
   'saveRestaurantV3PriceOverride','saveRestaurantV3CountOverride',
@@ -89,7 +89,7 @@ assert.strictEqual(createFlow.status,'flow_entry');
 var unresolvedHandlers=Array.from(completeCatalog.filter(function(item){return item.status==='unresolved';}).map(function(item){return item.handler;})).sort();
 assert.deepStrictEqual(unresolvedHandlers,[
   'clearActivityLog','clearAirConditioningRoomSettings','moveArchiveToTrash',
-  'moveBackupToTrash','purgeTrashItem','repairBackupStorageBloat',
+  'moveBackupToTrash','purgeTrashItem',
   'resetAirConditioningHouseAndRoomsSettings','restoreTrashItem',
   'saveConferenceBranding','saveSettings','shareCenterViaSystem',
   'shareSelectedCardsFiles','shareSelectedQueueCard',

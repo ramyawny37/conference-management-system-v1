@@ -14,7 +14,7 @@ test('known device without its bound private key fails closed before fresh enrol
   assert.match(enrollment,/invoke\(\{action:'device-status',deviceId:identity\.id\}\)/);
   assert.match(enrollment,/throw \{code:'BOUND_PRIVATE_KEY_REQUIRED'/);
   const guard=enrollment.indexOf("throw {code:'BOUND_PRIVATE_KEY_REQUIRED'");
-  const fresh=enrollment.indexOf('return adoptProvedLegacy().then(function(adopted){return adopted||enroll(auth);});',guard);
+  const fresh=enrollment.indexOf('return enroll(auth);',guard);
   assert.ok(guard>=0&&fresh>guard,'known-device guard must run before fresh enrollment');
 });
 

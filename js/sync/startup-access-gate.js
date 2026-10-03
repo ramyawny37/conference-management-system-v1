@@ -10,7 +10,7 @@
   function markSignUpStartupFailure(error){var auth=global.SupabaseAuth;if(auth&&typeof auth.markSignUpStartupAccessFailed==='function')auth.markSignUpStartupAccessFailed(error||{code:'STARTUP_ACCESS_FAILED'});}
   function showStartupDenied(text,code){markSignUpStartupFailure({code:code||'STARTUP_ACCESS_FAILED'});return show('denied',text);}
   function refreshAccountLabel(){if(typeof global.updateLogoText==='function')global.updateLogoText();}
-  function establishDeviceSession(){var service=global.PlatformDeviceSession;return service&&typeof service.ensureValid==='function'?service.ensureValid():Promise.resolve({valid:true,compatibility:true});}
+  function establishDeviceSession(){var service=global.PlatformDeviceSession;return service&&typeof service.ensureValid==='function'?service.ensureValid():Promise.reject({code:'DEVICE_SESSION_UNAVAILABLE'});}
   function nativeEnrollmentFailure(){setCanonicalState('ERROR');show('device_error','يجب اعتماد هذا الجهاز للمتابعة.');return {status:'device_error'};}
   function accountIdentity(){var auth=global.SupabaseAuth;return auth&&typeof auth.getAccountIdentity==='function'?auth.getAccountIdentity():{authenticated:false,userId:'',displayName:'',email:'',label:''};}
   function setCanonicalState(value){canonicalState=value;var integration=global.PlatformIntegration;if(integration&&typeof integration.recordCanonicalState==='function')integration.recordCanonicalState(value);recordStage('canonical_state',value);return value;}

@@ -66,7 +66,7 @@ vm.runInNewContext(source,sandbox,{filename:'template-diagnostic-export.js'});
         {organizationId:'org-1',role:'member',displayName:'private-name'}
       ]
     };}},
-    storage:{saveAppSnapshot(){writes.save++;}},
+    storage:{saveAppData(){writes.save++;}},
     client:{rpc(){writes.rpc++;}},
     sync:{flush(){writes.sync++;}}
   });
@@ -118,7 +118,7 @@ vm.runInNewContext(source,sandbox,{filename:'template-diagnostic-export.js'});
     /function renderSection\(\)[\s\S]{0,500}renderTemplateDiagnosticExport\(\)/
   );
   assert.doesNotMatch(source,
-    /saveAppSnapshot|setItem|putRecord|deleteRecord|\.rpc\s*\(|retry|repair/i
+    /saveAppData|setItem|putRecord|deleteRecord|\.rpc\s*\(|retry|repair/i
   );
   console.log('template diagnostic export tests: passed');
 })().catch(function(error){console.error(error);process.exitCode=1;});

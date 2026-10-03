@@ -149,63 +149,9 @@ test('different account cannot inherit creator-bound local conference',()=>{
   });
   env.setUser(userB);
   const denied=env.gate.authorizeLocalOnly(added.data,'local-new');
-  assert.equal(denied.classification,'unverified_legacy_unscoped');
+  assert.equal(denied.classification,'unverified_local_scope');
   assert.equal(env.gate.canDisplay('local-new'),false);
   assert.equal(added.data.conferenceLifecycle.records['local-new'].localOwnerUserId,userA);
-});
-
-test('pre-fix unpublished conference stays fail-closed except for confirmed system-owner recovery',()=>{
-  const env=runtime();
-  const legacy={
-    currentConferenceId:null,
-    conferences:[{id:'legacy-new',name:'أزمة',organizationId:'org-1',status:'active'}],
-    conferenceLifecycle:{schemaVersion:1,records:{
-      'legacy-new':{
-        localConferenceId:'legacy-new',
-        localLifecycle:'active',
-        cloudLifecycle:'unpublished',
-        localContentVersion:1,
-        publishMetadata:null
-      }
-    }}
-  };
-  let denied=env.gate.authorizeLocalOnly(legacy,'legacy-new');
-  assert.equal(denied.classification,'unverified_legacy_unscoped');
-  assert.equal(legacy.conferenceLifecycle.records['legacy-new'].localOwnerUserId,undefined);
-
-  env.setSystemOwner(true);
-  env.gate.resetForAccount(userA);
-  const recovered=env.gate.authorizeLocalOnly(legacy,'legacy-new');
-  assert.equal(recovered.classification,'authorized_local_only');
-  assert.equal(legacy.conferenceLifecycle.records['legacy-new'].localOwnerUserId,userA);
-  assert.equal(legacy.conferenceLifecycle.records['legacy-new'].publishMetadata,null);
-  assert.equal(env.gate.getCurrentState().localConferenceId,'legacy-new');
-
-  env.setUser(userB);
-  env.gate.resetForAccount(userB);
-  const cannotTakeOver=env.gate.authorizeLocalOnly(legacy,'legacy-new');
-  assert.equal(cannotTakeOver.classification,'unverified_legacy_unscoped');
-  assert.equal(legacy.conferenceLifecycle.records['legacy-new'].localOwnerUserId,userA);
-});
-
-test('legacy recovery requires organization context and confirmed fresh system ownership',()=>{
-  const env=runtime();
-  env.setSystemOwner(true);
-  const legacy={
-    conferences:[{id:'legacy-unscoped',name:'Legacy',status:'active'}],
-    conferenceLifecycle:{schemaVersion:1,records:{
-      'legacy-unscoped':{
-        localConferenceId:'legacy-unscoped',
-        localLifecycle:'active',
-        cloudLifecycle:'unpublished',
-        localContentVersion:0,
-        publishMetadata:null
-      }
-    }}
-  };
-  const denied=env.gate.authorizeLocalOnly(legacy,'legacy-unscoped');
-  assert.equal(denied.classification,'unverified_legacy_unscoped');
-  assert.equal(legacy.conferenceLifecycle.records['legacy-unscoped'].localOwnerUserId,undefined);
 });
 
 test('cloud authorization contract remains separate from local provenance',()=>{

@@ -20,7 +20,7 @@ var sandbox={
   };},
   syncConferencePeriod:function(){},
   ge:function(){return null;},
-  StorageRepository:{saveAppSnapshot:function(snapshot,options){
+  StorageRepository:{saveAppData:function(snapshot,options){
     repositoryCalls.push({snapshot:JSON.parse(JSON.stringify(snapshot)),
       options:options===undefined?null:JSON.parse(JSON.stringify(options))});
     return Promise.resolve({ok:true});
@@ -47,7 +47,7 @@ assert.strictEqual(currentReads,0);
 assert.strictEqual(trackingCalls,0);
 assert.strictEqual(JSON.stringify(sandbox.appData.conferences),before);
 assert.strictEqual(repositoryCalls.length,1);
-assert.deepStrictEqual(repositoryCalls[0].options,{skipSyncQueue:true});
+assert.strictEqual(repositoryCalls[0].options,null);
 assert.strictEqual(repositoryCalls[0].snapshot.currentConferenceId,'conference-1');
 assert.strictEqual(repositoryCalls[0].snapshot.templates[0].data.houses[0].id,
   'template-house');

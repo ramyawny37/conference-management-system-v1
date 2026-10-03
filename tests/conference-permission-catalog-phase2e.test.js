@@ -31,8 +31,8 @@ function conference(handler,status,action,entity,operation){
   assert.strictEqual(item.shadowGate,'pending',handler+' gate phase');
 }
 
-assert.strictEqual(entries.length,117);
-assert.strictEqual(Object.keys(byHandler).length,117);
+assert.strictEqual(entries.length,116);
+assert.strictEqual(Object.keys(byHandler).length,116);
 assert.strictEqual(contract.enforcementEnabled,false);
 assert.deepStrictEqual(Array.from(contract.sections),[
   'accommodation','transport','accounts','restaurant','air_conditioning',
@@ -98,7 +98,6 @@ assert.strictEqual(downloadedBackup.operation,'download_full');
 assert.match(downloadedBackup.notes,/Application-wide/);
 conference('moveArchiveToTrash','unresolved',null,'conference_archive','move_to_trash');
 conference('moveBackupToTrash','unresolved',null,'application_backup','move_to_trash');
-conference('repairBackupStorageBloat','unresolved',null,'application_backup','maintenance_rewrite');
 assert.strictEqual(entry('restoreTrashItem').entity,'dynamic_trash_item');
 assert.strictEqual(entry('restoreTrashItem').discriminator,'type');
 assert.strictEqual(entry('purgeTrashItem').entity,'dynamic_trash_item');
@@ -108,7 +107,7 @@ var unresolved=[
   'shareSelectedCardsFiles','shareCenterViaSystem','openShareCenterWhatsApp',
   'shareSelectedQueueCard','openSelectedCardsWhatsApp','saveSettings',
   'saveConferenceBranding','clearActivityLog','restoreTrashItem','purgeTrashItem',
-  'moveArchiveToTrash','moveBackupToTrash','repairBackupStorageBloat',
+  'moveArchiveToTrash','moveBackupToTrash',
   'resetAirConditioningHouseAndRoomsSettings','clearAirConditioningRoomSettings'
 ].sort();
 assert.deepStrictEqual(entries.filter(function(item){return item.status==='unresolved';})

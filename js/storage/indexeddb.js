@@ -48,23 +48,8 @@
   }
 
   function upgradeDatabase(db,upgradeTransaction){
-    [
-      'pending_operations','sync_metadata','conflicts','sync_operations_queue',
-      'pending_remote_applications','conflict_resolution_drafts',
-      'conflict_resolution_backups'
-    ].forEach(function(name){
-      if(db.objectStoreNames.contains(name))db.deleteObjectStore(name);
-    });
-    ensureStore(db,upgradeTransaction,STORE_NAMES.conferences,{keyPath:'conferenceId'},[
-      {name:'status',keyPath:'status'},
-      {name:'syncStatus',keyPath:'syncStatus'}
-    ]);
-    ensureStore(db,upgradeTransaction,STORE_NAMES.rooms,{keyPath:['conferenceId','roomId']},[
-      {name:'conferenceId',keyPath:'conferenceId'},
-      {name:'conferenceHouse',keyPath:['conferenceId','houseId']},
-      {name:'conferenceFloor',keyPath:['conferenceId','floorId']},
-      {name:'conferenceSyncStatus',keyPath:['conferenceId','syncStatus']}
-    ]);
+    ensureStore(db,upgradeTransaction,STORE_NAMES.conferences,{keyPath:'conferenceId'});
+    ensureStore(db,upgradeTransaction,STORE_NAMES.rooms,{keyPath:['conferenceId','roomId']});
     ensureStore(db,upgradeTransaction,STORE_NAMES.deviceSettings,{keyPath:'key'});
     ensureStore(db,upgradeTransaction,STORE_NAMES.localBackups,{keyPath:'backupId'},[
       {name:'conferenceId',keyPath:'conferenceId'},
@@ -202,81 +187,75 @@
     });
   }
 
-  function saveAppSnapshot(appData,persistenceMetadata){
-    var diagnostics=global.SnapshotPayloadDiagnostics;
-    var inspected;
-    if(diagnostics&&typeof diagnostics.inspect==='function'){
-      inspected=diagnostics.inspect(appData);
-    }else{
-      try{
-        var serialized=JSON.stringify(appData);
-        if(typeof serialized!=='string')throw new Error('NOT_SERIALIZABLE');
-        inspected={ok:true,snapshot:JSON.parse(serialized),sizeBytes:null};
-      }catch(error){
-        inspected={ok:false};
-      }
+  function serializeAppData(appData){
+    try{
+      var serialized=JSON.stringify(appData);
+      if(typeof serialized!=='string')throw new Error('NOT_SERIALIZABLE');
+      return {data:JSON.parse(serialized),sizeBytes:calculateUtf8Size(serialized)};
+    }catch(error){
+      throw Object.assign(new Error('Application data could not be serialized.'),
+        {code:'LOCAL_PERSISTENCE_SERIALIZATION_FAILED'});
     }
-    if(!inspected.ok){
-      var serializationError=new Error(
-        'The snapshot payload could not be serialized.'
-      );
-      serializationError.code='SNAPSHOT_SERIALIZATION_FAILED';
-      return Promise.reject(serializationError);
+  }
+
+  function isQuotaExceededError(error){
+    var current=error;
+    for(var depth=0;current&&depth<4;depth++){
+      if(current.name==='QuotaExceededError'||current.code===22||current.code===1014)return true;
+      current=current.cause;
     }
+    return false;
+  }
+
+  function saveAppData(appData){
+    var serialized;
+    try{serialized=serializeAppData(appData);}catch(error){return Promise.reject(error);}
     return putRecord(STORE_NAMES.conferences,{
-      conferenceId: '**app_snapshot**',
-      data: inspected.snapshot,
-      schemaVersion: inspected.snapshot&&inspected.snapshot.version
-        ?inspected.snapshot.version:'',
+      conferenceId:'**app_data**',
+      data:serialized.data,
+      schemaVersion:serialized.data&&serialized.data.version?serialized.data.version:'',
       appVersion: global.APP_RELEASE&&global.APP_RELEASE.version?global.APP_RELEASE.version:'',
       savedAt: new Date().toISOString(),
-      source: 'dual-write',
-      sizeBytes: inspected.sizeBytes,
-      persistenceMetadata:persistenceMetadata||null
+      source:'indexeddb',
+      sizeBytes:serialized.sizeBytes
     }).catch(function(error){
-      if(diagnostics&&diagnostics.isQuotaExceededError(error)){
-        var quotaError=new Error(
-          'Local storage quota prevented saving the snapshot.'
-        );
+      if(isQuotaExceededError(error)){
+        var quotaError=new Error('Local storage quota prevented saving application data.');
         quotaError.code='LOCAL_STORAGE_QUOTA_EXCEEDED';
-        quotaError.sizeBytes=inspected.sizeBytes;
+        quotaError.sizeBytes=serialized.sizeBytes;
         throw quotaError;
       }
       throw error;
     });
   }
 
-  function validateAppSnapshot(snapshot){
-    if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot)||!Object.keys(snapshot).length){
-      return {valid:false,reason:'SNAPSHOT_EMPTY'};
+  function validateAppDataRecord(record){
+    if(!record||typeof record!=='object'||Array.isArray(record)||!Object.keys(record).length){
+      return {valid:false,reason:'APP_DATA_EMPTY'};
     }
-    if(!snapshot.data||typeof snapshot.data!=='object'||Array.isArray(snapshot.data)||!Object.keys(snapshot.data).length){
-      return {valid:false,reason:'SNAPSHOT_DATA_MISSING'};
+    if(!record.data||typeof record.data!=='object'||Array.isArray(record.data)||!Object.keys(record.data).length){
+      return {valid:false,reason:'APP_DATA_MISSING'};
     }
-    if(!Object.prototype.hasOwnProperty.call(snapshot.data,'conferences')){
-      return {valid:false,reason:'SNAPSHOT_CONFERENCES_MISSING'};
+    if(!Object.prototype.hasOwnProperty.call(record.data,'conferences')){
+      return {valid:false,reason:'APP_DATA_CONFERENCES_MISSING'};
     }
-    if(!Array.isArray(snapshot.data.conferences)){
-      return {valid:false,reason:'SNAPSHOT_CONFERENCES_INVALID'};
+    if(!Array.isArray(record.data.conferences)){
+      return {valid:false,reason:'APP_DATA_CONFERENCES_INVALID'};
     }
-    if(!Object.prototype.hasOwnProperty.call(snapshot.data,'currentConferenceId')){
-      return {valid:false,reason:'SNAPSHOT_CURRENT_CONFERENCE_ID_MISSING'};
+    if(!Object.prototype.hasOwnProperty.call(record.data,'currentConferenceId')){
+      return {valid:false,reason:'APP_DATA_CURRENT_CONFERENCE_ID_MISSING'};
     }
     return {valid:true,reason:''};
   }
 
-  function getAppSnapshot(){
-    return getRecord(STORE_NAMES.conferences,'**app_snapshot**');
+  function getAppData(){
+    return getRecord(STORE_NAMES.conferences,'**app_data**');
   }
 
-  function hasAppSnapshot(){
-    return getAppSnapshot().then(function(snapshot){
-      return validateAppSnapshot(snapshot).valid;
+  function hasAppData(){
+    return getAppData().then(function(record){
+      return validateAppDataRecord(record).valid;
     });
-  }
-
-  function deleteAppSnapshot(){
-    return deleteRecord(STORE_NAMES.conferences,'**app_snapshot**');
   }
 
   function createBackupId(){
@@ -350,18 +329,18 @@
 
   function createLocalBackup(appData,reason){
     try{
-      var snapshotJson = JSON.stringify(appData);
-      var snapshot = JSON.parse(snapshotJson);
-      var conferenceId = snapshot.currentConferenceId||'**all**';
+      var dataJson=JSON.stringify(appData);
+      var data=JSON.parse(dataJson);
+      var conferenceId=data.currentConferenceId||'**all**';
       var backup = {
         backupId: createBackupId(),
         conferenceId: conferenceId,
         createdAt: new Date().toISOString(),
         reason: typeof reason==='string'?reason:'',
-        schemaVersion: snapshot.version||'',
+        schemaVersion:data.version||'',
         appVersion: global.APP_RELEASE&&global.APP_RELEASE.version?global.APP_RELEASE.version:'',
-        snapshot: snapshot,
-        sizeBytes: calculateUtf8Size(snapshotJson)
+        data:data,
+        sizeBytes:calculateUtf8Size(dataJson)
       };
       return putRecord(STORE_NAMES.localBackups,backup).then(function(){
         return pruneLocalBackups(conferenceId,10);
@@ -389,11 +368,10 @@
     putRecord: putRecord,
     deleteRecord: deleteRecord,
     clearStore: clearStore,
-    saveAppSnapshot: saveAppSnapshot,
-    getAppSnapshot: getAppSnapshot,
-    hasAppSnapshot: hasAppSnapshot,
-    deleteAppSnapshot: deleteAppSnapshot,
-    validateAppSnapshot: validateAppSnapshot,
+    saveAppData:saveAppData,
+    getAppData:getAppData,
+    hasAppData:hasAppData,
+    validateAppDataRecord:validateAppDataRecord,
     createLocalBackup: createLocalBackup,
     getLocalBackups: getLocalBackups,
     getLocalBackup: getLocalBackup,

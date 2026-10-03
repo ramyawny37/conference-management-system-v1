@@ -13,22 +13,16 @@ with expected(boundary, signature, expected_mode) as (values
   ('guarded','public.device_guarded_get_conference_lock(uuid,uuid)','volatile'),
   ('guarded','public.device_guarded_get_my_conference_membership(uuid,uuid)','stable'),
   ('guarded','public.device_guarded_list_available_conferences(uuid)','stable'),
-  ('guarded','public.device_guarded_get_conference_snapshot_metadata(uuid,uuid)','stable'),
-  ('guarded','public.device_guarded_download_conference_snapshot(uuid,uuid)','stable'),
   ('guarded','public.device_guarded_get_conference_creation_operation(uuid,uuid)','stable'),
-  ('guarded','public.device_guarded_get_sync_conflict(uuid,uuid)','stable'),
-  ('guarded','public.device_guarded_list_sync_conflicts(uuid,uuid,text,integer)','stable'),
   ('guarded','public.device_guarded_add_organization_member(uuid,uuid,uuid,uuid)','volatile'),
   ('guarded','public.device_guarded_remove_organization_member(uuid,uuid,uuid,uuid)','volatile'),
   ('guarded','public.device_guarded_change_organization_role(uuid,uuid,uuid,text,uuid)','volatile'),
   ('guarded','public.device_guarded_add_conference_manager(uuid,uuid,uuid,uuid)','volatile'),
   ('guarded','public.device_guarded_remove_conference_manager(uuid,uuid,uuid,uuid)','volatile'),
   ('guarded','public.device_guarded_create_conference_idempotent(uuid,uuid,uuid,text,jsonb)','volatile'),
-  ('guarded','public.device_guarded_apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)','volatile'),
   ('guarded','public.device_guarded_acquire_conference_lock(uuid,uuid,uuid,integer)','volatile'),
   ('guarded','public.device_guarded_renew_conference_lock(uuid,uuid,uuid,integer)','volatile'),
-  ('guarded','public.device_guarded_release_conference_lock(uuid,uuid,uuid)','volatile'),
-  ('guarded','public.device_guarded_resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)','volatile')
+  ('guarded','public.device_guarded_release_conference_lock(uuid,uuid,uuid)','volatile')
 ), inspected as (
   select expected.*,to_regprocedure(expected.signature) as routine_oid
   from expected
@@ -55,14 +49,12 @@ with expected(signature) as (values
   ('public.device_guarded_get_my_conference_access(uuid,uuid)'),('public.device_guarded_list_conference_members(uuid,uuid)'),
   ('public.device_guarded_lookup_conference_user_by_email(uuid,uuid,text)'),('public.device_guarded_get_conference_lock(uuid,uuid)'),
   ('public.device_guarded_get_my_conference_membership(uuid,uuid)'),('public.device_guarded_list_available_conferences(uuid)'),
-  ('public.device_guarded_get_conference_snapshot_metadata(uuid,uuid)'),('public.device_guarded_download_conference_snapshot(uuid,uuid)'),
-  ('public.device_guarded_get_conference_creation_operation(uuid,uuid)'),('public.device_guarded_get_sync_conflict(uuid,uuid)'),
-  ('public.device_guarded_list_sync_conflicts(uuid,uuid,text,integer)'),('public.device_guarded_add_organization_member(uuid,uuid,uuid,uuid)'),
+  ('public.device_guarded_get_conference_creation_operation(uuid,uuid)'),('public.device_guarded_add_organization_member(uuid,uuid,uuid,uuid)'),
   ('public.device_guarded_remove_organization_member(uuid,uuid,uuid,uuid)'),('public.device_guarded_change_organization_role(uuid,uuid,uuid,text,uuid)'),
   ('public.device_guarded_add_conference_manager(uuid,uuid,uuid,uuid)'),('public.device_guarded_remove_conference_manager(uuid,uuid,uuid,uuid)'),
-  ('public.device_guarded_create_conference_idempotent(uuid,uuid,uuid,text,jsonb)'),('public.device_guarded_apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)'),
+  ('public.device_guarded_create_conference_idempotent(uuid,uuid,uuid,text,jsonb)'),
   ('public.device_guarded_acquire_conference_lock(uuid,uuid,uuid,integer)'),('public.device_guarded_renew_conference_lock(uuid,uuid,uuid,integer)'),
-  ('public.device_guarded_release_conference_lock(uuid,uuid,uuid)'),('public.device_guarded_resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)')
+  ('public.device_guarded_release_conference_lock(uuid,uuid,uuid)')
 ), expected_resolved as (
   select expected.signature,to_regprocedure(expected.signature) as routine_oid
   from expected
@@ -71,7 +63,7 @@ with expected(signature) as (values
   from pg_proc as functions join pg_namespace as namespaces on namespaces.oid=functions.pronamespace
   where namespaces.nspname='public' and (functions.proname like 'device_guarded_%' or functions.proname='get_my_device_aware_system_access')
 )
-select 27 as expected_function_count,
+select 21 as expected_function_count,
   (select count(*) from actual) as actual_function_count,
   (select count(*) from actual
     left join expected_resolved on expected_resolved.routine_oid=actual.oid
@@ -117,9 +109,9 @@ with legacy(signature) as (values
   ('public.add_organization_member(uuid,uuid,uuid)'),('public.remove_organization_member(uuid,uuid,uuid)'),
   ('public.change_organization_role(uuid,uuid,text,uuid)'),('public.add_conference_manager(uuid,uuid,uuid)'),
   ('public.remove_conference_manager(uuid,uuid,uuid)'),('public.create_conference_idempotent(uuid,uuid,text,jsonb)'),
-  ('public.apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)'),('public.acquire_conference_lock(uuid,uuid,uuid,integer)'),
-  ('public.renew_conference_lock(uuid,uuid,uuid,integer)'),('public.release_conference_lock(uuid,uuid,uuid)'),
-  ('public.resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)')
+  ('public.acquire_conference_lock(uuid,uuid,uuid,integer)'),
+  ('public.renew_conference_lock(uuid,uuid,uuid,integer)'),
+  ('public.release_conference_lock(uuid,uuid,uuid)')
 )
 select 'P0.3E legacy grants unchanged baseline' as report,legacy.signature,
   has_function_privilege('public',to_regprocedure(legacy.signature),'execute') as public_execute,

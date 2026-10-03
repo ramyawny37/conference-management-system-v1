@@ -475,23 +475,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="overlay app-modal" id="legacyTemplateAdoptionModal" style="display:none">
-  <div class="modal" style="max-width:560px" role="dialog" aria-modal="true">
-    <div class="mhead"><span>توجد قوالب قديمة غير مرتبطة بمؤسسة</span><span style="cursor:pointer" onclick="LegacyTemplateAdoptionUI.close()">✕</span></div>
-    <div class="mbody">
-      <p>قوالب بيوت المؤتمرات: <b id="legacy_template_house_count">0</b></p>
-      <p>قوالب المؤتمرات: <b id="legacy_template_conference_count">0</b></p>
-      <p>اختر المؤسسات التي تريد إتاحة القوالب لها. سيتم رفع كل قالب مرة واحدة دون تغيير محتواه.</p>
-      <label class="lbl">المؤسسات</label>
-      <div id="legacy_template_organizations" style="max-height:220px;overflow:auto;border:1px solid #dfe8f0;border-radius:8px"></div>
-      <div id="legacy_template_adoption_message" class="sync-settings-message" style="margin-top:8px"></div>
-      <div class="row" style="margin-top:10px">
-        <button id="legacy_template_adopt_action" class="btn btn-blue" onclick="LegacyTemplateAdoptionUI.adopt()" disabled>إتاحة القوالب للمؤسسات المحددة</button>
-        <button class="btn btn-gray" onclick="LegacyTemplateAdoptionUI.close()">إلغاء</button>
-      </div>
-    </div>
-  </div>
-</div>
 <!-- Partial Transfer Modal -->
 <div class="overlay app-modal" id="houseTemplateSharingModal" style="display:none">
   <div class="modal" style="max-width:560px" role="dialog" aria-modal="true">
@@ -526,13 +509,10 @@
 </details>
 <script src="js/application-routing.js?rev=canonical-conference-routing-v1"></script>
 <script src="js/storage/environment-namespace.js"></script>
-<script src="js/storage/snapshot-payload-diagnostics.js?rev=snapshot-payload-diagnostics-v1"></script>
-<script src="js/storage/local-persistence-arbitration.js?rev=develop-cross-store-arbitration-v1"></script>
-<script src="js/storage/indexeddb.js?rev=develop-cross-store-arbitration-v1"></script>
+<script src="js/storage/indexeddb.js?rev=single-local-persistence-v1"></script>
 <script src="js/storage/storage-repository.js?rev=canonical-conference-core-cutover-v2"></script>
 <script src="js/storage/conference-repository.js"></script>
 <script src="js/storage/full-backup.js?rev=canonical-conference-core-cutover-v2"></script>
-<script src="js/storage/migration-audit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase/public-config.js"></script>
 <script src="js/supabase/runtime-config.js"></script>
@@ -573,11 +553,6 @@
 <script src="js/sync/organization-template-sync.js?rev=shared-template-copy-guard-v1"></script>
 <script src="js/sync/house-template-content-authorization.js?rev=shared-template-copy-guard-v1"></script>
 <script src="js/sync/house-template-sharing-ui.js?rev=official-house-template-sharing-v1"></script>
-<script src="js/sync/test-house-template-cleanup.js?rev=test-house-template-cleanup-v1"></script>
-<script src="js/sync/partial-template-state-cleanup.js?rev=partial-template-state-cleanup-v1"></script>
-<script src="js/sync/rejected-shared-template-cleanup.js?rev=rejected-shared-template-cleanup-v1"></script>
-<script src="js/sync/local-template-copy-cleanup.js?rev=shared-template-copy-guard-v1"></script>
-<script src="js/sync/legacy-template-adoption-ui.js?rev=legacy-template-adoption-authorization-v1"></script>
 <script src="js/sync/conference-locks.js?rev=conference-lock-release-diagnostics-v1"></script>
 <script src="js/sync/conference-edit-lock-manager.js?rev=section-accommodation-edit-lock-v1"></script>
 <script src="js/sync/template-diagnostic-export.js?rev=template-diagnostic-export-v1"></script>
@@ -588,7 +563,7 @@
 <script src="js/sync/conference-permission-resolver.js?rev=development-3-4-0-platform-foundation-v1"></script>
 <script src="js/sync/conference-activation-authorization.js?rev=runtime-authorization-phase1-v1"></script>
 <script src="js/sync/conference-membership-attempt-store.js"></script>
-<script src="js/sync/conference-members-service.js?rev=legacy-rpc-hardening-v1"></script>
+<script src="js/sync/conference-members-service.js?rev=canonical-rpc-hardening-v1"></script>
 <script src="js/sync/conference-members-ui.js?rev=diagnostics-privacy-hardening-v1"></script>
 <script src="js/sync/system-access-administration-attempt-store.js?rev=user-account-administration-v1"></script>
 <script src="js/supabase/account-administration-service.js?rev=admin-session-boundary-v1"></script>

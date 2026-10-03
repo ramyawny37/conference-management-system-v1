@@ -15,7 +15,7 @@ test('C1A.2 source audit fixes the active Branding facts, defaults, and preparat
   for(const fact of ['banner','service_logo','auto_colors','banner_position','card_theme','primary_color','secondary_color','text_color'])assert.match(sql,new RegExp(`\\b${fact}\\b`));
   assert.match(sql,/default false/);assert.match(sql,/default 'center'/);assert.match(sql,/default 'classic'/);assert.match(sql,/default '#6C3483'/);assert.match(sql,/default '#8E44AD'/);assert.match(sql,/default '#1A2A3A'/);
   assert.match(script,/maxWidth:isBanner\?1200:500/);assert.match(script,/maxHeight:isBanner\?600:500/);assert.match(script,/quality:isBanner\?\.72:\.75/);assert.match(script,/canvas\.width=900[\s\S]*canvas\.height=252/);
-  assert.doesNotMatch(sql,/bannerPrepared|banner_prepared|bannerFit|banner_fit|fontFamily|font_family|\blogo\b|watermark|conference_snapshots|activityLog|saveAppSnapshot|\bsave\(/);
+  assert.doesNotMatch(sql,/bannerPrepared|banner_prepared|bannerFit|banner_fit|fontFamily|font_family|\blogo\b|watermark|conference_snapshots|activityLog|saveAppData|\bsave\(/);
 });
 
 test('C1A.2 has one typed owner, shared ledger, protected operations, and no generic document authority',()=>{

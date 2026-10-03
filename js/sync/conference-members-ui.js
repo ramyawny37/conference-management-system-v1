@@ -487,7 +487,6 @@
       ?'\u062a\u0645\u062a \u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u0645\u062f\u064a\u0631.'
       :'\u062a\u0645\u062a \u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u0639\u0636\u0648.';
     if(result.status==='already_removed')return '\u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0644\u0645 \u064a\u0639\u062f \u0645\u062f\u064a\u0631\u064b\u0627.';
-    if(result.status==='already_manager')return '\u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0645\u062f\u064a\u0631 \u0628\u0627\u0644\u0641\u0639\u0644.';
     return '\u0644\u0645 \u064a\u062a\u063a\u064a\u0631 \u062f\u0648\u0631 \u0627\u0644\u0639\u0636\u0648.';
   }
 
@@ -531,7 +530,7 @@
         return {status:'stale'};
       }
       var trustedStatuses=['added','unchanged','role_changed',
-        'removed','already_removed','already_manager'];
+        'removed','already_removed'];
       if(result&&result.ok&&trustedStatuses.indexOf(result.status)>=0){
         state.mutationStatus='success';
         state.lookupStatus='idle';
@@ -543,9 +542,7 @@
               ?'تمت إضافة المدير.'
               :result.status==='removed'
                 ?'تمت إزالة المدير.'
-                :result.status==='already_manager'
-                  ?'المستخدم مدير بالفعل.'
-                  :'المستخدم لم يعد مديرًا.',
+                :'المستخدم لم يعد مديرًا.',
           'success'
         );
         setMessage(mutationSuccessMessage(result,action),'success');

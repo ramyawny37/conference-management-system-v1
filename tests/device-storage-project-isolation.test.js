@@ -46,18 +46,15 @@ function enrollmentRuntime(ns,db,status){
   const calls=[];const sandbox={PlatformDeviceStorageNamespace:ns,indexedDB:db,SupabaseAuth:{initialize:()=>Promise.resolve({authenticated:true,user:{id:USER}}),getSession:()=>({user:{id:USER}})},SupabaseDeviceIdentity:{reconcileProvedIdentity:value=>({success:true,identity:value})},SupabaseClientLayer:{getClient:()=>({auth:{getSession:()=>Promise.resolve({data:{session:{access_token:'access-token',user:{id:USER}}}})},functions:{invoke(name,request){calls.push(request.body);if(request.body.action==='status')return Promise.resolve({data:{ok:true,data:status}});return Promise.reject(new Error('NEW_ENROLLMENT_REACHED'));}}})},crypto:{getRandomValues:value=>value,subtle:{exportKey:()=>Promise.reject(new Error('non-exportable')),generateKey:()=>Promise.reject(new Error('NEW_ENROLLMENT_REACHED'))}},navigator:{},Promise,Error,Date,Object,Array,String,Number,JSON,Uint8Array,TextEncoder,btoa:value=>Buffer.from(value,'binary').toString('base64'),queueMicrotask};sandbox.window=sandbox;vm.runInNewContext(enrollmentSource,sandbox);return {api:sandbox.PlatformDeviceEnrollment,calls};
 }
 
-test('only backend-proved Development legacy key is reconciled, without deleting legacy state',async()=>{
-  const dev=namespace(DEV,'development'),legacy={privateKey:{kind:'dev-key'},publicKeyThumbprint:'dev-thumb',deviceId:DEVICE,bindingId:BINDING,state:'active',createdAt:'2026-01-01'};
-  const db=indexedDb({'platform-device-ownership-v1':[legacy]});
-  const runtime=enrollmentRuntime(dev,db,{status:'approved',deviceId:DEVICE,bindingId:BINDING,publicKeyThumbprint:'dev-thumb'});
-  const result=await runtime.api.ensure();
-  assert.equal(result.status,'approved');
-  assert.equal(db.databases.get(dev.databaseName())[0].privateKey.kind,'dev-key');
-  assert.equal(db.databases.get('platform-device-ownership-v1')[0].privateKey.kind,'dev-key');
-  assert.equal(JSON.stringify(runtime.calls),JSON.stringify([{action:'status',bindingId:BINDING}]));
+test('Development does not open or adopt the unscoped obsolete database',async()=>{
+  const dev=namespace(DEV,'development'),db=indexedDb({'platform-device-ownership-v1':[{privateKey:{kind:'old-key'},publicKeyThumbprint:'old-thumb',deviceId:DEVICE,bindingId:BINDING,state:'active'}]});
+  const runtime=enrollmentRuntime(dev,db,{status:'approved',deviceId:DEVICE,bindingId:BINDING,publicKeyThumbprint:'old-thumb'});
+  await assert.rejects(runtime.api.ensure(),/NEW_ENROLLMENT_REACHED/);
+  assert.deepEqual(db.opens,[dev.databaseName()]);
+  assert.equal(runtime.calls.length,0);
 });
 
-test('Production never opens or auto-adopts the unscoped legacy database',async()=>{
+test('Production never opens or auto-adopts the unscoped obsolete database',async()=>{
   const prod=namespace(PROD,'production'),db=indexedDb({'platform-device-ownership-v1':[{privateKey:{kind:'dev-key'},publicKeyThumbprint:'dev-thumb',deviceId:DEVICE,bindingId:BINDING,state:'active'}]});
   const runtime=enrollmentRuntime(prod,db,{status:'approved',deviceId:DEVICE,bindingId:BINDING,publicKeyThumbprint:'dev-thumb'});
   await assert.rejects(runtime.api.ensure(),/NEW_ENROLLMENT_REACHED/);

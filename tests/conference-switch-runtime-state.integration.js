@@ -17,7 +17,6 @@ function extract(source,name,nextName){
 }
 
 var writes=[];
-var schedules=[];
 var lifecycleCalls=0;
 var conferences=[
   {id:'A',name:'A',status:'active',houses:[{id:'ha',floors:[{id:'fa',rooms:[
@@ -33,17 +32,15 @@ var sandbox={
   currentConferenceRuntimeAccessRoles:{A:null,B:'viewer'},
   applicationStorageState:{},SK:'conf_v5',Date:Date,JSON:JSON,
   localStorage:{setItem:function(key,value){writes.push(JSON.parse(value));}},
-  StorageRepository:{saveAppSnapshot:function(snapshot,options){
-    assert.strictEqual(options.skipSyncQueue,true);
+  StorageRepository:{saveAppData:function(snapshot,options){
+    assert.strictEqual(options,undefined);
     writes.push(JSON.parse(JSON.stringify(snapshot)));
     return Promise.resolve();
   }},
   ConferenceRepository:{recordLocalChange:function(){lifecycleCalls++;}},
-  AutomaticSyncOrchestrator:{schedule:function(reason){schedules.push(reason);}},
   ConferenceActivationAuthorization:{
     canDisplay:function(id){return id==='A'||id==='B';}
   },
-  isConferenceImportRecoveryPending:function(){return false;},
   setCurrentConference:function(){},syncCurrentConferenceRefs:function(){},
   getCurrentConference:function(){return sandbox.appData.conferences.find(function(c){
     return c.id===sandbox.appData.currentConferenceId;
@@ -73,12 +70,10 @@ assert.strictEqual(sandbox.currentConferenceRuntimeAccessRole,'viewer');
 assert.strictEqual(sandbox.appData.currentConferenceId,'B');
 assert.strictEqual(sandbox.getCurrentConference().houses[0].id,'hb');
 assert.strictEqual(lifecycleCalls,0);
-assert.deepStrictEqual(schedules,['conference_changed']);
 assert.strictEqual(sandbox.setCurrentConferenceById('A',{skipToast:true}),true);
 assert.strictEqual(sandbox.currentConferenceRuntimeAccessRole,null);
 assert.strictEqual(sandbox.getCurrentConference().houses[0].id,'ha');
 assert.strictEqual(sandbox.getCurrentConference().houses[0].floors[0].rooms[0].guests.length,1);
 assert.strictEqual(lifecycleCalls,0);
-assert.deepStrictEqual(schedules,['conference_changed','conference_changed']);
 assert.strictEqual(writes[writes.length-1].currentConferenceId,'A');
 console.log('conference switch runtime state integration tests: passed');

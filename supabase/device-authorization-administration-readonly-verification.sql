@@ -65,27 +65,21 @@ with expected(signature) as (values
  ('public.device_guarded_get_conference_lock(uuid,uuid)'),
  ('public.device_guarded_get_my_conference_membership(uuid,uuid)'),
  ('public.device_guarded_list_available_conferences(uuid)'),
- ('public.device_guarded_get_conference_snapshot_metadata(uuid,uuid)'),
- ('public.device_guarded_download_conference_snapshot(uuid,uuid)'),
  ('public.device_guarded_get_conference_creation_operation(uuid,uuid)'),
- ('public.device_guarded_get_sync_conflict(uuid,uuid)'),
- ('public.device_guarded_list_sync_conflicts(uuid,uuid,text,integer)'),
  ('public.device_guarded_add_organization_member(uuid,uuid,uuid,uuid)'),
  ('public.device_guarded_remove_organization_member(uuid,uuid,uuid,uuid)'),
  ('public.device_guarded_change_organization_role(uuid,uuid,uuid,text,uuid)'),
  ('public.device_guarded_add_conference_manager(uuid,uuid,uuid,uuid)'),
  ('public.device_guarded_remove_conference_manager(uuid,uuid,uuid,uuid)'),
  ('public.device_guarded_create_conference_idempotent(uuid,uuid,uuid,text,jsonb)'),
- ('public.device_guarded_apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)'),
  ('public.device_guarded_acquire_conference_lock(uuid,uuid,uuid,integer)'),
  ('public.device_guarded_renew_conference_lock(uuid,uuid,uuid,integer)'),
- ('public.device_guarded_release_conference_lock(uuid,uuid,uuid)'),
- ('public.device_guarded_resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)')
+ ('public.device_guarded_release_conference_lock(uuid,uuid,uuid)')
 ), resolved as (select signature,to_regprocedure(signature) as oid from expected),
 actual as (select p.oid from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='public' and (p.proname like 'device_guarded_%'
    or p.proname='get_my_device_aware_system_access'))
-select 27 as expected_guarded_function_count,(select count(*) from actual) as actual_guarded_function_count,
+select 21 as expected_guarded_function_count,(select count(*) from actual) as actual_guarded_function_count,
  (select count(*) from resolved where oid is null) as missing_exact_signature_count,
  (select count(*) from actual left join resolved on resolved.oid=actual.oid where resolved.oid is null)
    as unexpected_guarded_function_count;
@@ -94,8 +88,7 @@ select t.tgname as trigger_name,pg_get_triggerdef(t.oid) as definition
 from pg_trigger t where t.tgrelid='public.device_authorization_audit_log'::regclass
  and t.tgname='device_authorization_audit_immutable' and not t.tgisinternal;
 
--- Exact reviewed P0.3C legacy grant baseline. Six lock/snapshot/conflict
--- signatures retain anon EXECUTE; the remaining thirteen do not.
+-- Exact reviewed legacy grant baseline for the surviving lock/conflict routines.
 with expected(signature,expected_public_execute,expected_anon_execute,
  expected_authenticated_execute) as (values
  ('public.list_my_organizations()',false,false,true),
@@ -112,11 +105,9 @@ with expected(signature,expected_public_execute,expected_anon_execute,
  ('public.add_conference_manager(uuid,uuid,uuid)',false,false,true),
  ('public.remove_conference_manager(uuid,uuid,uuid)',false,false,true),
  ('public.create_conference_idempotent(uuid,uuid,text,jsonb)',false,false,true),
- ('public.apply_conference_snapshot(uuid,uuid,uuid,bigint,jsonb,text,text)',false,true,true),
  ('public.acquire_conference_lock(uuid,uuid,uuid,integer)',false,true,true),
  ('public.renew_conference_lock(uuid,uuid,uuid,integer)',false,true,true),
- ('public.release_conference_lock(uuid,uuid,uuid)',false,true,true),
- ('public.resolve_sync_conflict(uuid,uuid,uuid,uuid,bigint,text,jsonb,text,text)',false,true,true)
+ ('public.release_conference_lock(uuid,uuid,uuid)',false,true,true)
 ), resolved as (select expected.*,to_regprocedure(signature) as routine_oid from expected),
 actual as (select p.oid from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='public' and p.proname in ('list_my_organizations','get_my_organization_access',
@@ -124,8 +115,8 @@ actual as (select p.oid from pg_proc p join pg_namespace n on n.oid=p.pronamespa
  'list_conference_members','lookup_conference_user_by_email','get_conference_lock',
  'add_organization_member','remove_organization_member','change_organization_role',
  'add_conference_manager','remove_conference_manager','create_conference_idempotent',
- 'apply_conference_snapshot','acquire_conference_lock','renew_conference_lock',
- 'release_conference_lock','resolve_sync_conflict'))
+ 'acquire_conference_lock','renew_conference_lock',
+ 'release_conference_lock'))
 select resolved.signature,resolved.routine_oid is not null as exact_signature_exists,
  resolved.expected_public_execute,has_function_privilege('public',resolved.routine_oid,'execute') as actual_public_execute,
  resolved.expected_anon_execute,has_function_privilege('anon',resolved.routine_oid,'execute') as actual_anon_execute,

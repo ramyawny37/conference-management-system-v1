@@ -275,7 +275,6 @@
     Object.freeze({handler:'backupAppData',action:'conference.backup_full',status:'classified',entity:'application_backup',operation:'create_local',shadowGate:'pending',notes:'Creates and stores a local application backup; it does not download a file.'}),
     Object.freeze({handler:'moveArchiveToTrash',action:null,status:'unresolved',entity:'conference_archive',operation:'move_to_trash',shadowGate:'pending',notes:'Deletes an archive artifact, not the active conference; conference.delete would change semantics.'}),
     Object.freeze({handler:'moveBackupToTrash',action:null,status:'unresolved',entity:'application_backup',operation:'move_to_trash',shadowGate:'pending',notes:'Deletes a stored backup artifact; no canonical backup-artifact delete action exists.'}),
-    Object.freeze({handler:'repairBackupStorageBloat',action:null,status:'unresolved',entity:'application_backup',operation:'maintenance_rewrite',shadowGate:'pending',notes:'Dormant maintenance helper rewrites every stored backup; backup creation permission does not describe this mutation.'}),
     Object.freeze({handler:'executeConfirmedFullRestore',action:'conference.restore_full',status:'classified',notes:'Application-wide restore may span multiple conferences.'}),
     Object.freeze({handler:'restoreBackup',action:'conference.restore_full',status:'classified',notes:'Legacy local backup restore.'})
   ]);

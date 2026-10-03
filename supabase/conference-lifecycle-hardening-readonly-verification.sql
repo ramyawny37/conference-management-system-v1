@@ -240,20 +240,6 @@ select 'conference_membership_operations', count(*)::bigint,
     order by rows.operation_id),''))
 from public.conference_membership_operations as rows
 union all
-select 'conference_snapshot_guard_intents', count(*)::bigint,
-  md5(coalesce(string_agg(to_jsonb(rows)::text, E'\n'
-    order by rows.operation_id),''))
-from public.conference_snapshot_guard_intents as rows
-union all
-select 'sync_operations', count(*)::bigint,
-  md5(coalesce(string_agg(to_jsonb(rows)::text, E'\n'
-    order by rows.operation_id),''))
-from public.sync_operations as rows
-union all
-select 'sync_conflicts', count(*)::bigint,
-  md5(coalesce(string_agg(to_jsonb(rows)::text, E'\n'
-    order by rows.id),''))
-from public.sync_conflicts as rows
 order by relation;
 
 select md5(coalesce(string_agg(

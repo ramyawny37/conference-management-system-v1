@@ -417,10 +417,7 @@
           },safeError('MEMBERSHIP_NOT_CHANGED',
             'The membership was not changed.'));
         }
-        var finalStatus=input.legacyManagerResponse===true&&
-          normalized.status==='unchanged'
-          ?'already_manager':normalized.status;
-        var success=outcome(true,finalStatus,{
+        var success=outcome(true,normalized.status,{
           remoteConferenceId:remoteConferenceId,
           targetUserId:targetUserId,
           operationId:operationId,
@@ -533,9 +530,7 @@
   }
 
   function addManager(input,options){
-    return addMember(Object.assign({},input,{
-      legacyManagerResponse:true
-    }),'manager',options);
+    return addMember(input,'manager',options);
   }
 
   function removeManager(input,options){

@@ -59,6 +59,14 @@ function formEnvironment(overrides={}){
       version:'2.0.0',
       currentConferenceId:null,
       conferences:[legacy],
+      conferenceLifecycle:{schemaVersion:1,records:{
+        'legacy-local-conference':{
+          localConferenceId:'legacy-local-conference',localLifecycle:'active',
+          cloudLifecycle:'local_only',localContentVersion:0,
+          localOwnerUserId:'11111111-1111-4111-8111-111111111111',
+          publishMetadata:null
+        }
+      }},
       templates:[],archives:[],backups:[],
       houseTemplates:[],
       peopleDb:{version:'1.0.0',people:[]}
@@ -69,7 +77,7 @@ function formEnvironment(overrides={}){
       displayName:'المؤسسة'
     }],
     SupabaseAuth:{
-      getState(){return {authenticated:true};}
+      getState(){return {authenticated:true,user:{id:'11111111-1111-4111-8111-111111111111'}};}
     },
     SystemAccessService:{
       getState(){

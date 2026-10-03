@@ -30,7 +30,7 @@ var linkStore={get:function(id){return links[id]||null;}};
 
   gate.capturePersistedCandidate('legacy','localStorage');
   var legacy=await gate.reconcileStartup({appData:data,persistedCandidate:'legacy',discovered:[],links:linkStore});
-  assert.strictEqual(legacy.classification,'unverified_legacy_unscoped');
+  assert.strictEqual(legacy.classification,'unverified_local_scope');
   assert.strictEqual(gate.canEdit('legacy'),false);
 
   gate.capturePersistedCandidate('local','indexeddb');
@@ -43,7 +43,7 @@ var linkStore={get:function(id){return links[id]||null;}};
   authUser=other;
   assert.strictEqual(gate.canDisplay('local'),false);
   var wrong=gate.authorizeLocalOnly(data,'local');
-  assert.strictEqual(wrong.classification,'unverified_legacy_unscoped');
+  assert.strictEqual(wrong.classification,'unverified_local_scope');
 
   authUser=user;gate.resetForAccount(user);gate.capturePersistedCandidate('cloud','indexeddb');
   var viewer=await gate.reconcileStartup({appData:data,persistedCandidate:'cloud',discovered:[{remoteConferenceId:links.cloud.remoteConferenceId}],links:linkStore,validateCloud:function(){return Promise.resolve({ok:true,status:'authorized',data:{canonicalAccess:true}});}});

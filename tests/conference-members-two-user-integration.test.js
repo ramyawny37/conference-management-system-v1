@@ -475,12 +475,12 @@ async function run(){
     mutationCallsBefore
   );
 
-  assert.strictEqual((await lookupAndAdd(owner)).status,'already_manager');
+  assert.strictEqual((await lookupAndAdd(owner)).status,'unchanged');
   assert.strictEqual(
     Object.keys(backend.members[ids.conferenceA]).length,
     2
   );
-  assert.ok(html(owner).indexOf('المستخدم مدير بالفعل')>=0);
+  assert.ok(html(owner).indexOf('لم يتغير دور العضو')>=0);
 
   assert.strictEqual(
     (await owner.ui.removeManager(ids.manager)).status,

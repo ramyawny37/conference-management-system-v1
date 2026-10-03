@@ -35,9 +35,6 @@ function getCurrentConference(){
   }
   for (var i = 0; i < appData.conferences.length; i++) {
     if (appData.conferences[i].id === appData.currentConferenceId) {
-      if(isConferenceImportRecoveryPending(
-        appData,appData.conferences[i].id
-      ))return null;
       return appData.conferences[i];
     }
   }
@@ -1304,8 +1301,8 @@ function syncConferencePeriod(conference){
     conference.nights=period.nights;
     conference.schedule=buildConferenceSchedule(startDate,endDate);
   }else{
-    var legacyDays=parseInt(conference.days||conference.conf.days,10);
-    conference.days=isFinite(legacyDays)&&legacyDays>0?legacyDays:1;
+    var configuredDays=parseInt(conference.days||conference.conf.days,10);
+    conference.days=isFinite(configuredDays)&&configuredDays>0?configuredDays:1;
     conference.nights=Math.max(0,conference.days-1);
     conference.schedule=[];
   }
@@ -1351,7 +1348,6 @@ function normalizeAppData_core(targetAppData){
   target.trash.backups = target.trash.backups || [];
   target.trash.houseTemplates = target.trash.houseTemplates || [];
   target.trash.rooms = target.trash.rooms || [];
-  normalizeConferenceImportRecovery(target);
   target.conferences.forEach(function(confObj){
     normalizeConference(confObj,target);
     var linkedRuntime=target===appData&&!!getCanonicalConferenceCoreLink(confObj&&confObj.id);
@@ -1363,8 +1359,7 @@ function normalizeAppData_core(targetAppData){
   var currentConfExists = false;
   if (target.currentConferenceId) {
     for (var i = 0; i < target.conferences.length; i++) {
-      if (target.conferences[i].id === target.currentConferenceId&&
-        !isConferenceImportRecoveryPending(target,target.currentConferenceId)) {
+      if (target.conferences[i].id === target.currentConferenceId) {
         currentConfExists = true;
         break;
       }
@@ -1374,44 +1369,6 @@ function normalizeAppData_core(targetAppData){
     target.currentConferenceId = null;
   }
   return target;
-}
-
-function normalizeConferenceImportRecovery(data){
-  var source=data&&data.conferenceImportRecovery;
-  var normalized={};
-  var reserved=Object.create(null);
-  if(source&&typeof source==='object'&&!Array.isArray(source)){
-    Object.keys(source).sort().forEach(function(remoteConferenceId){
-      var record=source[remoteConferenceId];
-      var localId=String(record&&record.localConferenceId||'').trim();
-      var accountId=String(record&&record.authenticatedUserId||'').trim();
-      var validUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if(!validUuid.test(remoteConferenceId)||!record||
-        typeof record!=='object'||Array.isArray(record)||
-        String(record.remoteConferenceId||'')!==remoteConferenceId||!localId||
-        reserved[localId]||!validUuid.test(accountId)||
-        !Number.isInteger(record.revision)||record.revision<1||
-        record.status!=='normalized_persisted'||!record.snapshot||
-        typeof record.snapshot!=='object'||Array.isArray(record.snapshot)||
-        String(record.snapshot.id||'')!==localId||
-        ['active','completed'].indexOf(record.snapshot.status)<0||
-        (record.schemaVersion!=null&&String(record.schemaVersion)!=='1'))return;
-      reserved[localId]=true;
-      normalized[remoteConferenceId]=record;
-    });
-  }
-  data.conferenceImportRecovery=normalized;
-  return normalized;
-}
-
-function isConferenceImportRecoveryPending(data,localConferenceId){
-  var records=data&&data.conferenceImportRecovery;
-  if(!records||typeof records!=='object'||Array.isArray(records))return false;
-  return Object.keys(records).some(function(remoteConferenceId){
-    var record=records[remoteConferenceId];
-    return record&&String(record.localConferenceId||'')===
-      String(localConferenceId||'');
-  });
 }
 
 function normalizeAppDataCandidate(candidate){
@@ -1445,20 +1402,6 @@ function normalizeConference(confObj,sourceAppData){
     confObj.peopleDb.version = confObj.peopleDb.version || '1.0.0';
     confObj.peopleDb.people = confObj.peopleDb.people || [];
   }
-  if(!linkedRuntime&&
-    !confObj.skipPeopleMigration &&
-    !confObj.peopleDb.people.length &&
-    source.peopleDb &&
-    source.peopleDb.people &&
-    source.peopleDb.people.length
-  ){
-    confObj.peopleDb.people = deepClone(source.peopleDb.people);
-  }
-
-  if(!linkedRuntime&&!confObj.houses.length && Array.isArray(confObj.rooms) && confObj.rooms.length){
-    confObj.houses = convertLegacyRoomsToHouses(confObj.rooms, confObj.name || 'البيت الافتراضي');
-  }
-
   (!linkedRuntime?confObj.houses:[]).forEach(function(h){
     normalizeHouseStructure(h);
   });
@@ -1475,8 +1418,6 @@ function normalizeConference(confObj,sourceAppData){
       t.seats.forEach(function(s){ s.type = s.type || 'adult'; s.room = s.room || ''; s.note = s.note || ''; s.name = s.name || ''; });
     }
   });
-  // ensureGuestIds(confObj); // This logic is now inside migrateToV3
-  if(!linkedRuntime)migrateToV3(confObj);
 }
 
 function createDefaultRestaurant(){
@@ -1548,166 +1489,6 @@ function normalizeHouseStructure(house){
     });
   });
   return house;
-}
-
-function convertLegacyRoomsToHouses(legacyRooms, fallbackName){
-  var houses = [];
-  var houseIndex = {};
-  var houseNameIndex = {};
-  var houseName = fallbackName || 'البيت الافتراضي';
-
-  legacyRooms.forEach(function(room){
-    var roomHouseId = room.houseId || room.house || null;
-    var roomHouseName = room.houseName || (typeof room.house === 'string' ? room.house : null) || houseName;
-    var roomFloorName = room.floorName || room.floor || 'الدور الرئيسي';
-    var house = null;
-    if (roomHouseId && houseIndex[roomHouseId]) {
-      house = houseIndex[roomHouseId];
-    } else if (roomHouseName && houseNameIndex[roomHouseName]) {
-      house = houseNameIndex[roomHouseName];
-    }
-    if(!house){
-      house = createDefaultHouse(roomHouseName || houseName, 'بيت تم تحويله من البيانات القديمة');
-      if(roomHouseId) house.id = roomHouseId;
-      houses.push(house);
-      houseIndex[house.id] = house;
-      houseNameIndex[house.name] = house;
-    }
-
-    var floor = null;
-    for (var i = 0; i < house.floors.length; i++) {
-      if (house.floors[i].name === roomFloorName || house.floors[i].id === (room.floorId || null)) {
-        floor = house.floors[i];
-        break;
-      }
-    }
-    if(!floor){
-      floor = createDefaultFloor(roomFloorName || 'الدور الرئيسي');
-      house.floors.push(floor);
-    }
-
-    var migratedRoom = room && typeof room === 'object' ? deepClone(room) : {};
-    var guests = [];
-    (migratedRoom.guests || []).forEach(function(g){
-      if (typeof g === 'string') {
-        guests.push({id:uid(), name:g, leftDay:null});
-      } else {
-        var guest = deepClone(g || {});
-        if(!guest.id) guest.id = uid();
-        guests.push(guest);
-      }
-    });
-    var children = [];
-    (migratedRoom.children || []).forEach(function(c){
-      if (typeof c === 'string') {
-        children.push({id:uid(), name:c, guardian:'', leftDay:null});
-      } else {
-        var child = deepClone(c || {});
-        if(!child.id) child.id = uid();
-        children.push(child);
-      }
-    });
-
-    if(!migratedRoom.id) migratedRoom.id = uid();
-    if(!migratedRoom.number) migratedRoom.number = migratedRoom.name || 'غرفة ' + (floor.rooms.length + 1);
-    if(migratedRoom.beds === undefined || migratedRoom.beds === null || migratedRoom.beds === ''){
-      migratedRoom.beds = migratedRoom.capacity || Math.max(guests.length + children.length, 1);
-    }
-    if(migratedRoom.extraBeds === undefined || migratedRoom.extraBeds === null || migratedRoom.extraBeds === ''){
-      migratedRoom.extraBeds = 0;
-    }
-    if(migratedRoom.notes === undefined || migratedRoom.notes === null) migratedRoom.notes = '';
-    migratedRoom.guests = guests;
-    migratedRoom.children = children;
-    if(migratedRoom.closed === undefined || migratedRoom.closed === null) migratedRoom.closed = false;
-    if(migratedRoom.closedDay === undefined) migratedRoom.closedDay = null;
-    floor.rooms.push(migratedRoom);
-  });
-
-  if(!houses.length){
-    houses.push(createDefaultHouse(houseName, 'بيت تم تحويله من البيانات القديمة'));
-  }
-
-  return houses.map(function(h){ return normalizeHouseStructure(h); });
-}
-
-function migrateToV3(conference) {
-  if (!conference) return;
-
-  // 1. Ensure the top-level guests array exists.
-  if (!conference.guests) {
-    conference.guests = [];
-  }
-
-  // 2. Iterate through all rooms to migrate guests and create beds.
-  (conference.houses || []).forEach(function(house) {
-    (house.floors || []).forEach(function(floor) {
-      (floor.rooms || []).forEach(function(room) {
-        // The legacy migration below applies only to the old array-based bed model.
-        // Numeric room.beds belongs to the current model and must remain unchanged.
-        if (!Array.isArray(room.beds)) return;
-
-        // Migration should only run once. If beds are already populated, skip.
-        // We check for old arrays to see if migration is needed.
-        var needsMigration = (room.guests && room.guests.length > 0) || (room.children && room.children.length > 0);
-        if (needsMigration && room.beds.length === 0) {
-          
-          // Migrate adults from room.guests
-          (room.guests || []).forEach(function(oldGuest) {
-            var guestId = oldGuest.id || uid();
-            var newGuest = oldGuest && typeof oldGuest === 'object'
-              ? deepClone(oldGuest)
-              : {name:gn(oldGuest)};
-            newGuest.id = guestId;
-            if(!newGuest.name) newGuest.name = gn(oldGuest);
-            if(!newGuest.type) newGuest.type = 'adult';
-            if(newGuest.guardianId === undefined) newGuest.guardianId = null;
-            if(newGuest.notes === undefined) newGuest.notes = '';
-            if(newGuest.arrivalDay === undefined) newGuest.arrivalDay = 1;
-            if(newGuest.leftDay === undefined) newGuest.leftDay = null;
-            if(newGuest.meals === undefined) newGuest.meals = {};
-            var guestExists = false;
-            for (var i = 0; i < conference.guests.length; i++) {
-              if (conference.guests[i].id === guestId) {
-                guestExists = true;
-                break;
-              }
-            }
-            if (!guestExists) {
-              conference.guests.push(newGuest);
-            }
-            room.beds.push({ id: uid(), status: 'occupied', guestId: guestId });
-          });
-          // Migrate children from room.children
-          (room.children || []).forEach(function(oldChild) {
-            var childId = oldChild.id || uid();
-            var newChild = oldChild && typeof oldChild === 'object'
-              ? deepClone(oldChild)
-              : {name:String(oldChild || '')};
-            newChild.id = childId;
-            if(!newChild.name) newChild.name = oldChild && oldChild.name ? oldChild.name : '';
-            if(!newChild.type) newChild.type = 'child';
-            if(newChild.guardianId === undefined) newChild.guardianId = null;
-            if(newChild.notes === undefined) newChild.notes = oldChild && oldChild.guardian ? 'ولي الأمر: ' + oldChild.guardian : '';
-            if(newChild.arrivalDay === undefined) newChild.arrivalDay = 1;
-            if(newChild.leftDay === undefined) newChild.leftDay = null;
-            if(newChild.meals === undefined) newChild.meals = {};
-            var childExists = false;
-            for (var i = 0; i < conference.guests.length; i++) {
-              if (conference.guests[i].id === childId) {
-                childExists = true;
-                break;
-              }
-            }
-            if (!childExists) {
-              conference.guests.push(newChild);
-            }
-            room.beds.push({ id: uid(), status: 'occupied', guestId: childId });
-          });
-        }
-      });
-    });
-  });
 }
 
 function getDays(){
@@ -1853,32 +1634,4 @@ function backupAppData(){
   renderSettings();
   showToast('✅ تم إنشاء نسخة احتياطية');
   return true;
-}
-
-function removeNestedDataFromExistingBackups(){
-  var backups=Array.isArray(appData&&appData.backups)?appData.backups:[];
-  var cleanedCount=0;
-  backups.forEach(function(backup){
-    if(!backup||typeof backup!=='object'||!backup.data||typeof backup.data!=='object'||Array.isArray(backup.data))return;
-    backup.data.backups=[];
-    backup.data.trash=createEmptyTrashStructure(backup.data.trash);
-    cleanedCount++;
-  });
-  return cleanedCount;
-}
-
-function repairBackupStorageBloat(){
-  var previousBackups=deepClone(Array.isArray(appData&&appData.backups)?appData.backups:[]);
-  var cleanedCount=removeNestedDataFromExistingBackups();
-  if(save()){
-    var successMessage='تم تنظيف البيانات المتداخلة داخل '+cleanedCount+' نسخة احتياطية وحفظ التغييرات بنجاح.';
-    console.log(successMessage);
-    if(typeof showToast==='function')showToast('✅ '+successMessage);
-    return true;
-  }
-  appData.backups=previousBackups;
-  var failureMessage='تعذر حفظ تنظيف النسخ الاحتياطية، وتمت استعادة النسخ في الذاكرة دون حذفها.';
-  console.error(failureMessage);
-  if(typeof showToast==='function')showToast('❌ '+failureMessage,'#E74C3C');
-  return false;
 }
