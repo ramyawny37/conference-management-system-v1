@@ -835,6 +835,13 @@ function getAccountsHouseContext(house){
 
 function getAccountsRestaurantContext(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
+  var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  if(linked){
+    var state=window.CanonicalConferenceRestaurant&&window.CanonicalConferenceRestaurant.getState(conference.id);
+    if(!state)return {available:false,days:[],grandTotal:0};
+    var summary=typeof calculateMealSummary==='function'?calculateMealSummary(conference):{days:[],grandTotal:0};
+    return {available:true,days:summary.days||[],grandTotal:Number(summary.grandTotal||0)};
+  }
   var restaurant=conference&&conference.restaurant?conference.restaurant:null;
   var available=!!(restaurant&&restaurant.meals);
   var daysCount=typeof getDays==='function'?getDays():parseInt(conference&&conference.conf&&conference.conf.days,10)||1;
@@ -1817,6 +1824,14 @@ function calculateMealsDayExpense(day){
 // يجمع أيام المؤتمر الحالية فقط ويتجاهل تخصيصات الأيام الأقدم من المدة الحالية.
 function calculateMealsExpense(context){
   context=context||getAccountsConferenceContext();
+  var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
+  var linked=conference&&typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  if(linked){
+    var restaurantState=window.CanonicalConferenceRestaurant&&window.CanonicalConferenceRestaurant.getState(conference.id);
+    if(!restaurantState)return applyAccountExpenseEnvelope({enabled:false,available:false,days:[],daysCount:0,enabledDaysCount:0,calculatedTotal:0,manualTotal:null,finalTotal:0,formula:''},{conferenceId:context&&context.conferenceId||'',daysCount:0},{values:{enabled:false,calculationMode:'restaurant_prices'},sources:{enabled:'canonical',calculationMode:'canonical'}},{enabledDaysCount:0},{calculatedTotal:0,manualTotal:null,finalTotal:0},{formula:''});
+    var canonicalSummary=calculateMealSummary(conference),canonicalDays=canonicalSummary.days||[],canonicalTotal=Number(canonicalSummary.grandTotal||0);
+    return applyAccountExpenseEnvelope({enabled:true,available:true,calculationMode:'restaurant_prices',days:canonicalDays,daysCount:canonicalDays.length,enabledDaysCount:canonicalDays.length,calculatedTotal:canonicalTotal,manualTotal:null,finalTotal:canonicalTotal,formula:''},{conferenceId:context&&context.conferenceId||'',daysCount:canonicalDays.length},{values:{enabled:true,calculationMode:'restaurant_prices'},sources:{enabled:'canonical',calculationMode:'canonical'}},{enabledDaysCount:canonicalDays.length},{calculatedTotal:canonicalTotal,manualTotal:null,finalTotal:canonicalTotal},{formula:''});
+  }
   var mealsSettings=getMealsAccounts()||{};
   var defaults=getMealsDefaults()||{};
   var daysCount=context?Math.max(0,parseInt(context.days,10)||0):0;

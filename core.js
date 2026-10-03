@@ -395,13 +395,16 @@ function buildConferenceMealSchedule(conference){
   conference=conference||getCurrentConference();
   if(!conference)return [];
   var plan=getConferenceMealPlan(conference);
-  var sourceSchedule=Array.isArray(conference.schedule)&&conference.schedule.length
+  var linked=typeof getCanonicalConferenceCoreLink==='function'&&getCanonicalConferenceCoreLink(conference.id);
+  var coreState=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceCoreState==='function'?window.PlatformIntegration.getConferenceCoreState(conference.id):null;
+  var core=coreState&&coreState.core;
+  var sourceSchedule=linked?(core&&Array.isArray(core.schedule)?core.schedule:[]):Array.isArray(conference.schedule)&&conference.schedule.length
     ?conference.schedule
     :(conference.conf&&Array.isArray(conference.conf.schedule)?conference.conf.schedule:[]);
   if(!sourceSchedule.length){
     sourceSchedule=buildConferenceSchedule(
-      conference.startDate||(conference.conf&&conference.conf.startDate)||'',
-      conference.endDate||(conference.conf&&conference.conf.endDate)||''
+      linked?(core&&core.startDate||''):(conference.startDate||(conference.conf&&conference.conf.startDate)||''),
+      linked?(core&&core.endDate||''):(conference.endDate||(conference.conf&&conference.conf.endDate)||'')
     );
   }
   var lastIndex=sourceSchedule.length-1;

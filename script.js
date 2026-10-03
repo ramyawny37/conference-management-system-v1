@@ -2119,7 +2119,8 @@ function renderV3Reports(){
     return;
   }
   var context=getV3ReportsContext(conference);
-  var conferenceName=(conference.conf&&conference.conf.name)||conference.name||'المؤتمر';
+  var reportCore=getCanonicalConferenceCoreLink(conference.id)&&window.PlatformIntegration?window.PlatformIntegration.getConferenceCoreState(conference.id):null;
+  var conferenceName=reportCore&&reportCore.core?reportCore.core.name:((conference.conf&&conference.conf.name)||conference.name||'المؤتمر');
   var periodText=getV3ReportsPeriodText(conference);
   var html='<div id="v3ReportsPage" class="settings-dashboard reports-v3-dashboard">';
   html+='<section class="settings-section reports-v3-hero"><div class="reports-v3-header"><div><div class="settings-section-title">تقارير الحسابات</div><div class="reports-v3-header-meta"><span>'+esc(conferenceName)+'</span><span>'+esc(periodText)+'</span></div></div>';
@@ -2167,14 +2168,16 @@ function printV3Reports(){
 function getV3ReportsPeriodText(conference){
   conference=conference||getCurrentConference();
   if(!conference)return '-';
-  var startDate=conference.startDate||(conference.conf&&conference.conf.startDate)||'';
-  var endDate=conference.endDate||(conference.conf&&conference.conf.endDate)||'';
+  var coreState=getCanonicalConferenceCoreLink(conference.id)&&window.PlatformIntegration?window.PlatformIntegration.getConferenceCoreState(conference.id):null;
+  var startDate=coreState&&coreState.core?coreState.core.startDate:(conference.startDate||(conference.conf&&conference.conf.startDate)||'');
+  var endDate=coreState&&coreState.core?coreState.core.endDate:(conference.endDate||(conference.conf&&conference.conf.endDate)||'');
   if(!startDate&&!endDate)return '-';
   return formatConferenceScheduleDate(startDate||'-')+' - '+formatConferenceScheduleDate(endDate||'-');
 }
 
 function buildV3ReportsPdfHeaderHtml(conference,generatedAtText){
-  var conferenceName=esc((conference&&((conference.conf&&conference.conf.name)||conference.name))||'المؤتمر');
+  var coreState=conference&&getCanonicalConferenceCoreLink(conference.id)&&window.PlatformIntegration?window.PlatformIntegration.getConferenceCoreState(conference.id):null;
+  var conferenceName=esc(coreState&&coreState.core?coreState.core.name:((conference&&((conference.conf&&conference.conf.name)||conference.name))||'المؤتمر'));
   var periodText=esc(getV3ReportsPeriodText(conference));
   var generatedAt=esc(generatedAtText||'');
   return '<section class="settings-section reports-v3-section reports-v3-pdf-meta" style="margin-bottom:10px">'+
@@ -2447,7 +2450,8 @@ function saveV3ReportsPdf(){
       };
     });
     var pdfBytes=buildSimplePdfFromJpegPages(pageImages);
-    var conferenceName=safeCardPngFilePart((stageState.conference&&((stageState.conference.conf&&stageState.conference.conf.name)||stageState.conference.name))||'المؤتمر','المؤتمر');
+    var pdfCore=stageState.conference&&getCanonicalConferenceCoreLink(stageState.conference.id)&&window.PlatformIntegration?window.PlatformIntegration.getConferenceCoreState(stageState.conference.id):null;
+    var conferenceName=safeCardPngFilePart(pdfCore&&pdfCore.core?pdfCore.core.name:((stageState.conference&&((stageState.conference.conf&&stageState.conference.conf.name)||stageState.conference.name))||'المؤتمر'),'المؤتمر');
     var fileName='تقرير-الحسابات-'+conferenceName+'.pdf';
     downloadV3ReportsPdfBlob(new Blob([pdfBytes],{type:'application/pdf'}),fileName);
     removeV3ReportsPdfStage(stageState);
