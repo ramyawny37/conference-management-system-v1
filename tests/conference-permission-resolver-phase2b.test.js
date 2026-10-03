@@ -16,6 +16,6 @@ assert.strictEqual(result.status,'retired');
 assert.strictEqual(result.allowed,false);
 assert.strictEqual(result.shouldProceed,true);
 assert.deepStrictEqual(Array.from(resolver.getDiagnostics()),[]);
-assert.strictEqual(sandbox.ConferencePermissionShadowGate('deleteHouse',null),true);
-assert.doesNotMatch(resolverSource,/ConferenceActivationAuthorization|authorizationDecision|\.rpc\s*\(|Supabase/);
+assert.strictEqual(sandbox.ConferencePermissionShadowGate,undefined);
+assert.doesNotMatch(resolverSource,/ConferencePermissionShadowGate|ConferenceActivationAuthorization|authorizationDecision|\.rpc\s*\(|Supabase/);
 console.log('conference permission resolver retirement tests: passed');
