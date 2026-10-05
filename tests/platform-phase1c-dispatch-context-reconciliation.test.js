@@ -68,13 +68,12 @@ test('session, binding, authorization, device, and account validation stays fail
 
 test('required Platform and Conference protected reads dispatch with authoritative session device',()=>{
   for(const operation of ['get_user_management_actor_capabilities','get_organization_management_overview',
-    'device_guarded_list_my_organizations','device_guarded_list_available_conferences']){
+    'device_guarded_list_my_organizations']){
     assert.ok(sql.includes("when '"+operation+"'"),operation);
   }
   assert.match(sql,/public\.get_user_management_actor_capabilities\(v_session\.device_id\)/);
   assert.match(sql,/public\.get_organization_management_overview\(v_session\.device_id\)/);
   assert.match(sql,/public\.device_guarded_list_my_organizations\(v_session\.device_id\)/);
-  assert.match(sql,/public\.device_guarded_list_available_conferences\(v_session\.device_id\)/);
 });
 
 test('migration changes no guards, authority data, shared module wrappers, or fallback',()=>{

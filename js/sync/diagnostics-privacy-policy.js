@@ -27,7 +27,6 @@
         global.BrowserStorageNamespace.environment==='development');
     },
     isSystemOwner:isSystemOwner,
-    conferenceRole:function(){return '';},
     canViewConferenceDiagnostics:canViewConferenceDiagnostics,
     canExportRescue:canExportRescue
   });

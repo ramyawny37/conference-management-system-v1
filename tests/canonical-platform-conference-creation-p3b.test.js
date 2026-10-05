@@ -53,10 +53,6 @@ test('retired local publishing consumers and unrelated domains are outside P3B',
   assert.doesNotMatch(sql,/\b(?:reservations|warehouse)\./i);
   assert.doesNotMatch(sql,/platform\.people|conference_people|conference_snapshots|sync_operations|sync_conflicts/i);
   assert.doesNotMatch(sql,/js\/|\.html|\.css/);
-  const legacy=sql.match(/create or replace function public\.create_organization_conference_idempotent\([\s\S]*?end \$\$;/i);
-  assert.ok(legacy);
-  assert.match(legacy[0],/insert into public\.conference_members\(conference_id,user_id,role\)/);
-  assert.match(legacy[0],/values\(p_requested_conference_id,actor_id,'owner'\)/);
 });
 
 const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
@@ -259,17 +255,6 @@ test('isolated PostgreSQL proves authority, idempotency, audit and direct-execut
     assert.throws(()=>dispatch(`,'p_actor_user_id','${actor}'`),/UNKNOWN/);
     assert.equal(query(`select actor_user_id||'|'||actor_device_authorization_id||'|'||action||'|'||(metadata->>'permissionKey')||'|'||(metadata->>'authoritySource')||'|'||operation_id from platform.audit_events`),
       `${actor}|${authorization}|conference.lifecycle.created|conference.lifecycle.create|module_grant|${operation}`);
-    query(`insert into public.organization_members values('${organization}','${actor}');
-      select public.device_guarded_create_organization_conference_idempotent(
-        '${device}','81000000-0000-0000-0000-000000000001',
-        '80000000-0000-0000-0000-000000000001','${organization}',
-        'Legacy','{}'::jsonb);
-      select public.device_guarded_create_organization_conference_idempotent(
-        '${device}','81000000-0000-0000-0000-000000000001',
-        '80000000-0000-0000-0000-000000000001','${organization}',
-        'Legacy','{}'::jsonb)`);
-    assert.equal(query(`select count(*) from public.conference_members
-      where conference_id='80000000-0000-0000-0000-000000000001' and user_id='${actor}' and role='owner'`),'1');
   }finally{
     command('dropdb',['--if-exists',database]);
     for(const role of createdRoles){

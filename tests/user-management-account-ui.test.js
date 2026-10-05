@@ -10,11 +10,11 @@ function account(){return {status:'loaded',data:{accountStatus:status,
 var read={
   listUsers:function(){return Promise.resolve({ok:true,data:{users:[{userId:id,
     displayName:'Runtime User',email:'runtime@dev.test',accountStatus:status,
-    conferenceCount:0,deviceCount:0}]}});},
+    deviceCount:0}]}});},
   getOverview:function(){overviewCalls++;return Promise.resolve({ok:true,data:{overview:{
     selectedUser:{userId:id,displayName:'Runtime User',email:'runtime@dev.test'},
     account:account(),organization:{status:'loaded',data:{memberships:[]}},
-    conferences:{status:'loaded',data:{items:[]}},devices:{status:'empty',data:{items:[]}},
+    devices:{status:'empty',data:{items:[]}},
     capabilities:{canManageAccount:true}}}});},
   getAccount:function(){accountReads++;return Promise.resolve({ok:true,data:{account:account()}});}
 };

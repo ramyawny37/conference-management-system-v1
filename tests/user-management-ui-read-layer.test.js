@@ -5,8 +5,8 @@ var first='11111111-1111-4111-8111-111111111111';
 var second='22222222-2222-4222-8222-222222222222';
 var listCalls=[],overviewCalls=[];
 var users=[
-  {userId:first,displayName:'First Real User',email:'first@dev.test',accountStatus:'approved',conferenceCount:1,deviceCount:1},
-  {userId:second,displayName:'Second Real User',email:'second@dev.test',accountStatus:'pending',conferenceCount:0,deviceCount:0}
+  {userId:first,displayName:'First Real User',email:'first@dev.test',accountStatus:'approved',deviceCount:1},
+  {userId:second,displayName:'Second Real User',email:'second@dev.test',accountStatus:'pending',deviceCount:0}
 ];
 function overview(userId,partial){
   var user=users.find(function(item){return item.userId===userId;});
@@ -15,7 +15,6 @@ function overview(userId,partial){
       canCreateConferences:user.userId===first,systemRoles:user.userId===first?['system_owner']:[]}},
     organization:partial?{status:'error',data:null}:
       {status:'loaded',data:{memberships:user.userId===first?[{organizationName:'Development Organization',isMember:true,role:'organization_owner'}]:[]}},
-    conferences:{status:'loaded',data:{items:user.userId===first?[{conferenceName:'Development Conference',isMember:true,role:'owner'}]:[]}},
     devices:{status:user.userId===first?'loaded':'empty',data:{items:user.userId===first?[{deviceName:'Development Device',platform:'Browser',authorizationStatus:'approved'}]:[]}},
     capabilities:{canManageAccount:true}};
 }
@@ -34,7 +33,7 @@ var ui=sandbox.window.UserManagementUI;
   assert.ok(masterAndDetail.includes('First Real User'));
   assert.ok(masterAndDetail.includes('Second Real User'));
   assert.ok(masterAndDetail.includes('Development Organization'));
-  assert.ok(!masterAndDetail.includes('Development Conference'));
+  assert.doesNotMatch(source,/conferenceCount|canViewConferences|canManageConferenceMembership/);
   assert.ok(masterAndDetail.includes('Development Device'));
   partialSecond=true;
   await ui.selectUser(second);

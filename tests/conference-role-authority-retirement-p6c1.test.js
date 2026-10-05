@@ -3,15 +3,17 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const root=path.resolve(__dirname,'..'),read=file=>fs.readFileSync(path.join(root,file),'utf8'),exists=file=>fs.existsSync(path.join(root,file));
 const retired=['js/sync/conference-permission-contract.js','js/sync/conference-permission-resolver.js','js/sync/conference-membership-attempt-store.js','js/sync/conference-members-service.js','js/sync/conference-members-ui.js'];
 const runtime=['core.js','script.js','js/conference/accounts.js','index.html','service-worker.js','js/sync/user-management-ui.js','js/supabase/conference-device-operation-contract.js'];
-const forbidden=/ConferencePermissionShadowGate|ConferencePermissionResolver|ConferencePermissionContract|ConferenceMembersService|ConferenceMembersUI|ConferenceMembershipAttemptStore|conference_members|is_conference_member|has_conference_role|device_guarded_(?:get_my_conference_access|get_my_conference_membership|list_conference_members|lookup_conference_user_by_email|manage_conference_member|add_conference_manager|remove_conference_manager)/i;
+const forbidden=/ConferencePermissionShadowGate|ConferencePermissionResolver|ConferencePermissionContract|ConferenceMembersService|ConferenceMembersUI|ConferenceMembershipAttemptStore|conference_members|is_conference_member|has_conference_role|add_conference_owner_membership|enforce_conference_lock_manager|device_guarded_(?:get_my_conference_access|get_my_conference_membership|list_conference_members|lookup_conference_user_by_email|manage_conference_member|add_conference_manager|remove_conference_manager|list_available_conferences|list_eligible_legacy_conference_organizations|assign_legacy_conference_organization|create_organization_conference_idempotent|get_conference_creation_operation)/i;
 retired.forEach(file=>assert.equal(exists(file),false,`retired file remains: ${file}`));
 runtime.forEach(file=>assert.doesNotMatch(read(file),forbidden,`legacy authority remains in ${file}`));
 assert.doesNotMatch(read('supabase/functions/conference-device-operation/index.ts'),forbidden);
 assert.doesNotMatch(read('supabase/functions/platform-device-operation/index.ts'),forbidden);
 const retirement=read('supabase/migrations/20261009120000_retire_conference_role_membership_authority.sql');
 const locks=read('supabase/migrations/20261009121000_cut_conference_locks_to_canonical_permissions.sql');
+const consumers=read('supabase/migrations/20261009121500_final_conference_membership_consumer_demolition.sql');
 const demolition=read('supabase/migrations/20261009122000_retire_conference_membership_plane.sql');
 assert.match(retirement,/drop table if exists public\.conference_membership_operations/i);
 assert.match(locks,/conference\.accommodation\.manage/);assert.match(locks,/conference\.sync\.write/);assert.match(locks,/CONFERENCE_LOCK_ROLE_AUTHORITY_REMAINS/);assert.doesNotMatch(locks,/conference membership required/i);
+assert.match(consumers,/drop function if exists public\.add_conference_owner_membership\(\)/i);assert.match(consumers,/drop function if exists public\.enforce_conference_lock_manager\(\)/i);assert.match(consumers,/drop function if exists public\.device_guarded_list_available_conferences\(uuid\)/i);assert.match(consumers,/FINAL_CONFERENCE_MEMBERSHIP_CONSUMER_REMAINS/i);assert.doesNotMatch(consumers,/drop[^;]*cascade/i);
 assert.match(demolition,/CONFERENCE_MEMBERSHIP_CONSUMER_REMAINS/);assert.match(demolition,/drop table if exists public\.conference_members\s*;/i);assert.doesNotMatch(demolition,/drop table[^;]*cascade/i);
 console.log('P6C1 conference role authority retirement contract: passed');

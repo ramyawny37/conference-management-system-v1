@@ -3,19 +3,19 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260808_6_4_0_user_management_scoped_read.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261009121500_final_conference_membership_consumer_demolition.sql'),'utf8');
 const service=fs.readFileSync(path.join(root,'js/sync/user-management-read-service.js'),'utf8');
 const ui=fs.readFileSync(path.join(root,'js/sync/user-management-ui.js'),'utf8');
 const app=fs.readFileSync(path.join(root,'script.js'),'utf8');
 
 [
   'get_user_management_actor_capabilities','search_user_management_users',
-  'get_user_management_overview','get_user_management_devices',
+  'get_user_management_overview',
   'require_current_approved_device','security definer',
-  "set search_path = pg_catalog, public"
+  "set search_path=''"
 ].forEach(value=>assert.ok(migration.toLowerCase().includes(value.toLowerCase()),value));
 assert.match(migration,/actor_members\.role in \('organization_owner','organization_admin'\)/);
-assert.match(migration,/conferences\.owner_id=actor_id|c\.owner_id=actor_id/);
+assert.doesNotMatch(migration,/['"](?:canViewConferences|canManageConferenceMembership|conferenceCount|conferences)['"]/);
 assert.match(migration,/USER_MANAGEMENT_SCOPE_DENIED/);
 assert.doesNotMatch(migration,/grant\s+(select|insert|update|delete)\s+on/i);
 assert.match(service,/getActorCapabilities/);

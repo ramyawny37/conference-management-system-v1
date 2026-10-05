@@ -54,7 +54,6 @@
     return {userId:String(row.userId),
       displayName:row.displayName==null?null:String(row.displayName),
       email:String(row.email||''),accountStatus:String(row.accountStatus),
-      conferenceCount:Number(row.conferenceCount||0),
       deviceCount:Number(row.deviceCount||0)};
   }
   function normalizeCapabilities(value){
@@ -65,8 +64,6 @@
       canViewOrganization:value.canViewOrganization===true,
       canManageOrganizationMembers:value.canManageOrganizationMembers===true,
       canManageOrganizationRoles:value.canManageOrganizationRoles===true,
-      canViewConferences:value.canViewConferences===true,
-      canManageConferenceMembership:value.canManageConferenceMembership===true,
       canViewDevices:value.canViewDevices===true,
       canManageDevices:value.canManageDevices===true};
   }
@@ -125,9 +122,6 @@
           ?data.account.systemRoles.slice():[]}}:{status:'hidden',data:null},
       organization:Array.isArray(data.organizations)?
         {status:'loaded',data:{memberships:data.organizations.slice()}}:
-        {status:'error',data:null},
-      conferences:Array.isArray(data.conferences)?
-        {status:'loaded',data:{items:data.conferences.slice()}}:
         {status:'error',data:null},
       devices:{status:'idle',data:{items:[]}},
       capabilities:normalizeCapabilities(data.capabilities),

@@ -60,10 +60,9 @@ initial canonical values. No audit identity comes from request data.
 P3B removes the global `conferences_add_owner_membership` trigger and its
 `add_conference_owner_membership` function. Canonical creation inserts only the
 Conference row and does not bootstrap Conference membership or depend on
-Organization membership. The surviving legacy Organization-aware creator now
-inserts its required owner membership explicitly in the same idempotent
-transaction. Its device, Organization membership, ledger, and replay behavior
-remain unchanged.
+Organization membership. The final P6C1 demolition subsequently removes the
+obsolete Organization-aware creator; canonical creation is the only current
+Conference creation path.
 
 The existing outer Phase1C Conference dispatcher now routes canonical create
 and core mutation operations through explicit branches after one verified
@@ -74,9 +73,8 @@ used, and no second dispatcher is introduced.
 ## Migration boundaries
 
 The old `device_guarded_create_organization_conference_idempotent` operation is
-classified **REMOVE AFTER ZERO LEGACY PUBLISHING CONSUMERS**. It remains solely
-for the unchanged local/snapshot generation. The canonical operation never
-calls it and has no Organization-membership fallback.
+retired by the final P6C1 demolition. The canonical operation has no
+Organization-membership or Conference-membership fallback.
 
 The future Platform UX contract is server-first: successful mutations update
 the current UI without manual reload; changes from elsewhere propagate through
