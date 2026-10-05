@@ -69,6 +69,8 @@ test('P6C1 lock cutover executes deterministically and uses only canonical permi
       end $$;
       create function public.is_conference_member(uuid) returns boolean language sql as $$select exists(select 1 from public.conference_members where conference_id=$1)$$;
       create function public.has_conference_role(uuid,text[]) returns boolean language sql as $$select exists(select 1 from public.conference_members where conference_id=$1 and role=any($2))$$;
+      create policy conferences_select_member on public.conferences for select using(public.is_conference_member(id));
+      create policy conference_members_select_member on public.conference_members for select using(public.is_conference_member(conference_id));
       create function public.add_conference_owner_membership() returns trigger language plpgsql as $$begin insert into public.conference_members values(new.id,new.owner_id,'owner');return new;end$$;
       create trigger conferences_add_owner_membership after insert on public.conferences for each row execute function public.add_conference_owner_membership();
       create function public.enforce_conference_lock_manager() returns trigger language plpgsql as $$begin if not public.has_conference_role(new.conference_id,array['owner','manager']) then raise exception 'DENIED';end if;return new;end$$;
@@ -94,12 +96,15 @@ test('P6C1 lock cutover executes deterministically and uses only canonical permi
       insert into public.system_user_access values('10000000-0000-0000-0000-000000000001','approved',true),('11000000-0000-0000-0000-000000000001','approved',false);
     `);
 
+    assert.equal(query(`select count(*)>0 from pg_policy policy join pg_depend dependency on dependency.classid='pg_policy'::regclass and dependency.objid=policy.oid left join pg_proc referenced_function on dependency.refclassid='pg_proc'::regclass and dependency.refobjid=referenced_function.oid left join pg_class referenced_relation on dependency.refclassid='pg_class'::regclass and dependency.refobjid=referenced_relation.oid left join pg_namespace relation_schema on relation_schema.oid=referenced_relation.relnamespace where referenced_function.proname in ('is_conference_member','has_conference_role') or (relation_schema.nspname='public' and referenced_relation.relname='conference_members')`),'t');
     for(const migration of migrations)command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',migration]);
 
     assert.equal(query(`select to_regclass('public.conference_members') is null`),'t');
     assert.equal(query(`select to_regclass('public.conference_membership_operations') is null`),'t');
     assert.equal(query(`select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_conference_member','has_conference_role')`),'t');
     assert.equal(query(`select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prokind='f' and pg_get_functiondef(p.oid)~*'conference_members|is_conference_member|has_conference_role'`),'t');
+    assert.equal(query(`select count(*)=0 from pg_policy policy join pg_depend dependency on dependency.classid='pg_policy'::regclass and dependency.objid=policy.oid left join pg_proc referenced_function on dependency.refclassid='pg_proc'::regclass and dependency.refobjid=referenced_function.oid left join pg_class referenced_relation on dependency.refclassid='pg_class'::regclass and dependency.refobjid=referenced_relation.oid left join pg_namespace relation_schema on relation_schema.oid=referenced_relation.relnamespace where referenced_function.proname in ('is_conference_member','has_conference_role') or (relation_schema.nspname='public' and referenced_relation.relname='conference_members')`),'t');
+    assert.equal(query(`select count(*)=0 from pg_policy where polname in ('conferences_select_member','conference_members_select_member')`),'t');
     assert.equal(query(`select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('add_conference_owner_membership','enforce_conference_lock_manager','prevent_invalid_conference_organization_change','device_guarded_create_organization_conference_idempotent','create_organization_conference_idempotent','device_guarded_get_conference_creation_operation','device_guarded_list_available_conferences','device_guarded_list_eligible_legacy_conference_organizations','device_guarded_assign_legacy_conference_organization')`),'t');
     assert.equal(query(`select count(*)=0 from pg_trigger where not tgisinternal and tgname in ('conferences_add_owner_membership','conference_locks_require_manager','conferences_prevent_invalid_organization_change')`),'t');
     assert.equal(query(`select to_regclass('public.legacy_conference_organization_assignments') is null`),'t');

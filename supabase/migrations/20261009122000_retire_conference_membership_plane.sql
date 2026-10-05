@@ -22,6 +22,11 @@ begin
   end if;
 end $$;
 
+-- These policies are the final RLS consumers of the retired membership helpers.
+-- Canonical Platform permissions own Conference authorization; no replacement policy is created.
+drop policy if exists conferences_select_member on public.conferences;
+drop policy if exists conference_members_select_member on public.conference_members;
+
 do $$
 declare
   target record;
