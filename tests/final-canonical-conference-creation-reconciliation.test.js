@@ -49,6 +49,8 @@ test('the current operation contract has one protected canonical creation owner'
 const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
 const pgBin=fs.existsSync(path.join(postgresAppBin,'psql'))?postgresAppBin:'';
 const database=`conference_final_create_${process.pid}_${Date.now()}`;
+const liveShapeDatabase=`${database}_live`;
+const incompatibleDatabase=`${database}_bad`;
 const actor='10000000-0000-0000-0000-000000000001';
 const device='20000000-0000-0000-0000-000000000001';
 const authorization='30000000-0000-0000-0000-000000000001';
@@ -58,7 +60,8 @@ const operation='60000000-0000-0000-0000-000000000001';
 const session='61000000-0000-0000-0000-000000000001';
 const connection=['-h',process.env.PGHOST||'/tmp','-p',process.env.PGPORT||'5432','-U',process.env.PGUSER||os.userInfo().username];
 function command(name,args){return execFileSync(pgBin?path.join(pgBin,name):name,[...connection,...args],{encoding:'utf8',stdio:'pipe'}).trim();}
-function query(statement){return command('psql',['-X','-v','ON_ERROR_STOP=1','-At','-d',database,'-c',statement]);}
+function queryIn(databaseName,statement){return command('psql',['-X','-v','ON_ERROR_STOP=1','-At','-d',databaseName,'-c',statement]);}
+function query(statement){return queryIn(database,statement);}
 
 test('disposable PostgreSQL proves final creation, grants, audit, replay and zero legacy side effects',()=>{
   const roles=[];
@@ -119,7 +122,142 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
         return platform.execute_conference_device_operation_phase1c_core(p_user_id,p_session_id,p_token_hash,p_operation,p_args);
       end\$\$;
     `);
+    command('createdb',['-T',database,liveShapeDatabase]);
+    command('createdb',['-T',database,incompatibleDatabase]);
+
+    queryIn(liveShapeDatabase,`
+      insert into public.conferences(
+        id,name,owner_id,organization_id,start_date,end_date,status,revision,updated_by
+      ) values(
+        '51000000-0000-0000-0000-000000000001','Preserved Conference','${actor}',
+        '${organization}','2026-10-01','2026-10-03','active',1,'${actor}'
+      );
+      create table public.conference_creation_operations(
+        user_id uuid not null references platform.profiles(user_id) on delete restrict,
+        operation_id uuid not null,
+        conference_id uuid not null unique references public.conferences(id) on delete restrict,
+        initial_metadata jsonb not null check(jsonb_typeof(initial_metadata)='object'),
+        created_at timestamptz not null default statement_timestamp(),
+        primary key(user_id,operation_id)
+      );
+      insert into public.conference_creation_operations(
+        user_id,operation_id,conference_id,initial_metadata
+      ) values(
+        '${actor}','64000000-0000-0000-0000-000000000001',
+        '51000000-0000-0000-0000-000000000001',
+        '{"name":"Preserved Conference","source":"live-shape"}'::jsonb
+      );
+      create function auth.uid() returns uuid language sql stable
+        as \$\$select '${actor}'::uuid\$\$;
+      alter table public.conference_creation_operations enable row level security;
+      create policy conference_creation_operations_select_own
+        on public.conference_creation_operations for select to authenticated
+        using(user_id=auth.uid());
+      grant all on public.conference_creation_operations
+        to public,anon,authenticated,service_role;
+    `);
+
+    assert.equal(queryIn(liveShapeDatabase,`
+      select bool_and(to_regclass(relation_name) is null)
+      from unnest(array[
+        'public.conference_participations',
+        'public.conference_participation_operations',
+        'public.conference_accommodation_houses',
+        'public.conference_accommodation_floors',
+        'public.conference_accommodation_rooms',
+        'public.conference_accommodation_occupancies',
+        'public.conference_transport_vehicles',
+        'public.conference_transport_assignments',
+        'public.conference_restaurant_settings',
+        'public.conference_restaurant_price_overrides',
+        'public.conference_restaurant_count_overrides'
+      ]) relation_name
+    `),'t');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select to_regclass('public.conference_members') is null
+        and to_regprocedure('public.is_conference_member(uuid)') is null
+        and not exists(
+          select 1 from pg_proc procedure_row
+          where procedure_row.pronamespace='public'::regnamespace
+            and procedure_row.proname in(
+              'has_conference_role','create_organization_conference_idempotent',
+              'device_guarded_create_organization_conference_idempotent'
+            )
+        )
+    `),'t');
+
+    queryIn(incompatibleDatabase,`
+      create table public.conference_creation_operations(
+        user_id uuid,
+        operation_id text,
+        conference_id uuid,
+        initial_metadata jsonb,
+        created_at timestamptz
+      );
+    `);
+
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,migrationPath)]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',liveShapeDatabase,'-f',path.join(root,migrationPath)]);
+    assert.throws(
+      ()=>command('psql',['-X','-v','ON_ERROR_STOP=1','-d',incompatibleDatabase,'-f',path.join(root,migrationPath)]),
+      /FINAL_CANONICAL_CONFERENCE_CREATION_LEDGER_INCOMPATIBLE/
+    );
+
+    assert.equal(queryIn(liveShapeDatabase,`
+      select count(*) from public.conference_creation_operations
+      where user_id='${actor}'
+        and operation_id='64000000-0000-0000-0000-000000000001'
+        and conference_id='51000000-0000-0000-0000-000000000001'
+        and initial_metadata='{"name":"Preserved Conference","source":"live-shape"}'::jsonb
+    `),'1');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select count(*) from pg_class relation join pg_namespace namespace
+        on namespace.oid=relation.relnamespace
+      where namespace.nspname='public'
+        and relation.relname='conference_creation_operations'
+        and relation.relkind in('r','p')
+    `),'1');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select relrowsecurity and relforcerowsecurity
+        and not exists(select 1 from pg_policy where polrelid=relation.oid)
+      from pg_class relation
+      where relation.oid='public.conference_creation_operations'::regclass
+    `),'t');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select bool_and(not has_table_privilege(role_name,'public.conference_creation_operations',privilege))
+      from unnest(array['anon','authenticated','service_role']) role_name
+      cross join unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) privilege
+    `),'t');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select string_agg(
+        attribute.attname||':'||format_type(attribute.atttypid,attribute.atttypmod)||':'||attribute.attnotnull,
+        ',' order by attribute.attnum
+      )
+      from pg_attribute attribute
+      where attribute.attrelid='public.conference_creation_operations'::regclass
+        and attribute.attnum>0 and not attribute.attisdropped
+    `),'user_id:uuid:true,operation_id:uuid:true,conference_id:uuid:true,initial_metadata:jsonb:true,created_at:timestamp with time zone:true');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select
+        count(*) filter(where constraint_row.contype='p')=1
+        and count(*) filter(where constraint_row.contype='u')=1
+        and count(*) filter(where constraint_row.contype='f')=2
+        and count(*) filter(
+          where constraint_row.contype='c'
+            and pg_get_constraintdef(constraint_row.oid,true)
+                ~* 'jsonb_typeof\\(initial_metadata\\) = ''object'''
+        )=1
+      from pg_constraint constraint_row
+      where constraint_row.conrelid='public.conference_creation_operations'::regclass
+    `),'t');
+    assert.equal(queryIn(liveShapeDatabase,`
+      select pg_get_expr(default_row.adbin,default_row.adrelid)='statement_timestamp()'
+      from pg_attrdef default_row
+      join pg_attribute attribute
+        on attribute.attrelid=default_row.adrelid and attribute.attnum=default_row.adnum
+      where default_row.adrelid='public.conference_creation_operations'::regclass
+        and attribute.attname='created_at'
+    `),'t');
 
     const signature='public.create_canonical_conference(uuid,uuid,uuid,uuid,text,date,date)';
     const contractSource=fs.readFileSync(path.join(root,'js/supabase/platform-device-operation-contract.js'),'utf8');
@@ -175,6 +313,8 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
     assert.equal(query(`select to_regclass('public.conference_snapshots') is null and to_regclass('public.sync_operations') is null and to_regclass('public.sync_conflicts') is null`),'t');
     assert.equal(query(`select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in('public','platform_private') and p.prokind='f' and pg_get_functiondef(p.oid)~*'conference_members|has_conference_role|organization_members'`),'t');
   } finally {
+    command('dropdb',['--if-exists',incompatibleDatabase]);
+    command('dropdb',['--if-exists',liveShapeDatabase]);
     command('dropdb',['--if-exists',database]);
     for(const role of roles)command('psql',['-X','-v','ON_ERROR_STOP=1','-d','postgres','-c',`drop role ${role}`]);
   }

@@ -6,14 +6,204 @@ alter table public.conferences
   add constraint conferences_place_check
     check(place=btrim(place) and char_length(place)<=500);
 
-create table public.conference_creation_operations(
-  user_id uuid not null references platform.profiles(user_id) on delete restrict,
-  operation_id uuid not null,
-  conference_id uuid not null unique references public.conferences(id) on delete restrict,
-  initial_metadata jsonb not null check(jsonb_typeof(initial_metadata)='object'),
-  created_at timestamptz not null default statement_timestamp(),
-  primary key(user_id,operation_id)
-);
+do $$
+declare
+  v_relation oid:=to_regclass('public.conference_creation_operations');
+  v_contract_errors text[]:=array[]::text[];
+begin
+  if v_relation is null then
+    create table public.conference_creation_operations(
+      user_id uuid not null references platform.profiles(user_id) on delete restrict,
+      operation_id uuid not null,
+      conference_id uuid not null unique references public.conferences(id) on delete restrict,
+      initial_metadata jsonb not null check(jsonb_typeof(initial_metadata)='object'),
+      created_at timestamptz not null default statement_timestamp(),
+      primary key(user_id,operation_id)
+    );
+    return;
+  end if;
+
+  if not exists(
+    select 1 from pg_class relation
+    where relation.oid=v_relation and relation.relkind='r'
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'relation_kind');
+  end if;
+
+  if exists(
+    select 1 from (values
+      ('user_id','uuid'::text,true),
+      ('operation_id','uuid',true),
+      ('conference_id','uuid',true),
+      ('initial_metadata','jsonb',true),
+      ('created_at','timestamp with time zone',true)
+    ) expected(column_name,data_type,is_not_null)
+    where not exists(
+      select 1 from pg_attribute attribute
+      where attribute.attrelid=v_relation and attribute.attnum>0
+        and not attribute.attisdropped
+        and attribute.attname=expected.column_name
+        and format_type(attribute.atttypid,attribute.atttypmod)=expected.data_type
+        and attribute.attnotnull=expected.is_not_null
+    )
+  ) or exists(
+    select 1 from pg_attribute attribute
+    where attribute.attrelid=v_relation and attribute.attnum>0
+      and not attribute.attisdropped
+      and attribute.attname not in(
+        'user_id','operation_id','conference_id','initial_metadata','created_at'
+      )
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'columns');
+  end if;
+
+  if not exists(
+    select 1 from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation and constraint_row.contype='p'
+      and constraint_row.conkey=array[
+        (select attnum from pg_attribute where attrelid=v_relation and attname='user_id'),
+        (select attnum from pg_attribute where attrelid=v_relation and attname='operation_id')
+      ]::smallint[]
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'primary_key');
+  end if;
+
+  if not exists(
+    select 1 from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation and constraint_row.contype='u'
+      and constraint_row.conkey=array[
+        (select attnum from pg_attribute where attrelid=v_relation and attname='conference_id')
+      ]::smallint[]
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'conference_id_unique');
+  end if;
+
+  if not exists(
+    select 1 from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation and constraint_row.contype='f'
+      and constraint_row.confrelid='platform.profiles'::regclass
+      and constraint_row.conkey=array[
+        (select attnum from pg_attribute where attrelid=v_relation and attname='user_id')
+      ]::smallint[]
+      and constraint_row.confkey=array[
+        (select attnum from pg_attribute where attrelid='platform.profiles'::regclass and attname='user_id')
+      ]::smallint[]
+      and constraint_row.confdeltype='r' and constraint_row.confupdtype='a'
+      and constraint_row.confmatchtype='s'
+  ) or not exists(
+    select 1 from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation and constraint_row.contype='f'
+      and constraint_row.confrelid='public.conferences'::regclass
+      and constraint_row.conkey=array[
+        (select attnum from pg_attribute where attrelid=v_relation and attname='conference_id')
+      ]::smallint[]
+      and constraint_row.confkey=array[
+        (select attnum from pg_attribute where attrelid='public.conferences'::regclass and attname='id')
+      ]::smallint[]
+      and constraint_row.confdeltype='r' and constraint_row.confupdtype='a'
+      and constraint_row.confmatchtype='s'
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'foreign_keys');
+  end if;
+
+  if not exists(
+    select 1 from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation and constraint_row.contype='c'
+      and regexp_replace(
+        pg_get_expr(constraint_row.conbin,constraint_row.conrelid,true),'\s+','','g'
+      )='jsonb_typeof(initial_metadata)=''object''::text'
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'initial_metadata_object_check');
+  end if;
+
+  if not exists(
+    select 1 from pg_attrdef default_row
+    join pg_attribute attribute
+      on attribute.attrelid=default_row.adrelid
+     and attribute.attnum=default_row.adnum
+    where default_row.adrelid=v_relation and attribute.attname='created_at'
+      and pg_get_expr(default_row.adbin,default_row.adrelid)='statement_timestamp()'
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'created_at_default');
+  end if;
+
+  if exists(
+    select 1
+    from pg_attribute attribute
+    left join pg_attrdef default_row
+      on default_row.adrelid=attribute.attrelid
+     and default_row.adnum=attribute.attnum
+    where attribute.attrelid=v_relation and attribute.attnum>0
+      and not attribute.attisdropped
+      and (
+        attribute.attidentity<>'' or attribute.attgenerated<>''
+        or (attribute.attname<>'created_at' and default_row.oid is not null)
+      )
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'column_generation_or_defaults');
+  end if;
+
+  if (
+    select count(*) from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation
+  )<>5 or exists(
+    select 1 from pg_constraint constraint_row
+    where constraint_row.conrelid=v_relation
+      and (
+        not constraint_row.convalidated
+        or constraint_row.condeferrable
+        or constraint_row.condeferred
+        or (constraint_row.contype='c' and constraint_row.connoinherit)
+      )
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'constraint_set');
+  end if;
+
+  if exists(
+    select 1 from pg_policy policy
+    where policy.polrelid=v_relation
+      and not (
+        policy.polname='conference_creation_operations_select_own'
+        and policy.polcmd='r' and policy.polpermissive
+        and policy.polroles=array['authenticated'::regrole]::oid[]
+        and pg_get_expr(policy.polqual,policy.polrelid)
+            ~* '^\(?user_id = auth\.uid\(\)\)?$'
+        and policy.polwithcheck is null
+      )
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'unexpected_rls_policies');
+  end if;
+
+  if exists(
+    select 1
+    from aclexplode(coalesce(
+      (select relation.relacl from pg_class relation where relation.oid=v_relation),
+      acldefault('r',(select relation.relowner from pg_class relation where relation.oid=v_relation))
+    )) privilege
+    where privilege.grantee<>0
+      and privilege.grantee not in(
+        'anon'::regrole,'authenticated'::regrole,'service_role'::regrole,
+        (select relation.relowner from pg_class relation where relation.oid=v_relation)
+      )
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'unexpected_acl_grantee');
+  end if;
+
+  if exists(
+    select 1 from pg_attribute attribute
+    where attribute.attrelid=v_relation and attribute.attnum>0
+      and not attribute.attisdropped and attribute.attacl is not null
+  ) then
+    v_contract_errors:=array_append(v_contract_errors,'column_acl');
+  end if;
+
+  if cardinality(v_contract_errors)>0 then
+    raise exception 'FINAL_CANONICAL_CONFERENCE_CREATION_LEDGER_INCOMPATIBLE'
+      using errcode='55000',detail=array_to_string(v_contract_errors,',');
+  end if;
+end $$;
+drop policy if exists conference_creation_operations_select_own
+  on public.conference_creation_operations;
 alter table public.conference_creation_operations enable row level security;
 alter table public.conference_creation_operations force row level security;
 revoke all on table public.conference_creation_operations
