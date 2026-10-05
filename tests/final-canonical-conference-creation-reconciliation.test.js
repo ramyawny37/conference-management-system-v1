@@ -32,7 +32,18 @@ test('the current operation contract has one protected canonical creation owner'
     assert.equal((source.match(/['"]create_canonical_conference['"]/g)||[]).length,1);
   assert.match(contract,/public\.create_canonical_conference\(uuid,uuid,uuid,uuid,text,date,date\)/);
   assert.match(sql,/platform\.execute_conference_device_operation\(uuid,uuid,bytea,text,jsonb\)/);
-  assert.match(sql,/platform_private\.route_canonical_conference_operation\(uuid,uuid,bytea,uuid,text,jsonb\)/);
+  assert.match(sql,/platform_private\.route_canonical_conference_operation\([\s\n]*uuid,uuid,bytea,uuid,text,jsonb/);
+  const router=sql.match(/create or replace function platform_private\.route_canonical_conference_operation\([\s\S]*?end \$\$;/i)[0];
+  for(const operation of ['create_canonical_conference','mutate_conference_core','list_accessible_conferences'])
+    assert.equal((router.match(new RegExp(`p_operation='${operation}'`,'g'))||[]).length,1);
+  assert.match(router,/platform\.execute_conference_device_operation_phase1c_core/);
+  assert.doesNotMatch(sql,/pg_get_functiondef|execute replace\(|FINAL_CANONICAL_CONFERENCE_DISPATCH_PRECONDITION_FAILED/);
+  const operations=[...contract.matchAll(/\['([^']+)','public\.[^']+'\]/g)].map(match=>match[1]);
+  for(const operation of operations){
+    assert.equal((router.match(new RegExp(`'${operation}'`,'g'))||[]).length,1,operation);
+    for(const edge of [conferenceEdge,platformEdge])
+      assert.equal((edge.match(new RegExp(`'${operation}'`,'g'))||[]).length,1,operation);
+  }
 });
 
 const postgresAppBin='/Applications/Postgres.app/Contents/Versions/latest/bin';
@@ -66,7 +77,8 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
       create table platform.profiles(user_id uuid primary key,account_status text);
       create table platform.devices(id uuid primary key,user_id uuid,lifecycle_status text,retired_at timestamptz,compromised_at timestamptz);
       create table platform.user_device_authorizations(id uuid primary key,user_id uuid,device_id uuid,status text,revoked_at timestamptz);
-      create table platform_private.device_sessions(id uuid primary key,user_id uuid,device_id uuid,device_authorization_id uuid,token_hash bytea,revoked_at timestamptz,expires_at timestamptz);
+      create table platform.device_key_bindings(id uuid primary key,user_id uuid,device_id uuid,device_authorization_id uuid,public_key_thumbprint text,algorithm text,lifecycle_status text,revoked_at timestamptz,retired_at timestamptz);
+      create table platform_private.device_sessions(id uuid primary key,user_id uuid,device_id uuid,device_authorization_id uuid,binding_id uuid,public_key_thumbprint text,purpose text,token_hash bytea,revoked_at timestamptz,expires_at timestamptz);
       create table platform.audit_events(id uuid primary key default gen_random_uuid(),actor_user_id uuid,actor_device_authorization_id uuid,subject_user_id uuid,domain text,module text,action text,entity_type text,entity_id uuid,scope_type text,scope_id uuid,old_values jsonb,new_values jsonb,metadata jsonb,operation_id uuid,source text);
       create table public.organizations(id uuid primary key,status text);
       create table public.conferences(id uuid primary key,name text,owner_id uuid,organization_id uuid,start_date date,end_date date,status text,completed_at timestamptz,revision bigint,created_at timestamptz default now(),updated_at timestamptz default now(),updated_by uuid,deleted_at timestamptz);
@@ -80,7 +92,8 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
       insert into platform.profiles values('${actor}','approved');
       insert into platform.devices values('${device}','${actor}','active',null,null);
       insert into platform.user_device_authorizations values('${authorization}','${actor}','${device}','approved',null);
-      insert into platform_private.device_sessions values('${session}','${actor}','${device}','${authorization}',decode(repeat('00',32),'hex'),null,now()+interval '1 day');
+      insert into platform.device_key_bindings values('31000000-0000-0000-0000-000000000001','${actor}','${device}','${authorization}','thumbprint','ECDSA_P256_SHA256','active',null,null);
+      insert into platform_private.device_sessions values('${session}','${actor}','${device}','${authorization}','31000000-0000-0000-0000-000000000001','thumbprint','PLATFORM_DEVICE_SESSION',decode(repeat('00',32),'hex'),null,now()+interval '1 day');
       insert into public.organizations values('${organization}','active');
       insert into public.module_permission_catalog values
         ('conference.lifecycle.create','conference','active','module',null),
@@ -93,7 +106,9 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
       end \$\$;
       create function platform_private.validated_phase1c_device_authorization(uuid,uuid) returns uuid language sql stable as \$\$select case when (select device_approved from public.final_create_test_context) and \$1='${actor}'::uuid and \$2='${device}'::uuid then '${authorization}'::uuid end\$\$;
       create function platform_private.require_exact_jsonb_keys(jsonb,text[],text[] default '{}') returns void language plpgsql immutable as \$\$declare key text;begin if \$1 is null or jsonb_typeof(\$1)<>'object' then raise exception 'INVALID';end if;foreach key in array \$2 loop if not \$1 ? key then raise exception 'MISSING';end if;end loop;if exists(select 1 from jsonb_object_keys(\$1) item where not(item=any(\$2) or item=any(\$3))) then raise exception 'UNKNOWN';end if;end\$\$;
-      create function public.mutate_conference_core(uuid,uuid,bigint,text,date,date,text) returns jsonb language sql as \$\$select '{}'::jsonb\$\$;
+      create function public.mutate_conference_core(uuid,uuid,uuid,bigint,text,text,date,date,text) returns jsonb language sql as \$\$select jsonb_build_object('operation','mutate','device',\$1,'operationId',\$2)\$\$;
+      revoke all on function public.mutate_conference_core(uuid,uuid,uuid,bigint,text,text,date,date,text) from public,anon,authenticated,service_role;
+      create function public.list_accessible_conferences(uuid) returns jsonb language sql as \$\$select jsonb_build_array(jsonb_build_object('operation','discovery','device',\$1))\$\$;
       create function platform.execute_conference_device_operation_phase1c_core(uuid,uuid,bytea,text,jsonb) returns jsonb language plpgsql as \$\$begin raise exception 'CONFERENCE_OPERATION_NOT_ALLOWED' using errcode='42501';end\$\$;
       create function platform.execute_conference_device_operation(p_user_id uuid,p_session_id uuid,p_token_hash bytea,p_operation text,p_args jsonb) returns jsonb language plpgsql security definer set search_path='' as \$\$
       declare v_session platform_private.device_sessions%rowtype;
@@ -101,10 +116,6 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
         if auth.role() is distinct from 'service_role' then raise exception 'CONFERENCE_OPERATION_BACKEND_REQUIRED' using errcode='42501';end if;
         select * into v_session from platform_private.device_sessions where id=p_session_id and user_id=p_user_id and token_hash=p_token_hash and revoked_at is null and expires_at>statement_timestamp();
         if not found then raise exception 'DEVICE_SESSION_INVALID' using errcode='42501';end if;
-        if p_operation='mutate_conference_core' then
-          perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_expected_revision','p_name','p_start_date','p_end_date','p_status']);
-          return public.mutate_conference_core(v_session.device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_expected_revision')::bigint,p_args->>'p_name',(p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date,p_args->>'p_status');
-        end if;
         return platform.execute_conference_device_operation_phase1c_core(p_user_id,p_session_id,p_token_hash,p_operation,p_args);
       end\$\$;
     `);
@@ -113,7 +124,13 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
     const signature='public.create_canonical_conference(uuid,uuid,uuid,uuid,text,date,date)';
     for(const role of ['public','anon','authenticated','service_role'])
       assert.equal(query(`select has_function_privilege('${role}','${signature}','execute')`),'f');
-    assert.equal(query(`select regexp_count(pg_get_functiondef('platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)'::regprocedure),'p_operation ?= ?''create_canonical_conference''')`),'1');
+    for(const role of ['public','anon','authenticated','service_role'])
+      assert.equal(query(`select has_function_privilege('${role}','public.mutate_conference_core(uuid,uuid,uuid,bigint,text,text,date,date,text)','execute')`),'f');
+    assert.equal(query(`select regexp_count(pg_get_functiondef('platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)'::regprocedure),'route_canonical_conference_operation')`),'1');
+    assert.equal(query(`select count(*) from pg_proc where pronamespace='platform_private'::regnamespace and proname='route_canonical_conference_operation'`),'1');
+    const routerDefinition=query(`select pg_get_functiondef('platform_private.route_canonical_conference_operation(uuid,uuid,bytea,uuid,text,jsonb)'::regprocedure)`);
+    for(const operationName of ['create_canonical_conference','mutate_conference_core','list_accessible_conferences'])
+      assert.equal((routerDefinition.match(new RegExp(`p_operation\\s*=\\s*'${operationName}'`,'g'))||[]).length,1);
     const dispatch=(extra='')=>query(`select platform.execute_conference_device_operation('${actor}','${session}',decode(repeat('00',32),'hex'),'create_canonical_conference',jsonb_build_object('p_operation_id','${operation}','p_requested_conference_id','${conference}','p_organization_id','${organization}','p_name','  Final Conference  ','p_start_date','2026-11-01','p_end_date','2026-11-03'${extra}))->>'created'`);
     query(`update public.final_create_test_context set permission_granted=false`);
     assert.throws(()=>dispatch(),/MODULE_PERMISSION_REQUIRED/);
@@ -130,6 +147,9 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
     assert.equal(query(`select count(*) from platform.audit_events where operation_id='${operation}'`),'1');
     assert.throws(()=>dispatch(`,'p_name','Different'`),/CANONICAL_CONFERENCE_CREATE_OPERATION_MISMATCH/);
     assert.throws(()=>dispatch(`,'p_actor_user_id','${actor}'`),/UNKNOWN/);
+    assert.match(query(`select platform.execute_conference_device_operation('${actor}','${session}',decode(repeat('00',32),'hex'),'mutate_conference_core',jsonb_build_object('p_operation_id','62000000-0000-0000-0000-000000000001','p_conference_id','${conference}','p_expected_revision',1,'p_name','Changed','p_place','Hall','p_start_date','2026-11-01','p_end_date','2026-11-03','p_status','active'))->>'operation'`),/mutate/);
+    assert.match(query(`select platform.execute_conference_device_operation('${actor}','${session}',decode(repeat('00',32),'hex'),'list_accessible_conferences','{}'::jsonb)->0->>'operation'`),/discovery/);
+    assert.throws(()=>query(`select platform.execute_conference_device_operation('${actor}','${session}',decode(repeat('00',32),'hex'),'unknown_conference_operation','{}'::jsonb)`),/CONFERENCE_OPERATION_NOT_ALLOWED/);
     assert.equal(query(`select to_regclass('public.conference_members') is null and to_regprocedure('public.is_conference_member(uuid)') is null`),'t');
     assert.equal(query(`select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in('has_conference_role','create_organization_conference_idempotent','device_guarded_create_organization_conference_idempotent')`),'t');
     assert.equal(query(`select to_regclass('public.conference_snapshots') is null and to_regclass('public.sync_operations') is null and to_regclass('public.sync_conflicts') is null`),'t');

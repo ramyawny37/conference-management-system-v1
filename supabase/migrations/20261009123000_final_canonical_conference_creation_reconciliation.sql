@@ -13,7 +13,10 @@ begin
      or to_regprocedure('public.require_effective_module_permission(uuid,text,text,text,text)') is null
      or to_regprocedure('platform_private.validated_phase1c_device_authorization(uuid,uuid)') is null
      or to_regprocedure('platform_private.require_exact_jsonb_keys(jsonb,text[],text[])') is null
-     or to_regprocedure('platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)') is null then
+     or to_regprocedure('platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)') is null
+     or to_regprocedure('platform.execute_conference_device_operation_phase1c_core(uuid,uuid,bytea,text,jsonb)') is null
+     or to_regprocedure('public.mutate_conference_core(uuid,uuid,uuid,bigint,text,text,date,date,text)') is null
+     or to_regprocedure('public.list_accessible_conferences(uuid)') is null then
     raise exception 'FINAL_CANONICAL_CONFERENCE_CREATION_FOUNDATION_REQUIRED' using errcode='55000';
   end if;
 
@@ -197,51 +200,204 @@ revoke all on function public.create_canonical_conference(
   uuid,uuid,uuid,uuid,text,date,date
 ) from public,anon,authenticated,service_role;
 
--- Preserve the one verified-session dispatcher. Add the canonical creation
--- branch only when this post-P3A Development state does not already have it.
-do $$
-declare
-  v_signature regprocedure:=
-    'platform.execute_conference_device_operation(uuid,uuid,bytea,text,jsonb)'::regprocedure;
-  v_definition text:=pg_get_functiondef(v_signature);
-  v_router_signature regprocedure:=to_regprocedure(
-    'platform_private.route_canonical_conference_operation(uuid,uuid,bytea,uuid,text,jsonb)'
-  );
-  v_router_definition text;
-  v_marker text:='if p_operation=''mutate_conference_core'' then';
-  v_branch text:='if p_operation=''create_canonical_conference'' then perform platform_private.require_exact_jsonb_keys(p_args,array[''p_operation_id'',''p_requested_conference_id'',''p_organization_id'',''p_name'',''p_start_date'',''p_end_date'']); return public.create_canonical_conference(v_session.device_id,(p_args->>''p_operation_id'')::uuid,(p_args->>''p_requested_conference_id'')::uuid,(p_args->>''p_organization_id'')::uuid,p_args->>''p_name'',(p_args->>''p_start_date'')::date,(p_args->>''p_end_date'')::date); elsif p_operation=''mutate_conference_core'' then';
-  v_route_count integer;
+-- One deterministic owner for canonical Conference lifecycle and discovery.
+-- The outer dispatcher alone establishes the verified session and supplies the
+-- server-derived device. Unmatched Platform operations continue to the final
+-- non-canonical core, which fails closed for unknown operations.
+create or replace function platform_private.route_canonical_conference_operation(
+  p_user_id uuid,p_session_id uuid,p_token_hash bytea,p_actor_device_id uuid,
+  p_operation text,p_args jsonb
+) returns jsonb language plpgsql security definer set search_path='' as $$
 begin
-  v_route_count:=(length(v_definition)-length(replace(v_definition,
-    'p_operation=''create_canonical_conference''','')))
-    / length('p_operation=''create_canonical_conference''');
-  if v_route_count=0 and v_router_signature is not null then
-    v_router_definition:=pg_get_functiondef(v_router_signature);
-    v_route_count:=(length(v_router_definition)-length(replace(v_router_definition,
-      'p_operation=''create_canonical_conference''','')))
-      / length('p_operation=''create_canonical_conference''');
-    if v_route_count<>1
-       or position('public.create_canonical_conference(p_actor_device_id' in v_router_definition)=0 then
-      raise exception 'FINAL_CANONICAL_CONFERENCE_ROUTER_CONFLICT' using errcode='55000';
-    end if;
-  elsif v_route_count=0 then
-    if (length(v_definition)-length(replace(v_definition,v_marker,'')))
-       / length(v_marker)<>1 then
-      raise exception 'FINAL_CANONICAL_CONFERENCE_DISPATCH_PRECONDITION_FAILED' using errcode='55000';
-    end if;
-    execute replace(v_definition,v_marker,v_branch);
-    v_definition:=pg_get_functiondef(v_signature);
-    v_route_count:=(length(v_definition)-length(replace(v_definition,
-      'p_operation=''create_canonical_conference''','')))
-      / length('p_operation=''create_canonical_conference''');
+  if p_operation='create_canonical_conference' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array[
+      'p_operation_id','p_requested_conference_id','p_organization_id',
+      'p_name','p_start_date','p_end_date'
+    ]);
+    return public.create_canonical_conference(
+      p_actor_device_id,(p_args->>'p_operation_id')::uuid,
+      (p_args->>'p_requested_conference_id')::uuid,
+      (p_args->>'p_organization_id')::uuid,p_args->>'p_name',
+      (p_args->>'p_start_date')::date,(p_args->>'p_end_date')::date
+    );
+  elsif p_operation='mutate_conference_core' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array[
+      'p_operation_id','p_conference_id','p_expected_revision','p_name',
+      'p_place','p_start_date','p_end_date','p_status'
+    ]);
+    return public.mutate_conference_core(
+      p_actor_device_id,(p_args->>'p_operation_id')::uuid,
+      (p_args->>'p_conference_id')::uuid,
+      (p_args->>'p_expected_revision')::bigint,p_args->>'p_name',
+      p_args->>'p_place',(p_args->>'p_start_date')::date,
+      (p_args->>'p_end_date')::date,p_args->>'p_status'
+    );
+  elsif p_operation='list_accessible_conferences' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array[]::text[]);
+    return public.list_accessible_conferences(p_actor_device_id);
+  elsif p_operation='get_conference_core' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_core(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='list_conference_participations' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.list_conference_participations(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='create_conference_participation' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_person_id']);
+    return public.create_conference_participation(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,(p_args->>'p_person_id')::uuid);
+  elsif p_operation='create_conference_participation_with_person' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_full_name','p_phone','p_gender','p_date_of_birth','p_church']);
+    return public.create_conference_participation_with_person(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,p_args->>'p_full_name',p_args->>'p_phone',p_args->>'p_gender',(p_args->>'p_date_of_birth')::date,p_args->>'p_church');
+  elsif p_operation='set_conference_participation_status' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_participation_id','p_expected_revision','p_status']);
+    return public.set_conference_participation_status(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_expected_revision')::bigint,p_args->>'p_status');
+  elsif p_operation='set_conference_participation_guardian' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_participation_id','p_expected_revision','p_guardian_participation_id']);
+    return public.set_conference_participation_guardian(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_guardian_participation_id')::uuid);
+  elsif p_operation='delete_conference_participation' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_participation_id','p_expected_revision']);
+    return public.delete_conference_participation(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_expected_revision')::bigint);
+  elsif p_operation='get_conference_accommodation' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation in('create_accommodation_house','update_accommodation_house','delete_accommodation_house','create_accommodation_floor','update_accommodation_floor','delete_accommodation_floor','create_accommodation_room','update_accommodation_room','delete_accommodation_room') then
+    return public.mutate_conference_accommodation_structure(p_actor_device_id,replace(p_operation,'_accommodation_','_'),p_args);
+  elsif p_operation='assign_conference_accommodation' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_room_id','p_participation_id','p_arrival_day','p_leave_day','p_bed_type','p_extra_bed_person_type']);
+    return public.assign_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_room_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_arrival_day')::integer,(p_args->>'p_leave_day')::integer,p_args->>'p_bed_type',p_args->>'p_extra_bed_person_type');
+  elsif p_operation='move_conference_accommodation' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_occupancy_id','p_expected_revision','p_room_id','p_arrival_day','p_leave_day','p_bed_type','p_extra_bed_person_type']);
+    return public.move_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_occupancy_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_room_id')::uuid,(p_args->>'p_arrival_day')::integer,(p_args->>'p_leave_day')::integer,p_args->>'p_bed_type',p_args->>'p_extra_bed_person_type');
+  elsif p_operation='remove_conference_accommodation' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_occupancy_id','p_expected_revision']);
+    return public.remove_conference_accommodation(p_actor_device_id,(p_args->>'p_conference_id')::uuid,(p_args->>'p_occupancy_id')::uuid,(p_args->>'p_expected_revision')::bigint);
+  elsif p_operation='get_conference_transport' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_transport(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='mutate_conference_transport_vehicle' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_operation','p_conference_id','p_vehicle_id','p_expected_revision','p_name','p_icon','p_capacity','p_position','p_remove_overflow']);
+    return public.mutate_conference_transport_vehicle(p_actor_device_id,(p_args->>'p_operation_id')::uuid,p_args->>'p_operation',(p_args->>'p_conference_id')::uuid,nullif(p_args->>'p_vehicle_id','')::uuid,nullif(p_args->>'p_expected_revision','')::bigint,p_args->>'p_name',p_args->>'p_icon',nullif(p_args->>'p_capacity','')::integer,nullif(p_args->>'p_position','')::integer,coalesce((p_args->>'p_remove_overflow')::boolean,false));
+  elsif p_operation='set_conference_transport_assignment' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_participation_id','p_vehicle_id','p_mode','p_rider_kind','p_seat_number','p_expected_revision']);
+    return public.set_conference_transport_assignment(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,(p_args->>'p_participation_id')::uuid,(p_args->>'p_vehicle_id')::uuid,p_args->>'p_mode',p_args->>'p_rider_kind',nullif(p_args->>'p_seat_number','')::integer,nullif(p_args->>'p_expected_revision','')::bigint);
+  elsif p_operation='remove_conference_transport_assignment' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_assignment_id','p_expected_revision']);
+    return public.remove_conference_transport_assignment(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_assignment_id')::uuid,(p_args->>'p_expected_revision')::bigint);
+  elsif p_operation='get_conference_restaurant' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_restaurant(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='mutate_conference_restaurant' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_operation','p_conference_id','p_expected_revision','p_payload']);
+    return public.mutate_conference_restaurant(p_actor_device_id,(p_args->>'p_operation_id')::uuid,p_args->>'p_operation',(p_args->>'p_conference_id')::uuid,nullif(p_args->>'p_expected_revision','')::bigint,p_args->'p_payload');
+  elsif p_operation='mutate_conference_accommodation_pricing' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_expected_revision','p_payload']);
+    return public.mutate_conference_accommodation_pricing(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,nullif(p_args->>'p_expected_revision','')::bigint,p_args->'p_payload');
+  elsif p_operation='get_conference_air_conditioning' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_air_conditioning(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='mutate_conference_air_conditioning' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_scope','p_scope_id','p_action','p_expected_revision','p_configuration']);
+    return public.mutate_conference_air_conditioning(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,p_args->>'p_scope',nullif(p_args->>'p_scope_id','')::uuid,p_args->>'p_action',(p_args->>'p_expected_revision')::bigint,p_args->'p_configuration');
+  elsif p_operation='get_conference_finance' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_finance(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='mutate_conference_finance' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_entity','p_action','p_entity_id','p_expected_revision','p_payload']);
+    return public.mutate_conference_finance(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,p_args->>'p_entity',p_args->>'p_action',nullif(p_args->>'p_entity_id','')::uuid,(p_args->>'p_expected_revision')::bigint,p_args->'p_payload');
+  elsif p_operation='get_conference_branding' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.get_conference_branding(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='mutate_conference_branding' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_conference_id','p_action','p_expected_revision','p_payload']);
+    return public.mutate_conference_branding(p_actor_device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_conference_id')::uuid,p_args->>'p_action',(p_args->>'p_expected_revision')::bigint,p_args->'p_payload');
+  elsif p_operation='list_conference_activity' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id']);
+    return public.list_conference_activity(p_actor_device_id,(p_args->>'p_conference_id')::uuid);
+  elsif p_operation='record_conference_output_event' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['p_conference_id','p_event']);
+    return public.record_conference_output_event(p_actor_device_id,(p_args->>'p_conference_id')::uuid,p_args->>'p_event');
   end if;
-  if v_route_count<>1 or (
-    v_router_signature is null
-    and position('public.create_canonical_conference(v_session.device_id' in v_definition)=0
-  ) then
-    raise exception 'FINAL_CANONICAL_CONFERENCE_DISPATCH_POSTCONDITION_FAILED' using errcode='55000';
-  end if;
+  return platform.execute_conference_device_operation_phase1c_core(
+    p_user_id,p_session_id,p_token_hash,p_operation,p_args
+  );
 end $$;
+
+revoke all on function platform_private.route_canonical_conference_operation(
+  uuid,uuid,bytea,uuid,text,jsonb
+) from public,anon,authenticated,service_role;
+
+create or replace function platform.execute_conference_device_operation(
+  p_user_id uuid,p_session_id uuid,p_token_hash bytea,p_operation text,p_args jsonb
+) returns jsonb language plpgsql security definer set search_path='' as $$
+declare v_session platform_private.device_sessions%rowtype;
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'CONFERENCE_OPERATION_BACKEND_REQUIRED' using errcode='42501';
+  end if;
+  if p_user_id is null or p_session_id is null
+     or pg_catalog.octet_length(p_token_hash)<>32 then
+    raise exception 'DEVICE_SESSION_ARGUMENT_INVALID' using errcode='22023';
+  end if;
+  select session.* into v_session
+  from platform_private.device_sessions session
+  join platform.device_key_bindings binding on binding.id=session.binding_id
+  join platform.user_device_authorizations device_authorization
+    on device_authorization.id=session.device_authorization_id
+  join platform.devices device on device.id=session.device_id
+  join platform.profiles profile on profile.user_id=session.user_id
+  where session.id=p_session_id and session.user_id=p_user_id
+    and session.token_hash=p_token_hash
+    and session.purpose='PLATFORM_DEVICE_SESSION'
+    and session.revoked_at is null
+    and session.expires_at>pg_catalog.statement_timestamp()
+    and binding.user_id=session.user_id and binding.device_id=session.device_id
+    and binding.device_authorization_id=session.device_authorization_id
+    and binding.public_key_thumbprint=session.public_key_thumbprint
+    and binding.algorithm='ECDSA_P256_SHA256'
+    and binding.lifecycle_status='active'
+    and binding.revoked_at is null and binding.retired_at is null
+    and device_authorization.user_id=session.user_id
+    and device_authorization.device_id=session.device_id
+    and device_authorization.status='approved'
+    and device_authorization.revoked_at is null
+    and device.lifecycle_status='active' and device.retired_at is null
+    and device.compromised_at is null and profile.account_status='approved';
+  if not found then
+    raise exception 'DEVICE_SESSION_INVALID' using errcode='42501';
+  end if;
+  if p_args ? 'p_actor_device_id'
+     or (p_args ? 'p_device_id'
+         and p_operation<>'approve_pending_device_authorization') then
+    raise exception 'ACTOR_DEVICE_OVERRIDE_DENIED' using errcode='22023';
+  end if;
+  perform pg_catalog.set_config(
+    'platform.phase1c_context',pg_catalog.jsonb_build_object(
+      'purpose','PLATFORM_DEVICE_SESSION_DISPATCH','session_id',v_session.id,
+      'user_id',v_session.user_id,'device_id',v_session.device_id,
+      'authorization_id',v_session.device_authorization_id,
+      'binding_id',v_session.binding_id,
+      'token_hash',pg_catalog.encode(p_token_hash,'hex')
+    )::text,true
+  );
+  perform pg_catalog.set_config(
+    'request.jwt.claims',pg_catalog.jsonb_build_object(
+      'sub',p_user_id,'role','authenticated'
+    )::text,true
+  );
+  return platform_private.route_canonical_conference_operation(
+    p_user_id,p_session_id,p_token_hash,v_session.device_id,p_operation,p_args
+  );
+end $$;
+
+revoke all on function platform.execute_conference_device_operation(
+  uuid,uuid,bytea,text,jsonb
+) from public,anon,authenticated,service_role;
+grant execute on function platform.execute_conference_device_operation(
+  uuid,uuid,bytea,text,jsonb
+) to service_role;
+
+comment on function platform_private.route_canonical_conference_operation(
+  uuid,uuid,bytea,uuid,text,jsonb
+) is 'One final internal canonical Conference lifecycle/discovery router. The outer Platform dispatcher supplies verified server-derived actor/device context; unmatched operations fail closed through the final Platform core.';
 
 comment on function public.create_canonical_conference(
   uuid,uuid,uuid,uuid,text,date,date
