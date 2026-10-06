@@ -4,54 +4,21 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const test=require('node:test');
 
-const repositorySource=fs.readFileSync('js/storage/conference-repository.js','utf8');
-const activationSource=fs.readFileSync('js/sync/conference-activation-authorization.js','utf8');
+const activationSource=fs.readFileSync(
+  'js/sync/conference-activation-authorization.js','utf8'
+);
 const scriptSource=fs.readFileSync('script.js','utf8');
 
-const userA='11111111-1111-4111-8111-111111111111';
-const userB='22222222-2222-4222-8222-222222222222';
-
 function runtime(){
-  let authUser=userA;
-  let systemOwner=false;
-  const sandbox={
-    window:null,
-    JSON,Promise,Object,Array,String,Number,Date,
-    structuredClone:value=>structuredClone(value),
-    SupabaseAuth:{
-      getState(){return {authenticated:!!authUser,user:authUser?{id:authUser}:null};}
-    },
-    SystemAccessService:{
-      getState(){return {
-        authenticated:!!authUser,
-        profileLoaded:true,
-        fresh:true,
-        accountStatus:'approved',
-        isSystemOwner:systemOwner
-      };}
-    }
-  };
+  const sandbox={window:null,Object,String,Promise};
   sandbox.window=sandbox;
-  vm.runInNewContext(repositorySource,sandbox,{filename:'conference-repository.js'});
-  vm.runInNewContext(activationSource,sandbox,{filename:'conference-activation-authorization.js'});
-  return {
-    sandbox,
-    repository:sandbox.ConferenceRepository,
-    gate:sandbox.ConferenceActivationAuthorization,
-    setUser(value){authUser=value;},
-    setSystemOwner(value){systemOwner=value===true;}
-  };
+  vm.runInNewContext(
+    activationSource,sandbox,{filename:'conference-activation-authorization.js'}
+  );
+  return sandbox.ConferenceActivationAuthorization;
 }
 
-function emptyApp(){
-  return {
-    currentConferenceId:null,
-    conferences:[],
-    conferenceLifecycle:{schemaVersion:1,records:{}}
-  };
-}
-
-function commonOpenPath(env,appData,links){
+function commonOpenPath(appData,links){
   const entrySource=scriptSource.slice(
     scriptSource.indexOf('function prepareCanonicalConferenceApplicationEntry'),
     scriptSource.indexOf('function traceMemberActivation')
@@ -62,19 +29,10 @@ function commonOpenPath(env,appData,links){
   );
   let current=null;
   let selectedConferenceId='';
-  let localAuthorizationAttempts=0;
-  const authorization={
-    canDisplay:id=>env.gate.canDisplay(id),
-    authorizeLocalOnly(data,id){
-      localAuthorizationAttempts+=1;
-      return env.gate.authorizeLocalOnly(data,id);
-    }
-  };
   const sandbox={
     window:null,appData,Object,String,
-    currentConferenceRuntimeAccessRole:null,
-    currentConferenceRuntimeAccessRoles:{},
-    ConferenceActivationAuthorization:authorization,
+    currentConferenceRuntimeActivationDecision:null,
+    ConferenceActivationAuthorization:runtime(),
     ConferenceLinkStore:links,
     PlatformIntegration:{
       getModuleServices(){
@@ -98,134 +56,97 @@ function commonOpenPath(env,appData,links){
   sandbox.window=sandbox;
   vm.runInNewContext(openSource,sandbox,{filename:'set-current-conference.js'});
   return {
-    open:id=>sandbox.setCurrentConferenceById(id),
-    localAuthorizationAttempts:()=>localAuthorizationAttempts,
+    authorization:sandbox.ConferenceActivationAuthorization,
+    open:(id,options)=>sandbox.setCurrentConferenceById(id,options),
     current:()=>current,
     selectedConferenceId:()=>selectedConferenceId
   };
 }
 
-test('new local conference persists creator provenance without using publish metadata',()=>{
-  const env=runtime();
-  const added=env.repository.addLocalConference(emptyApp(),{
-    id:'local-new',name:'أزمة',organizationId:'org-1',status:'active'
-  });
-  assert.equal(added.ok,true);
-  const record=added.data.conferenceLifecycle.records['local-new'];
-  assert.equal(record.localOwnerUserId,userA);
-  assert.equal(record.publishMetadata,null);
-  assert.equal(record.cloudLifecycle,'unpublished');
+test('unlinked conference uses the canonical local activation contract',()=>{
+  const authorization=runtime();
+  const decision=authorization.authorizeLocal({conferenceId:'local-new'});
+  assert.equal(decision.ok,true);
+  assert.equal(decision.active,true);
+  assert.equal(decision.reason,'local_conference');
+  assert.equal(decision.conferenceId,'local-new');
+  assert.equal(decision.role,null);
+  assert.equal(decision.capabilities,null);
 });
 
-test('creator opens local conference and authorization becomes active runtime state',async()=>{
-  const env=runtime();
-  const added=env.repository.addLocalConference(emptyApp(),{
-    id:'local-new',name:'أزمة',organizationId:'org-1',status:'active'
+test('linked conference requires explicit canonical access and carries capabilities',()=>{
+  const authorization=runtime();
+  const denied=authorization.authorizeCloud({
+    conferenceId:'cloud',canonicalAccess:false,capabilities:{edit:true}
   });
-  const decision=env.gate.authorizeLocalOnly(added.data,'local-new');
-  assert.equal(decision.classification,'authorized_local_only');
-  assert.equal(env.gate.canDisplay('local-new'),true);
-  assert.equal(env.gate.canEdit('local-new'),true);
-  assert.equal(env.gate.canReadProtected('local-new'),false);
-  assert.equal(env.gate.canSync('local-new'),false);
-  assert.equal(env.gate.getCurrentState().localConferenceId,'local-new');
+  assert.equal(denied.ok,false);
+  assert.equal(denied.active,false);
 
-  env.gate.resetForAccount(userA);
-  env.gate.capturePersistedCandidate('local-new','indexeddb');
-  const restored=await env.gate.reconcileStartup({
-    appData:added.data,
-    persistedCandidate:'local-new',
-    discovered:[],
-    links:{get(){return null;}}
+  const allowed=authorization.authorizeCloud({
+    conferenceId:'cloud',
+    canonicalAccess:true,
+    capabilities:{edit:true,sync:true,transportManage:false}
   });
-  assert.equal(restored.classification,'authorized_local_only');
-  assert.equal(env.gate.getCurrentState().localConferenceId,'local-new');
+  assert.equal(allowed.ok,true);
+  assert.equal(allowed.active,true);
+  assert.equal(allowed.role,null);
+  assert.equal(allowed.capabilities.edit,true);
+  assert.equal(allowed.capabilities.sync,true);
 });
 
-test('different account cannot inherit creator-bound local conference',()=>{
-  const env=runtime();
-  const added=env.repository.addLocalConference(emptyApp(),{
-    id:'local-new',name:'أزمة',organizationId:'org-1',status:'active'
-  });
-  env.setUser(userB);
-  const denied=env.gate.authorizeLocalOnly(added.data,'local-new');
-  assert.equal(denied.classification,'unverified_local_scope');
-  assert.equal(env.gate.canDisplay('local-new'),false);
-  assert.equal(added.data.conferenceLifecycle.records['local-new'].localOwnerUserId,userA);
+test('activation module exposes no retired stateful compatibility API',()=>{
+  const authorization=runtime();
+  [
+    'authorizeLocalOnly','canDisplay','canEdit','canSync','activate','deactivate',
+    'getCurrentState','capturePersistedCandidate','getPersistedCandidate',
+    'preparePersistedAppData'
+  ].forEach(name=>assert.equal(
+    Object.prototype.hasOwnProperty.call(authorization,name),false,name
+  ));
 });
 
-test('cloud authorization contract remains separate from local provenance',()=>{
-  const env=runtime();
-  const remote='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-  const viewer=env.gate.authorizeCloud({
-    localConferenceId:'cloud',
-    remoteConferenceId:remote,
-    authenticatedUserId:userA,
-    role:'viewer'
-  });
-  assert.equal(viewer.classification,'authorized_cloud_linked');
-  assert.equal(viewer.capabilities.display,true);
-  assert.equal(viewer.capabilities.edit,false);
-  assert.equal(viewer.capabilities.sync,false);
-  assert.equal(env.gate.activate('cloud'),true);
-  assert.equal(env.gate.getCurrentState().localConferenceId,'cloud');
-});
-
-test('common open path authorizes a creator-bound unlinked conference locally',()=>{
-  const env=runtime();
-  const added=env.repository.addLocalConference(emptyApp(),{
-    id:'local-new',name:'أزمة',organizationId:'org-1',status:'active'
-  });
-  const opener=commonOpenPath(env,added.data,{get(){return null;}});
-
+test('common open path authorizes an unlinked conference locally',()=>{
+  const app={currentConferenceId:null,conferences:[{id:'local-new',name:'Local'}]};
+  const opener=commonOpenPath(app,{get(){return null;}});
   assert.equal(opener.open('local-new'),true);
-  assert.equal(opener.localAuthorizationAttempts(),1);
   assert.equal(opener.current().id,'local-new');
   assert.equal(opener.selectedConferenceId(),'local-new');
-  assert.equal(env.gate.canDisplay('local-new'),true);
 });
 
-test('common open path never reclassifies a linked conference as local-only',()=>{
-  const env=runtime();
-  const remote='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+test('common open path fails closed for linked conference without canonical decision',()=>{
   const linked={
-    localConferenceId:'cloud',remoteConferenceId:remote,
-    linkStatus:'cloud_linked',knownRevision:1
+    localConferenceId:'cloud',
+    remoteConferenceId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    linkStatus:'cloud_linked'
   };
-  const app=emptyApp();
-  app.conferences.push({id:'cloud',name:'Cloud',organizationId:'org-1'});
-  const opener=commonOpenPath(env,app,{get(id){return id==='cloud'?linked:null;}});
-
+  const app={currentConferenceId:null,conferences:[{id:'cloud',name:'Cloud'}]};
+  const opener=commonOpenPath(app,{get(id){return id==='cloud'?linked:null;}});
   assert.equal(opener.open('cloud'),false);
-  assert.equal(opener.localAuthorizationAttempts(),0);
   assert.equal(app.currentConferenceId,null);
   assert.equal(opener.selectedConferenceId(),'');
+});
 
-  const cloudDecision=env.gate.authorizeCloud({
-    localConferenceId:'cloud',remoteConferenceId:remote,
-    authenticatedUserId:userA,role:'viewer'
+test('common open path accepts linked conference only with canonical activation decision',()=>{
+  const linked={
+    localConferenceId:'cloud',
+    remoteConferenceId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    linkStatus:'cloud_linked'
+  };
+  const app={currentConferenceId:null,conferences:[{id:'cloud',name:'Cloud'}]};
+  const opener=commonOpenPath(app,{get(id){return id==='cloud'?linked:null;}});
+  const decision=opener.authorization.authorizeCloud({
+    conferenceId:'cloud',
+    canonicalAccess:true,
+    capabilities:{edit:false,sync:true,transportManage:false}
   });
-  assert.equal(cloudDecision.ok,true);
-  assert.equal(opener.open('cloud'),true);
-  assert.equal(opener.localAuthorizationAttempts(),0);
+  assert.equal(opener.open('cloud',{activationDecision:decision}),true);
   assert.equal(opener.current().id,'cloud');
   assert.equal(opener.selectedConferenceId(),'cloud');
 });
 
-test('Platform Conference context is published only after the post-sync identity check',()=>{
-  const selection=scriptSource.slice(
-    scriptSource.indexOf('function setCurrentConferenceById'),
-    scriptSource.indexOf('function completeCurrentConference')
-  );
-  const identityCheck=selection.indexOf('if(!currentAfterSync || currentAfterSync.id !== id)');
-  const contextPublish=selection.indexOf('platformServices.setSelectedConferenceId(currentAfterSync.id)');
-  const successfulEntry=selection.indexOf('prepareCanonicalConferenceApplicationEntry(options)');
-  assert.ok(identityCheck>=0);
-  assert.ok(contextPublish>identityCheck);
-  assert.ok(successfulEntry>contextPublish);
-  assert.doesNotMatch(selection,/appData\.conferences\s*\[\s*0\s*\]/);
-});
-
 test('startup card still enters through the centralized real open path',()=>{
-  assert.match(scriptSource,/function openConferenceFromStartup\(id\)\{\s*return setCurrentConferenceById\(id,\{enterApplication:true\}\);\s*\}/);
+  assert.match(
+    scriptSource,
+    /function openConferenceFromStartup\(id\)\{\s*return setCurrentConferenceById\(id,\{enterApplication:true\}\);\s*\}/
+  );
 });
