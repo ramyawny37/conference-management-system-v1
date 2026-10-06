@@ -95,7 +95,7 @@ begin
     or not exists(
       select 1 from pg_constraint c
       where c.conrelid=v_relation and c.contype='c'
-        and pg_get_expr(c.conbin,c.conrelid,true)~*'jsonb_typeof\\(initial_metadata\\).*object'
+        and pg_get_expr(c.conbin,c.conrelid,true)~*'jsonb_typeof[(]initial_metadata[)].*object'
     )
     or exists(
       select 1 from public.conference_creation_operations ledger
