@@ -353,14 +353,16 @@ function setCurrentConferenceById(id, options){
   var conferenceLink=window.ConferenceLinkStore&&
     typeof window.ConferenceLinkStore.get==='function'
       ?window.ConferenceLinkStore.get(String(id||'')):null;
-  if(activationAuthorization&&
-    !conferenceLink&&
-    !activationAuthorization.canDisplay(String(id||''))){
-    activationAuthorization.authorizeLocalOnly(appData,String(id||''));
-  }
-  if(!activationAuthorization||
-    !activationAuthorization.canDisplay(String(id||'')))return false;
   options = options || {};
+  if(!activationAuthorization)return false;
+  var activationDecision=options.activationDecision||null;
+  if(!conferenceLink){
+    activationDecision=activationAuthorization.authorizeLocal({
+      conferenceId:String(id||'')
+    });
+  }
+  if(!activationDecision||activationDecision.ok!==true||
+    activationDecision.active!==true)return false;
   if(window.ConferenceEditLockManager&&
     window.ConferenceEditLockManager.getState&&
     ['editing','acquiring','lost'].indexOf(
@@ -672,15 +674,19 @@ function runMemberActivationStep(stage,callback){
 function activatePersistedConferenceById(id,options){
   options=options||{};
   var activationAuthorization=window.ConferenceActivationAuthorization;
-  if(!activationAuthorization||
-    !activationAuthorization.activate(String(id||'')))return false;
-  if(options.accessRole){
-    currentConferenceRuntimeAccessRoles[String(id)]=String(options.accessRole);
+  if(!activationAuthorization)return false;
+  var conferenceLink=window.ConferenceLinkStore&&
+    typeof window.ConferenceLinkStore.get==='function'
+      ?window.ConferenceLinkStore.get(String(id||'')):null;
+  var activationDecision=options.activationDecision||null;
+  if(!conferenceLink){
+    activationDecision=activationAuthorization.authorizeLocal({
+      conferenceId:String(id||'')
+    });
   }
-  currentConferenceRuntimeAccessRole=
-    Object.prototype.hasOwnProperty.call(
-      currentConferenceRuntimeAccessRoles,String(id)
-    )?currentConferenceRuntimeAccessRoles[String(id)]:null;
+  if(!activationDecision||activationDecision.ok!==true||
+    activationDecision.active!==true)return false;
+  currentConferenceRuntimeAccessRole=null;
   memberActivationDiagnosticState={
     trace:[],currentStage:null,exceptionStage:null,settingsResolved:false
   };
@@ -1695,8 +1701,13 @@ function reconcileConferenceRoute(){
   if(route.kind==='home')return showHomePage();
   var current=getCurrentConference();
   var authorization=window.ConferenceActivationAuthorization;
+  var routeLink=current&&window.ConferenceLinkStore&&
+    typeof window.ConferenceLinkStore.get==='function'
+      ?window.ConferenceLinkStore.get(String(current.id||'')):null;
+  var routeDecision=current&&!routeLink&&authorization
+    ?authorization.authorizeLocal({conferenceId:String(current.id||'')}):null;
   if(route.kind!=='application'||!current||!authorization||
-    !authorization.canDisplay(current.id)){
+    routeLink||!routeDecision||routeDecision.ok!==true){
     replacePlatformShellPathname('/conference');
     openStartupScreen({clearCurrentConference:false,persistView:false});
     return false;
@@ -2572,7 +2583,25 @@ function initializePlatformAdministrationContext(){
 function canEditCurrentConferenceData(){
   var current=getCurrentConference();
   var authorization=window.ConferenceActivationAuthorization;
-  return !!(current&&authorization&&authorization.canEdit(current.id));
+  if(!current||!authorization)return false;
+  var link=window.ConferenceLinkStore&&
+    typeof window.ConferenceLinkStore.get==='function'
+      ?window.ConferenceLinkStore.get(String(current.id||'')):null;
+  if(!link){
+    var localDecision=authorization.authorizeLocal({
+      conferenceId:String(current.id||'')
+    });
+    return !!(localDecision&&localDecision.ok===true&&localDecision.active===true);
+  }
+  var state=window.PlatformIntegration&&
+    typeof window.PlatformIntegration.getConferenceCoreState==='function'
+      ?window.PlatformIntegration.getConferenceCoreState(current.id):null;
+  var capabilities=state&&state.capabilities;
+  return !!(capabilities&&(
+    capabilities.manage===true||
+    capabilities.edit===true||
+    capabilities['conference.lifecycle.manage']===true
+  ));
 }
 
 function canEditCurrentConferenceAccommodation(){
