@@ -13,14 +13,15 @@ function environment(failure){
     ConferenceLinkStore:{findByRemoteId:id=>Object.values(links).find(x=>x.remoteConferenceId===id)||null,save:value=>{links[value.localConferenceId]=value;return {ok:true};}},
     PlatformIntegration:{hydrateConferenceCore:hydrate('core'),hydrateConferenceParticipations:hydrate('participation'),hydrateConferenceAccommodation:hydrate('accommodation'),hydrateConferenceAirConditioning:hydrate('air_conditioning')},
     CanonicalConferenceBranding:{hydrate:hydrate('branding')},CanonicalConferenceFinance:{hydrate:hydrate('finance')},CanonicalConferenceTransport:{hydrate:hydrate('transport')},CanonicalConferenceRestaurant:{hydrate:hydrate('restaurant')},
-    activatePersistedConferenceById:()=>{calls.push('activate');return true;}};
+    ConferenceActivationAuthorization:{authorizeCloud(input){calls.push('authorizeCloud');return {ok:input.canonicalAccess===true,active:input.canonicalAccess===true,conferenceId:input.conferenceId,capabilities:input.capabilities,role:null};}},
+    activatePersistedConferenceById:(id,options)=>{calls.push('activate');calls.push(options&&options.activationDecision&&options.activationDecision.capabilities&&options.activationDecision.capabilities.edit===true?'decision:edit':'decision:missing');return true;}};
   sandbox.window=sandbox;vm.runInNewContext(source,sandbox);
   return {sandbox,calls,links,getData:()=>sandbox.appData};
 }
 test('linked open hydrates every canonical owner without snapshot infrastructure',async()=>{
   const env=environment();const result=await env.sandbox.DiscoveredConferenceOpenService.open(remote);
   assert.equal(result.ok,true);assert.equal(result.status,'opened');
-  assert.deepEqual(env.calls,['core','participation','accommodation','air_conditioning','branding','finance','transport','restaurant','activate']);
+  assert.deepEqual(env.calls,['core','participation','accommodation','air_conditioning','branding','finance','transport','restaurant','authorizeCloud','activate','decision:edit']);
   assert.equal(env.links[remote].remoteConferenceId,remote);
   assert.equal(env.getData().conferences[0].name,'Canonical');
 });
