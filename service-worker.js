@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'reservations-root-boundary-v1'
+  ? 'conference-activation-canonical-v1'
   : 'production-3-6-0-release-v6';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -69,7 +69,7 @@ const CORE_ASSETS = [
   './js/supabase/first-system-bootstrap-service.js?rev=first-owner-bootstrap-hardening-v1',
   './js/sync/startup-access-gate.js?rev=revoked-rerequest-error-code-v1',
   './js/sync/conference-link-store.js',
-  './js/sync/conference-activation-authorization.js?rev=runtime-authorization-phase1-v1',
+  './js/sync/conference-activation-authorization.js?rev=conference-activation-canonical-v1',
   './js/sync/system-access-administration-attempt-store.js?rev=user-account-administration-v1',
   './js/supabase/account-administration-service.js?rev=admin-session-boundary-v1',
   './js/sync/user-management-read-service.js?rev=admin-session-boundary-v1',
@@ -77,14 +77,14 @@ const CORE_ASSETS = [
   './js/sync/module-permission-administration-service.js?rev=generic-permission-resources-service-v2',
   './js/sync/module-permission-administration-ui.js?rev=generic-permission-resources-lifecycle-v2',
   './js/sync/conference-linking-attempt-store.js',
-  './js/sync/discovered-conference-open-service.js?rev=canonical-conference-core-cutover-v1',
+  './js/sync/discovered-conference-open-service.js?rev=conference-activation-canonical-v1',
   './utils.js',
   './core.js?rev=development-3-4-0-platform-foundation-v1',
   './people.js?rev=canonical-conference-schema-v1',
   './houses.js?rev=template-floor-conference-sync-v1',
   './transport.js',
   './houseTemplates.js?rev=shared-house-template-read-only-v1',
-  './state.js?rev=canonical-conference-core-cutover-v2',
+  './state.js?rev=conference-activation-canonical-v1',
   './js/conference/accounts.js?rev=development-3-4-0-platform-foundation-v1',
   './js/conference-template-houses-editor.js',
   './cards.js',
@@ -95,7 +95,7 @@ const CORE_ASSETS = [
   './js/warehouse/party-management.js?rev=warehouse-party-management-v1',
   './js/warehouse/remaining-operations.js?rev=adjustment-conversion-ux-v1',
   './js/warehouse/workspace.js?rev=item-unit-add-ui-v1',
-  './script.js?rev=canonical-conference-core-cutover-v2',
+  './script.js?rev=conference-activation-canonical-v1',
   './version.js',
   './pwa.js?rev=pwa-update-state-consistency-v1',
   './libs/html2canvas.min.js',
