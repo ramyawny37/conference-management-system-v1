@@ -30,7 +30,7 @@
       session=d.auth&&d.auth.getSession();
       identity=d.deviceIdentity&&d.deviceIdentity.getOrCreate();
     }catch(error){return {error:'UNAVAILABLE'};}
-    if(!client||!d.deviceSession||typeof d.deviceSession.invokeProtected!=='function'||
+    if(!client||!d.deviceSession||typeof d.deviceSession.invokeModuleProtected!=='function'||
       !isUuid(String(session&&session.user&&session.user.id||''))||
       !isUuid(String(identity&&identity.id||''))){
       return {error:'UNAVAILABLE'};
