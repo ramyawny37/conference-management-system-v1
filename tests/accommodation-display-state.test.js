@@ -17,9 +17,9 @@ var conference={id:'c1',houses:[{id:'h1',floors:[{id:'f1',rooms:[
 ]}]}],accommodationDisplayedRoomIds:[]};
 var conferenceEditAuthorized=false;
 var sandbox={window:null,appData:{currentConferenceId:'c1',conferences:[conference]},
-  ConferenceActivationAuthorization:{canEdit:function(id){
-    return conferenceEditAuthorized&&id==='c2';
-  }},
+  currentConferenceRuntimeActivationDecision:null,
+  ConferenceLinkStore:{get:function(id){return id==='c2'?{remoteConferenceId:'remote-c2',linkStatus:'linked'}:null;}},
+  ConferenceActivationAuthorization:{authorizeLocal:function(input){return {ok:true,active:true,conferenceId:input.conferenceId,capabilities:null,role:null};}},
   ConferenceEditLockManager:{canMutateAccommodation:function(){return true;}}};
 sandbox.window=sandbox;
 vm.runInNewContext([
@@ -70,9 +70,9 @@ assert.strictEqual(sandbox.getAccommodationPersonDisplayName({id:'p1'}),
   'Member Name');
 assert.strictEqual(sandbox.getAccommodationPersonDisplayName({personId:'missing'}),
   '','an invalid personId must not break name rendering');
-conferenceEditAuthorized=false;
+sandbox.currentConferenceRuntimeActivationDecision={ok:true,active:true,conferenceId:'c2',capabilities:{edit:false},role:null};
 assert.strictEqual(sandbox.canEditCurrentConferenceAccommodation(),false);
-conferenceEditAuthorized=true;
+sandbox.currentConferenceRuntimeActivationDecision={ok:true,active:true,conferenceId:'c2',capabilities:{edit:true},role:null};
 assert.strictEqual(sandbox.canEditCurrentConferenceAccommodation(),true);
 
 var renderStart=script.indexOf('function renderAccommodation()');
