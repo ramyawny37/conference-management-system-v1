@@ -70,8 +70,21 @@
       ensureRuntimeConference(localId,access.data.conference,options);
       return hydrate(localId,remoteId).then(function(){
         if(token!==generation)return result(false,'stale');
+        var authorization=global.ConferenceActivationAuthorization;
+        if(!authorization||typeof authorization.authorizeCloud!=='function'){
+          return result(false,'activation_authorization_unavailable');
+        }
+        var activationDecision=authorization.authorizeCloud({
+          conferenceId:localId,
+          canonicalAccess:true,
+          capabilities:access.data.capabilities
+        });
         var activate=options.activate||global.activatePersistedConferenceById;
-        var activated=typeof activate==='function'&&activate(localId,{alreadyPersisted:true,accessRole:null,enterApplication:options.enterApplication===true})===true;
+        var activated=typeof activate==='function'&&activate(localId,{
+          alreadyPersisted:true,
+          activationDecision:activationDecision,
+          enterApplication:options.enterApplication===true
+        })===true;
         return activated?result(true,'opened',{localConferenceId:localId,remoteConferenceId:remoteId,canonicalAccess:true,capabilities:access.data.capabilities}):result(false,'runtime_activation_failed');
       });
     }).catch(function(error){return result(false,'canonical_hydration_failed',null,{code:String(error&&error.code||error&&error.message||'CANONICAL_HYDRATION_FAILED')});}).finally(function(){if(flights[remoteId]===flight)delete flights[remoteId];});
