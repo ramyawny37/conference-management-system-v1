@@ -35,19 +35,20 @@ assert.match(source,/window\.applicationPersistedConferenceCandidate=[\s\S]*Stri
 assert.match(startupSource,/authorization\.reconcileStartup\(\{[\s\S]*canonicalAccess:[\s\S]*capabilities:[\s\S]*activatePersistedConferenceById\(candidate,\{[\s\S]*activationDecision:decision/,
   'only centralized authorization reconciliation may restore the active conference');
 
-env=sandbox();
-env.StorageRepository={getAppData:()=>Promise.resolve({data:data([active],'local-1'),savedAt:'2026-10-06T00:00:00Z'})};
-env.AppIndexedDB={validateAppDataRecord:()=>({valid:true})};
-env.normalizeAppData=()=>{};
-env.updateLogoText=()=>{};
-env.getCurrentConference=()=>null;
-env.setCurrentConference=()=>{};
-return Promise.resolve(env.initializeApplicationStorage()).then(()=>{
-  assert.strictEqual(env.applicationPersistedConferenceCandidate,'local-1',
+(async function verifyPersistedCandidateBoundary(){
+  const startupEnv=sandbox();
+  startupEnv.StorageRepository={getAppData:()=>Promise.resolve({data:data([active],'local-1'),savedAt:'2026-10-06T00:00:00Z'})};
+  startupEnv.AppIndexedDB={validateAppDataRecord:()=>({valid:true})};
+  startupEnv.normalizeAppData=()=>{};
+  startupEnv.updateLogoText=()=>{};
+  startupEnv.getCurrentConference=()=>null;
+  startupEnv.setCurrentConference=()=>{};
+  await startupEnv.initializeApplicationStorage();
+  assert.strictEqual(startupEnv.applicationPersistedConferenceCandidate,'local-1',
     'storage initialization preserves the persisted conference candidate');
-  assert.strictEqual(env.appData.currentConferenceId,null,
+  assert.strictEqual(startupEnv.appData.currentConferenceId,null,
     'storage initialization never activates the persisted candidate before authorization');
-});
+})().catch(error=>{throw error;});
 
 env=sandbox();
 value=data([active,{id:'local-2',status:'active'}]);
