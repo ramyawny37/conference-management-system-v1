@@ -1,7 +1,7 @@
 begin;
 create or replace function public.manage_catalog_module_grant(
  p_actor_device_id uuid,p_operation_id uuid,p_action text,p_target_user_id uuid,
- p_module_key text,p_permission_key text,p_resource_type text,p_resource_id text,
+ p_module_key text,p_permission_key text,p_resource_type text default null,p_resource_id text default null,
  p_grant_id uuid default null,p_revocation_reason text default null
 ) returns jsonb language plpgsql security definer set search_path='' as $$
 declare a uuid;g uuid;expected_code text;
