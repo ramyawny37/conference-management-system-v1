@@ -30,9 +30,9 @@ assert.strictEqual(env.restoreSafeSingleCurrentConferenceSelection(value),false,
   'a local conference record must not establish runtime authorization');
 assert.strictEqual(value.currentConferenceId,null,
   'startup selection must remain inactive until authorization reconciliation');
-assert.match(source,/capturePersistedCandidate\(persistedCandidate,selection\.source\)[\s\S]*appData\.currentConferenceId=null;[\s\S]*restoreSafeSingleCurrentConferenceSelection\(appData\)/,
-  'startup must preserve the persisted candidate while clearing active selection');
-assert.match(startupSource,/authorization\.reconcileStartup\([\s\S]*appData\.currentConferenceId=decision&&decision\.ok\?decision\.localConferenceId:null/,
+assert.match(source,/window\.applicationPersistedConferenceCandidate=[\s\S]*String\(selection\.data\.currentConferenceId\|\|''\)\.trim\(\)\|\|null;[\s\S]*appData\.currentConferenceId=null;[\s\S]*restoreSafeSingleCurrentConferenceSelection\(appData\)/,
+  'startup must preserve the persisted candidate as non-authoritative selection while clearing active state');
+assert.match(startupSource,/authorization\.reconcileStartup\(\{[\s\S]*canonicalAccess:[\s\S]*capabilities:[\s\S]*activatePersistedConferenceById\(candidate,\{[\s\S]*activationDecision:decision/,
   'only centralized authorization reconciliation may restore the active conference');
 
 env=sandbox();
