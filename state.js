@@ -267,12 +267,6 @@ function saveCurrentConferenceSelection(){
     applicationStorageState.lastStorageError=e;
     return false;
   }
-  var selectedLink=window.ConferenceLinkStore&&
-    typeof window.ConferenceLinkStore.get==='function'
-      ?window.ConferenceLinkStore.get(String(appData.currentConferenceId||'')):null;
-  if(selectedLink&&selectedLink.remoteConferenceId){
-    return true;
-  }
   if(window.StorageRepository&&
     typeof window.StorageRepository.saveAppData==='function'){
     window.StorageRepository.saveAppData(persistedData)
