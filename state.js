@@ -172,11 +172,8 @@ function initializeApplicationStorage(){
       });
     })
     .then(function(selection){
-      var persistedCandidate=String(selection.data.currentConferenceId||'');
-      var activation=window.ConferenceActivationAuthorization;
-      if(activation&&typeof activation.capturePersistedCandidate==='function'){
-        activation.capturePersistedCandidate(persistedCandidate,selection.source);
-      }
+      window.applicationPersistedConferenceCandidate=
+        String(selection.data.currentConferenceId||'').trim()||null;
       appData=cloneApplicationStorageData(selection.data);
       appData.currentConferenceId=null;
       normalizeAppData();
@@ -218,9 +215,7 @@ function save(options){
       );
       if(tracked&&tracked.ok)appData=tracked.data;
     }
-    var activation=window.ConferenceActivationAuthorization;
-    var persistedData=activation&&typeof activation.preparePersistedAppData==='function'
-      ?activation.preparePersistedAppData(appData):appData;
+    var persistedData=cloneApplicationStorageData(appData);
     json=JSON.stringify(persistedData);
   }catch(e){
     console.error('تعذر حفظ بيانات التطبيق:',e);
@@ -265,9 +260,7 @@ function save(options){
 
 function saveCurrentConferenceSelection(){
   var json;
-  var activation=window.ConferenceActivationAuthorization;
-  var persistedData=activation&&typeof activation.preparePersistedAppData==='function'
-    ?activation.preparePersistedAppData(appData):appData;
+  var persistedData=cloneApplicationStorageData(appData);
   try{
     json=JSON.stringify(persistedData);
   }catch(e){
