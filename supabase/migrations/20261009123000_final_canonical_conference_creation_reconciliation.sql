@@ -30,6 +30,106 @@ begin
     v_contract_errors:=array_append(v_contract_errors,'relation_kind');
   end if;
 
+  -- Development can legitimately contain the pre-P6C1 creation ledger. Normalize
+  -- that exact historical shape in place; anything else remains fail-closed.
+  if exists(
+    select 1 from pg_attribute
+    where attrelid=v_relation and attnum>0 and not attisdropped and attname in('id','updated_at')
+  ) then
+    if (
+      select array_agg(attname order by attnum)
+      from pg_attribute
+      where attrelid=v_relation and attnum>0 and not attisdropped
+    )<>array['id','user_id','operation_id','conference_id','initial_metadata','created_at','updated_at']::name[]
+    or exists(
+      select 1 from (values
+        ('id','uuid'::text,true),
+        ('user_id','uuid',true),
+        ('operation_id','uuid',true),
+        ('conference_id','uuid',true),
+        ('initial_metadata','jsonb',true),
+        ('created_at','timestamp with time zone',true),
+        ('updated_at','timestamp with time zone',true)
+      ) expected(column_name,data_type,is_not_null)
+      where not exists(
+        select 1 from pg_attribute attribute
+        where attribute.attrelid=v_relation and attribute.attnum>0
+          and not attribute.attisdropped
+          and attribute.attname=expected.column_name
+          and format_type(attribute.atttypid,attribute.atttypmod)=expected.data_type
+          and attribute.attnotnull=expected.is_not_null
+      )
+    )
+    or not exists(
+      select 1 from pg_constraint c
+      where c.conrelid=v_relation and c.contype='p'
+        and c.conkey=array[(select attnum from pg_attribute where attrelid=v_relation and attname='id')]::smallint[]
+    )
+    or not exists(
+      select 1 from pg_constraint c
+      where c.conrelid=v_relation and c.contype='u'
+        and c.conkey=array[
+          (select attnum from pg_attribute where attrelid=v_relation and attname='user_id'),
+          (select attnum from pg_attribute where attrelid=v_relation and attname='operation_id')
+        ]::smallint[]
+    )
+    or not exists(
+      select 1 from pg_constraint c
+      where c.conrelid=v_relation and c.contype='u'
+        and c.conkey=array[(select attnum from pg_attribute where attrelid=v_relation and attname='conference_id')]::smallint[]
+    )
+    or not exists(
+      select 1 from pg_constraint c
+      where c.conrelid=v_relation and c.contype='f'
+        and c.confrelid='auth.users'::regclass
+        and c.conkey=array[(select attnum from pg_attribute where attrelid=v_relation and attname='user_id')]::smallint[]
+        and c.confdeltype='c'
+    )
+    or not exists(
+      select 1 from pg_constraint c
+      where c.conrelid=v_relation and c.contype='f'
+        and c.confrelid='public.conferences'::regclass
+        and c.conkey=array[(select attnum from pg_attribute where attrelid=v_relation and attname='conference_id')]::smallint[]
+        and c.confdeltype='r'
+    )
+    or not exists(
+      select 1 from pg_constraint c
+      where c.conrelid=v_relation and c.contype='c'
+        and pg_get_expr(c.conbin,c.conrelid,true)~*'jsonb_typeof\\(initial_metadata\\).*object'
+    )
+    or exists(
+      select 1 from public.conference_creation_operations ledger
+      left join platform.profiles profile on profile.user_id=ledger.user_id
+      where profile.user_id is null
+    ) then
+      raise exception 'FINAL_CANONICAL_CONFERENCE_CREATION_LEDGER_INCOMPATIBLE'
+        using errcode='55000',detail='historical_shape';
+    end if;
+
+    execute format('alter table public.conference_creation_operations drop constraint %I',
+      (select conname from pg_constraint where conrelid=v_relation and contype='p'));
+    execute format('alter table public.conference_creation_operations drop constraint %I',
+      (select conname from pg_constraint where conrelid=v_relation and contype='f'
+       and confrelid='auth.users'::regclass
+       and conkey=array[(select attnum from pg_attribute where attrelid=v_relation and attname='user_id')]::smallint[]));
+    execute format('alter table public.conference_creation_operations drop constraint %I',
+      (select conname from pg_constraint where conrelid=v_relation and contype='u'
+       and conkey=array[
+         (select attnum from pg_attribute where attrelid=v_relation and attname='user_id'),
+         (select attnum from pg_attribute where attrelid=v_relation and attname='operation_id')
+       ]::smallint[]));
+
+    drop index if exists public.conference_creation_operations_user_created_idx;
+    alter table public.conference_creation_operations
+      drop column id,
+      drop column updated_at,
+      alter column initial_metadata drop default,
+      alter column created_at set default statement_timestamp(),
+      add constraint conference_creation_operations_user_id_fkey
+        foreign key(user_id) references platform.profiles(user_id) on delete restrict,
+      add constraint conference_creation_operations_pkey primary key(user_id,operation_id);
+  end if;
+
   if exists(
     select 1 from (values
       ('user_id','uuid'::text,true),

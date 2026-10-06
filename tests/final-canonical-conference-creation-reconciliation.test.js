@@ -133,13 +133,18 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
         '${organization}','2026-10-01','2026-10-03','active',1,'${actor}'
       );
       create table public.conference_creation_operations(
-        user_id uuid not null references platform.profiles(user_id) on delete restrict,
+        id uuid primary key default extensions.gen_random_uuid(),
+        user_id uuid not null references auth.users(id) on delete cascade,
         operation_id uuid not null,
         conference_id uuid not null unique references public.conferences(id) on delete restrict,
-        initial_metadata jsonb not null check(jsonb_typeof(initial_metadata)='object'),
-        created_at timestamptz not null default statement_timestamp(),
-        primary key(user_id,operation_id)
+        initial_metadata jsonb not null default '{}'::jsonb
+          check(jsonb_typeof(initial_metadata)='object'),
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now(),
+        unique(user_id,operation_id)
       );
+      create index conference_creation_operations_user_created_idx
+        on public.conference_creation_operations(user_id,created_at);
       insert into public.conference_creation_operations(
         user_id,operation_id,conference_id,initial_metadata
       ) values(
