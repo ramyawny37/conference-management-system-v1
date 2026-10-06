@@ -12,8 +12,8 @@ function serviceRuntime(){
   const warehouseCalls=[];
   const sandbox={window:{
     crypto:{randomUUID:()=> 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'},
-    PlatformDeviceSession:{invokeProtected:(operation,args)=>{
-      protectedCalls.push({operation,args});
+    PlatformDeviceSession:{invokeModuleProtected:(module,operation,args)=>{
+      protectedCalls.push({module,operation,args});
       if(operation==='get_user_management_actor_capabilities')return Promise.resolve({status:'success',canManageAccount:true});
       if(operation==='list_module_permission_catalog_for_administration')return Promise.resolve([]);
       if(operation==='search_module_permission_candidates')return Promise.resolve([]);
@@ -27,12 +27,12 @@ function serviceRuntime(){
   return {api:sandbox.window.ModulePermissionAdministrationService,protectedCalls,warehouseCalls};
 }
 
-test('Warehouse and Reservations are the only selectable modules',()=>{
+test('Conference, Warehouse and Reservations share one permission administration surface',()=>{
   const runtime=serviceRuntime();
-  assert.deepEqual(Array.from(runtime.api.MODULE_KEYS),['warehouse','reservations']);
+  assert.deepEqual(Array.from(runtime.api.MODULE_KEYS),['conference','warehouse','reservations']);
   assert.equal(runtime.api.isSupportedModule('warehouse'),true);
   assert.equal(runtime.api.isSupportedModule('reservations'),true);
-  assert.equal(runtime.api.isSupportedModule('conference'),false);
+  assert.equal(runtime.api.isSupportedModule('conference'),true);
 });
 
 test('selected module is forwarded to every generic administration operation',async()=>{
@@ -44,7 +44,7 @@ test('selected module is forwarded to every generic administration operation',as
   await runtime.api.listGrants('reservations',user);
   await runtime.api.foundationMutation('reservations',{action:'grant',targetUserId:user,permissionKey:'module.access'});
   await runtime.api.catalogMutation('reservations',{action:'grant',targetUserId:user,permissionKey:'reservations.booking.view'});
-  for(const call of runtime.protectedCalls.filter((item)=>item.operation!=='get_user_management_actor_capabilities'))assert.equal(call.args.p_module_key,'reservations');
+  for(const call of runtime.protectedCalls.filter((item)=>item.operation!=='get_user_management_actor_capabilities')){assert.equal(call.module,'platform');assert.equal(call.args.p_module_key,'reservations');}
 });
 
 test('business keys are exact-module only and cross-module requests fail closed',async()=>{
@@ -66,6 +66,7 @@ test('resource discovery is generic for Warehouse stores and Reservations events
 });
 
 test('UI is module-selectable, resets generic resource state, and avoids module branches',()=>{
+  assert.match(uiSource,/data-module-permission-module="conference"/);
   assert.match(uiSource,/data-module-permission-module="warehouse"/);
   assert.match(uiSource,/data-module-permission-module="reservations"/);
   assert.match(uiSource,/مخازن|المخازن/);
@@ -77,7 +78,8 @@ test('UI is module-selectable, resets generic resource state, and avoids module 
 });
 
 test('Device Session protection and actor-device override denial remain intact',()=>{
-  assert.match(serviceSource,/PlatformDeviceSession\.invokeProtected/);
+  assert.match(serviceSource,/PlatformDeviceSession\.invokeModuleProtected/);
+  assert.match(serviceSource,/invokeModuleProtected\('platform'/);
   assert.match(serviceSource,/ACTOR_DEVICE_OVERRIDE_DENIED/);
   assert.doesNotMatch(serviceSource+uiSource,/\.rpc\s*\(|\.from\s*\(/);
 });
