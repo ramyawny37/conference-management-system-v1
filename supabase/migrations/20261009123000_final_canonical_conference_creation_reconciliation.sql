@@ -309,6 +309,15 @@ alter table public.conference_creation_operations force row level security;
 revoke all on table public.conference_creation_operations
   from public,anon,authenticated,service_role;
 
+-- Final cutover: remove the remaining pre-Platform Conference authority.
+drop function if exists public.device_guarded_create_conference_idempotent(uuid,uuid,uuid,text,jsonb);
+drop function if exists public.create_conference_idempotent(uuid,uuid,text,jsonb);
+drop function if exists public.can_user_create_conferences(uuid);
+drop function if exists public.set_user_conference_creation_permission(uuid,boolean);
+drop function if exists public.is_conference_owner(uuid);
+drop function if exists public.enforce_launch_conference_member_contract();
+drop function if exists public.protect_conference_owner_membership();
+
 -- Restore only the final server-native Conference creation capability after
 -- Conference membership retirement. Platform permissions remain the sole authority.
 do $$
