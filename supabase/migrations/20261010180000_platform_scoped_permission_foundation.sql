@@ -1,5 +1,15 @@
 begin;
 
+-- Inventory authority was explicitly retired earlier; remove its dormant
+-- reference rows before narrowing the canonical Platform permission domains.
+delete from platform.user_roles
+where role_id in (select id from platform.roles where domain='inventory');
+delete from platform.role_permissions
+where role_id in (select id from platform.roles where domain='inventory')
+   or permission_id in (select id from platform.permissions where domain='inventory');
+delete from platform.roles where domain='inventory';
+delete from platform.permissions where domain='inventory';
+
 alter table platform.permissions
   drop constraint permissions_code_check,
   drop constraint permissions_domain_check,
