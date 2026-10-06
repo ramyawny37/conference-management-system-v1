@@ -41,7 +41,7 @@ function runtime(initialRoute){
 
 test('Conference internal surface is relinquished before Reservations becomes visible',async()=>{
   const state=runtime('/conference/app/accommodation');
-  assert.equal(state.window.PlatformIntegration.reconcileRoute(),true);
+  assert.equal(await state.window.PlatformIntegration.reconcileRoute(),true);
   assert.equal(state.window.PlatformIntegration.getActiveModuleId(),'conference');
   assert.equal(state.elements.applicationBody.style.display,'block');
 
@@ -63,7 +63,7 @@ test('returning to Conference delegates restoration to the Conference lifecycle'
   state.calls.length=0;
 
   state.setRoute('/conference/app/accommodation');
-  state.listeners.hashchange();
+  await state.listeners.hashchange();
 
   assert.equal(state.window.PlatformIntegration.getActiveModuleId(),'conference');
   assert.deepEqual(state.calls,[['conference-route','/conference/app/accommodation']]);

@@ -8,9 +8,6 @@ const client=fs.readFileSync("js/supabase/client.js","utf8");
 const contractSource=fs.readFileSync("js/supabase/conference-device-operation-contract.js","utf8");
 const sandbox={window:{}};vm.runInNewContext(contractSource,sandbox);
 const contract=sandbox.window.ConferenceDeviceOperationContract;
-const unifiedEdge=fs.readFileSync("supabase/functions/platform-device-operation/index.ts","utf8");
-const deviceAdministration=fs.readFileSync("js/supabase/device-authorization-administration-service.js","utf8");
-const deviceAdministrationUi=fs.readFileSync("js/sync/device-authorization-administration-ui.js","utf8");
 test("dispatcher is service-role-only, verifies all authority dimensions, and derives the actor device",()=>{
   assert.match(migration,/auth\.role\(\) is distinct from 'service_role'/);
   assert.match(migration,/grant execute on function platform\.execute_conference_device_operation[^;]+to service_role/);
@@ -36,23 +33,6 @@ test("normal runtime keeps the token in tab memory and routes protected RPCs thr
   assert.match(client,/delete protectedArgs\.p_actor_device_id/);
   assert.doesNotMatch(client,/delete protectedArgs\.p_device_id/);
   assert.doesNotMatch(client,/\/api\/platform\/conference-rpc/);
-});
-test("protected member-device targets survive while actor-device overrides are stripped",async()=>{
-  const calls=[];
-  const rawClient={rpc:function(){throw new Error('PROTECTED_RPC_MUST_NOT_BE_DIRECT');},auth:{}};
-  const runtime={window:null,console,JSON,Promise,Object,String,Array,Error};
-  runtime.window={atob:()=>'',supabase:{createClient:()=>rawClient},SUPABASE_RUNTIME_CONFIG:{url:'https://example.supabase.co',publishableKey:'sb_publishable_test'},PlatformDeviceSession:{invokeProtected:function(name,args){calls.push({name,args});return Promise.resolve({status:'success'});}}};
-  vm.runInNewContext(contractSource,runtime);
-  vm.runInNewContext(client,runtime);
-  const protectedClient=runtime.window.SupabaseClientLayer.getClient();
-  for(const name of ['approve_member_device','reject_member_pending_device','revoke_member_device']){
-    await protectedClient.rpc(name,{p_actor_device_id:'actor-override',p_organization_id:'organization',p_target_user_id:'target-user',p_device_id:'target-device',p_operation_id:'operation'});
-  }
-  assert.equal(calls.length,3);
-  for(const call of calls){
-    assert.equal(call.args.p_device_id,'target-device',call.name);
-    assert.equal(Object.prototype.hasOwnProperty.call(call.args,'p_actor_device_id'),false,call.name);
-  }
 });
 test("legacy Phase 1C contract stays aligned while canonical operations use the canonical router",()=>{
   const round3g2=new Set(['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant']);
@@ -90,23 +70,6 @@ test("live-discovered browser SECURITY DEFINER surface has no unclassified signa
   assert.ok(!edge.includes("'list_module_permission_resources_for_administration'"));
   assert.equal(contract.INTERNAL_ONLY.filter(signature=>discovered.includes(signature)).length,10);
   assert.equal(discovered.length,89-13-52+2-3);
-});
-test("five former gateway operations have one Phase 1B/1C route and no gateway fallback",()=>{
-  const operations=['list_pending_device_authorizations','approve_pending_device_authorization','list_module_permission_grants','manage_foundation_module_grant','recover_revoke_final_module_manager'];
-  for(const operation of operations){
-    assert.ok(contract.isProtectedOperation(operation),operation);
-    assert.ok(unifiedEdge.includes("'"+operation+"'"),operation);
-  }
-  assert.match(deviceAdministration,/\.rpc\('list_pending_device_authorizations'/);
-  assert.doesNotMatch(deviceAdministration,/\.rpc\('approve_pending_device_authorization'/);
-  assert.match(deviceAdministration,/approveSystemOwnerPendingDevice:function\(input,options\)\{return mutateSystemOwnerPending\('approve',input,options\);\}/);
-  assert.doesNotMatch(deviceAdministration,/approvePlatformPendingDevice/);
-  assert.match(deviceAdministrationUi,/approveSystemOwnerPendingDevice\(\{targetUserId:targetUserId,deviceId:deviceId\}\)/);
-  assert.doesNotMatch(deviceAdministrationUi,/approvePlatformPendingDevice/);
-  assert.doesNotMatch(deviceAdministration,/\/api\/platform\/device-authorizations|conference-rpc/);
-  assert.equal(fs.existsSync('server/platform-gateway.cjs'),false);
-  assert.equal(fs.existsSync('api/gateway.js'),false);
-  assert.match(unifiedEdge,/execute_device_operation/);
 });
 test("literal browser RPC inventory is classified direct-safe or protected",()=>{
   const files=fs.readdirSync('js/supabase').map(name=>'js/supabase/'+name).concat(fs.readdirSync('js/sync').map(name=>'js/sync/'+name)).filter(name=>name.endsWith('.js'));

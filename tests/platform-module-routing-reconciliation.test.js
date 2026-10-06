@@ -45,8 +45,8 @@ function integrationRuntime(initialRoute,options={}){
 
 test('module cards use static-safe hash routes and open peer modules',async()=>{
   const state=integrationRuntime('/');
-  assert.strictEqual(state.window.PlatformIntegration.openModule('conference'),true);
-  assert.deepStrictEqual(state.calls,[['push','/preview/#/conference'],['conference-open']]);
+  assert.strictEqual(await state.window.PlatformIntegration.openModule('conference'),true);
+  assert.strictEqual(JSON.stringify(state.calls),JSON.stringify([['protected','conference','check_module_access',{}],['push','/preview/#/conference'],['conference-open']]));
   state.calls.length=0;
   state.setRoute('/');
   assert.strictEqual(await state.window.PlatformIntegration.openModule('warehouse'),true);
@@ -58,11 +58,11 @@ test('module cards use static-safe hash routes and open peer modules',async()=>{
 test('one hash listener owns Back and Forward reconciliation',async()=>{
   const state=integrationRuntime('/conference');
   assert.deepStrictEqual(Object.keys(state.listeners),['hashchange']);
-  state.listeners.hashchange();
-  assert.deepStrictEqual(state.calls,[['conference-route','/conference']]);
+  await state.listeners.hashchange();
+  assert.strictEqual(JSON.stringify(state.calls),JSON.stringify([['protected','conference','check_module_access',{}],['conference-route','/conference']]));
   state.calls.length=0;
   state.setRoute('/conference/app/reports');
-  state.listeners.hashchange();
+  await state.listeners.hashchange();
   assert.deepStrictEqual(state.calls,[['conference-route','/conference/app/reports']]);
   state.calls.length=0;
   state.setRoute('/warehouse/approvals');
@@ -75,10 +75,11 @@ test('one hash listener owns Back and Forward reconciliation',async()=>{
   assert.deepStrictEqual(state.calls,[['platform']]);
 });
 
-test('delayed reconciliation delegates the current canonical Conference route',()=>{
+test('delayed reconciliation delegates the current canonical Conference route',async()=>{
   const state=integrationRuntime('/conference/app/settings');
   state.window.PlatformIntegration.initialize();
-  assert.deepStrictEqual(state.calls,[['conference-route','/conference/app/settings']]);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.strictEqual(JSON.stringify(state.calls),JSON.stringify([['protected','conference','check_module_access',{}],['conference-route','/conference/app/settings']]));
 });
 
 test('refresh replays a preserved Warehouse route only after startup access is ready',async()=>{

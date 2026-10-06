@@ -69,6 +69,7 @@ test('UI is module-selectable, resets generic resource state, and avoids module 
   assert.match(uiSource,/data-module-permission-module="conference"/);
   assert.match(uiSource,/data-module-permission-module="warehouse"/);
   assert.match(uiSource,/data-module-permission-module="reservations"/);
+  assert.match(uiSource,/data-module-permission-module="conference"/);
   assert.match(uiSource,/مخازن|المخازن/);
   assert.match(uiSource,/الحجوزات/);
   assert.match(uiSource,/function selectModule/);

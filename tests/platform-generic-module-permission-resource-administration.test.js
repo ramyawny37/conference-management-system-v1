@@ -139,12 +139,13 @@ test('module-wide Reservations and Warehouse grant/revoke remain generic and una
 
 test('service discovers normalized generic resources through protected session only',async()=>{
   const calls=[];
-  const sandbox={window:{PlatformDeviceSession:{invokeProtected:(operation,args)=>{calls.push({operation,args});return Promise.resolve([{resourceId:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',resourceType:'store',code:'S1',name:'Store'}]);}}}};
+  const sandbox={window:{PlatformDeviceSession:{invokeModuleProtected:(module,operation,args)=>{calls.push({module,operation,args});return Promise.resolve([{resourceId:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',resourceType:'store',code:'S1',name:'Store'}]);}}}};
   vm.runInNewContext(serviceSource,sandbox);
   const response=await sandbox.window.ModulePermissionAdministrationService.listResources('warehouse','store');
   assert.equal(response.ok,true);
   assert.equal(response.data.resources[0].resourceId,'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
   assert.equal(calls[0].operation,'list_module_permission_resources_for_administration');
+  assert.equal(calls[0].module,'platform');
   assert.equal(calls[0].args.p_module_key,'warehouse');
   assert.equal(calls[0].args.p_resource_type,'store');
   assert.doesNotMatch(serviceSource,/WarehouseTransport|listStores|listEvents/);

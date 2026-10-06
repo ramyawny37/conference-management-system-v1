@@ -2,11 +2,11 @@
 const assert=require('assert'),fs=require('fs'),path=require('path'),vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const policySource=fs.readFileSync(path.join(root,'js/sync/diagnostics-privacy-policy.js'),'utf8');
-function policy(system,environment){
-  const sandbox={window:null,BrowserStorageNamespace:{environment:environment||'production'},SystemAccessService:{getState:()=>system||{}}};
+function policy(capabilities,environment){
+  const sandbox={window:null,BrowserStorageNamespace:{environment:environment||'production'},UserManagementReadService:{getCachedActorCapabilities:()=>capabilities||null}};
   sandbox.window=sandbox;vm.runInNewContext(policySource,sandbox);return sandbox.DiagnosticsPrivacyPolicy;
 }
-assert.strictEqual(policy({accountStatus:'approved',fresh:true,isSystemOwner:true}).canExportRescue(),true);
+assert.strictEqual(policy({canManageAccount:true}).canExportRescue(),true);
 assert.strictEqual(policy({}).canExportRescue(),false);
 assert.strictEqual(policy({},'development').isDevelopment(),true);
 assert.strictEqual(policy({},'production').isDevelopment(),false);

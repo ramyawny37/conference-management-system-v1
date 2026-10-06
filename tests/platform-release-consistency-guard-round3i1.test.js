@@ -29,21 +29,20 @@ function edgeSet(name){
   if(additions)for(const match of additions[1].matchAll(/'([^']+)'/g))values.add(match[1]);
   return values;
 }
-const conferenceContract=contract('js/supabase/conference-device-operation-contract.js','ConferenceDeviceOperationContract');
 const warehouseContract=contract('js/supabase/warehouse-device-operation-contract.js','WarehouseDeviceOperationContract');
-const conferenceEdge=edgeSet('conference');
+const platformEdge=edgeSet('platform');
 const warehouseEdge=edgeSet('warehouse');
-const conferenceOperations=['search_module_permission_candidates','list_module_permission_catalog_for_administration','manage_catalog_module_grant','list_module_permission_grants','manage_foundation_module_grant','recover_revoke_final_module_manager'];
+const administrationOperations=['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant','list_module_permission_grants'];
 const warehouseOperations=['list_permission_administration_stores'];
 
-test('foundation and catalog action vocabularies remain distinct end to end',()=>{
-  assert.match(service,/p_action:foundation&&input\.action==='grant'\?'create':input\.action/);
-  assert.doesNotMatch(service,/p_action:input\.action==='grant'\?'create':'revoke'/);
-  assert.match(foundation,/p_action not in \('create', 'revoke'\)[\s\S]*INVALID_FOUNDATION_GRANT_OPERATION/);
+test('foundation and catalog actions use the canonical generic grant vocabulary',()=>{
+  assert.match(service,/p_action:input\.action/);
+  assert.doesNotMatch(service,/input\.action==='grant'\?'create'/);
   assert.match(catalog,/p_action not in \('grant', 'revoke'\)[\s\S]*INVALID_MODULE_GRANT_OPERATION/);
 });
 test('required administration operations have protected client and Edge parity',()=>{
-  for(const operation of conferenceOperations){assert.equal(conferenceContract.isProtectedOperation(operation),true,'client missing '+operation);assert.equal(conferenceEdge.has(operation),true,'Edge missing '+operation);}
+  assert.match(service,/invokeModuleProtected\('platform',operation,args\|\|\{\}\)/);
+  for(const operation of administrationOperations)assert.equal(platformEdge.has(operation),true,'Edge missing '+operation);
   for(const operation of warehouseOperations){assert.ok(warehouseContract.get(operation),'client missing '+operation);assert.equal(warehouseEdge.has(operation),true,'Edge missing '+operation);}
 });
 test('actor device overrides remain rejected at both client and Edge boundaries',()=>{
@@ -54,8 +53,8 @@ test('actor device overrides remain rejected at both client and Edge boundaries'
   assert.match(edge,/module==='warehouse'&&Object\.prototype\.hasOwnProperty\.call\(args,'p_device_id'\)/);
 });
 test('frontend entrypoint loads service before UI',()=>{
-  const serviceAsset='js/sync/module-permission-administration-service.js?rev=generic-permission-resources-service-v2';
-  const uiAsset='js/sync/module-permission-administration-ui.js?rev=generic-permission-resources-lifecycle-v2';
+  const serviceAsset='js/sync/module-permission-administration-service.js?rev=unified-three-module-permissions-v1';
+  const uiAsset='js/sync/module-permission-administration-ui.js?rev=unified-three-module-permissions-v1';
   assert.ok(index.includes(serviceAsset));assert.ok(index.includes(uiAsset));assert.ok(index.indexOf(serviceAsset)<index.indexOf(uiAsset));
 });
 test('business authority remains server-catalog driven',()=>{
@@ -66,14 +65,14 @@ test('business authority remains server-catalog driven',()=>{
   assert.doesNotMatch(service+ui,/warehouse\.(?:store|item|stock|receipt|issue|transfer|adjustment|approval|reversal|reports)\./);
 });
 test('foundation and catalog paths remain separated from Organization and Inventory',()=>{
-  assert.match(ui,/foundationRow\('module\.access'/);assert.match(ui,/foundationRow\('module\.manage'/);
-  assert.match(service,/foundation\?'manage_foundation_module_grant':'manage_catalog_module_grant'/);
+  assert.match(ui,/foundationRow\(state\.moduleKey\+'\.module\.access'/);assert.match(ui,/foundationRow\(state\.moduleKey\+'\.module\.manage'/);
+  assert.match(service,/invoke\('manage_catalog_module_grant',args\)/);
   assert.match(service,/!foundation&&permission\.indexOf\(selected\+'\.'\)!==0/);
   assert.doesNotMatch(service+ui,/organization|inventory\./i);
 });
 test('Module Administration frontend assets remain in the authoritative PWA shell',()=>{
-  const serviceAsset='module-permission-administration-service.js?rev=generic-permission-resources-service-v2';
-  const uiAsset='module-permission-administration-ui.js?rev=generic-permission-resources-lifecycle-v2';
+  const serviceAsset='module-permission-administration-service.js?rev=unified-three-module-permissions-v1';
+  const uiAsset='module-permission-administration-ui.js?rev=unified-three-module-permissions-v1';
   for(const asset of [serviceAsset,uiAsset]){assert.ok(index.includes(asset),'index missing '+asset);assert.ok(worker.includes(asset),'cache shell missing '+asset);}
   assert.equal(index.match(/js\/sync\/module-permission-administration-service\.js\?rev=[^"']+/)[0],worker.match(/js\/sync\/module-permission-administration-service\.js\?rev=[^"']+/)[0]);
   assert.equal(index.match(/js\/sync\/module-permission-administration-ui\.js\?rev=[^"']+/)[0],worker.match(/js\/sync\/module-permission-administration-ui\.js\?rev=[^"']+/)[0]);

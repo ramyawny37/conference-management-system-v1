@@ -24,11 +24,11 @@ function runtime(initialRoute,denyModule){
   return {window,calls,classes,getRoute:()=>route};
 }
 
-for(const moduleId of ['warehouse','reservations']){
+for(const moduleId of ['conference','warehouse','reservations']){
   test(moduleId+' card checks access before route push and mount',async()=>{
     const state=runtime('/');
     assert.equal(await state.window.PlatformIntegration.openModule(moduleId),true);
-    assert.deepEqual(state.calls.slice(0,3).map(call=>call[0]),['check','push',moduleId+'-mount']);
+    assert.deepEqual(state.calls.slice(0,3).map(call=>call[0]),['check','push',moduleId==='conference'?'conference':moduleId+'-mount']);
   });
   test('denied '+moduleId+' navigation preserves the current route and never mounts',async()=>{
     const state=runtime('/conference',moduleId);
@@ -40,17 +40,11 @@ for(const moduleId of ['warehouse','reservations']){
   test('direct '+moduleId+' route checks access before mount',async()=>{
     const state=runtime('/'+moduleId);
     assert.equal(await state.window.PlatformIntegration.reconcileRoute(),true);
-    assert.deepEqual(state.calls.slice(0,2).map(call=>call[0]),['check',moduleId+'-mount']);
+    assert.deepEqual(state.calls.slice(0,2).map(call=>call[0]),['check',moduleId==='conference'?'conference-route':moduleId+'-mount']);
   });
 }
 
-test('Conference entry remains outside the generic module access gate',()=>{
-  const state=runtime('/');
-  assert.equal(state.window.PlatformIntegration.openModule('conference'),true);
-  assert.equal(state.calls.some(call=>call[0]==='check'),false);
-});
-
-test('shared gate deduplicates concurrent checks and stale protected entry cannot replace Conference',async()=>{
+test('shared gate deduplicates concurrent checks',async()=>{
   assert.match(integration,/if\(entryFlights\[id\]\)return entryFlights\[id\]/);
   let resolveAccess;
   const state=runtime('/');
@@ -59,17 +53,16 @@ test('shared gate deduplicates concurrent checks and stale protected entry canno
   const first=state.window.PlatformIntegration.openModule('warehouse');
   const second=state.window.PlatformIntegration.openModule('warehouse');
   assert.equal(checks,1);
-  assert.equal(state.window.PlatformIntegration.openModule('conference'),true);
   resolveAccess();
   assert.equal(await first,false);
-  assert.equal(await second,false);
-  assert.equal(state.calls.some(call=>call[0]==='warehouse-mount'),false);
+  assert.equal(await second,true);
+  assert.equal(state.calls.filter(call=>call[0]==='warehouse-mount').length,1);
 });
 
-test('Edge exposes check_module_access only for Warehouse and Reservations',()=>{
+test('Edge exposes check_module_access for every protected module',()=>{
   assert.match(edge,/warehouse\.add\('check_module_access'\)/);
   assert.match(edge,/reservations\.add\('check_module_access'\)/);
-  assert.doesNotMatch(edge,/conference\.add\('check_module_access'\)/);
+  assert.match(edge,/conference\.add\('check_module_access'\)/);
   assert.match(edge,/MODULE_PERMISSION_REQUIRED/);
 });
 
@@ -83,10 +76,10 @@ test('dispatcher delegates other operations and authorizes with the verified ses
 
 test('route restores use PlatformIntegration and deterministic assets remain aligned',()=>{
   assert.doesNotMatch(script,/platformRoute\.indexOf\('\/warehouse'\)[\s\S]{0,180}openWarehouseWorkspace/);
-  assert.match(index,/js\/platform-integration\.js\?rev=canonical-conference-core-cutover-v2/);
-  assert.match(worker,/\.\/js\/platform-integration\.js\?rev=canonical-conference-core-cutover-v2/);
-  assert.match(index,/script\.js\?rev=canonical-conference-core-cutover-v2/);
-  assert.match(worker,/\.\/script\.js\?rev=canonical-conference-core-cutover-v2/);
+  assert.match(index,/js\/platform-integration\.js\?rev=unified-module-entry-gate-v1/);
+  assert.match(worker,/\.\/js\/platform-integration\.js\?rev=unified-module-entry-gate-v1/);
+  assert.match(index,/script\.js\?rev=conference-activation-canonical-v1/);
+  assert.match(worker,/\.\/script\.js\?rev=conference-activation-canonical-v1/);
   assert.match(index,/reservations-module\.js\?rev=reservations-root-boundary-v1/);
   assert.doesNotMatch(reservationsBundle,/check_module_access/);
 });

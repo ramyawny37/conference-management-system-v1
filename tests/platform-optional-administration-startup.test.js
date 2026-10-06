@@ -21,7 +21,7 @@ assert.match(script,/function ensureOrganizationManagementAccess\(\)[\s\S]*Organ
 assert.match(script,/function ensureModulePermissionAdministrationAccess\(\)[\s\S]*ModulePermissionAdministrationService\.probeAvailability\('warehouse'\)[\s\S]*ModulePermissionAdministrationService\.probeAvailability\('reservations'\)/);
 assert.match(deviceUi,/global\.DeviceAuthorizationAdministrationUI=Object\.freeze\(\{initialize:initialize/);
 assert.match(deviceService,/function administrationState\(options\)[\s\S]*get-administration-state/);
-assert.match(deviceUi,/function refreshPlatformPendingRequests\(\)[\s\S]*listPlatformPendingDevices/);
+assert.match(deviceUi,/function refreshPlatformPendingRequests\(\)[\s\S]*listSystemOwnerPendingDevices/);
 assert.match(script,/device_authorization_administration_root[\s\S]*refreshDeviceAuthorizationAdministration/);
 
 async function administrationContext(responses){

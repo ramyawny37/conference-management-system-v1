@@ -1,16 +1,15 @@
 (function(global){
   'use strict';
 
-  function systemAccess(){
-    var service=global.SystemAccessService;
-    return service&&typeof service.getState==='function'?service.getState():{};
+  function platformCapabilities(){
+    var service=global.UserManagementReadService;
+    return service&&typeof service.getCachedActorCapabilities==='function'?
+      service.getCachedActorCapabilities():null;
   }
 
   function isSystemOwner(){
-    var access=systemAccess();
-    return access.accountStatus==='approved'&&
-      access.fresh===true&&
-      access.isSystemOwner===true;
+    var capabilities=platformCapabilities();
+    return !!(capabilities&&capabilities.canManageAccount===true);
   }
 
   function canViewConferenceDiagnostics(){

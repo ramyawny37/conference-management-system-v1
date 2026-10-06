@@ -11,12 +11,9 @@ var users=[
 function overview(userId,partial){
   var user=users.find(function(item){return item.userId===userId;});
   return {selectedUser:{userId:user.userId,displayName:user.displayName,email:user.email},
-    account:{status:'loaded',data:{accountStatus:user.accountStatus,
-      canCreateConferences:user.userId===first,systemRoles:user.userId===first?['system_owner']:[]}},
-    organization:partial?{status:'error',data:null}:
-      {status:'loaded',data:{memberships:user.userId===first?[{organizationName:'Development Organization',isMember:true,role:'organization_owner'}]:[]}},
+    account:{status:'loaded',data:{accountStatus:user.accountStatus}},
     devices:{status:user.userId===first?'loaded':'empty',data:{items:user.userId===first?[{deviceName:'Development Device',platform:'Browser',authorizationStatus:'approved'}]:[]}},
-    capabilities:{canManageAccount:true}};
+    capabilities:{canViewAccount:true,canViewDevices:true}};
 }
 var partialSecond=false;
 var readService={listUsers:function(input){listCalls.push(input);return Promise.resolve({ok:true,status:'listed',data:{users:users.slice()}});},getOverview:function(input){overviewCalls.push(input);return Promise.resolve({ok:true,status:'loaded',data:{overview:overview(input.targetUserId,input.targetUserId===second&&partialSecond)}});},getAccount:function(input){return Promise.resolve({ok:true,status:'loaded',data:{account:overview(input.targetUserId,false).account}});}};
@@ -32,7 +29,8 @@ var ui=sandbox.window.UserManagementUI;
   var masterAndDetail=ui.renderSection();
   assert.ok(masterAndDetail.includes('First Real User'));
   assert.ok(masterAndDetail.includes('Second Real User'));
-  assert.ok(masterAndDetail.includes('Development Organization'));
+  assert.doesNotMatch(masterAndDetail,/Development Organization/);
+  assert.doesNotMatch(source,/organization|canCreateConferences|systemRoles|manageAccount|manageDevice/);
   assert.doesNotMatch(source,/conferenceCount|canViewConferences|canManageConferenceMembership/);
   assert.ok(masterAndDetail.includes('Development Device'));
   partialSecond=true;

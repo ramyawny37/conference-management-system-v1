@@ -42,7 +42,7 @@ function runtime(initialRoute='/'){
 test('built-in modules remain registered and open through the common contract',async()=>{
   const state=runtime('/');
   assert.deepStrictEqual(Array.from(state.window.PlatformIntegration.getRegisteredModules()),['conference','warehouse']);
-  assert.strictEqual(state.window.PlatformIntegration.openModule('conference'),true);
+  assert.strictEqual(await state.window.PlatformIntegration.openModule('conference'),true);
   assert.strictEqual(state.window.PlatformIntegration.getActiveModuleId(),'conference');
   state.setRoute('/');
   assert.strictEqual(await state.window.PlatformIntegration.openModule('warehouse'),true);
