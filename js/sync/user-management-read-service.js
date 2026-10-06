@@ -40,7 +40,7 @@
       organizationManagement:d.organizationManagement,devices:d.devices};
   }
   function rpc(ctx,name,args){
-    return Promise.resolve(ctx.deviceSession.invokeProtected(name,args||{})).then(function(data){
+    return Promise.resolve(ctx.deviceSession.invokeModuleProtected('platform',name,args||{})).then(function(data){
       return result(true,'received',data);
     }).catch(function(error){
       return result(false,'rpc_error',null,{code:String(error&&error.code||error&&error.message||'READ_FAILED')});
