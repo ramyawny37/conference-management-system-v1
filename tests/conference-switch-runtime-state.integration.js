@@ -28,8 +28,7 @@ var conferences=[
 ];
 var sandbox={
   window:null,appData:{currentConferenceId:'A',conferences:conferences},
-  currentConferenceRuntimeAccessRole:'viewer',
-  currentConferenceRuntimeAccessRoles:{A:null,B:'viewer'},
+  currentConferenceRuntimeActivationDecision:null,
   applicationStorageState:{},SK:'conf_v5',Date:Date,JSON:JSON,
   localStorage:{setItem:function(key,value){writes.push(JSON.parse(value));}},
   StorageRepository:{saveAppData:function(snapshot,options){
@@ -39,8 +38,9 @@ var sandbox={
   }},
   ConferenceRepository:{recordLocalChange:function(){lifecycleCalls++;}},
   ConferenceActivationAuthorization:{
-    canDisplay:function(id){return id==='A'||id==='B';}
+    authorizeLocal:function(input){return {ok:true,active:true,conferenceId:input.conferenceId,capabilities:null,role:null};}
   },
+  cloneApplicationStorageData:function(value){return JSON.parse(JSON.stringify(value));},
   setCurrentConference:function(){},syncCurrentConferenceRefs:function(){},
   getCurrentConference:function(){return sandbox.appData.conferences.find(function(c){
     return c.id===sandbox.appData.currentConferenceId;
@@ -66,12 +66,12 @@ vm.runInNewContext(
 );
 
 assert.strictEqual(sandbox.setCurrentConferenceById('B',{skipToast:true}),true);
-assert.strictEqual(sandbox.currentConferenceRuntimeAccessRole,'viewer');
+assert.strictEqual(sandbox.currentConferenceRuntimeActivationDecision.conferenceId,'B');
 assert.strictEqual(sandbox.appData.currentConferenceId,'B');
 assert.strictEqual(sandbox.getCurrentConference().houses[0].id,'hb');
 assert.strictEqual(lifecycleCalls,0);
 assert.strictEqual(sandbox.setCurrentConferenceById('A',{skipToast:true}),true);
-assert.strictEqual(sandbox.currentConferenceRuntimeAccessRole,null);
+assert.strictEqual(sandbox.currentConferenceRuntimeActivationDecision.conferenceId,'A');
 assert.strictEqual(sandbox.getCurrentConference().houses[0].id,'ha');
 assert.strictEqual(sandbox.getCurrentConference().houses[0].floors[0].rooms[0].guests.length,1);
 assert.strictEqual(lifecycleCalls,0);
