@@ -66,10 +66,16 @@ function environment(options={}){
       return true;
     },
     ConferenceActivationAuthorization:{
-      activate(id){
-        authorizationCalls.push(id);
-        assert.strictEqual(id,'local');
-        return options.activationAllowed!==false;
+      authorizeLocal(input){
+        authorizationCalls.push(input.conferenceId);
+        assert.strictEqual(input.conferenceId,'local');
+        return {
+          ok:options.activationAllowed!==false,
+          active:options.activationAllowed!==false,
+          conferenceId:input.conferenceId,
+          capabilities:null,
+          role:null
+        };
       }
     },
     AutomaticSyncOrchestrator:{schedule(){
