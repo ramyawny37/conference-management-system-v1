@@ -28,9 +28,7 @@ alter table reservations.events
  add constraint reservations_events_scope_type_check check(
    (scope_type='conference' and conference_id is not null and scope_partition_id=conference_id)
    or (scope_type='standalone' and conference_id is null)
- ),
- add constraint reservations_events_conference_fk
-   foreign key(conference_id) references public.conferences(id) on delete restrict;
+ );
 
 alter table reservations.attendance_records drop column if exists organization_id;
 alter table reservations.booking_number_counters drop column if exists organization_id;
