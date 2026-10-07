@@ -61,19 +61,19 @@ test("canonical dispatcher owns current routing while the historical Phase 1C mi
 test("live-discovered browser SECURITY DEFINER surface has no unclassified signature",()=>{
   const discovered=[
     'platform.approve_device_authorization(uuid,text)','platform.approve_pending_device_authorization(uuid,uuid,text)','platform.block_device_authorization(uuid,text)','platform.get_my_device_authorization()','platform.grant_role_permission(text,text,text)','platform.grant_user_role(uuid,text,text,text,uuid)','platform.has_permission(text,text,uuid)','platform.list_pending_device_authorizations()','platform.register_current_device(text,text,text)','platform.revoke_device_authorization(uuid,text)','platform.revoke_role_permission(text,text,text)','platform.revoke_user_role(uuid)','platform.set_account_status(uuid,text,text)',
-    'public.can_user_create_conferences(uuid)','public.grant_system_role(uuid,text)','public.is_account_approved(uuid)','public.is_system_admin(uuid)','public.is_system_owner(uuid)','public.list_module_permission_grants(uuid,text,uuid)','public.manage_foundation_module_grant(uuid,uuid,text,uuid,text,text,uuid,text)','public.recover_revoke_final_module_manager(uuid,uuid,text,uuid,uuid,text)','public.revoke_system_role(uuid,text)'
+    'public.grant_system_role(uuid,text)','public.is_account_approved(uuid)','public.is_system_admin(uuid)','public.is_system_owner(uuid)','public.list_module_permission_grants(uuid,text,uuid)','public.manage_foundation_module_grant(uuid,uuid,text,uuid,text,text,uuid,text)','public.recover_revoke_final_module_manager(uuid,uuid,text,uuid,uuid,text)','public.revoke_system_role(uuid,text)'
   ];
   const classified=new Set([].concat(contract.DIRECT_BROWSER_REQUIRED,[...contract.EDGE_ONLY_PROTECTED].map(row=>row.signature),contract.INTERNAL_ONLY,contract.POLICY_HELPER_BROWSER_READ));
   assert.deepEqual(discovered.filter(signature=>!classified.has(signature)),[]);
   for(const signature of contract.INTERNAL_ONLY.filter(signature=>discovered.includes(signature))){
     assert.ok(migration.includes(signature),"missing internal-only revoke: "+signature);
   }
-  assert.equal(contract.POLICY_HELPER_BROWSER_READ.length,6);
+  assert.equal(contract.POLICY_HELPER_BROWSER_READ.length,4);
   assert.equal(contract.DIRECT_BROWSER_REQUIRED.length,7);
   assert.ok(contract.EDGE_ONLY_PROTECTED.some(row=>row.operation==='list_module_permission_resources_for_administration'));
   assert.ok(!edge.includes("'list_module_permission_resources_for_administration'"));
   assert.equal(contract.INTERNAL_ONLY.filter(signature=>discovered.includes(signature)).length,10);
-  assert.equal(discovered.length,22);
+  assert.equal(discovered.length,21);
 });
 test("literal browser RPC inventory is classified direct-safe or protected",()=>{
   const files=fs.readdirSync('js/supabase').map(name=>'js/supabase/'+name).concat(fs.readdirSync('js/sync').map(name=>'js/sync/'+name)).filter(name=>name.endsWith('.js'));
