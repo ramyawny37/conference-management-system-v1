@@ -45,10 +45,9 @@ const CORE_ASSETS = [
   './js/sync/access-diagnostics-ui.js?rev=platform-first-login-coordinator-v1',
   './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-enrollment.js?rev=revoked-rerequest-error-code-v1',
-  './js/supabase/current-device-authorization-service.js?rev=canonical-platform-device-authority-v1',
+
   './js/supabase/device-authorization-administration-service.js?rev=platform-only-device-administration-v1',
-  './js/sync/current-device-authorization-ui.js?rev=platform-first-login-coordinator-v1',
-  './js/sync/device-reauthorization-flow.js?rev=device-reauthorization-flow-v1',
+
   './js/sync/device-authorization-administration-ui.js?rev=platform-only-device-administration-v1',
   './js/sync/startup-conference-discovery.js?rev=shared-template-library-v1',
   './js/sync/conference-locks.js?rev=conference-lock-release-diagnostics-v1',
