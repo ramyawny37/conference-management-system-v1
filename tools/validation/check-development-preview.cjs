@@ -66,7 +66,8 @@ for (const retiredContract of [
   'platform-startup-device-read-reconciliation.test.js',
   'platform-production-device-admin-compatibility-round3l3.test.js',
   'platform-account-status-reconciliation-round3d3.test.js',
-  'platform-inventory-authority-retirement-round3e5.test.js'
+  'platform-inventory-authority-retirement-round3e5.test.js',
+  'platform-canonical-device-authority-reconciliation.test.js'
 ]) {
   if (fs.existsSync(path.join(testsDir, retiredContract))) {
     throw new Error('RETIRED_PARALLEL_AUTHORITY_CONTRACT_PRESENT: ' + retiredContract);
@@ -74,8 +75,7 @@ for (const retiredContract of [
 }
 for (const canonicalContract of [
   'platform-final-single-authority-cutover.test.js',
-  'platform-reservations-organization-detenant-final.test.js',
-  'platform-canonical-device-authority-reconciliation.test.js'
+  'platform-reservations-organization-detenant-final.test.js'
 ]) {
   if (!fs.existsSync(path.join(testsDir, canonicalContract))) {
     throw new Error('CANONICAL_AUTHORITY_CONTRACT_MISSING: ' + canonicalContract);
