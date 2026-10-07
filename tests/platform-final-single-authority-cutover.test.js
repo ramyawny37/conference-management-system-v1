@@ -15,6 +15,11 @@ test('final authority cutover drops every legacy Public account and device autho
   }
   assert.match(finalCutover,/insert into platform\.profiles/i);
   assert.match(finalCutover,/insert into platform\.user_roles/i);
+  for(const retired of [
+    'begin_system_owner_device_possession_challenge',
+    'complete_system_owner_pending_device_operation',
+    'get_system_owner_device_operation_result'
+  ]) assert.match(finalCutover,new RegExp('drop function if exists public\\.'+retired,'i'),retired);
 });
 
 test('Organization authority and member-device API roots are retired rather than bridged',()=>{
