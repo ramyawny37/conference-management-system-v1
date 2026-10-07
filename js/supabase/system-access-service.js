@@ -215,7 +215,7 @@
     var client=d.clientLayer&&
       typeof d.clientLayer.getClient==='function'
       ?d.clientLayer.getClient():null;
-    if(!client||typeof client.from!=='function'){
+    if(!client||typeof client.rpc!=='function'){
       return Promise.resolve(setFailure('configuration_error',userId,{
         code:'SUPABASE_UNAVAILABLE',
         message:'System access service is not configured.'
@@ -226,44 +226,22 @@
     state.authenticated=true;
     state.userId=userId;
     applyUi();
-    var accessRequest=client.from('system_user_access')
-      .select('user_id,account_status,updated_at')
-      .eq('user_id',userId)
-      .maybeSingle();
-    var rolesRequest=client.from('system_user_roles')
-      .select('user_id,role,granted_at')
-      .eq('user_id',userId);
-
-    var flight=Promise.all([accessRequest,rolesRequest])
-      .then(function(results){
+    var flight=client.rpc('get_my_platform_system_access').then(function(response){
         if(generation!==loadGeneration||
           String(sessionUser(d.auth)&&sessionUser(d.auth).id||'')!==userId){
           return getState();
         }
-        var accessResponse=results[0]||{};
-        var rolesResponse=results[1]||{};
-        if(accessResponse.error||rolesResponse.error){
-          throw accessResponse.error||rolesResponse.error;
-        }
-        if(!validAccess(accessResponse.data,userId)||
-          !validRoles(rolesResponse.data,userId)){
-          return setFailure('access_missing',userId,{
-            code:'SYSTEM_ACCESS_MISSING',
-            message:'The account has no valid System Access record.'
-          },cached);
+        response=response||{};
+        if(response.error)throw response.error;
+        var data=response.data||{};
+        var access={user_id:String(data.userId||''),account_status:String(data.accountStatus||'')};
+        var roles=Array.isArray(data.systemRoles)?data.systemRoles.map(function(role){return {user_id:userId,role:String(role)};}):[];
+        if(!validAccess(access,userId)||!validRoles(roles,userId)){
+          return setFailure('access_missing',userId,{code:'SYSTEM_ACCESS_MISSING',message:'The account has no valid Platform access record.'},cached);
         }
         var checkedAt=new Date().toISOString();
-        var roles=rolesResponse.data;
-        writeCache(d.storage,{
-          userId:userId,
-          accountStatus:accessResponse.data.account_status,
-          roles:roles.map(function(row){return {role:row.role};}),
-          checkedAt:checkedAt,
-          source:'server'
-        });
-        return setFromRecord(
-          userId,accessResponse.data,roles,'server',checkedAt,true
-        );
+        writeCache(d.storage,{userId:userId,accountStatus:access.account_status,roles:roles.map(function(row){return {role:row.role};}),checkedAt:checkedAt,source:'server'});
+        return setFromRecord(userId,access,roles,'server',checkedAt,true);
       })
       .catch(function(error){
         if(generation!==loadGeneration)return getState();
