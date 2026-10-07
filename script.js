@@ -1482,7 +1482,7 @@ function restoreLastApplicationTab(options){
   var restoredTab=requestedTab===null?0:requestedTab;
   var settingsTabId=getApplicationTabIdByName('settings');
   if(restoredTab===settingsTabId){
-    settingsTab=getStoredSettingsInternalView()||'general';
+    settingsTab='general';
   }
   var restored=switchTab(restoredTab,{preserveRoute:
     !!(conferenceRoute&&conferenceRoute.kind==='application')});
