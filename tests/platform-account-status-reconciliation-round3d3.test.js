@@ -85,7 +85,7 @@ test('Conference capability and both owner models remain outside reconciliation'
   assert.doesNotMatch(migration,/can_create_conferences|system_user_roles|platform\.user_roles|platform_owner|system_owner|organization/i);
   assert.match(systemAccessFoundation,/can_create_conferences boolean not null default false/i);
   assert.match(platformFoundation,/'platform_owner'/);
-  assert.match(conferenceContract,/device_guarded_list_my_organizations/);
+  assert.doesNotMatch(conferenceContract,/organization/i);
 });
 
 test('Warehouse authorization and Organization independence remain unchanged',()=>{
