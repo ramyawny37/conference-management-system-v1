@@ -17,7 +17,7 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
   assert(revisions,'missing environment-specific cache revisions');
   assert.strictEqual(
-    revisions[1],'platform-authority-cutover-v1'
+    revisions[1],'platform-authority-cutover-v2'
   );
   assert.strictEqual(revisions[2],'production-3-6-0-release-v6');
 
