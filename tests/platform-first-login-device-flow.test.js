@@ -60,20 +60,8 @@ function harness({ authenticated = true, deviceStatus = "registered", accountSta
       refresh: async () => { systemAccessReads += 1; order.push("account_approved"); },
       getState: () => ({ accountStatus: publicAccountStatus, fresh: true }),
     },
-    CurrentDeviceAuthorizationUI: {
-      initialize: async () => { deviceRpcCount += 1; order.push("device_read:" + currentDeviceStatus); },
-      ensurePendingAuthorization: async () => {
-        requestCount += 1;
-        order.push("authorization_request");
-        currentDeviceStatus = "pending";
-        order.push("device_pending");
-        return { ok: true, status: "pending" };
-      },
-      getState: () => ({ status: currentDeviceStatus }),
-    },
     SupabaseDeviceIdentity: { getOrCreate: () => { localFallbackReads += 1; return { id: "22222222-2222-4222-8222-222222222222", platform: "MacIntel" }; } },
     AccessDiagnosticsUI: { render: () => "" },
-    CurrentDeviceAuthorizationService: { getLastDiagnostic: () => ({}) },
     SyncSettingsUI: { signOut: () => {} },
   };
   if(nativeEnrollment)window.PlatformDeviceEnrollment={
@@ -120,14 +108,23 @@ test("logout returns to unauthenticated login without device work", async () => 
   assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0, localFallbackReads: 0, systemAccessReads: 0 });
 });
 
-test("legacy origin retains local identity rendering and frontend state excludes device secret", async () => {
-  const legacy = harness({ deviceStatus: "pending", managedOrigin: false });
-  assert.equal((await legacy.run()).status, "device");
-  assert.equal(legacy.counts().localFallbackReads, 1);
-  assert.equal(legacy.counts().deviceRpcCount, 1);
-  assert.equal(legacy.counts().systemAccessReads, 2);
-  assert.ok(legacy.nodes.startupAccessGate.innerHTML.includes("MacIntel"));
+test("non-managed startup uses Platform native enrollment and never a legacy device path", async () => {
+  const flow = harness({ deviceStatus: "pending", managedOrigin: false, nativeEnrollment: {} });
+  assert.equal((await flow.run()).status, "device");
+  assert.deepEqual(flow.enrollmentCounts(), { enrollmentChecks: 1, explicitReEnrollments: 0 });
+  assert.equal(flow.counts().deviceRpcCount, 0);
+  assert.equal(flow.counts().localFallbackReads, 0);
   assert.equal(/deviceSecret|device_secret/.test(integrationSource), false);
+});
+
+test("missing Platform native enrollment fails closed instead of falling back", async () => {
+  const flow = harness({ deviceStatus: "pending", managedOrigin: false });
+  const result = await flow.run();
+  assert.equal(result.status, "denied");
+  assert.equal(flow.window.StartupAccessGate.getState().canonicalState, "ERROR");
+  assert.equal(flow.counts().deviceRpcCount, 0);
+  assert.equal(flow.counts().localFallbackReads, 0);
+  assert.match(flow.nodes.startupAccessGate.innerHTML, /PLATFORM_DEVICE_ENROLLMENT_REQUIRED/);
 });
 
 test("unauthenticated startup never adopts, calls device RPC, or renders a device gate", async () => {
