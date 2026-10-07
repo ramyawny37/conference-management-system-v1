@@ -47,7 +47,7 @@ const canonicalDeviceAdministrationSource = fs.readFileSync(
   path.join(root, 'js/supabase/device-authorization-administration-service.js'),
   'utf8'
 );
-if (/listPlatformPendingDevices|list_pending_device_authorizations/.test(canonicalDeviceAdministrationSource)) {
+if (/listPlatformPendingDevices|list_pending_device_authorizations|DeviceAuthorizationOperationRepository/.test(canonicalDeviceAdministrationSource)) {
   throw new Error('RETIRED_DIRECT_DEVICE_ADMINISTRATION_PATH_PRESENT');
 }
 
