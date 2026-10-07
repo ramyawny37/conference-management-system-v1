@@ -1,6 +1,6 @@
 (function(global){
   'use strict';
-  var direct=['public.get_first_system_bootstrap_status()','public.complete_first_system_bootstrap(text,uuid,text,text,uuid)','public.get_my_device_aware_system_access(uuid)','platform.get_my_device_key_binding_status()','platform.begin_device_session_challenge(uuid)','platform.get_my_device_authorization()','platform.register_current_device(text,text,text)'];
+  var direct=['public.get_first_system_bootstrap_status()','public.complete_first_system_bootstrap(text,uuid,text,text,uuid)','platform.get_my_device_key_binding_status()','platform.begin_device_session_challenge(uuid)','platform.get_my_device_authorization()','platform.register_current_device(text,text,text)'];
   var entries=[
     ['get_user_management_actor_capabilities','public.get_user_management_actor_capabilities(uuid)'],
     ['search_user_management_users','public.search_user_management_users(uuid,text,text,integer)'],
