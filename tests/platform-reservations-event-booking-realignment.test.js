@@ -5,7 +5,8 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const schema = fs.readFileSync(path.join(root, 'supabase/migrations/20260908171814_reservations_event_booking_domain_reconciliation.sql'), 'utf8');
-const dispatcher = fs.readFileSync(path.join(root, 'supabase/migrations/20260908171822_reservations_event_booking_dispatcher.sql'), 'utf8');
+const dispatcher = fs.readFileSync(path.join(root, 'supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql'), 'utf8');
+const dispatcherBody = dispatcher.match(/create or replace function platform\.execute_device_operation\([\s\S]*?end \$\$;/i)[0];
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/platform-device-operation/index.ts'), 'utf8');
 
 test('replaces the empty lodging model with the existing product domain', () => {
@@ -49,12 +50,14 @@ test('enforces dependency deletion, optimistic concurrency and idempotency', () 
   assert.match(schema, /RESERVATIONS_OPERATION_IDEMPOTENCY_CONFLICT/);
 });
 
-test('exposes the exact protected operation surface and delegates other modules', () => {
+test('canonical dispatcher exposes the exact protected operation surface without a predecessor', () => {
   for (const operation of ['get_dashboard_summary', 'list_events', 'get_event', 'list_event_periods', 'list_booking_types', 'list_bookings', 'get_booking_detail', 'search_participants_bookings', 'list_booking_payments', 'list_attendance', 'get_operational_state', 'get_report_source_data', 'create_event', 'update_event', 'delete_event', 'create_event_period', 'update_event_period', 'delete_event_period', 'reorder_event_periods', 'create_booking_type', 'update_booking_type', 'create_booking', 'update_participant_booking', 'delete_booking', 'record_payment', 'void_payment', 'update_attendance', 'update_operational_review']) {
-    assert.match(dispatcher, new RegExp(`'${operation}'`));
+    assert.match(dispatcherBody, new RegExp(`'${operation}'`));
     assert.match(edge, new RegExp(`'${operation}'`));
   }
-  assert.match(dispatcher, /execute_device_operation_pre_reservations_event_booking/);
+  assert.doesNotMatch(dispatcherBody, /execute_device_operation_pre_/);
+  assert.match(dispatcherBody, /return reservations\.read\(v_session\.device_id,p_operation,p_args\)/);
+  assert.match(dispatcherBody, /return reservations\.mutate\(v_session\.device_id,p_operation,p_args\)/);
   assert.match(edge, /module==='warehouse'\?'WAREHOUSE_IDENTIFIER_ALREADY_EXISTS':module==='reservations'\?'RESERVATIONS_IDENTIFIER_ALREADY_EXISTS'/);
 });
 
