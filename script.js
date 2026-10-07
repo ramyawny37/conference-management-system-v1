@@ -8447,10 +8447,6 @@ function renderSettings(){
   }
   h+='</div></div></section></div>';
   ge('tab6').innerHTML=h;
-  if(window.SystemAccessService&&
-    typeof window.SystemAccessService.applyUi==='function'){
-    window.SystemAccessService.applyUi();
-  }
   mountSyncSettingsSection();
   refreshDeviceAuthorizationAdministration();
   var conferenceSelect = ge('conf_select');
@@ -9445,8 +9441,6 @@ function loadConferenceOrganizationOptions(){
 }
 
 function createConferenceFromSelection(){
-  if(conferenceDialogMode!=='edit'&&
-    !systemAccessAllowsConferenceCreation())return false;
   var name = (ge('cfg_name') ? ge('cfg_name').value.trim() : '') || 'المؤتمر';
   var startDate = ge('cfg_start') ? ge('cfg_start').value : '';
   var endDate = ge('cfg_end') ? ge('cfg_end').value : '';
@@ -9619,41 +9613,8 @@ function collectConferenceSelection(){
   return selected;
 }
 
-function systemAccessAllowsConferenceCreation(){
-  if(!window.SupabaseAuth||typeof window.SupabaseAuth.getState!=='function'){
-    return true;
-  }
-  var authState=window.SupabaseAuth.getState();
-  if(!authState||!authState.authenticated)return true;
-  if(!window.SystemAccessService||
-    typeof window.SystemAccessService.getState!=='function'||
-    typeof window.SystemAccessService.canCreateConference!=='function'){
-    alert('تعذر التحقق حديثًا من صلاحية إنشاء المؤتمرات.');
-    return false;
-  }
-  var access=window.SystemAccessService.getState();
-  if(!access.profileLoaded||!access.fresh){
-    alert('تعذر التحقق حديثًا من صلاحية إنشاء المؤتمرات.');
-    return false;
-  }
-  if(access.accountStatus==='pending'){
-    alert('الحساب ينتظر الاعتماد.');
-    return false;
-  }
-  if(access.accountStatus==='blocked'){
-    alert('الحساب موقوف.');
-    return false;
-  }
-  if(!window.SystemAccessService.canCreateConference()){
-    alert('هذا الحساب غير مخول بإنشاء مؤتمرات جديدة.');
-    return false;
-  }
-  return true;
-}
-
 function openNewConferenceModal(mode){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
-  if(mode!=='edit'&&!systemAccessAllowsConferenceCreation())return false;
   conferenceDraft = null;
   conferenceDialogMode = (mode === 'edit') ? 'edit' : 'create';
   var current = getCurrentConference();
