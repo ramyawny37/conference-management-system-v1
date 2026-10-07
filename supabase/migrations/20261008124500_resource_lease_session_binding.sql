@@ -39,7 +39,8 @@ begin
     new.holder_session_id:=v_session;
     return new;
   end if;
-  if old.holder_session_id is distinct from v_session then
+  if old.holder_session_id is distinct from v_session
+     and not (tg_op='UPDATE' and old.expires_at<=pg_catalog.clock_timestamp()) then
     raise exception 'RESOURCE_LEASE_SESSION_NOT_OWNED' using errcode='42501';
   end if;
   if tg_op='DELETE' then return old; end if;
