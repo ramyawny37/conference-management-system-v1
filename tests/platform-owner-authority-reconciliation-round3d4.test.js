@@ -163,7 +163,7 @@ test('Organizations remain Conference-only and no third top-level owner is defin
   assert.match(organizationFoundation,/create table public\.organization_members/i);
   assert.match(organizationAdministration,
     /alter table public\.organization_members[\s\S]*add column role text not null default 'member'[\s\S]*check \(role in \('organization_owner', 'organization_admin', 'member'\)\)/i);
-  assert.match(conferenceContract,/device_guarded_list_my_organizations/i);
+  assert.doesNotMatch(conferenceContract,/organization/i);
   assert.doesNotMatch([platformFoundation,platformBootstrap,moduleAdapter].join('\n'),
     /organization_owner|organization_admin/i);
   assert.doesNotMatch(organizationFoundation,/system_owner|platform_owner/i);
