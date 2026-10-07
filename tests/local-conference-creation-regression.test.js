@@ -235,51 +235,10 @@ function formEnvironment(overrides={}){
   assert.strictEqual(missingOrganization.saved.length,0);
   assert.deepStrictEqual(alerts,['يجب اختيار مؤسسة قبل إنشاء المؤتمر.']);
 
-  const unauthorizedCalls={repository:0,indexedDb:0,rpc:0,queue:0,sync:0};
-  const unauthorizedAlerts=[];
-  const unauthorized=formEnvironment({
-    SupabaseAuth:{
-      getState(){return {authenticated:true};}
-    },
-    SystemAccessService:{
-      getState(){
-        return {
-          authenticated:true,profileLoaded:true,fresh:true,
-          accountStatus:'approved',canCreateConferences:false,
-          isSystemOwner:false
-        };
-      },
-      canCreateConference(){return false;}
-    },
-    ConferenceRepository:{
-      addLocalConference(){unauthorizedCalls.repository++;}
-    },
-    AppIndexedDB:{putRecord(){unauthorizedCalls.indexedDb++;}},
-    SupabaseClientLayer:{
-      getClient(){return {rpc(){unauthorizedCalls.rpc++;}};}
-    },
-    ConferenceSyncQueue:{enqueue(){unauthorizedCalls.queue++;}},
-    OfflineFirstIntegration:{handleLocalSave(){unauthorizedCalls.sync++;}},
-    alert(message){unauthorizedAlerts.push(message);}
-  });
-  const unauthorizedCount=unauthorized.sandbox.appData.conferences.length;
-  assert.strictEqual(
-    unauthorized.sandbox.openNewConferenceModal('create'),false
+  assert.doesNotMatch(
+    creationSource,
+    /systemAccessAllowsConferenceCreation|canCreateConference/
   );
-  assert.strictEqual(
-    unauthorized.sandbox.createConferenceFromSelection(),false
-  );
-  assert.strictEqual(
-    unauthorized.sandbox.appData.conferences.length,unauthorizedCount
-  );
-  assert.strictEqual(unauthorized.saved.length,0);
-  assert.deepStrictEqual(unauthorizedCalls,{
-    repository:0,indexedDb:0,rpc:0,queue:0,sync:0
-  });
-  assert.deepStrictEqual(unauthorizedAlerts,[
-    'هذا الحساب غير مخول بإنشاء مؤتمرات جديدة.',
-    'هذا الحساب غير مخول بإنشاء مؤتمرات جديدة.'
-  ]);
 
   console.log('local conference creation regression tests: passed');
 })();
