@@ -49,6 +49,23 @@ test('pending list and mutation have one canonical Platform owner',()=>{
   assert.doesNotMatch(completion,/public\.user_device_authorizations/i);
 });
 
+test('canonical privileged mutation preserves transactional WebAuthn and replay guarantees',()=>{
+  const completion=migration.match(/create or replace function public\\.complete_system_owner_pending_device_operation[\\s\\S]*?end; \\$\\$;/i)?.[0]||'';
+  for(const contract of [
+    'pg_advisory_xact_lock',
+    'for update',
+    'require_system_owner_webauthn_actor',
+    'challenge_hash=p_challenge_hash',
+    'device_possession_challenge_consumers',
+    'system_owner_device_authorization_operations',
+    'privileged_device_authorization_audit_log',
+    'consumed_at=pg_catalog.statement_timestamp()',
+    'stored_result'
+  ]) assert.ok(completion.includes(contract),contract);
+  assert.ok(completion.indexOf('device_possession_challenge_consumers')<completion.indexOf('consumed_at=pg_catalog.statement_timestamp()'));
+  assert.doesNotMatch(completion,/public\\.user_device_authorizations/i);
+});
+
 test('member administration uses Platform devices without dual-write',()=>{
   const member=migration.match(/create or replace function platform_private\.apply_member_device_authorization[\s\S]*?end; \$\$;/i)?.[0]||'';
   const listing=migration.match(/create or replace function public\.list_member_device_authorizations[\s\S]*?end; \$\$;/i)?.[0]||'';
