@@ -103,6 +103,18 @@ function exportedDatabaseName(file,exportName){
 assert.strictEqual(exportedDatabaseName(
   'js/storage/indexeddb.js','AppIndexedDB'
 ),prefix+'conference_manager_v3');
+const indexedDbSource=read('js/storage/indexeddb.js');
+assert.ok(indexedDbSource.includes('var DATABASE_VERSION = 8;'));
+[
+  'organization_membership_pending_operations',
+  'organization_template_operations',
+  'organization_template_access_operations'
+].forEach(storeName=>{
+  assert.ok(indexedDbSource.includes("db.deleteObjectStore(name)"),
+    'retired Organization stores must be deleted during IndexedDB upgrade');
+  assert.strictEqual((indexedDbSource.match(new RegExp(storeName,'g'))||[]).length,1,
+    storeName+' must remain only as an upgrade-time retirement target');
+});
 const index=read('index.html');
 assert.ok(index.indexOf('js/storage/environment-namespace.js')<
   index.indexOf('js/storage/indexeddb.js'));
