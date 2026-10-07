@@ -60,6 +60,28 @@ if (/listPlatformPendingDevices|list_pending_device_authorizations|DeviceAuthori
 }
 
 
+for (const retiredContract of [
+  'platform-privileged-device-administration-transactions.test.js',
+  'platform-privileged-device-administration.test.js',
+  'platform-startup-device-read-reconciliation.test.js',
+  'platform-production-device-admin-compatibility-round3l3.test.js',
+  'platform-account-status-reconciliation-round3d3.test.js',
+  'platform-inventory-authority-retirement-round3e5.test.js'
+]) {
+  if (fs.existsSync(path.join(testsDir, retiredContract))) {
+    throw new Error('RETIRED_PARALLEL_AUTHORITY_CONTRACT_PRESENT: ' + retiredContract);
+  }
+}
+for (const canonicalContract of [
+  'platform-final-single-authority-cutover.test.js',
+  'platform-reservations-organization-detenant-final.test.js',
+  'platform-canonical-device-authority-reconciliation.test.js'
+]) {
+  if (!fs.existsSync(path.join(testsDir, canonicalContract))) {
+    throw new Error('CANONICAL_AUTHORITY_CONTRACT_MISSING: ' + canonicalContract);
+  }
+}
+
 const platformTests = fs.readdirSync(testsDir)
   .filter((name) => /^platform-.*\.test\.js$/.test(name))
   .filter((name) => name !== 'platform-promotion-readiness.test.js')
