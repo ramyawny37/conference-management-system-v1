@@ -1,6 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),test=require("node:test"),vm=require("node:vm");
 const migration=fs.readFileSync("supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql","utf8");
+const canonicalDispatcher=fs.readFileSync("supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql","utf8");
 const finalizationCorrection=fs.readFileSync("supabase/migrations/20260909220000_device_session_finalization_audit_retention.sql","utf8");
 const edge=fs.readFileSync("supabase/functions/conference-device-operation/index.ts","utf8");
 const session=fs.readFileSync("js/supabase/device-session.js","utf8");
@@ -34,17 +35,20 @@ test("normal runtime keeps the token in tab memory and routes protected RPCs thr
   assert.doesNotMatch(client,/delete protectedArgs\.p_device_id/);
   assert.doesNotMatch(client,/\/api\/platform\/conference-rpc/);
 });
-test("legacy Phase 1C contract stays aligned while canonical operations use the canonical router",()=>{
+test("canonical dispatcher owns current routing while the historical Phase 1C migration remains historical",()=>{
   const round3g2=new Set(['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant']);
   const canonical=new Set(['create_canonical_conference','mutate_conference_core','get_conference_core','list_conference_participations','create_conference_participation','set_conference_participation_status','set_conference_participation_guardian','delete_conference_participation','get_conference_accommodation','create_accommodation_house','update_accommodation_house','delete_accommodation_house','create_accommodation_floor','update_accommodation_floor','delete_accommodation_floor','create_accommodation_room','update_accommodation_room','delete_accommodation_room','assign_conference_accommodation','move_conference_accommodation','remove_conference_accommodation']);
   const declared=[...contract.EDGE_ONLY_PROTECTED].filter(row=>!round3g2.has(row.operation)).map(row=>row.operation).sort();
   const edgeBlock=edge.match(/const allowed=new Set\(\[([\s\S]*?)\]\);/)[1];
   const edgeOperations=[...edgeBlock.matchAll(/'([a-z0-9_]+)'/g)].map(match=>match[1]).sort();
-  const dispatcher=[...migration.matchAll(/when '([a-z0-9_]+)'(?:,'([a-z0-9_]+)')?(?:,'([a-z0-9_]+)')? then/g)].flatMap(match=>match.slice(1).filter(Boolean)).sort();
+  const dispatcher=[...canonicalDispatcher.matchAll(/when '([a-z0-9_]+)'(?:,'([a-z0-9_]+)')?(?:,'([a-z0-9_]+)')? then/g)].flatMap(match=>match.slice(1).filter(Boolean)).sort();
   assert.deepEqual(edgeOperations.filter(operation=>!canonical.has(operation)),declared);
   assert.deepEqual(edgeOperations.filter(operation=>canonical.has(operation)),[...canonical].sort());
   const retired=new Set(['device_guarded_apply_conference_snapshot','device_guarded_download_conference_snapshot','device_guarded_get_conference_snapshot_metadata','device_guarded_get_sync_conflict','device_guarded_list_sync_conflicts','device_guarded_resolve_sync_conflict','device_guarded_get_my_conference_access','device_guarded_get_my_conference_membership','device_guarded_list_conference_members','device_guarded_lookup_conference_user_by_email','device_guarded_manage_conference_member','device_guarded_add_conference_manager','device_guarded_remove_conference_manager','device_guarded_list_available_conferences','device_guarded_create_organization_conference_idempotent','device_guarded_get_conference_creation_operation','device_guarded_list_eligible_legacy_conference_organizations','device_guarded_assign_legacy_conference_organization']);
-  assert.deepEqual(dispatcher.filter(operation=>!retired.has(operation)),declared);
+  assert.equal([...canonicalDispatcher.matchAll(/execute_device_operation_pre_/g)].length,0);
+  assert.ok(dispatcher.includes('get_user_management_actor_capabilities'));
+  assert.ok(dispatcher.includes('apply_library_template_content_operation'));
+  assert.doesNotMatch(canonicalDispatcher,/organization/i);
   for(const row of contract.EDGE_ONLY_PROTECTED.filter(row=>!round3g2.has(row.operation))){
     assert.ok(migration.includes("'"+row.signature+"'"),"missing exact revoke: "+row.signature);
   }
@@ -57,7 +61,7 @@ test("legacy Phase 1C contract stays aligned while canonical operations use the 
 test("live-discovered browser SECURITY DEFINER surface has no unclassified signature",()=>{
   const discovered=[
     'platform.approve_device_authorization(uuid,text)','platform.approve_pending_device_authorization(uuid,uuid,text)','platform.block_device_authorization(uuid,text)','platform.get_my_device_authorization()','platform.grant_role_permission(text,text,text)','platform.grant_user_role(uuid,text,text,text,uuid)','platform.has_permission(text,text,uuid)','platform.list_pending_device_authorizations()','platform.register_current_device(text,text,text)','platform.revoke_device_authorization(uuid,text)','platform.revoke_role_permission(text,text,text)','platform.revoke_user_role(uuid)','platform.set_account_status(uuid,text,text)',
-    'public.can_user_create_conferences(uuid)','public.grant_system_role(uuid,text)','public.is_account_approved(uuid)','public.is_current_user_organization_member(uuid)','public.is_system_admin(uuid)','public.is_system_owner(uuid)','public.list_module_permission_grants(uuid,text,uuid)','public.manage_foundation_module_grant(uuid,uuid,text,uuid,text,text,uuid,text)','public.recover_revoke_final_module_manager(uuid,uuid,text,uuid,uuid,text)','public.revoke_system_role(uuid,text)'
+    'public.can_user_create_conferences(uuid)','public.grant_system_role(uuid,text)','public.is_account_approved(uuid)','public.is_system_admin(uuid)','public.is_system_owner(uuid)','public.list_module_permission_grants(uuid,text,uuid)','public.manage_foundation_module_grant(uuid,uuid,text,uuid,text,text,uuid,text)','public.recover_revoke_final_module_manager(uuid,uuid,text,uuid,uuid,text)','public.revoke_system_role(uuid,text)'
   ];
   const classified=new Set([].concat(contract.DIRECT_BROWSER_REQUIRED,[...contract.EDGE_ONLY_PROTECTED].map(row=>row.signature),contract.INTERNAL_ONLY,contract.POLICY_HELPER_BROWSER_READ));
   assert.deepEqual(discovered.filter(signature=>!classified.has(signature)),[]);
@@ -69,7 +73,7 @@ test("live-discovered browser SECURITY DEFINER surface has no unclassified signa
   assert.ok(contract.EDGE_ONLY_PROTECTED.some(row=>row.operation==='list_module_permission_resources_for_administration'));
   assert.ok(!edge.includes("'list_module_permission_resources_for_administration'"));
   assert.equal(contract.INTERNAL_ONLY.filter(signature=>discovered.includes(signature)).length,10);
-  assert.equal(discovered.length,89-13-52+2-3);
+  assert.equal(discovered.length,22);
 });
 test("literal browser RPC inventory is classified direct-safe or protected",()=>{
   const files=fs.readdirSync('js/supabase').map(name=>'js/supabase/'+name).concat(fs.readdirSync('js/sync').map(name=>'js/sync/'+name)).filter(name=>name.endsWith('.js'));
