@@ -74,6 +74,7 @@ test('link operation is private and dispatched through the verified device-sessi
 
 test('Edge permits the guarded operation but still rejects browser actor and device overrides',()=>{
   assert.match(edge,new RegExp(`const reservations=new Set\\(\\[[^;]*'${operation}'[^;]*\\]\\)`));
-  assert.match(edge,/module==='reservations'&&\(Object\.prototype\.hasOwnProperty\.call\(args,'p_device_id'\)\|\|Object\.prototype\.hasOwnProperty\.call\(args,'p_organization_id'\)\|\|Object\.prototype\.hasOwnProperty\.call\(args,'organization_id'\)\)/);
+  assert.match(edge,/module==='reservations'&&Object\.prototype\.hasOwnProperty\.call\(args,'p_device_id'\)/);
+  assert.doesNotMatch(edge,/p_organization_id|organization_id/);
   assert.match(edge,/required\('SUPABASE_SERVICE_ROLE_KEY'\)/);
 });

@@ -30,7 +30,7 @@ test('the current operation contract has one protected canonical creation owner'
   const platformEdge=fs.readFileSync(path.join(root,'supabase/functions/platform-device-operation/index.ts'),'utf8');
   for(const source of [contract,conferenceEdge,platformEdge])
     assert.equal((source.match(/['"]create_canonical_conference['"]/g)||[]).length,1);
-  assert.match(contract,/public\.create_canonical_conference\(uuid,uuid,uuid,uuid,text,date,date\)/);
+  assert.match(contract,/public\.create_canonical_conference\(uuid,uuid,uuid,text,date,date\)/);
   assert.match(sql,/platform\.execute_conference_device_operation\(uuid,uuid,bytea,text,jsonb\)/);
   assert.match(sql,/platform_private\.route_canonical_conference_operation\([\s\n]*uuid,uuid,bytea,uuid,text,jsonb/);
   const router=sql.match(/create or replace function platform_private\.route_canonical_conference_operation\([\s\S]*?end \$\$;/i)[0];
@@ -266,7 +266,11 @@ test('disposable PostgreSQL proves final creation, grants, audit, replay and zer
 
     const signature='public.create_canonical_conference(uuid,uuid,uuid,uuid,text,date,date)';
     const contractSource=fs.readFileSync(path.join(root,'js/supabase/platform-device-operation-contract.js'),'utf8');
-    const canonicalSignatures=[...contractSource.matchAll(/\['[^']+','(public\.[^']+)'\]/g)].map(match=>match[1]);
+    // This disposable fixture applies this historical migration in isolation.
+    // The later de-tenancy migration owns the current creation signature.
+    const canonicalSignatures=[...contractSource.matchAll(/\['[^']+','(public\.[^']+)'\]/g)].map(match=>
+      match[1].startsWith('public.create_canonical_conference(')?signature:match[1]
+    );
     for(const canonicalSignature of canonicalSignatures){
       assert.equal(query(`select to_regprocedure('${canonicalSignature}') is not null`),'t',canonicalSignature);
       for(const role of ['public','anon','authenticated','service_role'])

@@ -1,8 +1,29 @@
 begin;
--- Organization-free Conference/Reservations schema cutover. Runtime function
--- replacements are installed in the immediately following migration.
+-- Organization-free Conference/Reservations schema cutover. All runtime
+-- replacements are installed by the immediately preceding migration.
 drop trigger if exists conferences_require_organization_on_insert on public.conferences;
 drop function if exists public.prevent_null_conference_organization();
+
+-- Retire obsolete Conference/Organization entry points whose bodies resolve
+-- the column being removed. Signatures varied across historical generations.
+do $$
+declare v_signature regprocedure;
+begin
+  for v_signature in
+    select procedure.oid::regprocedure
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid=procedure.pronamespace
+    where namespace.nspname='public' and procedure.proname in(
+      'create_organization_conference_idempotent',
+      'device_guarded_create_organization_conference_idempotent',
+      'device_guarded_assign_legacy_conference_organization',
+      'device_guarded_list_eligible_legacy_conference_organizations',
+      'enforce_launch_conference_member_contract',
+      'prevent_conference_member_organization_removal',
+      'require_conference_member_organization_membership'
+    )
+  loop execute format('drop function %s',v_signature); end loop;
+end $$;
 
 alter table reservations.events
  drop constraint if exists reservations_events_conference_organization_fk,
