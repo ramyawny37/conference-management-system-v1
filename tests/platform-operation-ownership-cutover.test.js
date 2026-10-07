@@ -17,15 +17,16 @@ function loadContract(){
 test('shared protected operations are owned by platform, not conference',()=>{
   const contract=loadContract();
   for(const operation of [
-    'device_guarded_list_my_organizations',
     'get_user_management_overview',
-    'list_member_device_authorizations',
-    'list_organization_templates',
     'list_module_permission_grants',
     'manage_catalog_module_grant'
   ]){
     assert.equal(contract.isProtectedOperation(operation),true);
     assert.equal(contract.moduleFor(operation),'platform');
+  }
+  for(const retired of ['device_guarded_list_my_organizations','list_member_device_authorizations','list_organization_templates']) {
+    assert.equal(contract.isProtectedOperation(retired),false);
+    assert.equal(contract.moduleFor(retired),null);
   }
 });
 
