@@ -6,67 +6,28 @@ var path=require('path');
 var vm=require('vm');
 
 var root=path.resolve(__dirname,'..');
-var migration=fs.readFileSync(path.join(
+var authority=fs.readFileSync(path.join(
   root,
-  'supabase/migrations/20260730_5_0_0_system_access_foundation.sql'
+  'supabase/migrations/20261010202000_platform_account_authority_cutover.sql'
+),'utf8');
+var startup=fs.readFileSync(path.join(
+  root,
+  'supabase/migrations/20261010202200_startup_platform_system_access.sql'
+),'utf8');
+var retirement=fs.readFileSync(path.join(
+  root,
+  'supabase/migrations/20261010202600_system_access_device_authority_cutover.sql'
 ),'utf8');
 
-[
-  /\bbegin\s*;/i,
-  /\bcommit\s*;/i,
-  /create table public\.system_user_access/i,
-  /account_status in \('pending', 'approved', 'blocked'\)/i,
-  /can_create_conferences boolean not null default false/i,
-  /create table public\.system_user_roles/i,
-  /primary key \(user_id, role\)/i,
-  /role in \('system_owner', 'system_admin'\)/i,
-  /create table public\.system_access_audit_log/i,
-  /alter table public\.system_user_access enable row level security/i,
-  /alter table public\.system_user_roles enable row level security/i,
-  /alter table public\.system_access_audit_log enable row level security/i,
-  /create or replace function public\.is_system_owner/i,
-  /create or replace function public\.is_system_admin/i,
-  /create or replace function public\.is_account_approved/i,
-  /create or replace function public\.can_user_create_conferences/i,
-  /set search_path = pg_catalog, public/gi,
-  /create or replace function public\.approve_system_user/i,
-  /create or replace function public\.block_system_user/i,
-  /create or replace function public\.unblock_system_user/i,
-  /create or replace function public\.set_user_conference_creation_permission/i,
-  /create or replace function public\.grant_system_role/i,
-  /create or replace function public\.revoke_system_role/i,
-  /LAST_SYSTEM_OWNER_REQUIRED/i,
-  /SYSTEM_OWNER_REQUIRED/i,
-  /create or replace function public\.create_conference_idempotent/i,
-  /ACCOUNT_PENDING/i,
-  /ACCOUNT_BLOCKED/i,
-  /CONFERENCE_CREATION_NOT_ALLOWED/i,
-  /owner_id = auth\.uid\(\)[\s\S]*can_user_create_conferences\(auth\.uid\(\)\)/i
-].forEach(function(pattern){
-  assert.match(migration,pattern);
-});
-
-assert.match(
-  migration,
-  /insert into public\.system_user_access[\s\S]*select[\s\S]*from public\.conferences[\s\S]*from public\.conference_members[\s\S]*from auth\.users as users[\s\S]*on conflict \(user_id\) do nothing/i
-);
-assert.match(
-  migration,
-  /insert into public\.system_user_access[\s\S]*values \(new\.id, 'pending', false\)[\s\S]*on conflict \(user_id\) do nothing/i
-);
-assert.doesNotMatch(
-  migration,
-  /grant\s+(insert|update|delete|all)\s+on table public\.system_user_(access|roles)\s+to authenticated/i
-);
-assert.doesNotMatch(migration, /['"][^'"]+@[^'"]+['"]/);
-assert.doesNotMatch(
-  migration,
-  /alter table public\.conference_members|update public\.conference_members|delete from public\.conference_members/i
-);
-assert.ok(
-  (migration.match(/from auth\.users as users/gi)||[]).length>=2,
-  'backfill must close the trigger replacement window'
-);
+assert.match(authority,/from platform\.profiles/i);
+assert.match(authority,/from platform\.user_roles/i);
+assert.doesNotMatch(authority,/from public\.system_user_(?:access|roles)/i);
+assert.match(startup,/get_my_platform_system_access/i);
+assert.match(startup,/platform\.profiles/i);
+assert.match(startup,/platform\.user_roles/i);
+assert.doesNotMatch(startup,/system_user_(?:access|roles)/i);
+assert.match(retirement,/drop table public\.system_user_access/i);
+assert.match(retirement,/drop table public\.system_user_roles/i);
 
 function storage(){
   var values={};
