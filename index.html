@@ -388,10 +388,6 @@
         <div style="flex:1"><label class="lbl">عدد أيام الإقامة</label><input id="cfg_days" type="number" min="1" max="30" value="1" readonly></div>
       </div>
       <div style="margin-bottom:10px"><label class="lbl">المكان</label><input id="cfg_place" placeholder="مكان المؤتمر"></div>
-      <div id="conferenceOrganizationField" style="margin-bottom:10px;display:none">
-        <label class="lbl" for="cfg_organization">المؤسسة</label>
-        <select id="cfg_organization"></select>
-        <div id="conferenceOrganizationMessage" class="sync-settings-message"></div>
       </div>
       <div class="row" style="margin-bottom:10px;gap:8px">
         <div style="flex:1"><label class="lbl">تاريخ البداية</label><input id="cfg_start" type="date" onclick="openNativeDatePicker(this)" onchange="updateConferencePeriodPreview()" oninput="updateConferencePeriodPreview()"></div>
@@ -522,7 +518,6 @@
 <script src="js/sync/diagnostics-privacy-policy.js?rev=platform-capability-authority-v1"></script>
 <script src="js/supabase/first-system-bootstrap-service.js?rev=first-owner-bootstrap-hardening-v1"></script>
 <script src="js/sync/access-diagnostics-ui.js?rev=platform-first-login-coordinator-v1"></script>
-<script src="js/supabase/organization-management-service.js?rev=admin-session-boundary-v1"></script>
 <script src="js/supabase/device-identity.js?rev=project-device-storage-isolation-v1"></script>
 <script src="js/supabase/device-enrollment.js?rev=revoked-rerequest-error-code-v1"></script>
 <script src="js/sync/device-authorization-operation-repository.js"></script>
