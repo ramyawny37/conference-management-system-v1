@@ -143,8 +143,17 @@ const activeSources=[
   'js/warehouse/current-store-context.js',
   'js/sync/conference-link-store.js',
   'js/sync/conference-linking-attempt-store.js',
-  'js/sync/device-authorization-operation-repository.js',
 ];
+assert.strictEqual(
+  fs.existsSync(path.join(root,'js/sync/device-authorization-operation-repository.js')),
+  false,
+  'retired device operation repository must stay deleted'
+);
+assert.ok(!index.includes('device-authorization-operation-repository.js'),
+  'retired device operation repository must not be loaded by the app');
+assert.ok(!worker.includes('device-authorization-operation-repository.js'),
+  'retired device operation repository must not be precached');
+
 activeSources.forEach(file=>{
   const source=read(file);
   assert.ok(/namespace\.key|storageKey\(|browserStorageNamespace\.key/.test(source),
