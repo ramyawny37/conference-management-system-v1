@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'platform-authority-cutover-v2'
+  ? 'runtime-syntax-repair-v3'
   : 'production-3-6-0-release-v6';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -46,7 +46,7 @@ const CORE_ASSETS = [
   './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-enrollment.js?rev=revoked-rerequest-error-code-v1',
 
-  './js/supabase/device-authorization-administration-service.js?rev=platform-only-device-administration-v1',
+  './js/supabase/device-authorization-administration-service.js?rev=runtime-syntax-repair-v2',
 
   './js/sync/device-authorization-administration-ui.js?rev=platform-only-device-administration-v1',
   './js/sync/startup-conference-discovery.js?rev=shared-template-library-v1',
