@@ -20,6 +20,25 @@ runNode(['--check', 'js/storage/environment-namespace.js']);
 runNode(['--check', 'service-worker.js']);
 runNode(['tests/browser-storage-isolation.test.js']);
 
+const retiredAuthorityArtifacts = [
+  'js/sync/device-authorization-operation-repository.js',
+  'tools/approve-development-pending-device.cjs',
+  'tools/verify-development-organization-templates-realtime.cjs',
+  'supabase/device-authorization-foundation-readonly-verification.sql',
+  'supabase/webauthn-privileged-device-security-foundation-readonly-verification.sql',
+  'supabase/organization-access-role-variable-fix-readonly-verification.sql',
+  'supabase/organization-administration-rpc-reads-readonly-verification.sql',
+  'supabase/organization-member-list-role-variable-fix-readonly-verification.sql',
+  'supabase/reservations-phase1br-runtime-verification.sql',
+];
+
+for (const artifact of retiredAuthorityArtifacts) {
+  if (fs.existsSync(path.join(root, artifact))) {
+    throw new Error(`RETIRED_AUTHORITY_ARTIFACT_PRESENT:${artifact}`);
+  }
+}
+
+
 const platformTests = fs.readdirSync(testsDir)
   .filter((name) => /^platform-.*\.test\.js$/.test(name))
   .filter((name) => name !== 'platform-promotion-readiness.test.js')
