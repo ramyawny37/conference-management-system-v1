@@ -169,34 +169,32 @@ async function run(){
     storage:cache,
     auth:auth(userId),
     clientLayer:clientLayer(userId,{
-      account_status:'approved',
-      can_create_conferences:false
+      account_status:'approved'
     },['system_owner'])
   });
   var ownerState=await approved.SystemAccessService.load();
   assert.strictEqual(ownerState.status,'approved');
+  assert.strictEqual(ownerState.accountStatus,'approved');
   assert.strictEqual(ownerState.isSystemOwner,true);
-  assert.strictEqual(ownerState.canCreateConferences,true);
   assert.strictEqual(ownerState.source,'server');
   assert.strictEqual(ownerState.fresh,true);
   assert.strictEqual(
-    approved.SystemAccessService.canCreateConference(),
-    true
+    Object.prototype.hasOwnProperty.call(ownerState,'canCreateConferences'),
+    false
+  );
+  assert.strictEqual(
+    typeof approved.SystemAccessService.canCreateConference,
+    'undefined'
   );
 
   var pending=loadService({
     auth:auth(userId),
     clientLayer:clientLayer(userId,{
-      account_status:'pending',
-      can_create_conferences:false
+      account_status:'pending'
     },[])
   });
   var pendingState=await pending.SystemAccessService.load();
   assert.strictEqual(pendingState.accountStatus,'pending');
-  assert.strictEqual(
-    pending.SystemAccessService.canCreateConference(),
-    false
-  );
 
   var createControl={
     style:{},disabled:false,attributes:{},
@@ -206,7 +204,7 @@ async function run(){
   var memberUi=loadService({
     auth:auth(userId),
     clientLayer:clientLayer(userId,{
-      account_status:'approved',can_create_conferences:false
+      account_status:'approved'
     },[]),
     document:{
       querySelectorAll:function(){return [createControl];},
@@ -215,12 +213,7 @@ async function run(){
     }
   });
   await memberUi.SystemAccessService.load();
-  assert.strictEqual(createControl.disabled,true);
-  assert.strictEqual(createControl.attributes['aria-disabled'],'true');
-  assert.strictEqual(
-    createControl.attributes.title,
-    'هذا الحساب غير مخول بإنشاء مؤتمرات جديدة.'
-  );
+  assert.strictEqual(createControl.disabled,false);
 
   var offline=loadService({
     storage:cache,
@@ -232,10 +225,6 @@ async function run(){
   assert.strictEqual(cachedState.accountStatus,'approved');
   assert.strictEqual(cachedState.source,'cache');
   assert.strictEqual(cachedState.fresh,false);
-  assert.strictEqual(
-    offline.SystemAccessService.canCreateConference(),
-    false
-  );
 
   var failed=loadService({
     auth:auth(userId),
@@ -262,20 +251,12 @@ async function run(){
     index.indexOf('js/supabase/system-access-service.js')<
     index.indexOf('js/supabase/device-identity.js')
   );
-  assert.match(script,/!access\.profileLoaded\|\|!access\.fresh/);
-  assert.match(script,/systemAccessAllowsConferenceCreation/);
-  assert.match(script,
-    /createConferenceFromSelection\(\)\s*\{[\s\S]{0,180}!systemAccessAllowsConferenceCreation\(\)/
-  );
-  assert.match(script,
-    /openNewConferenceModal\(mode\)\s*\{[\s\S]{0,220}!systemAccessAllowsConferenceCreation\(\)/
-  );
-  assert.match(index,/data-system-conference-create/);
-  assert.match(
+  assert.doesNotMatch(script,/systemAccessAllowsConferenceCreation/);
+  assert.doesNotMatch(
     fs.readFileSync(path.join(
       root,'js/supabase/system-access-service.js'
     ),'utf8'),
-    /control\.disabled=restricted[\s\S]*aria-disabled/
+    /can_create_conferences|canCreateConferences|canCreateConference/
   );
   assert.match(serviceWorker,/js\/supabase\/system-access-service\.js/);
 
