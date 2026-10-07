@@ -43,6 +43,15 @@ for (const artifact of retiredAuthorityArtifacts) {
 }
 
 
+const canonicalDeviceAdministrationSource = fs.readFileSync(
+  path.join(root, 'js/supabase/device-authorization-administration-service.js'),
+  'utf8'
+);
+if (/listPlatformPendingDevices|list_pending_device_authorizations/.test(canonicalDeviceAdministrationSource)) {
+  throw new Error('RETIRED_DIRECT_DEVICE_ADMINISTRATION_PATH_PRESENT');
+}
+
+
 const platformTests = fs.readdirSync(testsDir)
   .filter((name) => /^platform-.*\.test\.js$/.test(name))
   .filter((name) => name !== 'platform-promotion-readiness.test.js')
