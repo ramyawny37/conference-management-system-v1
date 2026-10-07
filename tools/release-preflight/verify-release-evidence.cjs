@@ -14,8 +14,7 @@ const REQUIRED_MIGRATIONS=Object.freeze([
 const REQUIRED_EDGE_OPERATIONS=Object.freeze([
   'search_module_permission_candidates','list_module_permission_catalog_for_administration',
   'manage_catalog_module_grant','list_permission_administration_stores',
-  'list_module_permission_grants','manage_foundation_module_grant',
-  'recover_revoke_final_module_manager','check_module_access'
+  'list_module_permission_grants','check_module_access'
 ]);
 const SECRET_KEY=/(?:password|database_url|service.?role|access.?token|refresh.?token|authorization|api.?key|secret)/i;
 const SHA=/^[0-9a-f]{40}$/;
