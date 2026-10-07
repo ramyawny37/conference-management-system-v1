@@ -1,4 +1,5 @@
 -- Retire the remaining Organization API surface and root table.
+drop table if exists public.organizations;
 drop function if exists public.add_organization_member(uuid,uuid,uuid);
 drop function if exists public.change_organization_role(uuid,uuid,text,uuid);
 drop function if exists public.device_guarded_add_organization_member(uuid,uuid,uuid,uuid);
@@ -33,4 +34,3 @@ drop function if exists public.revoke_member_device(uuid,uuid,uuid,uuid,uuid);
 drop function if exists public.replace_member_active_device(uuid,uuid,uuid,uuid,uuid,uuid);
 drop function if exists public.require_device_authorization_manager(uuid,uuid,uuid);
 drop function if exists platform_private.apply_member_device_authorization(text,uuid,uuid,uuid,uuid,uuid,uuid);
-drop table if exists public.organizations;
