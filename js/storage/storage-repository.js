@@ -13,10 +13,6 @@
       }
       return persistence.saveAppData(appData);
     }).then(function(result){
-      var templateSync=options.skipTemplateSync?null:global.OrganizationTemplateSync;
-      if(templateSync&&typeof templateSync.captureLocalSave==='function'){
-        Promise.resolve(templateSync.captureLocalSave(appData)).catch(function(){return null;});
-      }
       return {ok:true,status:'persisted',indexedDB:result};
     });
     localWriteQueue=writeOperation;

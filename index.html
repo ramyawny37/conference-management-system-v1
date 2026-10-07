@@ -476,17 +476,6 @@
 
 <div class="toast" id="toast"></div>
 <!-- Partial Transfer Modal -->
-<div class="overlay app-modal" id="houseTemplateSharingModal" style="display:none">
-  <div class="modal" style="max-width:560px" role="dialog" aria-modal="true">
-    <div class="mhead"><span>مشاركة قالب بيت مع مؤسسة</span><span style="cursor:pointer" onclick="HouseTemplateSharingUI.close()">✕</span></div>
-    <div class="mbody">
-      <div class="settings-summary-note">القالب: <strong id="house_template_sharing_name"></strong></div>
-      <div id="house_template_sharing_organizations"></div>
-      <div id="house_template_sharing_message" class="sync-settings-message"></div>
-      <div class="row" style="margin-top:10px"><button class="btn btn-gray" onclick="HouseTemplateSharingUI.close()">إغلاق</button></div>
-    </div>
-  </div>
-</div>
 
 <div class="overlay app-modal" id="partialTransferModal" style="display:none" onclick="if(event.target===this)closePartialTransferModal()">
   <div class="modal transfer-editor-modal" role="dialog" aria-modal="true" aria-labelledby="partialTransferTitle">
@@ -510,7 +499,7 @@
 <script src="js/application-routing.js?rev=canonical-conference-routing-v1"></script>
 <script src="js/storage/environment-namespace.js"></script>
 <script src="js/storage/indexeddb.js?rev=single-local-persistence-v1"></script>
-<script src="js/storage/storage-repository.js?rev=canonical-conference-core-cutover-v2"></script>
+<script src="js/storage/storage-repository.js?rev=house-template-local-authority-v1"></script>
 <script src="js/storage/conference-repository.js"></script>
 <script src="js/storage/full-backup.js?rev=canonical-conference-core-cutover-v2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -550,12 +539,9 @@
 <script src="js/sync/device-reauthorization-flow.js?rev=device-reauthorization-flow-v1"></script>
 <script src="js/sync/device-authorization-administration-ui.js?rev=platform-only-device-administration-v1"></script>
 <script src="js/sync/startup-conference-discovery.js?rev=shared-template-library-v1"></script>
-<script src="js/sync/organization-template-sync.js?rev=shared-template-copy-guard-v1"></script>
-<script src="js/sync/house-template-content-authorization.js?rev=shared-template-copy-guard-v1"></script>
-<script src="js/sync/house-template-sharing-ui.js?rev=official-house-template-sharing-v1"></script>
 <script src="js/sync/conference-locks.js?rev=conference-lock-release-diagnostics-v1"></script>
 <script src="js/sync/conference-edit-lock-manager.js?rev=section-accommodation-edit-lock-v1"></script>
-<script src="js/sync/template-diagnostic-export.js?rev=template-diagnostic-export-v1"></script>
+<script src="js/sync/template-diagnostic-export.js?rev=house-template-local-authority-v1"></script>
 <script src="js/sync/sync-settings-ui.js?rev=platform-first-login-coordinator-v1"></script>
 <script src="js/sync/startup-access-gate.js?rev=revoked-rerequest-error-code-v1"></script>
 <script src="js/sync/conference-link-store.js"></script>
@@ -571,8 +557,8 @@
 <script src="people.js?rev=canonical-conference-schema-v1"></script>
 <script src="houses.js?rev=template-floor-conference-sync-v1"></script>
 <script src="transport.js"></script>
-<script src="houseTemplates.js?rev=shared-house-template-read-only-v1"></script>
-<script src="state.js?rev=conference-activation-canonical-v1"></script>
+<script src="houseTemplates.js?rev=house-template-local-authority-v1"></script>
+<script src="state.js?rev=house-template-local-authority-v1"></script>
 <script src="js/conference/accounts.js?rev=development-3-4-0-platform-foundation-v1"></script>
 <script src="js/conference-template-houses-editor.js"></script>
 <script src="cards.js"></script>
@@ -584,7 +570,7 @@
 <script src="js/warehouse/party-management.js?rev=warehouse-party-management-v1"></script>
 <script src="js/warehouse/remaining-operations.js?rev=adjustment-conversion-ux-v1"></script>
 <script src="js/warehouse/workspace.js?rev=item-unit-add-ui-v1"></script>
-<script src="script.js?rev=conference-activation-canonical-v1"></script>
+<script src="script.js?rev=house-template-local-authority-v1"></script>
 <script src="version.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
