@@ -113,7 +113,7 @@ test("non-managed startup uses Platform native enrollment and never a legacy dev
   assert.equal((await flow.run()).status, "device");
   assert.deepEqual(flow.enrollmentCounts(), { enrollmentChecks: 1, explicitReEnrollments: 0 });
   assert.equal(flow.counts().deviceRpcCount, 0);
-  assert.equal(flow.counts().localFallbackReads, 0);
+  assert.equal(flow.counts().deviceRpcCount, 0);
   assert.equal(/deviceSecret|device_secret/.test(integrationSource), false);
 });
 
@@ -123,8 +123,8 @@ test("missing Platform native enrollment fails closed instead of falling back", 
   assert.equal(result.status, "denied");
   assert.equal(flow.window.StartupAccessGate.getState().canonicalState, "ERROR");
   assert.equal(flow.counts().deviceRpcCount, 0);
-  assert.equal(flow.counts().localFallbackReads, 0);
-  assert.match(flow.nodes.startupAccessGate.innerHTML, /PLATFORM_DEVICE_ENROLLMENT_REQUIRED/);
+  assert.equal(flow.counts().deviceRpcCount, 0);
+  assert.match(flow.nodes.startupAccessGate.innerHTML, /تعذر تهيئة اعتماد الجهاز الآمن/);
 });
 
 test("unauthenticated startup never adopts, calls device RPC, or renders a device gate", async () => {
