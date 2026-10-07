@@ -7,7 +7,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'house-template-local-authority-v1'
+  ? 'organization-runtime-retirement-v1'
   : 'production-3-6-0-release-v6';
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
@@ -42,14 +42,8 @@ const CORE_ASSETS = [
   './modules/reservations/reservations-visual-prototype.js?rev=reservations-prototype-fidelity-v2',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',
   './js/sync/diagnostics-privacy-policy.js?rev=platform-capability-authority-v1',
-  './js/sync/organization-administration-utils.js',
   './js/sync/access-diagnostics-ui.js?rev=platform-first-login-coordinator-v1',
-  './js/sync/organization-membership-operation-repository.js?rev=organization-membership-retention-safe-v1',
-  './js/supabase/organization-administration-service.js?rev=admin-session-boundary-v1',
-  './js/sync/organization-members-ui.js?rev=organization-membership-manual-retry-v1',
-  './js/sync/organization-management-attempt-store.js?rev=organization-management-v1',
   './js/supabase/organization-management-service.js?rev=admin-session-boundary-v1',
-  './js/sync/organization-management-ui.js?rev=startup-device-admin-lifecycle-v1',
   './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-enrollment.js?rev=revoked-rerequest-error-code-v1',
   './js/sync/device-authorization-operation-repository.js',
