@@ -4,7 +4,7 @@
   var diagnostics={ownerPendingRequestsCount:0,lastListStatus:null,lastWebAuthnError:null,
     authGeneration:0,clientGeneration:0};
   var lastActor='',lastClient=null;
-  function isUuid(value){var u=global.OrganizationAdministrationUtils;return !!(u&&u.isUuid&&u.isUuid(String(value||'')));}
+  function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||''));}
   function out(ok,status,data,error){return {ok:ok,status:status,data:data||null,error:error||null};}
   function deps(options){options=options||{};return {clientLayer:options.clientLayer||global.SupabaseClientLayer,auth:options.auth||global.SupabaseAuth,identity:options.identity||global.SupabaseDeviceIdentity,repository:options.repository||global.DeviceAuthorizationOperationRepository,crypto:options.crypto||global.crypto,navigator:options.navigator||global.navigator};}
   function context(options){var d=deps(options),client=d.clientLayer&&d.clientLayer.getClient&&d.clientLayer.getClient(),session=d.auth&&d.auth.getSession&&d.auth.getSession(),actor=session&&session.user&&String(session.user.id||''),identity=d.identity&&d.identity.getOrCreate&&d.identity.getOrCreate();if(client!==lastClient){lastClient=client;diagnostics.clientGeneration++;}if(actor!==lastActor){lastActor=actor;diagnostics.authGeneration++;diagnostics.ownerPendingRequestsCount=0;}if(!client||typeof client.rpc!=='function')return {error:'SUPABASE_UNAVAILABLE'};if(!isUuid(actor))return {error:'AUTH_REQUIRED'};if(!identity||!isUuid(identity.id))return {error:'DEVICE_IDENTITY_REQUIRED'};return {d:d,client:client,actor:actor,deviceId:identity.id};}
