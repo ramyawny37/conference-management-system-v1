@@ -25,7 +25,9 @@ test('one top-level dispatcher owns the verified session and has no predecessor 
   assert.match(dispatcher,/auth\.jwt\(\)->>'role'[\s\S]*service_role/);
   assert.match(dispatcher,/session\.purpose='PLATFORM_DEVICE_SESSION'/);
   assert.match(dispatcher,/binding\.algorithm='ECDSA_P256_SHA256'/);
-  assert.match(dispatcher,/authorization\.status='approved'/);
+  assert.match(dispatcher,/join platform\.user_device_authorizations device_auth on device_auth\.id=session\.device_authorization_id/);
+  assert.match(dispatcher,/device_auth\.status='approved'/);
+  assert.doesNotMatch(dispatcher,/join platform\.user_device_authorizations authorization\b/i);
   assert.match(dispatcher,/profile\.account_status='approved'/);
   assert.match(dispatcher,/set_config\('platform\.phase1c_context'/);
   assert.match(dispatcher,/ACTOR_DEVICE_OVERRIDE_DENIED/);

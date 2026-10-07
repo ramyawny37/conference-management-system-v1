@@ -32,7 +32,7 @@ begin
   select session.* into v_session
   from platform_private.device_sessions session
   join platform.device_key_bindings binding on binding.id=session.binding_id
-  join platform.user_device_authorizations authorization on authorization.id=session.device_authorization_id
+  join platform.user_device_authorizations device_auth on device_auth.id=session.device_authorization_id
   join platform.devices device on device.id=session.device_id
   join platform.profiles profile on profile.user_id=session.user_id
   where session.id=p_session_id and session.user_id=p_user_id
@@ -43,8 +43,8 @@ begin
     and binding.public_key_thumbprint=session.public_key_thumbprint
     and binding.algorithm='ECDSA_P256_SHA256' and binding.lifecycle_status='active'
     and binding.revoked_at is null and binding.retired_at is null
-    and authorization.user_id=session.user_id and authorization.device_id=session.device_id
-    and authorization.status='approved' and authorization.revoked_at is null
+    and device_auth.user_id=session.user_id and device_auth.device_id=session.device_id
+    and device_auth.status='approved' and device_auth.revoked_at is null
     and device.lifecycle_status='active' and device.retired_at is null
     and device.compromised_at is null and profile.account_status='approved';
   if not found then raise exception 'DEVICE_SESSION_INVALID' using errcode='42501'; end if;
