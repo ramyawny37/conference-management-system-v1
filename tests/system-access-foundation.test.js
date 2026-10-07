@@ -137,19 +137,16 @@ function clientLayer(userId,access,roles,error){
   return {
     getClient:function(){
       return {
-        from:function(table){
-          if(table==='system_user_access'){
-            return query({
-              data:error?null:Object.assign({user_id:userId},access),
-              error:error||null
-            },true);
-          }
-          return query({
-            data:error?null:(roles||[]).map(function(role){
-              return {user_id:userId,role:role};
-            }),
+        rpc:function(name){
+          assert.strictEqual(name,'get_my_platform_system_access');
+          return Promise.resolve({
+            data:error?null:{
+              userId:userId,
+              accountStatus:access&&access.account_status,
+              systemRoles:roles||[]
+            },
             error:error||null
-          },false);
+          });
         }
       };
     }
@@ -259,6 +256,7 @@ async function run(){
     /can_create_conferences|canCreateConferences|canCreateConference/
   );
   assert.match(serviceWorker,/js\/supabase\/system-access-service\.js/);
+  assert.doesNotMatch(fs.readFileSync(path.join(root,'js/supabase/system-access-service.js'),'utf8'),/client\.from\('system_user_(access|roles)'\)/);
 
   console.log('system access foundation tests: passed');
 }
