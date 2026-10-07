@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   var canonicalConference=[
-    ['create_canonical_conference','public.create_canonical_conference(uuid,uuid,uuid,uuid,text,date,date)'],
+    ['create_canonical_conference','public.create_canonical_conference(uuid,uuid,uuid,text,date,date)'],
     ['mutate_conference_core','public.mutate_conference_core(uuid,uuid,uuid,bigint,text,text,date,date,text)'],
     ['get_conference_core','public.get_conference_core(uuid,uuid)'],
     ['list_accessible_conferences','public.list_accessible_conferences(uuid)'],
