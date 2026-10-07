@@ -38,7 +38,10 @@ test('legacy-only authorization cannot satisfy canonical privileged administrati
 
 test('pending list and mutation have one canonical Platform owner',()=>{
   const listing=migration.match(/create or replace function public\.list_system_owner_pending_device_authorizations[\s\S]*?end; \$\$;/i)?.[0]||'';
-  const completion=migration.slice(\n    migration.indexOf('create or replace function public.complete_system_owner_pending_device_operation'),\n    migration.indexOf('create or replace function public.get_system_owner_device_operation_result')\n  );
+  const completion=migration.slice(
+    migration.indexOf('create or replace function public.complete_system_owner_pending_device_operation'),
+    migration.indexOf('create or replace function public.get_system_owner_device_operation_result')
+  );
   assert.match(listing,/from platform\.user_device_authorizations device_authorization/i);
   assert.match(listing,/device_authorization\.status='pending'/i);
   assert.match(completion,/from platform\.user_device_authorizations device_authorization/i);
