@@ -131,12 +131,13 @@ test('27 legacy Platform registration is structural and fail closed',()=>{
   const grants=sql.slice(sql.indexOf('revoke all on all functions in schema platform'),sql.indexOf('create policy profiles_select'));
   assert.doesNotMatch(grants,/grant execute[^;]*platform\.register_current_device/is);
 });
-test('28 active onboarding does not call the legacy Platform registration function',()=>{
-  const service=fs.readFileSync('js/supabase/current-device-authorization-service.js','utf8');
-  assert.doesNotMatch(service,/register_or_refresh_current_device|request_current_device_authorization|get_my_device_authorization/);
-  assert.match(service,/PlatformDeviceEnrollment/);
-  assert.doesNotMatch(service,/platform\.register_current_device|['"]register_current_device['"]/);
-  assert.match(migrations.conference,/grant execute[^;]*platform\.register_current_device\(text,text,text\)/s);
+test('28 active onboarding has one Platform native enrollment path',()=>{
+  const gate=fs.readFileSync('js/sync/startup-access-gate.js','utf8');
+  const enrollment=fs.readFileSync('js/supabase/device-enrollment.js','utf8');
+  assert.match(gate,/PlatformDeviceEnrollment/);
+  assert.match(gate,/PLATFORM_DEVICE_ENROLLMENT_REQUIRED/);
+  assert.doesNotMatch(gate,/CurrentDeviceAuthorizationUI|CurrentDeviceAuthorizationService|DeviceReauthorizationFlow/);
+  assert.doesNotMatch(enrollment,/register_or_refresh_current_device|request_current_device_authorization|get_my_device_authorization|platform\.register_current_device/);
 });
 test('29 reserved authorization keyword is never used as a relation alias',()=>{
   assert.doesNotMatch(executable,/\b(?:from|join)\s+[^\s;(),]+\s+(?:as\s+)?authorization\b/i);
