@@ -7,20 +7,14 @@
   var DATABASE_NAME = namespace.databaseName(
     'conference_manager_v3'
   );
-  var DATABASE_VERSION = 7;
+  var DATABASE_VERSION = 8;
   var STORE_NAMES = Object.freeze({
     conferences: 'conferences',
     rooms: 'rooms',
     deviceSettings: 'device_settings',
     localBackups: 'local_backups',
-    organizationMembershipPendingOperations:
-      'organization_membership_pending_operations',
-    organizationTemplateOperations:
-      'organization_template_operations',
     libraryTemplateContentOperations:
       'library_template_content_operations',
-    organizationTemplateAccessOperations:
-      'organization_template_access_operations'
   });
   var database = null;
   var openingPromise = null;
@@ -48,6 +42,13 @@
   }
 
   function upgradeDatabase(db,upgradeTransaction){
+    [
+      'organization_membership_pending_operations',
+      'organization_template_operations',
+      'organization_template_access_operations'
+    ].forEach(function(name){
+      if(db.objectStoreNames.contains(name))db.deleteObjectStore(name);
+    });
     ensureStore(db,upgradeTransaction,STORE_NAMES.conferences,{keyPath:'conferenceId'});
     ensureStore(db,upgradeTransaction,STORE_NAMES.rooms,{keyPath:['conferenceId','roomId']});
     ensureStore(db,upgradeTransaction,STORE_NAMES.deviceSettings,{keyPath:'key'});
@@ -56,41 +57,10 @@
       {name:'conferenceCreatedAt',keyPath:['conferenceId','createdAt']}
     ]);
     ensureStore(db,upgradeTransaction,
-      STORE_NAMES.organizationMembershipPendingOperations,
-      {keyPath:['authenticatedUserId','operationId']},[
-        {name:'by_authenticated_user',keyPath:'authenticatedUserId'},
-        {name:'by_user_intent',keyPath:[
-          'authenticatedUserId','organizationId','targetUserId','action',
-          'requestedRole'
-        ]},
-        {name:'by_user_created_at',keyPath:[
-          'authenticatedUserId','createdAt'
-        ]},
-        {name:'by_created_at',keyPath:'createdAt'}
-      ]);
-    ensureStore(db,upgradeTransaction,
-      STORE_NAMES.organizationTemplateOperations,
-      {keyPath:'operationId'},[
-        {name:'by_organization_status',keyPath:['organizationId','status']},
-        {name:'by_template',keyPath:[
-          'organizationId','templateType','templateId'
-        ]},
-        {name:'by_created_at',keyPath:'createdAt'}
-      ]);
-    ensureStore(db,upgradeTransaction,
       STORE_NAMES.libraryTemplateContentOperations,
       {keyPath:'operationId'},[
         {name:'by_status',keyPath:'status'},
         {name:'by_template',keyPath:['templateType','templateId']},
-        {name:'by_created_at',keyPath:'createdAt'}
-      ]);
-    ensureStore(db,upgradeTransaction,
-      STORE_NAMES.organizationTemplateAccessOperations,
-      {keyPath:'operationId'},[
-        {name:'by_status',keyPath:'status'},
-        {name:'by_organization_template',keyPath:[
-          'organizationId','templateType','templateId'
-        ]},
         {name:'by_created_at',keyPath:'createdAt'}
       ]);
   }
