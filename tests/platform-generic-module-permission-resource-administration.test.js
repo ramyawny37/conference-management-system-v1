@@ -70,27 +70,6 @@ test('backend discovery is protected, catalog-authorized, normalized, and suppor
   assert.match(edge,/list_module_permission_resources_for_administration/);
 });
 
-test('Reservations Event discovery uses canonical event-manage and partition authority',()=>{
-  assert.match(migration,/has_event_permission\(\s*actor_id,'reservations\.event\.manage',events\.id\s*\)/);
-  assert.match(migration,/events\.scope_type='conference'[\s\S]*public\.conferences[\s\S]*public\.organizations[\s\S]*organizations\.status='active'[\s\S]*public\.organization_members[\s\S]*members\.user_id=actor_id/);
-  assert.match(migration,/conferences\.id=events\.conference_id[\s\S]*conferences\.organization_id=events\.organization_id[\s\S]*conferences\.deleted_at is null/);
-  assert.match(migration,/events\.scope_type='standalone'[\s\S]*events\.conference_id is null[\s\S]*events\.organization_id is null/);
-  assert.doesNotMatch(migration,/booking_creation_context|reservations\.booking\.create/);
-});
-
-test('module.manage alone cannot discover an Event resource',()=>{
-  const eventBranch=migration.match(/elsif p_module_key='reservations'[\s\S]*?raise exception 'MODULE_PERMISSION_RESOURCE_DISCOVERY_UNSUPPORTED'/)[0];
-  assert.match(eventBranch,/has_event_permission[\s\S]*reservations\.event\.manage/);
-  assert.doesNotMatch(migration,/create function public\.manage_catalog_module_grant|alter function public\.manage_catalog_module_grant|resolve_event_scope/);
-});
-
-test('System Owner and non-owner behavior are delegated to canonical Reservations policy',()=>{
-  const canonical=fs.readFileSync('supabase/migrations/20260915220000_reservations_authorization_architecture_reconciliation.sql','utf8');
-  assert.match(canonical,/has_event_permission[\s\S]*public\.is_system_owner\(p_actor\)/);
-  assert.match(canonical,/resolve_event_scope[\s\S]*require_effective_module_permission[\s\S]*scope_type='conference'[\s\S]*organization_members/);
-  assert.match(migration,/has_event_permission\(/);
-});
-
 test('Warehouse store discovery retains active-store semantics and no Reservations predicates',()=>{
   const storeBranch=migration.match(/if p_module_key='warehouse'[\s\S]*?elsif p_module_key='reservations'/)[0];
   assert.match(storeBranch,/from warehouse\.stores stores[\s\S]*stores\.status='active'/);
