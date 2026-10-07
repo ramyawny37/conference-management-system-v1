@@ -136,23 +136,7 @@ function initializeApplicationStorage(){
 
   var defaults=cloneApplicationStorageData(appData);
   var repository=window.StorageRepository;
-  var platformIntegration=window.PlatformIntegration;
-  var managedPlatformApproved=!!(platformIntegration&&
-    typeof platformIntegration.isManagedOrigin==='function'&&
-    platformIntegration.isManagedOrigin()&&
-    typeof platformIntegration.isAuthorizationReady==='function'&&
-    platformIntegration.isAuthorizationReady()&&
-    typeof platformIntegration.getContext==='function'&&
-    platformIntegration.getContext()&&
-    platformIntegration.getContext().accountStatus==='approved'&&
-    platformIntegration.getContext().deviceStatus==='approved');
-  var deviceApproval=managedPlatformApproved
-    ?Promise.resolve({status:'approved',approved:true,source:'platform_context'})
-    :window.DeviceReauthorizationFlow&&
-    typeof window.DeviceReauthorizationFlow.waitUntilApproved==='function'
-    ?window.DeviceReauthorizationFlow.waitUntilApproved()
-    :Promise.resolve();
-  storageInitializationPromise=Promise.resolve(deviceApproval)
+  storageInitializationPromise=Promise.resolve()
     .then(function(){
       if(!repository||typeof repository.getAppData!=='function'){
         throw new Error('LOCAL_PERSISTENCE_UNAVAILABLE');
