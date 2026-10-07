@@ -43,6 +43,14 @@ for (const artifact of retiredAuthorityArtifacts) {
 }
 
 
+const developmentBootstrapSource = fs.readFileSync(
+  path.join(root, 'tools/issue-development-initial-platform-bootstrap.cjs'),
+  'utf8'
+);
+if (/system_user_access|system_user_roles|\/rest\/v1\/devices\?|\/rest\/v1\/user_device_authorizations\?/.test(developmentBootstrapSource)) {
+  throw new Error('RETIRED_BOOTSTRAP_DEVICE_AUTHORITY_PRESENT');
+}
+
 const canonicalDeviceAdministrationSource = fs.readFileSync(
   path.join(root, 'js/supabase/device-authorization-administration-service.js'),
   'utf8'
