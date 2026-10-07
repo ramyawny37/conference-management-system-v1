@@ -22,6 +22,10 @@ runNode(['tests/browser-storage-isolation.test.js']);
 
 const retiredAuthorityArtifacts = [
   'js/sync/device-authorization-operation-repository.js',
+  'js/supabase/current-device-authorization-service.js',
+  'js/sync/current-device-authorization-ui.js',
+  'js/sync/device-reauthorization-flow.js',
+
   'tools/approve-development-pending-device.cjs',
   'tools/verify-development-organization-templates-realtime.cjs',
   'supabase/device-authorization-foundation-readonly-verification.sql',
