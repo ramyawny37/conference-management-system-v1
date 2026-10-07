@@ -18,6 +18,25 @@ function runNode(args) {
 
 runNode(['--check', 'js/storage/environment-namespace.js']);
 runNode(['--check', 'service-worker.js']);
+
+const runtimePages = [
+  'index.html',
+  'platform-device-admin.html',
+  'platform-device-recovery-login-v2.html',
+  'platform-device-recovery.html',
+  'platform-device-session.html',
+];
+const runtimeScripts = new Set(['service-worker.js']);
+for (const page of runtimePages) {
+  const source = fs.readFileSync(path.join(root, page), 'utf8');
+  for (const match of source.matchAll(/<script[^>]+src=["']([^"']+\.js(?:\?[^"']*)?)["']/gi)) {
+    const script = match[1].split('?')[0].replace(/^\.\//, '');
+    if (!/^https?:/i.test(script) && fs.existsSync(path.join(root, script))) {
+      runtimeScripts.add(script);
+    }
+  }
+}
+for (const script of [...runtimeScripts].sort()) runNode(['--check', script]);
 runNode(['tests/browser-storage-isolation.test.js']);
 
 const retiredAuthorityArtifacts = [
