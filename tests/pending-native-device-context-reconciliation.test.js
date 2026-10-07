@@ -25,8 +25,6 @@ function harness(options){
     SupabaseDeviceIdentity:{getCurrent:()=>({id:identityId,deviceName:'',platform:'MacIntel',createdAt:''}),getOrCreate:()=>({id:identityId,platform:'MacIntel'})},
     FirstSystemBootstrapService:{getStatus:()=>Promise.resolve({ok:true,status:'completed'})},
     SystemAccessService:{initialize:()=>Promise.resolve(),refresh:()=>Promise.resolve(),getState:()=>({accountStatus:'approved',fresh:true})},
-    CurrentDeviceAuthorizationUI:{getState:()=>({status:'unavailable'})},
-    CurrentDeviceAuthorizationService:{getLastDiagnostic:()=>({})},AccessDiagnosticsUI:{render:()=>''},SyncSettingsUI:{signOut(){}},
     PlatformDeviceSession:{ensureValid(){sessionCalls++;return Promise.resolve({verified:true});}}
   };
   window.window=window;
