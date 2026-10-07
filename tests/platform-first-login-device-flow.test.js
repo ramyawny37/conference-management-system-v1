@@ -85,11 +85,11 @@ test("managed first-login flow serializes adoption and uses Platform pending sta
   const run = flow.run();
   await Promise.resolve();await Promise.resolve();
   flow.signalSignedIn();flow.signalSignedIn();flow.drainSignals();
-  assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0: 0, systemAccessReads: 0 });
+  assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0, systemAccessReads: 0 });
   flow.releaseAdoption();
   const result = await run;
   assert.equal(result.status, "device");
-  assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0: 0, systemAccessReads: 0 });
+  assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0, systemAccessReads: 0 });
   assert.equal(flow.window.StartupAccessGate.getState().canonicalState, "DEVICE_PENDING");
   assert.equal(flow.window.StartupAccessGate.getState().canonicalState === "DEVICE_APPROVED", false);
   assert.ok(flow.nodes.startupAccessGate.innerHTML.includes("Integrated Platform browser"));
@@ -103,7 +103,7 @@ test("logout returns to unauthenticated login without device work", async () => 
   await Promise.resolve();await Promise.resolve();await Promise.resolve();
   assert.equal(flow.window.StartupAccessGate.getState().canonicalState, "UNAUTHENTICATED");
   assert.equal(flow.nodes.startupAccessGate.innerHTML.includes("Device ID"), false);
-  assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0: 0, systemAccessReads: 0 });
+  assert.deepEqual(flow.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0, systemAccessReads: 0 });
 });
 
 test("non-managed startup uses Platform native enrollment and never a legacy device path", async () => {
@@ -130,7 +130,7 @@ test("unauthenticated startup never adopts, calls device RPC, or renders a devic
   const result = await flow.run();
   assert.equal(result.status, "auth");
   assert.equal(flow.window.StartupAccessGate.getState().canonicalState, "UNAUTHENTICATED");
-  assert.deepEqual(flow.counts(), { adoptionCount: 0, requestCount: 0, deviceRpcCount: 0: 0, systemAccessReads: 0 });
+  assert.deepEqual(flow.counts(), { adoptionCount: 0, requestCount: 0, deviceRpcCount: 0, systemAccessReads: 0 });
   assert.equal(flow.nodes.startupAccessGate.innerHTML.includes("Device ID"), false);
 });
 
@@ -138,12 +138,12 @@ test("Platform approved overrides Conference pending; revoked remains blocked", 
   const approved = harness({ deviceStatus: "approved", publicDeviceStatus: "pending", publicAccountStatus: "pending" });
   assert.equal((await approved.run()).status, "allowed");
   assert.equal(approved.window.StartupAccessGate.getState().canonicalState, "DEVICE_APPROVED");
-  assert.deepEqual(approved.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0: 0, systemAccessReads: 0 });
+  assert.deepEqual(approved.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0, systemAccessReads: 0 });
 
   const revoked = harness({ deviceStatus: "revoked" });
   assert.equal((await revoked.run()).status, "device");
   assert.equal(revoked.window.StartupAccessGate.getState().canonicalState, "DEVICE_REVOKED");
-  assert.deepEqual(revoked.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0: 0, systemAccessReads: 0 });
+  assert.deepEqual(revoked.counts(), { adoptionCount: 1, requestCount: 0, deviceRpcCount: 0, systemAccessReads: 0 });
 });
 
 test("Platform pending and account-not-approved states remain blocked", async () => {
