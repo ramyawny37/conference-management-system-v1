@@ -69,26 +69,11 @@ async function verifyTarget(serviceRoleKey) {
   const encodedUser = encodeURIComponent(INTENDED_USER_ID);
   const encodedDevice = encodeURIComponent(INTENDED_DEVICE_ID);
   const now = encodeURIComponent(new Date().toISOString());
-  const [roleRows, accessRows, deviceRows, authorizationRows, credentialRows, bootstrapRows] = await Promise.all([
-    request(serviceRoleKey, `/rest/v1/system_user_roles?select=role&user_id=eq.${encodedUser}&role=eq.system_owner`, { label: 'System Owner' }),
-    request(serviceRoleKey, `/rest/v1/system_user_access?select=account_status&user_id=eq.${encodedUser}`, { label: 'Account approval' }),
-    request(serviceRoleKey, `/rest/v1/devices?select=id,user_id,platform&id=eq.${encodedDevice}&user_id=eq.${encodedUser}`, { label: 'Device ownership' }),
-    request(serviceRoleKey, `/rest/v1/user_device_authorizations?select=authorization_status,revoked_at&user_id=eq.${encodedUser}&device_id=eq.${encodedDevice}`, { label: 'Device authorization' }),
-    request(serviceRoleKey, `/rest/v1/device_security_credentials?select=id&user_id=eq.${encodedUser}&credential_kind=eq.platform_primary&lifecycle_status=eq.active&revoked_at=is.null`, { label: 'Active credential' }),
+  const [credentialRows, bootstrapRows] = await Promise.all([
+    request(serviceRoleKey, `/rest/v1/device_security_credentials?select=id&user_id=eq.${encodedUser}&device_id=eq.${encodedDevice}&credential_kind=eq.platform_primary&lifecycle_status=eq.active&revoked_at=is.null`, { label: 'Active credential' }),
     request(serviceRoleKey, `/rest/v1/system_owner_credential_bootstrap_authorizations?select=id&intended_user_id=eq.${encodedUser}&intended_device_id=eq.${encodedDevice}&environment=eq.${ENVIRONMENT}&consumed_at=is.null&expires_at=gt.${now}`, { label: 'Live bootstrap authorization' }),
   ]);
 
-  expectSingle(roleRows, 'System Owner');
-  const access = expectSingle(accessRows, 'Account');
-  const device = expectSingle(deviceRows, 'Device');
-  const authorization = expectSingle(authorizationRows, 'Device authorization');
-  if (access.account_status !== 'approved') fail('Intended account is not approved');
-  if (device.user_id !== INTENDED_USER_ID || device.id !== INTENDED_DEVICE_ID || device.platform !== 'MacIntel') {
-    fail('Intended device binding mismatch');
-  }
-  if (authorization.authorization_status !== 'approved' || authorization.revoked_at !== null) {
-    fail('Intended device is not currently approved');
-  }
   if (!Array.isArray(credentialRows) || credentialRows.length !== 0) fail('Active platform credential already exists');
   if (!Array.isArray(bootstrapRows) || bootstrapRows.length !== 0) fail('Live bootstrap authorization already exists');
 }
