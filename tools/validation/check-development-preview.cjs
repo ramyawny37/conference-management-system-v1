@@ -46,6 +46,10 @@ for (const page of runtimePages) {
     }
   }
 }
+for (const match of serviceWorkerSource.matchAll(/['"]\.\/([^'"]+\.js(?:\?[^'"]*)?)['"]/gi)) {
+  const script = match[1].split('?')[0];
+  if (fs.existsSync(path.join(root, script))) runtimeScripts.add(script);
+}
 for (const script of [...runtimeScripts].sort()) runNode(['--check', script]);
 runNode(['tests/browser-storage-isolation.test.js']);
 
