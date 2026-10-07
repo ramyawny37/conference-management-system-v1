@@ -1265,13 +1265,6 @@ function mountSyncSettingsSection(){
   );
 }
 
-function refreshOrganizationMembersSection(){
-  if(window.OrganizationMembersUI&&
-    typeof window.OrganizationMembersUI.initialize==='function'){
-    window.OrganizationMembersUI.initialize();
-  }
-}
-
 function refreshDeviceAuthorizationAdministration(){
   if(window.DeviceAuthorizationAdministrationUI&&
     typeof window.DeviceAuthorizationAdministrationUI.initialize==='function'){
@@ -1478,20 +1471,6 @@ function saveApplicationView(view){
   }catch(e){}
 }
 
-function getStoredSettingsInternalView(){
-  try{
-    return localStorage.getItem(SETTINGS_INTERNAL_VIEW_KEY)==='organization-members'
-      ?'organization-members':'';
-  }catch(e){return '';}
-}
-
-function saveSettingsInternalView(view){
-  try{
-    if(view==='organization-members')localStorage.setItem(SETTINGS_INTERNAL_VIEW_KEY,view);
-    else localStorage.removeItem(SETTINGS_INTERNAL_VIEW_KEY);
-  }catch(e){}
-}
-
 function restoreLastApplicationTab(options){
   options=options||{};
   var conferenceRoute=getCanonicalConferenceRoute();
@@ -1508,10 +1487,7 @@ function restoreLastApplicationTab(options){
   var restored=switchTab(restoredTab,{preserveRoute:
     !!(conferenceRoute&&conferenceRoute.kind==='application')});
   if(!restored)switchTab(0);
-  if(restored&&restoredTab===settingsTabId){
-    resetAdministrativeViewScroll();
-    if(settingsTab==='organization-members')refreshOrganizationMembersSection();
-  }
+  if(restored&&restoredTab===settingsTabId)resetAdministrativeViewScroll();
   return restored;
 }
 
@@ -1534,7 +1510,6 @@ function switchTab(n,options){
     return false;
   }
   var previousTab=currentTab;
-  closeOrganizationManagementScreen();
   currentTab=tabId;
   document.body.classList.toggle('accommodation-shell-active',tabId===0);
   if(tabId===2&&previousTab!==2)v3AccordionOpenSection='';
@@ -1571,22 +1546,6 @@ function openSettingsFromHome(){
   return opened;
 }
 
-function openOrganizationMembersFromManagement(organizationId){
-  var ui=window.OrganizationMembersUI;
-  if(!ui||typeof ui.initializeAndSelect!=='function')return false;
-  settingsTab='organization-members';
-  if(!openSettingsFromHome())return false;
-  saveSettingsInternalView('organization-members');
-  return ui.initializeAndSelect(String(organizationId||''));
-}
-
-function returnToOrganizationManagementFromMembers(){
-  settingsTab='general';
-  saveSettingsInternalView('');
-  return window.OrganizationManagementUI&&
-    typeof window.OrganizationManagementUI.open==='function'
-    ?window.OrganizationManagementUI.open({returnView:'settings'}):false;
-}
 
 function showHomePage(){
   if(getPlatformShellPathname()!=='/conference'){
@@ -2451,49 +2410,6 @@ function getAccommodationPersonDisplayName(person){
 
 var userManagementAccessState={status:'idle',capabilities:null,flight:null};
 var modulePermissionAdministrationAccessState={status:'idle',available:false,flight:null};
-var organizationManagementAccessState={status:'idle',canOpen:false,flight:null};
-function closeOrganizationManagementScreen(){
-  var screen=ge('organizationManagementScreen');
-  if(screen)screen.style.display='none';
-}
-function applyOrganizationManagementEntryVisibility(){
-  var visible=organizationManagementAccessState.status==='loaded'&&
-    organizationManagementAccessState.canOpen===true;
-  if(!document.querySelectorAll)return;
-  document.querySelectorAll('[data-organization-management-entry]').forEach(function(entry){
-    entry.style.display=visible?'':'none';
-  });
-}
-function ensureOrganizationManagementAccess(){
-  if(organizationManagementAccessState.flight)return organizationManagementAccessState.flight;
-  if(organizationManagementAccessState.status!=='idle')return Promise.resolve(organizationManagementAccessState);
-  if(!window.OrganizationManagementService||
-    typeof window.OrganizationManagementService.list!=='function')return Promise.resolve(organizationManagementAccessState);
-  organizationManagementAccessState.status='loading';
-  applyOrganizationManagementEntryVisibility();
-  organizationManagementAccessState.flight=window.OrganizationManagementService.list().then(function(response){
-    var data=response&&response.ok&&response.data?response.data:null;
-    organizationManagementAccessState.status=response&&response.ok?'loaded':'error';
-    organizationManagementAccessState.canOpen=!!(data&&(
-      data.canCreate===true||Array.isArray(data.organizations)&&data.organizations.some(function(organization){
-        var capabilities=organization&&organization.capabilities||{};
-        return capabilities.canManageMembers===true||capabilities.canEdit===true||
-          capabilities.canArchive===true||capabilities.canRestore===true;
-      })
-    ));
-    applyOrganizationManagementEntryVisibility();
-    if(ge('tab6')&&ge('tab6').style.display!=='none')renderSettings();
-    organizationManagementAccessState.flight=null;
-    return organizationManagementAccessState;
-  }).catch(function(){
-    organizationManagementAccessState.status='error';
-    organizationManagementAccessState.canOpen=false;
-    organizationManagementAccessState.flight=null;
-    applyOrganizationManagementEntryVisibility();
-    return organizationManagementAccessState;
-  });
-  return organizationManagementAccessState.flight;
-}
 function ensureUserManagementAccess(){
   if(userManagementAccessState.flight)return userManagementAccessState.flight;
   if(userManagementAccessState.status!=='idle')return Promise.resolve(userManagementAccessState);
@@ -2544,7 +2460,6 @@ function ensureModulePermissionAdministrationAccess(){
 function initializePlatformAdministrationContext(){
   return Promise.all([
     ensureUserManagementAccess(),
-    ensureOrganizationManagementAccess(),
     ensureModulePermissionAdministrationAccess()
   ]);
 }
@@ -7268,7 +7183,6 @@ Application Navigation - Central Entry Points
 function openStartupScreen(options){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   options=options||{};
-  closeOrganizationManagementScreen();
   document.body.classList.remove('accommodation-shell-active');
   var clearCurrentConference=options.clearCurrentConference===true;
   var persistView=options.persistView!==false;
@@ -8351,19 +8265,6 @@ function renderSettings(){
   var activeSettingsTab = settingsTab || 'general';
   ensureUserManagementAccess();
   ensureModulePermissionAdministrationAccess();
-  ensureOrganizationManagementAccess();
-  if(activeSettingsTab==='organization-members'){
-    var organizationMembersUi=window.OrganizationMembersUI;
-    var organizationMembersHtml='<div class="settings-dashboard" dir="rtl">';
-    organizationMembersHtml+='<div class="settings-nav"><button class="btn btn-gray btn-sm" onclick="returnToOrganizationManagementFromMembers()">← العودة إلى إدارة المؤسسات</button></div>';
-    organizationMembersHtml+=organizationMembersUi&&
-      typeof organizationMembersUi.renderSection==='function'
-      ?organizationMembersUi.renderSection({})
-      :'<div class="settings-empty-state">تعذر تحميل إدارة أعضاء المؤسسة.</div>';
-    organizationMembersHtml+='</div>';
-    ge('tab6').innerHTML=organizationMembersHtml;
-    return;
-  }
   var canOpenUserManagement=userManagementAccessState.status==='loaded'&&
     userManagementAccessState.capabilities&&
     userManagementAccessState.capabilities.canOpenUserManagement===true;
@@ -8384,7 +8285,6 @@ function renderSettings(){
   h+='<button class="btn '+(activeSettingsTab==='houses'?'btn-purple':'btn-gray')+' btn-sm" onclick="switchSettingsTab(\'houses\')">🏠 بيوت المؤتمرات</button>';
   if(canOpenUserManagement)h+='<button class="btn '+(activeSettingsTab==='users'?'btn-purple':'btn-gray')+' btn-sm" onclick="switchSettingsTab(\'users\')">👥 إدارة المستخدمين</button>';
   if(canOpenModulePermissionAdministration)h+='<button class="btn '+(activeSettingsTab==='module-permissions'?'btn-purple':'btn-gray')+' btn-sm" onclick="switchSettingsTab(\'module-permissions\')">صلاحيات الموديولات</button>';
-  if(organizationManagementAccessState.status==='loaded'&&organizationManagementAccessState.canOpen)h+='<button class="btn btn-gray btn-sm" data-organization-management-entry onclick="OrganizationManagementUI.open({returnView:\'settings\'})">🏢 إدارة المؤسسات</button>';
   h+='</div>';
   if(activeSettingsTab==='general')h+='<div id="device_authorization_administration_root" style="display:none"></div>';
   if (activeSettingsTab === 'houses') {
@@ -8422,15 +8322,10 @@ function renderSettings(){
     }
     return;
   }
-  if(window.OrganizationMembersUI&&
-    typeof window.OrganizationMembersUI.renderSection==='function'){
-    h+=window.OrganizationMembersUI.renderSection({});
-  }
   if (!current) {
     h += '<div class="settings-empty-state">يرجى اختيار مؤتمر أو إنشاء مؤتمر جديد أولًا لعرض هذا القسم.</div></div>';
     ge('tab6').innerHTML = h;
     mountSyncSettingsSection();
-    refreshOrganizationMembersSection();
     refreshDeviceAuthorizationAdministration();
     return;
   }
@@ -8557,7 +8452,6 @@ function renderSettings(){
     window.SystemAccessService.applyUi();
   }
   mountSyncSettingsSection();
-  refreshOrganizationMembersSection();
   refreshDeviceAuthorizationAdministration();
   var conferenceSelect = ge('conf_select');
   if(conferenceSelect){
@@ -9036,7 +8930,6 @@ function saveTemplateFloor() {
     selectedHouseTemplateId = previousSelectedHouseTemplateId;
     return false;
   }
-  closeOrganizationManagementScreen();
   var conferenceHeader=ge('globalConferenceHeader');
   if(conferenceHeader)conferenceHeader.style.display='';
   if (editHouseTemplateId === house.id && ge('houseTemplateModal').style.display !== 'none') {
@@ -9539,13 +9432,7 @@ function loadConferenceOrganizationOptions(){
       return {organizationId:String(item.organizationId),displayName:String(item.displayName||'')};
     });
     var selectedId='';
-    var organizationState=window.OrganizationManagementUI&&
-      typeof window.OrganizationManagementUI.getState==='function'
-      ?window.OrganizationManagementUI.getState():null;
-    if(organizationState&&conferenceOrganizationOptions.some(function(item){
-      return item.organizationId===organizationState.selectedId;
-    }))selectedId=organizationState.selectedId;
-    else if(conferenceOrganizationOptions.length===1){
+    if(conferenceOrganizationOptions.length===1){
       selectedId=conferenceOrganizationOptions[0].organizationId;
     }
     renderConferenceOrganizationOptions(selectedId);
