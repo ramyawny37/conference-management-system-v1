@@ -40,7 +40,7 @@
     ['list_conference_activity','public.list_conference_activity(uuid,uuid)'],
     ['record_conference_output_event','public.record_conference_output_event(uuid,uuid,text)']
   ].map(function(entry){return Object.freeze({module:'conference',operation:entry[0],signature:entry[1],dispatchable:true});});
-  var platformResourceLeaseOperations=['acquire_resource_lease','renew_resource_lease','release_resource_lease','get_resource_lease'].map(function(operation){return Object.freeze({module:'conference',operation:operation,signature:'platform_private.'+operation+'(...)',dispatchable:true});});
+  var platformResourceLeaseOperations=['acquire_resource_lease','renew_resource_lease','release_resource_lease','get_resource_lease'].map(function(operation){return Object.freeze({module:'conference',operation:operation,signature:'platform_private.'+operation+'(uuid,text,text,text,text'+(operation==='get_resource_lease'?'':operation==='release_resource_lease'?',uuid':',uuid,integer')+')',dispatchable:true});});
   var conference=canonicalConference.concat(platformResourceLeaseOperations).concat(global.ConferenceDeviceOperationContract.EDGE_ONLY_PROTECTED.map(function(entry){return Object.freeze({module:'conference',operation:entry.operation,signature:entry.signature,dispatchable:true});}));
   var warehouse=global.WarehouseDeviceOperationContract.DISPATCHABLE;
   global.PlatformDeviceOperationContract=Object.freeze({CONFERENCE:Object.freeze(conference),WAREHOUSE:warehouse,DISPATCHABLE:Object.freeze(conference.concat(warehouse)),isAllowed:function(module,operation){return module==='conference'?conference.some(function(entry){return entry.operation===operation;}):module==='warehouse'&&!!(global.WarehouseDeviceOperationContract.get(operation)||{}).dispatchable;}});
