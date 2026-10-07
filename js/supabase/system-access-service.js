@@ -19,7 +19,6 @@
       authenticated:false,
       profileLoaded:false,
       accountStatus:null,
-      canCreateConferences:false,
       isSystemOwner:false,
       isSystemAdmin:false,
       userId:null,
@@ -72,7 +71,6 @@
       var parsed=JSON.parse(storage.getItem(cacheKey(userId))||'null');
       if(!parsed||parsed.userId!==userId||
         ['pending','approved','blocked'].indexOf(parsed.accountStatus)<0||
-        typeof parsed.canCreateConferences!=='boolean'||
         !Array.isArray(parsed.roles)||!parsed.checkedAt){
         return null;
       }
@@ -106,10 +104,6 @@
       authenticated:true,
       profileLoaded:true,
       accountStatus:access.account_status,
-      canCreateConferences:
-        access.account_status==='approved'&&
-        (access.can_create_conferences===true||
-          normalizedRoles.indexOf('system_owner')>=0),
       isSystemOwner:normalizedRoles.indexOf('system_owner')>=0,
       isSystemAdmin:normalizedRoles.indexOf('system_admin')>=0,
       userId:userId,
@@ -126,7 +120,6 @@
     if(cached){
       setFromRecord(userId,{
         account_status:cached.accountStatus,
-        can_create_conferences:cached.canCreateConferences
       },cached.roles,'cache',cached.checkedAt,false);
       state.status=status;
       state.error=error||null;
@@ -148,7 +141,7 @@
       (!state.profileLoaded||!state.fresh||
        state.accountStatus==='pending'||state.accountStatus==='blocked'||
         state.accountStatus==='approved'&&
-          !state.canCreateConferences&&!state.isSystemOwner);
+        state.accountStatus!=='approved');
     var controls=document.querySelectorAll(
       '[data-system-conference-create]'
     );
@@ -192,7 +185,7 @@
   function validAccess(row,userId){
     return row&&String(row.user_id||'')===userId&&
       ['pending','approved','blocked'].indexOf(row.account_status)>=0&&
-      typeof row.can_create_conferences==='boolean';
+      true;
   }
 
   function validRoles(rows,userId){
@@ -234,7 +227,7 @@
     state.userId=userId;
     applyUi();
     var accessRequest=client.from('system_user_access')
-      .select('user_id,account_status,can_create_conferences,updated_at')
+      .select('user_id,account_status,updated_at')
       .eq('user_id',userId)
       .maybeSingle();
     var rolesRequest=client.from('system_user_roles')
@@ -264,8 +257,6 @@
         writeCache(d.storage,{
           userId:userId,
           accountStatus:accessResponse.data.account_status,
-          canCreateConferences:
-            accessResponse.data.can_create_conferences===true,
           roles:roles.map(function(row){return {role:row.role};}),
           checkedAt:checkedAt,
           source:'server'
@@ -336,12 +327,6 @@
     return copy(state);
   }
 
-  function canCreateConference(){
-    return state.authenticated&&state.profileLoaded&&state.fresh&&
-      state.accountStatus==='approved'&&
-      (state.canCreateConferences||state.isSystemOwner);
-  }
-
   function resetForTests(){
     if(authSubscription&&typeof authSubscription.unsubscribe==='function'){
       authSubscription.unsubscribe();
@@ -362,7 +347,6 @@
       return load(options);
     },
     getState:getState,
-    canCreateConference:canCreateConference,
     applyUi:applyUi,
     resetForTests:resetForTests
   });
