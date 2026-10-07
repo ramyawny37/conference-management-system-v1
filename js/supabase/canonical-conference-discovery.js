@@ -11,7 +11,7 @@
     )).then(function(response){
       var rows=response&&Array.isArray(response.conferences)?response.conferences:[];
       var conferences=rows.filter(function(item){return item&&item.conferenceId;}).map(function(item){return {
-        id:item.conferenceId,organizationId:item.organizationId||null,name:item.name,
+        id:item.conferenceId,name:item.name,
         startDate:item.startDate||null,endDate:item.endDate||null,status:item.status,
         completedAt:item.completedAt||null,revision:item.revision,
         createdAt:item.createdAt,updatedAt:item.updatedAt,
