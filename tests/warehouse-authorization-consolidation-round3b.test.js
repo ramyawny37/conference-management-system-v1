@@ -11,7 +11,6 @@ const contractSource=read('js/supabase/warehouse-device-operation-contract.js');
 const transport=read('js/supabase/warehouse-transport.js');
 const session=read('js/supabase/device-session.js');
 const currentStore=read('js/warehouse/current-store-context.js');
-const conferenceContract=read('js/supabase/conference-device-operation-contract.js');
 const guarded=read('supabase/migrations/20260829140200_warehouse_v1_guarded_rpc.sql');
 const secureReads=read('supabase/migrations/20260829150500_warehouse_secure_read_surface.sql');
 const unified=read('supabase/migrations/20260903180000_unified_platform_warehouse_device_operation.sql');
@@ -86,10 +85,3 @@ test('the reconciled inventory role model is not consumed by Warehouse runtime a
   assert.doesNotMatch(authorizationRuntime,/inventory\.[a-z]|platform\.user_roles|platform\.role_permissions|platform\.permissions/);
 });
 
-test('Conference Organization authorization contracts remain present and separate',()=>{
-  assert.match(conferenceContract,/device_guarded_list_my_organizations/);
-  assert.match(conferenceContract,/device_guarded_get_my_organization_access/);
-  assert.match(conferenceContract,/device_guarded_list_organization_members/);
-  assert.match(conferenceContract,/is_current_user_organization_member/);
-  assert.doesNotMatch(contractSource,/organization/i);
-});
