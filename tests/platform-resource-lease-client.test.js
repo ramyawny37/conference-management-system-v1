@@ -41,3 +41,13 @@ test('stale accommodation response cannot overwrite a newer accepted response',(
  assert.equal(stale.pricing.revision,2);
  assert.equal(sandbox.PlatformIntegration.getConferenceAccommodationState(local).pricing.revision,2);
 });
+
+test('owned room lease renewal preserves token and uses protected dispatch',async()=>{
+ const env=environment(),id='40000000-0000-4000-8000-000000000002';
+ await env.api.acquireResourceLease('conference','accommodation_room',id);
+ const renewed=await env.api.renewResourceLease('conference','accommodation_room',id);
+ assert.equal(renewed.owned,true);
+ assert.equal(env.calls[1].operation,'renew_resource_lease');
+ assert.equal(env.calls[1].args.p_lease_token,env.token);
+ assert.equal(env.api.getOwnedResourceLease('conference','accommodation_room',id).leaseToken,env.token);
+});
