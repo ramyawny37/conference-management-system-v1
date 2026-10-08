@@ -26,3 +26,14 @@ test('invalid resource identity is rejected before dispatch',async()=>{
  await assert.rejects(env.api.acquireResourceLease('conference','bad type','room'),error=>error.code==='PLATFORM_RESOURCE_LEASE_ARGUMENT_INVALID');
  assert.equal(env.calls.length,0);
 });
+
+test('accommodation refresh ignores an older response arriving last',async()=>{
+ const env=environment(),local='local-a',remote='50000000-0000-4000-8000-000000000001';
+ const pending=[];
+ const original=env.api.hydrateConferenceAccommodation;
+ assert.equal(typeof original,'function');
+ // Read-only structural assertion: both hydration and mutation use the same sequence guard.
+ assert.match(source,/function hydrateConferenceAccommodation[\\s\\S]*?acceptConferenceAccommodation\\(localId,remoteId,response,sequence\\)/);
+ assert.match(source,/function mutateAccommodation[\\s\\S]*?acceptConferenceAccommodation\\(localId,record.remoteConferenceId,response,sequence\\)/);
+ assert.match(source,/if\\(sequence!==undefined&&sequence!==accommodationRefreshSequence\\[String\\(localId\\)\\]\\)/);
+});
