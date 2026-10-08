@@ -2815,6 +2815,8 @@ function renderAccommodation() {
     renderCanonicalAccommodation(canonicalAccommodationState());
     return;
   }
+  ge('tab0').innerHTML='<main class="accommodation-dashboard"><div class="card" role="status" style="text-align:center;padding:20px">التسكين متاح فقط للمؤتمرات المرتبطة بالمنصة. اختر مؤتمرًا مرتبطًا للمتابعة.</div></main>';
+  return;
   var normalizedSearchQuery=normalizeAccommodationSearchText(accommodationSearchQuery);
   var isFiltering=!!normalizedSearchQuery;
   var lockState=window.ConferenceEditLockManager&&
