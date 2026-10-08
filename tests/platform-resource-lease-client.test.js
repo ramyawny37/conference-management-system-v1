@@ -27,13 +27,17 @@ test('invalid resource identity is rejected before dispatch',async()=>{
  assert.equal(env.calls.length,0);
 });
 
-test('accommodation refresh ignores an older response arriving last',async()=>{
- const env=environment(),local='local-a',remote='50000000-0000-4000-8000-000000000001';
- const pending=[];
- const original=env.api.hydrateConferenceAccommodation;
- assert.equal(typeof original,'function');
- // Read-only structural assertion: both hydration and mutation use the same sequence guard.
- assert.match(source,/function hydrateConferenceAccommodation[\\s\\S]*?acceptConferenceAccommodation\\(localId,remoteId,response,sequence\\)/);
- assert.match(source,/function mutateAccommodation[\\s\\S]*?acceptConferenceAccommodation\\(localId,record.remoteConferenceId,response,sequence\\)/);
- assert.match(source,/if\\(sequence!==undefined&&sequence!==accommodationRefreshSequence\\[String\\(localId\\)\\]\\)/);
+test('stale accommodation response cannot overwrite a newer accepted response',()=>{
+ const sandbox={window:null,console,Promise,JSON,Object,String,Array,Date,RegExp,Error,Uint8Array,Math,setTimeout,clearTimeout,navigator:{onLine:true},document:{addEventListener(){}},addEventListener(){},dispatchEvent(){},CustomEvent:function(){},crypto:{randomUUID(){return '11111111-1111-4111-8111-111111111111'}},PlatformDeviceSession:{invokeModuleProtected(){return Promise.resolve({})}}};
+ sandbox.window=sandbox;
+ const instrumented=source.replace('function hydrateConferenceAccommodation(localId,remoteId)', 'global.__testAccommodationAccept=acceptConferenceAccommodation;global.__testAccommodationSequence=accommodationRefreshSequence;function hydrateConferenceAccommodation(localId,remoteId)');
+ assert.notEqual(instrumented,source);
+ vm.runInNewContext(instrumented,sandbox);
+ const local='local-a',remote='50000000-0000-4000-8000-000000000001';
+ sandbox.__testAccommodationSequence[local]=2;
+ const response=revision=>({conferenceId:remote,houses:[],pricing:{revision}});
+ sandbox.__testAccommodationAccept(local,remote,response(2),2);
+ const stale=sandbox.__testAccommodationAccept(local,remote,response(1),1);
+ assert.equal(stale.pricing.revision,2);
+ assert.equal(sandbox.PlatformIntegration.getConferenceAccommodationState(local).pricing.revision,2);
 });
