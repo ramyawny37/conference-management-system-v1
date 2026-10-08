@@ -51,3 +51,9 @@ test('owned room lease renewal preserves token and uses protected dispatch',asyn
  assert.equal(env.calls[1].args.p_lease_token,env.token);
  assert.equal(env.api.getOwnedResourceLease('conference','accommodation_room',id).leaseToken,env.token);
 });
+
+test('room structure edits require hydrated canonical state',async()=>{
+ const env=environment();
+ await assert.rejects(env.api.mutateConferenceAccommodationStructure('missing','update_accommodation_room',{p_room_id:'40000000-0000-4000-8000-000000000003'}),error=>error.code==='CANONICAL_CONFERENCE_ACCOMMODATION_NOT_HYDRATED');
+ assert.equal(env.calls.length,0);
+});
