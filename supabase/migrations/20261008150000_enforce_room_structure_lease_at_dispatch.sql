@@ -6,8 +6,8 @@ begin
  where n.nspname='platform_private' and p.proname='route_canonical_conference_operation';
  if d is null then raise exception 'CANONICAL_DISPATCH_NOT_FOUND'; end if;
  marker:='then return public.mutate_conference_accommodation_structure(p_actor_device_id,replace(p_operation,''_accommodation_'',''_''),p_args);';
- if (length(d)-length(replace(d,marker,'')))<>length(marker) then
-  raise exception 'ROOM_STRUCTURE_DISPATCH_MARKER_NOT_UNIQUE';
+ if position(marker in d)=0 then
+  raise exception 'ROOM_STRUCTURE_DISPATCH_MARKER_MISSING';
  end if;
  replacement:=$body$then
   if p_operation in ('update_accommodation_room','delete_accommodation_room') then
