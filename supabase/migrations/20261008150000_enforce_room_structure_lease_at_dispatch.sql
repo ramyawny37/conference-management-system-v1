@@ -5,11 +5,11 @@ begin
  select pg_get_functiondef(p.oid) into d from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='platform_private' and p.proname='route_canonical_conference_operation';
  if d is null then raise exception 'CANONICAL_DISPATCH_NOT_FOUND'; end if;
- marker:='then return public.mutate_conference_accommodation_structure(p_actor_device_id,replace(p_operation,''_accommodation_'',''_''),p_args);';
+ marker:='elsif p_operation in(''create_accommodation_house'',''update_accommodation_house'',''delete_accommodation_house'',''create_accommodation_floor'',''update_accommodation_floor'',''delete_accommodation_floor'',''create_accommodation_room'',''update_accommodation_room'',''delete_accommodation_room'') then';
  if position(marker in d)=0 then
   raise exception 'ROOM_STRUCTURE_DISPATCH_MARKER_MISSING';
  end if;
- replacement:=$body$then
+ replacement:=$body$elsif p_operation in('create_accommodation_house','update_accommodation_house','delete_accommodation_house','create_accommodation_floor','update_accommodation_floor','delete_accommodation_floor','create_accommodation_room','update_accommodation_room','delete_accommodation_room') then
   if p_operation in ('update_accommodation_room','delete_accommodation_room') then
    if jsonb_typeof(p_args->'p_room_lease_tokens') is distinct from 'array'
       or jsonb_array_length(p_args->'p_room_lease_tokens')<>1 then
