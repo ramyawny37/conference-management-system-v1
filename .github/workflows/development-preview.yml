@@ -47,6 +47,14 @@ jobs:
           printf '%s\n' "${GITHUB_SHA}" > site/conference-management-system-development-preview/development-preview-source.txt
           rm -rf site/.git site/.github
 
+      - name: Validate platform resource lease client
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check develop-source/js/platform-integration.js
+          cd develop-source
+          node --test tests/platform-resource-lease-client.test.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
