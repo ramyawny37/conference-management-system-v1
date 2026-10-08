@@ -57,3 +57,26 @@ test('room structure edits require hydrated canonical state',async()=>{
  await assert.rejects(env.api.mutateConferenceAccommodationStructure('missing','update_accommodation_room',{p_room_id:'40000000-0000-4000-8000-000000000003'}),error=>error.code==='CANONICAL_CONFERENCE_ACCOMMODATION_NOT_HYDRATED');
  assert.equal(env.calls.length,0);
 });
+
+test('canonical room edit dispatches only after obtaining its resource lease',async()=>{
+ const env=environment(),local='room-edit',remote='50000000-0000-4000-8000-000000000004',room='40000000-0000-4000-8000-000000000004';
+ const sandbox={window:null,console,Promise,JSON,Object,String,Array,Date,RegExp,Error,Uint8Array,Math,setTimeout,clearTimeout,navigator:{onLine:true},document:{addEventListener(){}},addEventListener(){},dispatchEvent(){},CustomEvent:function(){},crypto:{randomUUID(){return env.token}},PlatformDeviceSession:{invokeModuleProtected(module,operation,args){
+  env.calls.push({module,operation,args:JSON.parse(JSON.stringify(args))});
+  if(operation==='get_conference_accommodation')return Promise.resolve({conferenceId:remote,houses:[],pricing:{}});
+  if(operation==='acquire_resource_lease')return Promise.resolve({owned:true,leaseToken:env.token,expiresAt:'2099-01-01T00:00:00Z'});
+  if(operation==='get_resource_lease')return Promise.resolve({owned:false,locked:false});
+  if(operation==='release_resource_lease')return Promise.resolve({owned:false});
+  return Promise.resolve({ok:true});
+ }}};
+ sandbox.window=sandbox;
+ const instrumented=source.replace('function hydrateConferenceAccommodation(localId,remoteId)','global.__acceptAccommodation=acceptConferenceAccommodation;function hydrateConferenceAccommodation(localId,remoteId)');
+ vm.runInNewContext(instrumented,sandbox);
+ sandbox.__acceptAccommodation(local,remote,{conferenceId:remote,houses:[],pricing:{}});
+ await sandbox.PlatformIntegration.mutateConferenceAccommodationStructure(local,'update_accommodation_room',{p_room_id:room,p_expected_revision:1});
+ const operations=env.calls.map(call=>call.operation);
+ assert.ok(operations.indexOf('acquire_resource_lease')>=0);
+ assert.ok(operations.indexOf('update_accommodation_room')>operations.indexOf('acquire_resource_lease'));
+ const write=env.calls.find(call=>call.operation==='update_accommodation_room');
+ assert.equal(write.args.p_room_lease_tokens[0].roomId,room);
+ assert.equal(write.args.p_room_lease_tokens[0].token,env.token);
+});
