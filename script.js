@@ -9317,10 +9317,16 @@ function createConferenceFromSelection(){
     conferenceCanonicalCreateDraft=null;
     closeNewConferenceModal();
     showStartupConferenceList();
-    showToast('تم إنشاء المؤتمر بنجاح');
-    return openDiscoveredConferenceFromStartup(draft.conferenceId);
+    return Promise.resolve(openDiscoveredConferenceFromStartup(draft.conferenceId)).then(function(opened){
+      if(!opened||opened.ok!==true){
+        showToast('تم إنشاء المؤتمر وظهر في القائمة، لكن تعذر فتحه. يمكنك إعادة فتحه من قائمة المؤتمرات.','#E74C3C');
+        return false;
+      }
+      showToast('تم إنشاء المؤتمر وفتحه بنجاح');
+      return opened;
+    });
   }).catch(function(error){
-    showToast(created?'تم إنشاء المؤتمر لكن تعذر تحديث القائمة. أعد فتح قائمة المؤتمرات.':
+    showToast(created?'تم إنشاء المؤتمر لكن تعذر تأكيد ظهوره أو فتحه. أعد تحديث قائمة المؤتمرات.':
       'تعذر تأكيد إنشاء المؤتمر. أعد المحاولة دون تغيير البيانات.','#E74C3C');
     return false;
   }).finally(function(){
