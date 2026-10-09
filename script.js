@@ -2788,7 +2788,7 @@ function renderCanonicalAccommodation(state){
   var h='<main class="accommodation-dashboard">';
   if(!state){h+='<div class="card" role="status">جارٍ تحميل بيانات التسكين المركزية...</div></main>';ge('tab0').innerHTML=h;return;}
   var houses=state.houses||[],rooms=[];houses.forEach(function(house){(house.floors||[]).forEach(function(floor){(floor.rooms||[]).forEach(function(room){rooms.push(room);});});});
-  var occupied=rooms.reduce(function(n,room){return n+(room.occupancies||[]).length;},0),capacity=rooms.reduce(function(n,room){return n+Number(room.baseCapacity||0)+Number(room.extraBedCapacity||0);},0);
+  var occupied=rooms.reduce(function(n,room){return n+(room.occupancies||[]).length;},0);
   var occupiedRooms=rooms.filter(function(room){return (room.occupancies||[]).length>0;}).length;
   var closedRooms=rooms.filter(function(room){return room.isClosed===true;}).length;
   var extraBedsUsed=rooms.reduce(function(total,room){return total+(room.occupancies||[]).filter(function(item){return item.bedType==='extra';}).length;},0);
