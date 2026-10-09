@@ -68,9 +68,13 @@
     diagnostics.lastRemoteConferenceId=remoteId;
     var flight=available(remoteId,options).then(function(access){
       if(!access.ok||token!==generation)return token===generation?access:result(false,'stale');
-      var localId=linkFor(remoteId,access.data.conference,options);
-      ensureRuntimeConference(localId,access.data.conference,options);
+      var links=options.links||global.ConferenceLinkStore;
+      var existing=links&&typeof links.findByRemoteId==='function'?links.findByRemoteId(remoteId):null;
+      var localId=String(existing&&existing.localConferenceId||remoteId);
       return hydrate(localId,remoteId).then(function(){
+        if(token!==generation)return result(false,'stale');
+        linkFor(remoteId,access.data.conference,options);
+        ensureRuntimeConference(localId,access.data.conference,options);
         if(token!==generation)return result(false,'stale');
         var authorization=global.ConferenceActivationAuthorization;
         if(!authorization||typeof authorization.authorizeCloud!=='function'){
