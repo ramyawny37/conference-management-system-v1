@@ -47,6 +47,9 @@ async function run(){
  const denied=setup({createResult:{ok:false}});
  assert.equal(await denied.sandbox.createConferenceFromSelection(),false);
  assert.equal(denied.opened,0);
+ const mismatch=setup({createResult:{status:'created',conferenceId:'wrong',operationId:'wrong'}});
+ assert.equal(await mismatch.sandbox.createConferenceFromSelection(),false);
+ assert.equal(mismatch.opened,0);
  const notListed=setup({recordsMissing:true});
  assert.equal(await notListed.sandbox.createConferenceFromSelection(),false);
  assert.equal(notListed.opened,0);
