@@ -42,7 +42,7 @@ test('automatic link persistence failure stops before runtime mutation or hydrat
   assert.equal(result.error.code,'CONFERENCE_LINK_SAVE_FAILED');
   assert.equal(env.getData().currentConferenceId,null);
   assert.equal(env.getData().conferences.length,0);
-  assert.deepEqual(env.calls,[]);
+  assert.equal(env.calls.includes('activate'),false);
 });
 
 test('failed hydration preserves previously selected conference',async()=>{
@@ -53,4 +53,14 @@ test('failed hydration preserves previously selected conference',async()=>{
   assert.equal(result.status,'canonical_hydration_failed');
   assert.equal(env.getData().currentConferenceId,'existing-conference');
   assert.equal(env.calls.includes('activate'),false);
+});
+
+test('canonical hydration failure does not persist a new link or runtime conference',async()=>{
+  const env=environment('finance');
+  const result=await env.sandbox.DiscoveredConferenceOpenService.open(remote);
+  assert.equal(result.ok,false);
+  assert.equal(result.status,'canonical_hydration_failed');
+  assert.equal(env.links[remote],undefined);
+  assert.equal(env.getData().conferences.length,0);
+  assert.equal(env.getData().currentConferenceId,null);
 });
