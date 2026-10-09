@@ -52,8 +52,10 @@ jobs:
         run: |
           set -euo pipefail
           node --check develop-source/js/platform-integration.js
+          node --check develop-source/js/sync/discovered-conference-open-service.js
+          node --check develop-source/script.js
           cd develop-source
-          node --test tests/platform-resource-lease-client.test.js
+          node --test tests/platform-resource-lease-client.test.js tests/discovered-conference-open-service.test.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
