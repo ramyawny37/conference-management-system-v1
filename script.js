@@ -7173,40 +7173,22 @@ function openDiscoveredConferenceFromStartup(remoteConferenceId){
 }
 
 function getStartupConferenceViewModel(){
-  var localConferences=Array.isArray(appData&&appData.conferences)
-    ?appData.conferences.slice():[];
-  var merged=localConferences.slice();
-  var remoteIds=Object.create(null);
-  localConferences.forEach(function(conference,index){
-    if(!conference)return;
-    var localId=String(conference.id||'');
-    var link=window.ConferenceLinkStore&&
-      typeof window.ConferenceLinkStore.get==='function'
-      ?window.ConferenceLinkStore.get(localId):null;
-    var linkedRemoteId=String(link&&link.remoteConferenceId||'');
-    if(linkedRemoteId){
-      remoteIds[linkedRemoteId]=true;
-      var linkedViewConference=typeof structuredClone==='function'
-        ?structuredClone(conference)
-        :JSON.parse(JSON.stringify(conference));
-      linkedViewConference.__startupDiscoveredRemoteId=linkedRemoteId;
-      merged[index]=linkedViewConference;
-    }
-  });
   var discovered=window.StartupConferenceDiscovery&&
     typeof window.StartupConferenceDiscovery.getRecords==='function'
     ?window.StartupConferenceDiscovery.getRecords():[];
-  discovered.forEach(function(conference){
-    var remoteId=String(conference&&conference.id||'');
-    if(!remoteId||remoteIds[remoteId])return;
-    remoteIds[remoteId]=true;
-    var viewConference=typeof structuredClone==='function'
+  var seen=Object.create(null);
+  return discovered.filter(function(conference){
+    var id=String(conference&&conference.id||'');
+    if(!id||seen[id])return false;
+    seen[id]=true;
+    return true;
+  }).map(function(conference){
+    var view=typeof structuredClone==='function'
       ?structuredClone(conference)
       :JSON.parse(JSON.stringify(conference));
-    viewConference.__startupDiscoveredRemoteId=remoteId;
-    merged.push(viewConference);
+    view.__startupDiscoveredRemoteId=String(conference.id);
+    return view;
   });
-  return merged;
 }
 
 function showStartupConferenceList(){
