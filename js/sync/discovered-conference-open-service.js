@@ -40,7 +40,7 @@
       found.startDate=conference.startDate||found.startDate||'';
       found.endDate=conference.endDate||found.endDate||'';
     }
-    data.currentConferenceId=localId;
+    // Activation selects the conference only after canonical hydration and authorization.
     applyData(data);
     return data;
   }
@@ -87,16 +87,7 @@
           activationDecision:activationDecision,
           enterApplication:options.enterApplication===true
         })===true;
-        if(!activated){
-          var getData=options.getAppData||function(){return global.appData;};
-          var applyData=options.applyAppData||function(value){global.appData=value;};
-          var currentData=copy(getData()||{});
-          if(String(currentData.currentConferenceId||'')===localId){
-            currentData.currentConferenceId=null;
-            applyData(currentData);
-          }
-          return result(false,'runtime_activation_failed');
-        }
+        if(!activated)return result(false,'runtime_activation_failed');
         return result(true,'opened',{localConferenceId:localId,remoteConferenceId:remoteId,canonicalAccess:true,capabilities:access.data.capabilities});
       });
     }).catch(function(error){return result(false,error&&error.code==='CONFERENCE_LINK_SAVE_FAILED'?'conference_link_save_failed':error&&error.code==='CONFERENCE_LINK_STORE_UNAVAILABLE'?'conference_link_store_unavailable':'canonical_hydration_failed',null,{code:String(error&&error.code||error&&error.message||'CANONICAL_HYDRATION_FAILED')});}).finally(function(){if(flights[remoteId]===flight)delete flights[remoteId];});
