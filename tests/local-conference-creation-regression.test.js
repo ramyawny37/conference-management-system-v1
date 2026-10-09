@@ -58,13 +58,13 @@ async function run(){
  const second=pending.sandbox.createConferenceFromSelection();
  assert.equal(first,second);
  assert.equal(pending.calls.length,1);
- gate.resolve({ok:true});await first;
+ gate.resolve({status:'created',conferenceId:pending.calls[0].payload.p_requested_conference_id,operationId:pending.calls[0].payload.p_operation_id});await first;
  assert.equal(pending.calls.length,1);
  const retryGate=deferred(),retry=setup({gate:retryGate});
  const attempt=retry.sandbox.createConferenceFromSelection();
  const original=retry.calls[0].payload.p_operation_id;
  retryGate.reject(new Error('offline'));await attempt;
- retry.sandbox.PlatformDeviceSession.invokeModuleProtected=(m,o,p)=>{retry.calls.push({module:m,operation:o,payload:p});return Promise.resolve({ok:true});};
+ retry.sandbox.PlatformDeviceSession.invokeModuleProtected=(m,o,p)=>{retry.calls.push({module:m,operation:o,payload:p});return Promise.resolve({status:'duplicate',conferenceId:p.p_requested_conference_id,operationId:p.p_operation_id});};
  await retry.sandbox.createConferenceFromSelection();
  assert.equal(retry.calls[1].payload.p_operation_id,original);
  console.log('canonical conference creation regression tests: passed');
