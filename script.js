@@ -2800,11 +2800,13 @@ function renderCanonicalAccommodation(state){
     if(query&&normalizeAccommodationSearchText(searchable).indexOf(query)<0)return false;
     if(filter==='occupied'&&!guests.length)return false;
     if(filter==='empty'&&guests.length)return false;
+    if(filter==='closed'&&!room.isClosed)return false;
+    if(filter==='available'&&(room.isClosed||guests.length>=Number(room.baseCapacity||0)+Number(room.extraBedCapacity||0)))return false;
     return true;
   });
   h+=renderAccommodationSearchControls(matchingRooms.length,!!query);
   h+='<div class="accommodation-quick-filters" role="group" aria-label="فلترة الغرف">';
-  [['all','كل الغرف'],['occupied','الغرف المشغولة'],['empty','الغرف الفارغة']].forEach(function(item){
+  [['all','كل الغرف'],['occupied','الغرف المشغولة'],['empty','الغرف الفارغة'],['available','بها أماكن'],['closed','الغرف المغلقة']].forEach(function(item){
     h+='<button type="button" class="filter-item '+(filter===item[0]?'active':'')+'" onclick="setAccommodationQuickFilter(\''+item[0]+'\')">'+item[1]+'</button>';
   });
   h+='</div>';
