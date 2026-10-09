@@ -9380,11 +9380,12 @@ function openNewConferenceModal(mode){
 
   ge('nc_modal_title').textContent = conferenceDialogMode === 'edit' ? '✏️ تعديل المؤتمر' : '➕ مؤتمر جديد';
   ge('nc_save_btn').textContent = conferenceDialogMode === 'edit' ? '💾 حفظ التعديلات' : '💾 إنشاء المؤتمر';
-  ge('cfg_name').value = conf.name || '';
+  var retryDraft=conferenceDialogMode==='create'?conferenceCanonicalCreateDraft:null;
+  ge('cfg_name').value = retryDraft ? retryDraft.name : (conf.name || '');
   ge('cfg_days').value = conf.days || 1;
   ge('cfg_place').value = conf.place || '';
-  ge('cfg_start').value = conf.startDate || '';
-  ge('cfg_end').value = conf.endDate || '';
+  ge('cfg_start').value = retryDraft ? retryDraft.startDate : (conf.startDate || '');
+  ge('cfg_end').value = retryDraft ? retryDraft.endDate : (conf.endDate || '');
   if(ge('cfg_place'))ge('cfg_place').disabled=false;
 
   ge('newConferenceModal').style.display = 'flex';
