@@ -7336,7 +7336,16 @@ function openPreviousConferenceById(id){
 يجب أن تمر جميع بطاقات وقوائم اختيار المؤتمرات من خلال هذه الدالة.
 */
 function openConferenceFromStartup(id){
-  return setCurrentConferenceById(id,{enterApplication:true});
+  // A local-only conference must never be reported as a canonical cloud open.
+  var linked=window.ConferenceLinkStore&&typeof window.ConferenceLinkStore.get==='function'
+    ?window.ConferenceLinkStore.get(String(id||'')):null;
+  if(linked&&linked.remoteConferenceId){
+    return openDiscoveredConferenceFromStartup(linked.remoteConferenceId);
+  }
+  if(typeof showToast==='function'){
+    showToast('المؤتمر غير موجود ضمن المؤتمرات السحابية المصرح بها. لا يمكن فتحه كتسكين سحابي.','#E74C3C');
+  }
+  return false;
 }
 
 var conferenceBrandingDraft=null;
