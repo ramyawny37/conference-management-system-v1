@@ -32,3 +32,15 @@ test('canonical hydration failure has no fallback and does not activate',async()
 test('runtime contains no linked whole-document read, revision, queue, or recovery contract',()=>{
   assert.doesNotMatch(source,/conference_snapshots|SupabaseSnapshotSync|OfflineSyncQueue|snapshotRevision|baseRevision|needs_resolution|recovery|fallback/i);
 });
+
+test('automatic link persistence failure stops before runtime mutation or hydration',async()=>{
+  const env=environment();
+  env.sandbox.ConferenceLinkStore.save=()=>({ok:false,status:'storage_error'});
+  const result=await env.sandbox.DiscoveredConferenceOpenService.open(remote);
+  assert.equal(result.ok,false);
+  assert.equal(result.status,'conference_link_save_failed');
+  assert.equal(result.error.code,'CONFERENCE_LINK_SAVE_FAILED');
+  assert.equal(env.getData().currentConferenceId,null);
+  assert.equal(env.getData().conferences.length,0);
+  assert.deepEqual(env.calls,[]);
+});
