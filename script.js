@@ -2791,6 +2791,7 @@ function renderCanonicalAccommodation(state){
   var occupied=rooms.reduce(function(n,room){return n+(room.occupancies||[]).length;},0);
   var occupiedRooms=rooms.filter(function(room){return (room.occupancies||[]).length>0;}).length;
   var closedRooms=rooms.filter(function(room){return room.isClosed===true;}).length;
+  var emptyOpenRooms=rooms.filter(function(room){return !room.isClosed&&!(room.occupancies||[]).length;}).length;
   var extraBedsUsed=rooms.reduce(function(total,room){return total+(room.occupancies||[]).filter(function(item){return item.bedType==='extra';}).length;},0);
   var openRooms=rooms.filter(function(room){return room.isClosed!==true;});
   var usableCapacity=openRooms.reduce(function(total,room){return total+Number(room.baseCapacity||0)+Number(room.extraBedCapacity||0);},0);
@@ -2802,7 +2803,7 @@ function renderCanonicalAccommodation(state){
     var searchable=[room.roomNumber].concat(guests.map(function(item){return item.person&&item.person.fullName||'';})).join(' ');
     if(query&&normalizeAccommodationSearchText(searchable).indexOf(query)<0)return false;
     if(filter==='occupied'&&!guests.length)return false;
-    if(filter==='empty'&&guests.length)return false;
+    if(filter==='empty'&&(guests.length||room.isClosed))return false;
     if(filter==='closed'&&!room.isClosed)return false;
     if(filter==='available'&&(room.isClosed||guests.length>=Number(room.baseCapacity||0)+Number(room.extraBedCapacity||0)))return false;
     return true;
@@ -2815,7 +2816,7 @@ function renderCanonicalAccommodation(state){
   h+='</div>';
   h+='<div class="accommodation-search-count" aria-live="polite">الغرف المعروضة: '+matchingRooms.length+' من '+rooms.length+'</div>';
   h+='<div class="accommodation-edit-toolbar"><button class="btn btn-blue" onclick="createCanonicalAccommodationHouse()">➕ إضافة بيت تسكين</button></div>';
-  h+='<div class="accommodation-canonical-summary" role="group" aria-label="ملخص التسكين"><div class="card">إجمالي الغرف <strong>'+rooms.length+'</strong></div><div class="card">الغرف المشغولة <strong>'+occupiedRooms+'</strong></div><div class="card">الغرف الفارغة <strong>'+(rooms.length-occupiedRooms)+'</strong></div><div class="card">الغرف المغلقة <strong>'+closedRooms+'</strong></div><div class="card">النزلاء <strong>'+occupied+'</strong></div><div class="card">الأسرة الإضافية المستخدمة <strong>'+extraBedsUsed+'</strong></div><div class="card">الأسرة المتاحة <strong>'+Math.max(0,usableCapacity-openOccupancies)+'</strong></div></div>';
+  h+='<div class="accommodation-canonical-summary" role="group" aria-label="ملخص التسكين"><div class="card">إجمالي الغرف <strong>'+rooms.length+'</strong></div><div class="card">الغرف المشغولة <strong>'+occupiedRooms+'</strong></div><div class="card">الغرف الفارغة <strong>'+emptyOpenRooms+'</strong></div><div class="card">الغرف المغلقة <strong>'+closedRooms+'</strong></div><div class="card">النزلاء <strong>'+occupied+'</strong></div><div class="card">الأسرة الإضافية المستخدمة <strong>'+extraBedsUsed+'</strong></div><div class="card">الأسرة المتاحة <strong>'+Math.max(0,usableCapacity-openOccupancies)+'</strong></div></div>';
   if((query||filter!=='all')&&!matchingRooms.length&&rooms.length)h+='<div class="card" role="status">لا توجد غرف مطابقة للبحث أو الفلتر.</div>';
   if(!houses.length)h+='<div class="card" role="status" style="text-align:center;padding:20px;color:#95a5a6;">لا توجد بيوت تسكين في بيانات المؤتمر المركزية. يمكنك إضافة بيت من الزر أعلاه.</div>';
   state.houses.forEach(function(house){
