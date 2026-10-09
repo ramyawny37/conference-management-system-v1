@@ -9306,7 +9306,11 @@ function createConferenceFromSelection(){
     p_operation_id:draft.operationId,p_requested_conference_id:draft.conferenceId,
     p_name:name,p_start_date:startDate,p_end_date:endDate
   }).then(function(response){
-    if(!response||response.ok===false)throw new Error('CANONICAL_CONFERENCE_CREATE_DENIED');
+    if(!response||!['created','duplicate'].includes(response.status)||
+       String(response.conferenceId)!==draft.conferenceId||
+       String(response.operationId)!==draft.operationId){
+      throw new Error('CANONICAL_CONFERENCE_CREATE_RESULT_INVALID');
+    }
     created=true;
     return window.StartupConferenceDiscovery.refresh();
   }).then(function(listed){
