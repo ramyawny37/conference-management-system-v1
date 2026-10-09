@@ -1617,8 +1617,11 @@ function openConferenceWorkspace(options){
   return true;
 }
 function renderTab(n){
-  renderGlobalConferenceHeader();
-  if (n === 0) renderAccommodation();
+  if (n === 0) {
+    var conferenceHeader=ge('globalConferenceHeader');
+    if(conferenceHeader){conferenceHeader.innerHTML='';conferenceHeader.style.display='none';}
+    renderAccommodation();
+  }
   else if (n === 1) renderTransports();
   else if (n === 2) renderAccounts();
   else if (n === 3) renderV3Reports();
@@ -2841,9 +2844,8 @@ function renderCanonicalAccommodation(state){
 
 function renderAccommodation() {
   var current = getCurrentConference();
-  renderGlobalConferenceHeader();
   if (!current || !getCanonicalConferenceCoreLink(current.id)) {
-    ge('tab0').innerHTML = '<main class="accommodation-dashboard"><div class="card" role="status">التسكين متاح فقط للمؤتمرات المرتبطة بالمنصة.</div></main>';
+    ge('tab0').innerHTML = '<main class="accommodation-dashboard"><div class="card" role="status">لا تتوفر بيانات تسكين سحابية للمؤتمر الحالي. افتح المؤتمر من قائمة المؤتمرات بالمنصة لإعادة تحميل سياقه تلقائيًا؛ لا يلزم إنشاء ربط يدوي.</div></main>';
     return;
   }
   renderCanonicalAccommodation(canonicalAccommodationState());
