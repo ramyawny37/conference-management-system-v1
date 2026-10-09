@@ -7196,10 +7196,9 @@ function getStartupConferenceViewModel(){
   var discovered=window.StartupConferenceDiscovery&&
     typeof window.StartupConferenceDiscovery.getRecords==='function'
     ?window.StartupConferenceDiscovery.getRecords():[];
-  discovered.forEach(function(record){
-    var remoteId=String(record&&record.remoteConferenceId||'');
-    var conference=record&&record.conference;
-    if(!remoteId||remoteIds[remoteId]||!conference)return;
+  discovered.forEach(function(conference){
+    var remoteId=String(conference&&conference.id||'');
+    if(!remoteId||remoteIds[remoteId])return;
     remoteIds[remoteId]=true;
     var viewConference=typeof structuredClone==='function'
       ?structuredClone(conference)
