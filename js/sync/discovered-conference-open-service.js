@@ -18,8 +18,10 @@
     var links=options.links||global.ConferenceLinkStore;
     var existing=links&&typeof links.findByRemoteId==='function'?links.findByRemoteId(remoteId):null;
     var localId=String(existing&&existing.localConferenceId||remoteId);
-    if(links&&typeof links.save==='function'&&!existing){
-      links.save({localConferenceId:localId,remoteConferenceId:remoteId,remoteName:String(conference.name||''),linkStatus:'linked'});
+    if(!existing){
+      if(!links||typeof links.save!=='function')throw {code:'CONFERENCE_LINK_STORE_UNAVAILABLE'};
+      var saved=links.save({localConferenceId:localId,remoteConferenceId:remoteId,remoteName:String(conference.name||''),linkStatus:'linked'});
+      if(!saved||saved.ok!==true)throw {code:'CONFERENCE_LINK_SAVE_FAILED',status:saved&&saved.status};
     }
     return localId;
   }
@@ -97,7 +99,7 @@
         }
         return result(true,'opened',{localConferenceId:localId,remoteConferenceId:remoteId,canonicalAccess:true,capabilities:access.data.capabilities});
       });
-    }).catch(function(error){return result(false,'canonical_hydration_failed',null,{code:String(error&&error.code||error&&error.message||'CANONICAL_HYDRATION_FAILED')});}).finally(function(){if(flights[remoteId]===flight)delete flights[remoteId];});
+    }).catch(function(error){return result(false,error&&error.code==='CONFERENCE_LINK_SAVE_FAILED'?'conference_link_save_failed':error&&error.code==='CONFERENCE_LINK_STORE_UNAVAILABLE'?'conference_link_store_unavailable':'canonical_hydration_failed',null,{code:String(error&&error.code||error&&error.message||'CANONICAL_HYDRATION_FAILED')});}).finally(function(){if(flights[remoteId]===flight)delete flights[remoteId];});
     flights[remoteId]=flight;
     return flight;
   }
