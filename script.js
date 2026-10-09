@@ -9371,7 +9371,7 @@ function collectConferenceSelection(){
 function openNewConferenceModal(mode){
   if(window.StartupAccessGate&&!window.StartupAccessGate.isAllowed())return false;
   conferenceDraft = null;
-  conferenceCanonicalCreateDraft=null;
+  // Retain the operation ID when the server outcome is still uncertain.
   conferenceDialogMode = (mode === 'edit') ? 'edit' : 'create';
   var current = getCurrentConference();
   var conf = (conferenceDialogMode === 'edit' && current) ? (current.conf || {}) : {};
