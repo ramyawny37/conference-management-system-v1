@@ -144,9 +144,19 @@ test('common open path accepts linked conference only with canonical activation 
   assert.equal(opener.selectedConferenceId(),'cloud');
 });
 
-test('startup card still enters through the centralized real open path',()=>{
-  assert.match(
-    scriptSource,
-    /function openConferenceFromStartup\(id\)\{\s*return setCurrentConferenceById\(id,\{enterApplication:true\}\);\s*\}/
-  );
+test('startup card delegates linked conferences to authorized cloud open and rejects local-only records',()=>{
+  const start=scriptSource.indexOf('function openConferenceFromStartup(id){');
+  const end=scriptSource.indexOf('\nvar conferenceBrandingDraft=',start);
+  assert.ok(start>=0&&end>start);
+  const source=scriptSource.slice(start,end);
+  let remoteOpened=null;
+  let localActivated=false;
+  const sandbox={window:{ConferenceLinkStore:{get:()=>({remoteConferenceId:'cloud-id'})}},openDiscoveredConferenceFromStartup:id=>{remoteOpened=id;return true;},setCurrentConferenceById:()=>{localActivated=true;return true;}};
+  vm.runInNewContext(source+'\nthis.openStartup=openConferenceFromStartup;',sandbox);
+  assert.equal(sandbox.openStartup('local-id'),true);
+  assert.equal(remoteOpened,'cloud-id');
+  assert.equal(localActivated,false);
+  sandbox.window.ConferenceLinkStore.get=()=>null;
+  assert.equal(sandbox.openStartup('local-only'),false);
+  assert.equal(localActivated,false);
 });
