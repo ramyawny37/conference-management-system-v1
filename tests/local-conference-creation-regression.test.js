@@ -21,7 +21,7 @@ function setup(options={}){
   crypto:{randomUUID:()=>('00000000-0000-4000-8000-'+String(++nextId).padStart(12,'0'))},
   PlatformDeviceSession:{invokeModuleProtected:(module,operation,payload)=>{
    calls.push({module,operation,payload});
-   return gate?gate.promise:Promise.resolve(options.createResult===undefined?{ok:true}:options.createResult);
+   return gate?gate.promise:Promise.resolve(options.createResult===undefined?{status:'created',conferenceId:payload.p_requested_conference_id,operationId:payload.p_operation_id}:options.createResult);
   }},
   StartupConferenceDiscovery:{refresh:()=>options.refreshResult===undefined?Promise.resolve({ok:true}):Promise.resolve(options.refreshResult),
    getRecords:()=>options.recordsMissing?[]:[{id:calls[0]?.payload.p_requested_conference_id}]}
