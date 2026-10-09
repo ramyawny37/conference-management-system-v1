@@ -2805,8 +2805,10 @@ function renderCanonicalAccommodation(state){
     h+='<button type="button" class="filter-item '+(filter===item[0]?'active':'')+'" onclick="setAccommodationQuickFilter(\''+item[0]+'\')">'+item[1]+'</button>';
   });
   h+='</div>';
+  h+='<div class="accommodation-search-count" aria-live="polite">الغرف المعروضة: '+matchingRooms.length+' من '+rooms.length+'</div>';
   h+='<div class="accommodation-edit-toolbar"><button class="btn btn-blue" onclick="createCanonicalAccommodationHouse()">اختيار بيت المؤتمر</button></div>';
   h+='<div class="accommodation-canonical-summary" role="group" aria-label="ملخص التسكين"><div class="card">إجمالي الغرف <strong>'+rooms.length+'</strong></div><div class="card">الغرف المشغولة <strong>'+rooms.filter(function(room){return (room.occupancies||[]).length>0;}).length+'</strong></div><div class="card">إجمالي النزلاء <strong>'+occupied+'</strong></div><div class="card">الأسرة المتاحة <strong>'+Math.max(0,capacity-occupied)+'</strong></div></div>';
+  if((query||filter!=='all')&&!matchingRooms.length&&rooms.length)h+='<div class="card" role="status">لا توجد غرف مطابقة للبحث أو الفلتر.</div>';
   if(!houses.length)h+='<div class="card" style="text-align:center;padding:20px;color:#95a5a6;">لم يتم اختيار بيت للمؤتمر.</div>';
   state.houses.forEach(function(house){
     h+='<section class="card accommodation-house section-card"><div class="accommodation-house-title"><span>'+accommodationIcon('building')+'</span><strong>'+esc(house.name)+'</strong><div class="row"><button class="btn btn-blue btn-sm" onclick="editCanonicalAccommodationHouse(\''+house.houseId+'\')">✏️ تعديل</button><button class="btn btn-green btn-sm" onclick="createCanonicalAccommodationFloor(\''+house.houseId+'\')">➕ دور</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalAccommodationHouse(\''+house.houseId+'\')">🗑️ حذف</button></div></div>';
