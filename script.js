@@ -2773,8 +2773,8 @@ function assignCanonicalAccommodation(roomId){
 function moveCanonicalAccommodation(occupancyId){
   var current=getCurrentConference(),integration=window.PlatformIntegration,occupancy=findCanonicalAccommodationEntity('occupancy',occupancyId),rooms=[];
   if(!occupancy)return false;
-  (canonicalAccommodationState().houses||[]).forEach(function(h){(h.floors||[]).forEach(function(f){(f.rooms||[]).forEach(function(r){if(!r.isClosed&&r.roomId!==occupancy.roomId)rooms.push({house:h,floor:f,room:r});});});});
-  if(!rooms.length){alert('لا توجد غرف مفتوحة أخرى متاحة للنقل.');return false;}
+  (canonicalAccommodationState().houses||[]).forEach(function(h){(h.floors||[]).forEach(function(f){(f.rooms||[]).forEach(function(r){if(!r.isClosed&&r.roomId!==occupancy.roomId&&(r.occupancies||[]).length<Number(r.baseCapacity||0)+Number(r.extraBedCapacity||0))rooms.push({house:h,floor:f,room:r});});});});
+  if(!rooms.length){alert('لا توجد غرف أخرى مفتوحة وبها أماكن متاحة للنقل.');return false;}
   openSearchableSelectDialog('اختر الغرفة الهدف',rooms.map(function(entry){return {label:entry.house.name+' / '+entry.floor.name+' / غرفة '+entry.room.roomNumber,searchText:entry.house.name+' '+entry.floor.name+' '+entry.room.roomNumber,data:entry.room};}),function(room){
     if(!room)return;
     canonicalAccommodationMutation(integration.moveConferenceAccommodation(current.id,{occupancyId:occupancy.occupancyId,expectedRevision:occupancy.revision,roomId:room.roomId,arrivalDay:occupancy.arrivalDay,leaveDay:occupancy.leaveDay,bedType:occupancy.bedType,extraBedPersonType:occupancy.extraBedPersonType}),'↔️ تم نقل النزيل');
