@@ -9221,7 +9221,7 @@ function updateConferencePeriodPreview(){
 var conferenceCanonicalCreatePending=null;
 var conferenceCanonicalCreateDraft=null;
 function createConferenceFromSelection(){
-  var name = (ge('cfg_name') ? ge('cfg_name').value.trim() : '') || 'المؤتمر';
+  var name = ge('cfg_name') ? ge('cfg_name').value.trim() : '';
   var startDate = ge('cfg_start') ? ge('cfg_start').value : '';
   var endDate = ge('cfg_end') ? ge('cfg_end').value : '';
   var days = parseInt(ge('cfg_days') ? ge('cfg_days').value : 1, 10) || 1;
