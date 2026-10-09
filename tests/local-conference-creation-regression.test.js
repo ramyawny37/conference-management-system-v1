@@ -1,244 +1,72 @@
-const assert=require('assert');
-const fs=require('fs');
-const path=require('path');
-const vm=require('vm');
-
-const scriptSource=fs.readFileSync(path.join(
-  __dirname,'..','script.js'
-),'utf8');
-const start=scriptSource.indexOf(
-  'var conferenceOrganizationOptions='
-);
-const end=scriptSource.indexOf(
-  'function openImportHouseModal()',start
-);
-assert.ok(start>=0&&end>start);
-const creationSource=scriptSource.slice(start,end);
-
-function repository(){
-  const sandbox={
-    console,JSON,Object,Array,String,Number,Date,
-    structuredClone:value=>structuredClone(value),
-    SupabaseAuth:{getState(){return {user:{
-      id:'22222222-2222-4222-8222-222222222222'
-    }};}}
-  };
-  sandbox.window=sandbox;
-  vm.runInNewContext(fs.readFileSync(path.join(
-    __dirname,'..','js','storage','conference-repository.js'
-  ),'utf8'),sandbox,{filename:'conference-repository.js'});
-  return sandbox.ConferenceRepository;
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const source=fs.readFileSync(path.join(__dirname,'..','script.js'),'utf8');
+const start=source.indexOf('var conferenceCanonicalCreatePending=null;');
+const end=source.indexOf('function collectConferenceSelection()',start);
+assert.ok(start>=0&&end>start,'canonical create implementation must exist');
+const creationSource=source.slice(start,end);
+assert.doesNotMatch(creationSource,/addLocalConference|organization_id|p_organization_id|cfg_organization/);
+function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
+function setup(options={}){
+ const fields={cfg_name:{value:'اختبار مركزي'},cfg_start:{value:'2026-10-10'},cfg_end:{value:'2026-10-12'},cfg_days:{value:'3'},cfg_place:{value:''},nc_save_btn:{disabled:false}};
+ const calls=[],messages=[],records=[],gate=options.gate||null;
+ let nextId=0,closed=0,opened=0;
+ const sandbox={Promise,Error,parseInt,console,conferenceDialogMode:'create',
+  ge:id=>fields[id]||null,calculateConferencePeriod:()=>({valid:true,days:3,nights:2}),
+  buildConferenceSchedule:()=>[],showToast:message=>messages.push(message),
+  alert:message=>messages.push(message),closeNewConferenceModal:()=>{closed++;},
+  showStartupConferenceList:()=>{},openDiscoveredConferenceFromStartup:id=>{opened++;return Promise.resolve(options.openResult===undefined?{ok:true}:options.openResult);},
+  crypto:{randomUUID:()=>('00000000-0000-4000-8000-'+String(++nextId).padStart(12,'0'))},
+  PlatformDeviceSession:{invokeModuleProtected:(module,operation,payload)=>{
+   calls.push({module,operation,payload});
+   return gate?gate.promise:Promise.resolve(options.createResult===undefined?{ok:true}:options.createResult);
+  }},
+  StartupConferenceDiscovery:{refresh:()=>options.refreshResult===undefined?Promise.resolve({ok:true}):Promise.resolve(options.refreshResult),
+   getRecords:()=>options.recordsMissing?[]:[{id:calls[0]?.payload.p_requested_conference_id}]}
+ };
+ sandbox.window=sandbox;
+ vm.runInNewContext(creationSource,sandbox,{filename:'canonical-create.js'});
+ return {sandbox,fields,calls,messages,get closed(){return closed;},get opened(){return opened;}};
 }
-
-function formEnvironment(overrides={}){
-  const fields={
-    cfg_name:{value:'مؤتمر الاختبار الكامل'},
-    cfg_start:{value:'2026-08-10'},
-    cfg_end:{value:'2026-08-12'},
-    cfg_days:{value:'3'},
-    cfg_place:{value:'القاهرة'},
-    cfg_organization:{value:'11111111-1111-4111-8111-111111111111'}
-  };
-  const legacy={
-    id:'legacy-local-conference',
-    name:'مؤتمر محلي قديم',
-    status:'active'
-  };
-  const logs=[];
-  const toasts=[];
-  const saved=[];
-  const sandbox={
-    console:{
-      error(...args){logs.push(args);},
-      warn(){},
-      log(){}
-    },
-    Error,Date,JSON,Object,Array,String,Number,Math,RegExp,
-    parseInt,
-    appData:{
-      version:'2.0.0',
-      currentConferenceId:null,
-      conferences:[legacy],
-      conferenceLifecycle:{schemaVersion:1,records:{
-        'legacy-local-conference':{
-          localConferenceId:'legacy-local-conference',localLifecycle:'active',
-          cloudLifecycle:'local_only',localContentVersion:0,
-          localOwnerUserId:'11111111-1111-4111-8111-111111111111',
-          publishMetadata:null
-        }
-      }},
-      templates:[],archives:[],backups:[],
-      houseTemplates:[],
-      peopleDb:{version:'1.0.0',people:[]}
-    },
-    conferenceDialogMode:'create',
-    conferenceOrganizationOptions:[{
-      organizationId:'11111111-1111-4111-8111-111111111111',
-      displayName:'المؤسسة'
-    }],
-    SupabaseAuth:{
-      getState(){return {authenticated:true,user:{id:'11111111-1111-4111-8111-111111111111'}};}
-    },
-    SystemAccessService:{
-      getState(){
-        return {
-          authenticated:true,profileLoaded:true,fresh:true,
-          accountStatus:'approved',canCreateConferences:true,
-          isSystemOwner:true
-        };
-      },
-      canCreateConference(){return true;}
-    },
-    window:null,
-    ge(id){return fields[id]||null;},
-    calculateConferencePeriod(startDate,endDate){
-      assert.strictEqual(startDate,'2026-08-10');
-      assert.strictEqual(endDate,'2026-08-12');
-      return {valid:true,days:3,nights:2};
-    },
-    buildConferenceSchedule(){
-      return [
-        {dayNumber:1,date:'2026-08-10'},
-        {dayNumber:2,date:'2026-08-11'},
-        {dayNumber:3,date:'2026-08-12'}
-      ];
-    },
-    uid(){return 'new-local-conference';},
-    createDefaultRestaurant(){return {meals:[]};},
-    createDefaultRestaurantV3(){return {days:[]};},
-    normalizeConference(value){
-      value.conf=value.conf||{};
-      value.houses=value.houses||[];
-    },
-    setCurrentConferenceById(id){
-      assert.strictEqual(id,'new-local-conference');
-      sandbox.appData.currentConferenceId=id;
-      const tracked=sandbox.ConferenceRepository.recordLocalChange(
-        sandbox.appData,id
-      );
-      assert.strictEqual(tracked.ok,true);
-      sandbox.appData=tracked.data;
-      saved.push(structuredClone(sandbox.appData));
-    },
-    addActivityLog(){},
-    closeNewConferenceModal(){},
-    alert(){},
-    showToast(message){toasts.push(message);}
-  };
-  sandbox.window=sandbox;
-  sandbox.ConferenceRepository=repository();
-  Object.assign(sandbox,overrides);
-  sandbox.window=sandbox;
-  vm.runInNewContext(creationSource,sandbox,{
-    filename:'createConferenceFromSelection.js'
-  });
-  sandbox.closeNewConferenceModal=function(){};
-  sandbox.conferenceOrganizationOptions=[{
-    organizationId:'11111111-1111-4111-8111-111111111111',
-    displayName:'المؤسسة'
-  }];
-  return {sandbox,fields,logs,toasts,saved};
+async function run(){
+ const ok=setup();
+ const result=await ok.sandbox.createConferenceFromSelection();
+ assert.equal(result.ok,true);
+ assert.equal(ok.calls.length,1);
+ assert.equal(ok.calls[0].module,'conference');
+ assert.equal(ok.calls[0].operation,'create_canonical_conference');
+ assert.deepEqual(Object.keys(ok.calls[0].payload).sort(),['p_end_date','p_name','p_operation_id','p_requested_conference_id','p_start_date'].sort());
+ assert.equal(ok.opened,1);
+ assert.equal(ok.closed,1);
+ assert.ok(ok.messages.includes('تم إنشاء المؤتمر وفتحه بنجاح'));
+ const missing=setup();missing.fields.cfg_name.value='';
+ assert.equal(missing.sandbox.createConferenceFromSelection(),false);
+ assert.equal(missing.calls.length,0);
+ const denied=setup({createResult:{ok:false}});
+ assert.equal(await denied.sandbox.createConferenceFromSelection(),false);
+ assert.equal(denied.opened,0);
+ const notListed=setup({recordsMissing:true});
+ assert.equal(await notListed.sandbox.createConferenceFromSelection(),false);
+ assert.equal(notListed.opened,0);
+ const openFailed=setup({openResult:{ok:false}});
+ assert.equal(await openFailed.sandbox.createConferenceFromSelection(),false);
+ assert.ok(openFailed.messages.some(x=>x.includes('تعذر فتحه')));
+ const gate=deferred(),pending=setup({gate});
+ const first=pending.sandbox.createConferenceFromSelection();
+ const second=pending.sandbox.createConferenceFromSelection();
+ assert.equal(first,second);
+ assert.equal(pending.calls.length,1);
+ gate.resolve({ok:true});await first;
+ assert.equal(pending.calls.length,1);
+ const retryGate=deferred(),retry=setup({gate:retryGate});
+ const attempt=retry.sandbox.createConferenceFromSelection();
+ const original=retry.calls[0].payload.p_operation_id;
+ retryGate.reject(new Error('offline'));await attempt;
+ retry.sandbox.PlatformDeviceSession.invokeModuleProtected=(m,o,p)=>{retry.calls.push({module:m,operation:o,payload:p});return Promise.resolve({ok:true});};
+ await retry.sandbox.createConferenceFromSelection();
+ assert.equal(retry.calls[1].payload.p_operation_id,original);
+ console.log('canonical conference creation regression tests: passed');
 }
-
-(function(){
-  const repositorySource=fs.readFileSync(path.join(
-    __dirname,'..','js','storage','conference-repository.js'
-  ),'utf8');
-  const addStart=repositorySource.indexOf(
-    'function addLocalConference('
-  );
-  const addEnd=repositorySource.indexOf(
-    'function getContract()',addStart
-  );
-  assert.doesNotMatch(
-    repositorySource.slice(addStart,addEnd),
-    /recordLocalChange\s*\(/
-  );
-
-  const env=formEnvironment();
-  env.sandbox.createConferenceFromSelection();
-
-  assert.strictEqual(env.logs.length,0);
-  assert.strictEqual(env.saved.length,1);
-  const snapshot=env.saved[0];
-  assert.doesNotThrow(()=>structuredClone(snapshot));
-  assert.doesNotThrow(()=>JSON.stringify(snapshot));
-  const created=snapshot.conferences.find(item=>
-    item.id==='new-local-conference'
-  );
-  assert.ok(created);
-  assert.strictEqual(created.name,'مؤتمر الاختبار الكامل');
-  assert.strictEqual(created.conf.place,'القاهرة');
-  assert.strictEqual(created.organizationId,
-    '11111111-1111-4111-8111-111111111111');
-  assert.strictEqual(created.startDate,'2026-08-10');
-  assert.strictEqual(created.endDate,'2026-08-12');
-  assert.strictEqual(created.days,3);
-  assert.strictEqual(created.nights,2);
-  assert.strictEqual(created.conf.days,3);
-  assert.strictEqual(created.conf.nights,2);
-  assert.ok(Array.isArray(created.schedule));
-  assert.strictEqual(created.schedule.length,3);
-
-  const lifecycle=snapshot.conferenceLifecycle.records[
-    'new-local-conference'
-  ];
-  assert.strictEqual(lifecycle.localConferenceId,
-    'new-local-conference');
-  assert.strictEqual(lifecycle.localLifecycle,'active');
-  assert.strictEqual(lifecycle.cloudLifecycle,'unpublished');
-  assert.strictEqual(lifecycle.localContentVersion,1);
-  assert.strictEqual(lifecycle.localOwnerUserId,
-    '22222222-2222-4222-8222-222222222222');
-  assert.strictEqual(lifecycle.publishMetadata,null);
-  assert.strictEqual(
-    snapshot.conferenceLifecycle.records[
-      'legacy-local-conference'
-    ].cloudLifecycle,
-    'local_only'
-  );
-
-  Object.keys(created).forEach(key=>{
-    assert.notStrictEqual(typeof created[key],'function',key);
-  });
-  assert.ok(!Object.values(created).some(value=>
-    value&&typeof value==='object'&&value.nodeType
-  ));
-
-  const failure=formEnvironment({
-    ConferenceRepository:{
-      addLocalConference(){
-        return {
-          ok:false,
-          status:'classification_required',
-          issues:[{
-            code:'LIFECYCLE_CLASSIFICATION_REQUIRED',
-            path:'conferenceLifecycle'
-          }]
-        };
-      }
-    }
-  });
-  failure.sandbox.window=failure.sandbox;
-  failure.sandbox.createConferenceFromSelection();
-  assert.strictEqual(failure.logs.length,0);
-  assert.strictEqual(failure.saved.length,0);
-  assert.ok(failure.toasts.includes(
-    'تعذر إنشاء المؤتمر المحلي بأمان.'
-  ));
-
-  const missingOrganization=formEnvironment();
-  missingOrganization.fields.cfg_organization.value='';
-  const alerts=[];
-  missingOrganization.sandbox.alert=message=>alerts.push(message);
-  missingOrganization.sandbox.createConferenceFromSelection();
-  assert.strictEqual(missingOrganization.saved.length,0);
-  assert.deepStrictEqual(alerts,['يجب اختيار مؤسسة قبل إنشاء المؤتمر.']);
-
-  assert.doesNotMatch(
-    creationSource,
-    /systemAccessAllowsConferenceCreation|canCreateConference/
-  );
-
-  console.log('local conference creation regression tests: passed');
-})();
+run().catch(error=>{console.error(error);process.exitCode=1;});
