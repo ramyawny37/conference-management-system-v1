@@ -44,3 +44,13 @@ test('automatic link persistence failure stops before runtime mutation or hydrat
   assert.equal(env.getData().conferences.length,0);
   assert.deepEqual(env.calls,[]);
 });
+
+test('failed hydration preserves previously selected conference',async()=>{
+  const env=environment('finance');
+  env.sandbox.appData.currentConferenceId='existing-conference';
+  const result=await env.sandbox.DiscoveredConferenceOpenService.open(remote);
+  assert.equal(result.ok,false);
+  assert.equal(result.status,'canonical_hydration_failed');
+  assert.equal(env.getData().currentConferenceId,'existing-conference');
+  assert.equal(env.calls.includes('activate'),false);
+});
