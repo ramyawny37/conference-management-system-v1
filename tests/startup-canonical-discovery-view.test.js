@@ -16,3 +16,16 @@ test('startup renders canonical discovery rows directly and opens by canonical i
   assert.equal(rows[0].name,'بابا');
   assert.equal(rows[0].__startupDiscoveredRemoteId,'cloud-1');
 });
+
+test('local-only startup open cannot bypass canonical discovery authorization',()=>{
+  const begin=script.indexOf('function openConferenceFromStartup(id){');
+  const end=script.indexOf('\nvar conferenceBrandingDraft=',begin);
+  assert.ok(begin>=0&&end>begin);
+  const source=script.slice(begin,end);
+  let localActivations=0,toast='';
+  const sandbox={window:{ConferenceLinkStore:{get:()=>null}},showToast:value=>{toast=value;},setCurrentConferenceById:()=>{localActivations++;return true;}};
+  vm.runInNewContext(source+'\nthis.openLocal=openConferenceFromStartup;',sandbox);
+  assert.equal(sandbox.openLocal('local-only'),false);
+  assert.equal(localActivations,0);
+  assert.match(toast,/السحابية/);
+});
