@@ -1,6 +1,6 @@
 # Conference Accommodation Acceptance Matrix
 
-Baseline: `3b873074c80bdbd4f36c8b9aeb932dcafe6e0bd3`
+Baseline for the complete original UX recovery: `4dbc348c1006e38bb7d1ec1b6e3955ead25f2b34`
 
 Functional reference: `cccba23a9b13e800cd6e95c96c86bd02ad56bf2a`. The old commit is a behavior reference only; its local `conference.houses`, `room.guests`, `room.children`, `save()` and IndexedDB paths are not valid owners for a linked Conference.
 
@@ -9,6 +9,21 @@ Canonical runtime owner:
 `Person -> Conference Participation -> Active Accommodation Occupancy -> Operational Modules`
 
 The active UI owner is `renderCanonicalAccommodation()` in `script.js`. Reads and mutations are owned by `PlatformIntegration`, the protected Conference dispatcher, and the canonical PostgreSQL tables. Every successful accommodation mutation rehydrates Accommodation, Transportation, Restaurant, and the active tab before reporting refreshed state.
+
+## Historical component evidence and restored surface matrix
+
+The design chain was inspected component by component: `c0617e2` (exclusive room actions), `2e2c737` (room actions and editor), `9d878ac` (visual polish), `0d57ad9` (guest and extra-bed rows), `60e0381` (child rows), and `cccba23` (final historical polish and searchable person picker). The legacy local data writers from those commits remain reference-only.
+
+| Surface | Git reference and original evidence | Difference at baseline `4dbc348` | Restored canonical behavior | Programmatic acceptance |
+| --- | --- | --- | --- | --- |
+| Room card | `c0617e2` through `cccba23`; compact `rcard-head/body`, status strip, resident names, arrival/key and exclusive quick menu | Geometry had already been restored, but still awaited visual confirmation | Preserved the compact 230–262px canonical card, guardian-linked child grouping, quick arrival/key/details actions and no contact/stay editor data in the card | PASS; visual BLOCKED |
+| Room grid | `cccba23`; RTL auto-fill tracks, start alignment, 8px gap/padding | Canonical grid already matched measured source values | Preserved one scoped owner and content-driven card height, including one-column mobile layout | PASS; visual BLOCKED |
+| Quick actions | `c0617e2`, `2e2c737`; direct primary action plus exclusive overflow actions | Canonical actions existed but are revisioned central mutations | Preserved details/add/arrival/key and central open/close/remove actions without a legacy writer | PASS; operational BLOCKED |
+| Room details | `2e2c737` to `cccba23`; bounded editor, guest/child rows, room fields and persistent footer | Baseline canonical dialog already contained full actions and bounded scrolling | Preserved full canonical details, stay history, edit/replace/move/remove, notes/capacity, and visible sticky actions | PASS; visual/operational BLOCKED |
+| Person picker | `cccba23` `renderGuestPersonPickerList`, `openGuestPersonPickerPopover`; immediate search, rich rows, inline new-person path | Period fields appeared first and people stayed hidden until pressing “عرض الأشخاص المتاحين” | Immediate searchable list on open; name/phone/church rows; stable Participation selection; integrated central-person creation; same draft resumes after creation; period and bed changes recalculate availability | PASS; visual/operational BLOCKED |
+| Assignment lifecycle | Central `PlatformIntegration` contracts, dispatcher and PostgreSQL functions | Functional contracts existed but the picker interaction diverged from the original | Picker-first UI now feeds the same assign/move/atomic-replace contracts with permission, revision, lease, overlap, capacity, idempotency and hydration guards unchanged | PASS; live operational BLOCKED |
+
+The canonical adaptation intentionally uses the original picker interaction rather than restoring the old row-anchored room editor: `Person -> Conference Participation -> Accommodation Occupancy` remains the sole data route. DOM interaction coverage verifies immediate rendering, search by identity details, selection by `participationId`, enabled confirmation, and removal of the intermediate load step.
 
 ## Original room-card restoration
 

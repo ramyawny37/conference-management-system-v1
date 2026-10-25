@@ -2840,11 +2840,11 @@ function assignCanonicalAccommodation(roomId){
   ge('canonicalAccommodationReplacementDayField').style.display='none';
   ge('canonicalAccommodationAssignmentSearch').value='';
   ge('canonicalAccommodationAssignmentError').textContent='';
-  ge('canonicalAccommodationAssignmentCandidates').style.display='none';
   ge('canonicalAccommodationAssignmentConfirm').disabled=true;
   ge('canonicalAccommodationCreatePerson').style.display=currentConferenceSectionCapability('peopleManage')?'':'none';
   modal.style.display='flex';
-  ge('canonicalAccommodationArrivalDay').focus();
+  renderCanonicalAccommodationAssignmentCandidates();
+  ge('canonicalAccommodationAssignmentSearch').focus();
   return true;
 }
 
@@ -2902,7 +2902,7 @@ function renderCanonicalAccommodationAssignmentCandidates(){
   if(!draft||!error||!container)return false;
   var interval=getCanonicalAccommodationIntervalDraft(),bedType=ge('canonicalAccommodationBedType').value;
   ge('canonicalAccommodationExtraPersonTypeField').style.display=bedType==='extra'?'block':'none';
-  if(interval.error){error.textContent=interval.error;container.style.display='none';return false;}
+  if(interval.error){error.textContent=interval.error;return false;}
   var current=getCurrentConference(),state=canonicalAccommodationState();
   if(!current||String(current.id)!==draft.conferenceId||!state||!findCanonicalAccommodationEntity('room',draft.roomId,state)){error.textContent='تغيرت بيانات التسكين أو الصلاحيات. أعد فتح عملية التسكين.';return false;}
   draft.arrivalDay=interval.arrivalDay;draft.leaveDay=interval.leaveDay;
@@ -2913,7 +2913,7 @@ function renderCanonicalAccommodationAssignmentCandidates(){
   if(!draft.available.some(function(item){return String(item.participationId)===nextSelection;}))nextSelection='';
   draft.selectedParticipationId=nextSelection||null;
   syncCanonicalAccommodationReplacementFields();
-  error.textContent='';container.style.display='block';ge('canonicalAccommodationAssignmentConfirm').disabled=!draft.selectedParticipationId;
+  error.textContent='';ge('canonicalAccommodationAssignmentConfirm').disabled=!draft.selectedParticipationId;
   renderCanonicalAccommodationAssignmentCandidateList();return true;
 }
 function renderCanonicalAccommodationAssignmentCandidateList(){
@@ -2922,9 +2922,17 @@ function renderCanonicalAccommodationAssignmentCandidateList(){
   var query=normalizePersonKey(input&&input.value||'');list.innerHTML='';
   var candidates=draft.available||[];
   var shown=0;candidates.forEach(function(item){var person=item.person||{},search=normalizePersonKey([person.fullName,person.phone,person.church].join(' '));if(query&&search.indexOf(query)<0)return;
-    var button=document.createElement('button');button.type='button';button.className='btn modal-list-item'+(String(draft.selectedParticipationId)===String(item.participationId)?' selected':'');button.textContent=(person.fullName||'')+(person.church?' - '+person.church:'');button.onclick=function(){selectCanonicalAccommodationParticipation(item.participationId);};list.appendChild(button);shown++;
+    var selected=String(draft.selectedParticipationId)===String(item.participationId);
+    var button=document.createElement('button');button.type='button';button.className='canonical-accommodation-person-option'+(selected?' selected':'');button.setAttribute('role','option');button.setAttribute('aria-selected',selected?'true':'false');
+    var icon=document.createElement('span');icon.className='canonical-accommodation-person-icon';icon.setAttribute('aria-hidden','true');icon.textContent=selected?'✓':'●';
+    var text=document.createElement('span');text.className='canonical-accommodation-person-text';var name=document.createElement('strong');name.textContent=person.fullName||'';text.appendChild(name);
+    var secondary=[person.phone,person.church].filter(Boolean).join(' • ');if(secondary){var detail=document.createElement('small');detail.textContent=secondary;text.appendChild(detail);}
+    var arrow=document.createElement('span');arrow.className='canonical-accommodation-person-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='‹';
+    button.appendChild(icon);button.appendChild(text);button.appendChild(arrow);button.onclick=function(){selectCanonicalAccommodationParticipation(item.participationId);};list.appendChild(button);shown++;
   });
   if(!shown)list.innerHTML='<div class="modal-empty-state">لا توجد نتائج</div>';
+  var selectedItem=candidates.find(function(item){return String(item.participationId)===String(draft.selectedParticipationId||'');});
+  var selectedLabel=ge('canonicalAccommodationSelectedPerson');if(selectedLabel)selectedLabel.textContent=selectedItem&&selectedItem.person&&selectedItem.person.fullName?selectedItem.person.fullName:'اختر شخصًا أولًا';
   return shown;
 }
 function selectCanonicalAccommodationParticipation(participationId){
@@ -3017,7 +3025,7 @@ function editCanonicalAccommodation(occupancyId){
   ge('canonicalAccommodationCreatePerson').style.display=currentConferenceSectionCapability('peopleManage')?'':'none';
   renderCanonicalAccommodationAssignmentCandidates();
   modal.style.display='flex';
-  ge('canonicalAccommodationArrivalDay').focus();
+  ge('canonicalAccommodationAssignmentSearch').focus();
   return true;
 }
 

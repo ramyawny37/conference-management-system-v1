@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
+const {JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'..');
 const ui=fs.readFileSync(path.join(root,'script.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'style.css'),'utf8');
@@ -107,6 +108,48 @@ test('canonical assignment can add a central person and resume the same room dra
   assert.match(body,/resumeCanonicalAccommodationAssignmentForPerson/);
   assert.match(body,/selectCanonicalAccommodationParticipation/);
   assert.doesNotMatch(body,/peopleDb|localStorage|indexedDB|room\.guests/);
+});
+
+test('restored canonical person picker renders searchable rich rows and selects by participation identity',()=>{
+  const dom=new JSDOM('<input id="canonicalAccommodationAssignmentSearch"><div id="canonicalAccommodationAssignmentList"></div><button id="canonicalAccommodationAssignmentConfirm" disabled></button><small id="canonicalAccommodationSelectedPerson"></small>');
+  const renderStart=ui.indexOf('function renderCanonicalAccommodationAssignmentCandidateList(');
+  const renderEnd=ui.indexOf('\nfunction syncCanonicalAccommodationReplacementFields(',renderStart);
+  const context={
+    document:dom.window.document,
+    String,
+    canonicalAccommodationAssignmentDraft:{available:[
+      {participationId:'participation-1',person:{fullName:'مريم حنا',phone:'0100',church:'كنيسة مارمرقس'}},
+      {participationId:'participation-2',person:{fullName:'يوسف فريد',phone:'0200',church:'كنيسة العذراء'}}
+    ],selectedParticipationId:null},
+    ge:id=>dom.window.document.getElementById(id),
+    normalizePersonKey:value=>String(value||'').trim().toLowerCase(),
+    syncCanonicalAccommodationReplacementFields:()=>false
+  };
+  vm.runInNewContext(ui.slice(renderStart,renderEnd)+';this.renderList=renderCanonicalAccommodationAssignmentCandidateList;this.select=selectCanonicalAccommodationParticipation;',context);
+  assert.equal(context.renderList(),2);
+  const rows=dom.window.document.querySelectorAll('[role="option"]');
+  assert.equal(rows.length,2);
+  assert.match(rows[0].textContent,/مريم حنا/);
+  assert.match(rows[0].textContent,/0100/);
+  assert.match(rows[0].textContent,/كنيسة مارمرقس/);
+  rows[0].click();
+  assert.equal(context.canonicalAccommodationAssignmentDraft.selectedParticipationId,'participation-1');
+  assert.equal(dom.window.document.getElementById('canonicalAccommodationAssignmentConfirm').disabled,false);
+  assert.equal(dom.window.document.getElementById('canonicalAccommodationSelectedPerson').textContent,'مريم حنا');
+  dom.window.document.getElementById('canonicalAccommodationAssignmentSearch').value='يوسف';
+  assert.equal(context.renderList(),1);
+  assert.match(dom.window.document.querySelector('[role="option"]').textContent,/يوسف فريد/);
+});
+
+test('canonical assignment opens with the historical picker-first interaction without a load step',()=>{
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  const start=ui.indexOf('function assignCanonicalAccommodation(roomId){');
+  const end=ui.indexOf('\nfunction openCanonicalAccommodationPersonDialog(',start);
+  const body=ui.slice(start,end);
+  assert.match(body,/modal\.style\.display='flex';\s*renderCanonicalAccommodationAssignmentCandidates\(\);\s*ge\('canonicalAccommodationAssignmentSearch'\)\.focus\(\)/);
+  assert.doesNotMatch(html,/canonical-accommodation-load-candidates|>عرض الأشخاص المتاحين</);
+  assert.match(html,/id="canonicalAccommodationAssignmentList" role="listbox"/);
+  assert.match(html,/onchange="renderCanonicalAccommodationAssignmentCandidates\(\)"/);
 });
 
 test('canonical assignment exposes shared child occupancy without consuming a bed',()=>{

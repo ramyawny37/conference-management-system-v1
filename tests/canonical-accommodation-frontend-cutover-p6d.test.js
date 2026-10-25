@@ -111,7 +111,7 @@ test('linked renderer reads only canonical hierarchy and Person occupancy projec
   assert.match(header,/linkedAccommodation\?\(canonicalAccommodation\?canonicalAccommodation\.houses:\[\]\):\(current\.houses\|\|\[\]\)/);
 });
 
-test('linked participant selection starts with the stay period and uses canonical Participation ids',()=>{
+test('linked participant selection uses canonical Participation ids and period-scoped availability',()=>{
   const start=scriptSource.indexOf('function assignCanonicalAccommodation(');
   const end=scriptSource.indexOf('\nfunction moveCanonicalAccommodation',start);
   const source=scriptSource.slice(start,end);
