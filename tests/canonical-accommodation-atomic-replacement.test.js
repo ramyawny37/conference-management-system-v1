@@ -64,10 +64,12 @@ test('room details use canonical actions for guests and children, and keep histo
   assert.match(room,/getCanonicalAccommodationStayPhase\(occupancy,day\)/);
   assert.match(room,/ge\('rmGuestsCount'\)\.textContent=guestOccupancies\.length/);
   assert.match(room,/ge\('rmChildrenCount'\)\.textContent=childOccupancies\.length/);
-  assert.match(room,/ge\('m_children'\)\.innerHTML=childOccupancies\.map/);
-  const children=room.slice(room.indexOf("ge('m_children').innerHTML"),room.indexOf("ge('rmGuestsCount').textContent"));
+  assert.match(room,/groupCanonicalAccommodationOccupancies\(occupancies\)/);
+  assert.match(room,/occupancyGroups\.rows\.map/);
+  assert.match(room,/occupancyGroups\.unlinkedChildren\.map/);
+  const detailRenderer=script.slice(script.indexOf('function renderCanonicalAccommodationDetailOccupant('),start);
   for(const operation of ['editCanonicalAccommodation','moveCanonicalAccommodation','removeCanonicalAccommodation']){
-    assert.ok(children.includes(operation),operation+' missing for children');
+    assert.ok(detailRenderer.includes(operation),operation+' missing for room occupants');
   }
   assert.match(room,/assignCanonicalAccommodation/);
   assert.match(room,/if\(canManage&&!room\.isClosed\)/);

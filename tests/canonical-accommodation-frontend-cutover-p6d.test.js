@@ -98,9 +98,10 @@ test('linked renderer reads only canonical hierarchy and Person occupancy projec
   assert.match(source,/house\.floors/);
   assert.match(source,/floor\.rooms/);
   assert.match(source,/room\.occupancies/);
-  assert.match(source,/var person=occupancy\.person\|\|\{\}/);
-  assert.match(source,/person\.fullName/);
-  assert.match(source,/person\.church/);
+  const display=scriptSource.slice(scriptSource.indexOf('function renderCanonicalAccommodationDetailOccupant('),end);
+  assert.match(display,/var person=occupancy\.person\|\|\{\}/);
+  assert.match(display,/person\.fullName/);
+  assert.match(display,/person\.church/);
   assert.doesNotMatch(source,/current\.houses|room\.guests|room\.children|getPeopleList|peopleDb|\bsave\s*\(/);
   assert.doesNotMatch(source,/occupancy\.occupancyId\s*\+\s*'<\/|participationId\s*\+\s*'<\//);
   const branch=scriptSource.slice(scriptSource.indexOf('function renderAccommodation()'),scriptSource.indexOf('var normalizedSearchQuery',scriptSource.indexOf('function renderAccommodation()')));
@@ -164,24 +165,26 @@ test('cancelled canonical guest assignment clears draft without mutation',()=>{
   assert.doesNotMatch(handler,/prompt\(/);
 });
 
-test('canonical room cards retain capacity, notes, contact and stay-day details',()=>{
+test('canonical room cards stay compact while room details retain full canonical data',()=>{
   const start=scriptSource.indexOf('function renderCanonicalAccommodation(state){');
   const end=scriptSource.indexOf('function ',start+10);
   assert.ok(start>=0&&end>start);
   const render=scriptSource.slice(start,end);
-  for(const field of ['room.baseCapacity','room.extraBedCapacity','room.notes','person.phone','person.church','occupancy.arrivalDay','occupancy.leaveDay']){
-    assert.ok(render.includes(field),'canonical accommodation display must include '+field);
-  }
-  assert.ok(render.includes('accommodation-room-details'));
+  for(const field of ['room.baseCapacity','room.extraBedCapacity','room.notes'])assert.ok(render.includes(field),'canonical accommodation display must include '+field);
+  assert.match(render,/renderCanonicalAccommodationCompactOccupants/);
+  const details=scriptSource.slice(scriptSource.indexOf('function renderCanonicalAccommodationDetailOccupant('),start);
+  for(const field of ['person.phone','person.church','occupancy.arrivalDay','occupancy.leaveDay'])assert.ok(details.includes(field),'room details must include '+field);
 });
 
 test('canonical room hierarchy restores house, floor, extra-bed and stay-history detail from canonical data',()=>{
   const start=scriptSource.indexOf('function renderCanonicalAccommodation(state){');
   const end=scriptSource.indexOf('function ',start+10);
   const render=scriptSource.slice(start,end);
-  for(const token of ['house.description','accommodation-house-description','floorOccupants','floorCapacity','accommodation-floor-summary','extraUsed+\'/\'+extraBeds','room.occupancies||[]','getCanonicalAccommodationStayPhase','accommodation-room-stay-history']){
+  for(const token of ['house.description','accommodation-house-description','floorOccupants','floorCapacity','accommodation-floor-summary','extraUsed+\'/\'+extraBeds']){
     assert.ok(render.includes(token),'missing restored canonical room detail '+token);
   }
+  const details=scriptSource.slice(scriptSource.indexOf('function openCanonicalAccommodationRoomDetails('),start);
+  for(const token of ['room.occupancies||[]','getCanonicalAccommodationStayPhase','canonical-room-stay-history'])assert.ok(details.includes(token),'missing room-dialog detail '+token);
   const helperStart=scriptSource.indexOf('function getCanonicalAccommodationStayPhase(');
   const helperEnd=scriptSource.indexOf('\nfunction ',helperStart+1);
   const helper=scriptSource.slice(helperStart,helperEnd);
@@ -198,7 +201,7 @@ test('canonical accommodation summary calculates occupancy and bed totals from c
   for(const token of ['totalBaseBeds','totalExtraBeds','extraBedsUsed','childrenCount','occupancyPercent','accommodation-secondary-summary']){
     assert.ok(render.includes(token),'missing canonical summary '+token);
   }
-  assert.ok(render.includes('usableAccommodationOccupancyPercent(occupied,totalBeds)'));
+  assert.ok(render.includes('usableAccommodationOccupancyPercent(occupiedBeds,totalBeds)'));
 });
 
 test('canonical accommodation search includes person name phone and church',()=>{
@@ -216,8 +219,9 @@ test('canonical accommodation shows guardian relationship without local person f
   const end=scriptSource.indexOf('function ',start+10);
   const render=scriptSource.slice(start,end);
   assert.ok(render.includes('accompaniedGuests'));
-  assert.ok(render.includes('occupancy.guardianParticipationId'));
-  assert.ok(render.includes('occupancy.guardianFullName'));
+  const grouping=scriptSource.slice(scriptSource.indexOf('function groupCanonicalAccommodationOccupancies('),start);
+  assert.ok(grouping.includes('occupancy.guardianParticipationId'));
+  assert.doesNotMatch(grouping,/guardianFullName/);
 });
 
 test('canonical transfer rejects blank and fractional effective days before mutation',()=>{

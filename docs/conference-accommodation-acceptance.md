@@ -10,6 +10,19 @@ Canonical runtime owner:
 
 The active UI owner is `renderCanonicalAccommodation()` in `script.js`. Reads and mutations are owned by `PlatformIntegration`, the protected Conference dispatcher, and the canonical PostgreSQL tables. Every successful accommodation mutation rehydrates Accommodation, Transportation, Restaurant, and the active tab before reporting refreshed state.
 
+## Original room-card restoration
+
+The compact visual reference is the accommodation sequence `c0617e2`, `2e2c737`, `9d878ac`, `0d57ad9`, and `60e0381`, finalized by `cccba23a9b13e800cd6e95c96c86bd02ad56bf2a`. The historical renderer is a visual and interaction reference only; `renderCanonicalAccommodation()` remains the sole active owner.
+
+| Surface | Historical behavior | Canonical restored behavior | Evidence |
+| --- | --- | --- | --- |
+| Room card | Fixed compact card with room state, names, and quick tools | Compact 230–262px card; full contact, stay, and per-person actions are excluded | `renderCanonicalAccommodation`, `renderCanonicalAccommodationCompactOccupants` |
+| Room details | Full room and resident operations in the room dialog | Central room dialog keeps room edit, add, edit/replace, move, remove, arrival, key, notes, and stay history | `openCanonicalAccommodationRoomDetails`, `renderCanonicalAccommodationDetailOccupant` |
+| Linked children | Child shown with its guardian | Exact `guardianParticipationId` grouping; one render per occupancy and a bed-type badge | `groupCanonicalAccommodationOccupancies`, `canonicalAccommodationChildBedLabel` |
+| Missing guardian link | No name-based inference | Child remains visible with `ربط ولي الأمر مفقود` | `renderCanonicalAccommodationCompactOccupants` |
+| Capacity | Bed occupancy drives room capacity | `shared` remains visible but does not consume a bed; `base` and `extra` do | `bedOccupancies`, available-room filter and summary |
+| Workspace | Rooms are the primary work surface | Four compact headline metrics, secondary chips, unchanged search/filters, houses/floors, compact room grid | `renderCanonicalAccommodation` and scoped `#tab0` styles |
+
 ## Functional matrix
 
 | Capability | Old reference | Canonical implementation / evidence | Gap closed or remaining acceptance | Acceptance test | Status |

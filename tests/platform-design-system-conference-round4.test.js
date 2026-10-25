@@ -15,7 +15,7 @@ const guide=read('docs/platform-design-system.md');
 test('design layers have one documented runtime owner and deterministic cache graph',()=>{
   const assets=[
     'shared-design-tokens.css?rev=platform-design-system-consolidation-v2',
-    'style.css?rev=canonical-accommodation-room-details-v4',
+    'style.css?rev=canonical-accommodation-original-ui-v1',
     'canonical-platform-shell.css?rev=conference-header-content-offset-v1'
   ];
   for(const asset of assets){
@@ -53,7 +53,7 @@ test('canonical accommodation composes shared states with scoped responsive patt
   const start=script.indexOf('function renderCanonicalAccommodation(');
   const end=script.indexOf('\nfunction deactivateAccommodationRoom',start);
   const renderer=script.slice(start,end);
-  for(const marker of ['accommodation-toolbar','accommodation-canonical-summary','accommodation-room-toolbar','accommodation-guest-meta','ui-state--loading','ui-state--error','ui-state--denied'])assert.match(renderer,new RegExp(marker));
+  for(const marker of ['accommodation-toolbar','accommodation-canonical-summary','accommodation-room-toolbar','accommodation-compact-occupants','ui-state--loading','ui-state--error','ui-state--denied'])assert.match(renderer,new RegExp(marker));
   assert.doesNotMatch(renderer,/style="/);
   assert.match(renderer,/getConferenceOperationalDay\(getCurrentConference\(\)\)/);
   assert.match(renderer,/getCanonicalAccommodationOccupanciesOnDay\(room,operationalDay\)/);

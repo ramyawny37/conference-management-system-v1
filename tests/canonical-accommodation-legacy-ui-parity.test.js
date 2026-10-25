@@ -62,8 +62,8 @@ test('house summaries and floor toggles use canonical house/room identities',()=
 test('room states and guest badges derive from canonical operational occupancies',()=>{
   assert.match(renderer,/getCanonicalAccommodationOccupanciesOnDay/);
   for(const state of ['room-status-closed','room-status-over','room-status-full','room-status-partial','room-status-empty'])assert.ok(renderer.includes(state),state);
-  assert.match(renderer,/accommodation-arrival-badge/);
-  assert.match(renderer,/activeKeyHolder&&String\(activeKeyHolder\.occupancyId\)===String\(occupancy\.occupancyId\)/);
+  assert.match(ui,/accommodation-arrival-badge/);
+  assert.match(ui,/keyHolder&&String\(keyHolder\.occupancyId\)===String\(occupancy\.occupancyId\)/);
   assert.match(renderer,/extraBedPersonType==='child'/);
   assert.match(renderer,/bedType==='extra'/);
 });
@@ -90,7 +90,7 @@ test('canonical occupancy edit reuses the protected move contract in the same ro
   assert.doesNotMatch(body,/saveRoomData|requireLocalOnlyAccommodationMutation/);
   const rendererStart=ui.indexOf('function renderCanonicalAccommodation(');
   const rendererEnd=ui.indexOf('\nfunction renderAccommodation()',rendererStart);
-  assert.match(ui.slice(rendererStart,rendererEnd),/editCanonicalAccommodation/);
+  assert.match(ui.slice(ui.indexOf('function renderCanonicalAccommodationDetailOccupant('),rendererStart),/editCanonicalAccommodation/);
 });
 
 test('canonical assignment can add a central person and resume the same room draft',()=>{
@@ -127,7 +127,7 @@ test('responsive room and guest layouts and collapsed floors exist',()=>{
 });
 
 test('original accommodation workspace and room card shell use canonical data and actions',()=>{
-  for(const token of ['accommodation-workspace','accommodation-primary-column','canonical-accommodation-sidebar','floor-container','accommodation-floor-rooms','rcard-head','rcard-body','accommodation-room-key','accommodation-room-actions','room-more-actions'])assert.match(renderer,new RegExp(token),token);
+  for(const token of ['accommodation-workspace','accommodation-primary-column','canonical-accommodation-sidebar','floor-container','accommodation-floor-rooms','rcard-head','rcard-body','accommodation-compact-occupants','accommodation-room-actions','room-more-actions'])assert.match(renderer,new RegExp(token),token);
   assert.match(renderer,/renderAccommodationQuickFilters\('canonical-accommodation-sidebar'\)/);
   assert.match(renderer,/openCanonicalAccommodationRoomDetails/);
   assert.doesNotMatch(renderer,/openRoomEditor|saveRoomData/);
@@ -346,8 +346,9 @@ test('key filters, room detail and guest badge use the same active-day holder',(
   assert.match(body,/filter==='key-delivered'&&!canonicalAccommodationActiveKeyHolder\(room,operationalDay\)/);
   assert.match(body,/filter==='key-not-delivered'&&canonicalAccommodationActiveKeyHolder\(room,operationalDay\)/);
   assert.match(body,/var activeKeyHolder=canonicalAccommodationActiveKeyHolder\(room,operationalDay\)/);
-  assert.match(body,/activeKeyHolder\.person&&activeKeyHolder\.person\.fullName/);
-  assert.match(body,/activeKeyHolder&&String\(activeKeyHolder\.occupancyId\)===String\(occupancy\.occupancyId\)/);
+  assert.match(body,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder\)/);
+  const compact=ui.slice(ui.indexOf('function renderCanonicalAccommodationCompactOccupants('),ui.indexOf('function openCanonicalAccommodationRoomDetails('));
+  assert.match(compact,/keyHolder&&String\(keyHolder\.occupancyId\)===String\(occupancy\.occupancyId\)/);
 });
 
 test('key handover checks conference, room revision, permission and current occupant at selection time',()=>{
@@ -427,10 +428,10 @@ test('canonical guest cards tolerate missing person details',()=>{
   const start=ui.indexOf('function renderCanonicalAccommodation(');
   const end=ui.indexOf('\nfunction ',start+1);
   const body=ui.slice(start,end);
-  assert.match(body,/roomOccupancies\.forEach\(function\(occupancy\)\{var person=occupancy\.person\|\|\{\}/);
-  assert.match(body,/esc\(person\.fullName\|\|'نزيل بدون اسم'\)/);
-  assert.match(body,/esc\(person\.church\|\|''\)/);
-  assert.match(body,/person\.phone\?' • '\+esc\(person\.phone\)/);
+  assert.match(body,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder\)/);
+  const compact=ui.slice(ui.indexOf('function renderCanonicalAccommodationCompactOccupants('),ui.indexOf('function openCanonicalAccommodationRoomDetails('));
+  assert.match(compact,/occupancy\.person\|\|\{\}/);
+  assert.match(compact,/esc\(person\.fullName\|\|'نزيل بدون اسم'\)/);
 });
 test('available-room filter excludes zero-capacity rooms',()=>{
   const start=ui.indexOf('function renderCanonicalAccommodation(');
