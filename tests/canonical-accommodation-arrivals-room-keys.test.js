@@ -44,7 +44,7 @@ test('canonical projection and UI expose per-person arrival and named room key r
   assert.match(ui,/setCanonicalAccommodationArrival/);
   assert.match(ui,/setCanonicalAccommodationRoomKey/);
   assert.match(ui,/canonicalAccommodationActiveKeyHolder/);
-  assert.match(ui,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder\)/);
+  assert.match(ui,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder,canManage\)/);
   assert.match(ui,/keyHolder&&String\(keyHolder\.occupancyId\)===String\(occupancy\.occupancyId\)/);
 });
 

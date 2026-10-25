@@ -346,7 +346,7 @@ test('key filters, room detail and guest badge use the same active-day holder',(
   assert.match(body,/filter==='key-delivered'&&!canonicalAccommodationActiveKeyHolder\(room,operationalDay\)/);
   assert.match(body,/filter==='key-not-delivered'&&canonicalAccommodationActiveKeyHolder\(room,operationalDay\)/);
   assert.match(body,/var activeKeyHolder=canonicalAccommodationActiveKeyHolder\(room,operationalDay\)/);
-  assert.match(body,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder\)/);
+  assert.match(body,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder,canManage\)/);
   const compact=ui.slice(ui.indexOf('function renderCanonicalAccommodationCompactOccupants('),ui.indexOf('function openCanonicalAccommodationRoomDetails('));
   assert.match(compact,/keyHolder&&String\(keyHolder\.occupancyId\)===String\(occupancy\.occupancyId\)/);
 });
@@ -428,7 +428,7 @@ test('canonical guest cards tolerate missing person details',()=>{
   const start=ui.indexOf('function renderCanonicalAccommodation(');
   const end=ui.indexOf('\nfunction ',start+1);
   const body=ui.slice(start,end);
-  assert.match(body,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder\)/);
+  assert.match(body,/renderCanonicalAccommodationCompactOccupants\(roomOccupancies,activeKeyHolder,canManage\)/);
   const compact=ui.slice(ui.indexOf('function renderCanonicalAccommodationCompactOccupants('),ui.indexOf('function openCanonicalAccommodationRoomDetails('));
   assert.match(compact,/occupancy\.person\|\|\{\}/);
   assert.match(compact,/esc\(person\.fullName\|\|'نزيل بدون اسم'\)/);

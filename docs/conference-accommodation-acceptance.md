@@ -23,6 +23,21 @@ The compact visual reference is the accommodation sequence `c0617e2`, `2e2c737`,
 | Capacity | Bed occupancy drives room capacity | `shared` remains visible but does not consume a bed; `base` and `extra` do | `bedOccupancies`, available-room filter and summary |
 | Workspace | Rooms are the primary work surface | Four compact headline metrics, secondary chips, unchanged search/filters, houses/floors, compact room grid | `renderCanonicalAccommodation` and scoped `#tab0` styles |
 
+### Measured historical geometry
+
+| Component | Historical source value | Active canonical value |
+| --- | --- | --- |
+| Room grid | `repeat(auto-fill,minmax(230px,262px))`; row flow; `justify-content:start`; `gap:8px`; `padding:8px`; RTL | Same single scoped owner: `#tab0 .accommodation-floor-rooms` |
+| Room card | `align-self:start`; 11px radius; 3px status strip; header min-height 39px; body padding 5px 7px | Same dimensions; height remains content-driven for empty and occupied rooms |
+| Desktop room dialog | 880px maximum width after the 940px base rule | `min(880px, calc(100vw - 32px))`; max 880px |
+| Tablet room dialog | At 820px: max 760px and one body column | Preserved |
+| Mobile room dialog | At 600px: full width, bottom-sheet corners, body padding 9px | Preserved |
+| Resident scroll area | Historical desktop maximum 34vh; mobile content joins the modal scroll | Preserved, with the canonical modal body bounded to `100dvh - 24px` |
+| Footer | Historical centered actions, 110–145px per action | Two visible canonical actions use centered 120–160px columns; sticky footer remains visible |
+| Mobile room grid | Single column at 600px | Single column at 600px; the conflicting 680px override was removed |
+
+At the historical minimum track width, the grid fits 1/2/3/4 cards in approximately 262/500/760/1020px of available floor width. CSS logical `start` under `direction:rtl` places the first card on the right.
+
 ## Functional matrix
 
 | Capability | Old reference | Canonical implementation / evidence | Gap closed or remaining acceptance | Acceptance test | Status |

@@ -1236,9 +1236,6 @@ tr:nth-child(even) td{background:#F7FBFF}
 #tab0 .accommodation-house-title>.row{margin-inline-start:auto}
 #tab0 .floor-section{padding:var(--app-space-4) var(--app-space-5);border-bottom:1px solid var(--app-border)}#tab0 .floor-section:last-child{border-bottom:0}
 #tab0 .floor-section>.floor-title{display:flex;align-items:center;justify-content:space-between;gap:var(--app-space-4);margin-bottom:var(--app-space-4);color:var(--app-primary-dark);font-size:var(--platform-font-size-body)}
-#tab0 .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,262px));justify-content:start;gap:var(--app-space-3)}
-#tab0 .room-card{display:grid;min-width:0;gap:var(--app-space-3);padding:var(--app-space-4);border:1px solid var(--app-border);border-top:4px solid var(--app-success);border-radius:var(--app-radius-md);background:var(--app-surface);box-shadow:var(--app-shadow-sm)}
-#tab0 .room-card.room-closed{border-top-color:var(--app-neutral);background:var(--app-neutral-soft)}
 #tab0 .room-card-header{display:flex;align-items:center;justify-content:space-between;gap:var(--app-space-3);color:var(--app-primary-dark)}#tab0 .room-card-header strong{font-size:var(--platform-font-size-body)}#tab0 .room-card-header span{padding:3px 8px;border-radius:var(--app-radius-pill);background:var(--app-success-soft);color:var(--app-success);font-size:var(--platform-font-size-xs);font-weight:var(--app-font-weight-bold)}#tab0 .room-closed .room-card-header span{background:var(--app-surface);color:var(--app-neutral)}
 #tab0 .accommodation-room-toolbar{align-items:center;gap:var(--app-space-2)}#tab0 .accommodation-room-toolbar .btn:first-child{flex:1}
 #tab0 .guest-row{gap:var(--app-space-3);padding:var(--app-space-3) 0;border-bottom:1px solid var(--app-border)}#tab0 .guest-row:last-child{border-bottom:0}#tab0 .accommodation-guest-meta{margin-top:2px;color:var(--app-text-muted);font-size:var(--platform-font-size-xs)}
@@ -1260,26 +1257,21 @@ tr:nth-child(even) td{background:#F7FBFF}
 .accommodation-dashboard .floor-section.is-collapsed>.rooms-grid{display:none}
 
 /* Canonical accommodation room parity: status and capacity are visual only. */
-.accommodation-dashboard .accommodation-room-card{min-width:0;border-inline-start:4px solid #98a3af}
-.accommodation-dashboard .accommodation-room-card.room-status-full{border-inline-start-color:#2b9460}
-.accommodation-dashboard .accommodation-room-card.room-status-partial{border-inline-start-color:#e59a32}
-.accommodation-dashboard .accommodation-room-card.room-status-over{border-inline-start-color:#cf4750}
-.accommodation-dashboard .accommodation-room-card.room-status-closed{border-inline-start-color:#89939f}
+.accommodation-dashboard .accommodation-room-card{min-width:0;--room-status-color:#98a3af}
+.accommodation-dashboard .accommodation-room-card.room-status-full{--room-status-color:#2b9460}
+.accommodation-dashboard .accommodation-room-card.room-status-partial{--room-status-color:#e59a32}
+.accommodation-dashboard .accommodation-room-card.room-status-over{--room-status-color:#cf4750}
+.accommodation-dashboard .accommodation-room-card.room-status-closed{--room-status-color:#89939f}
 .accommodation-dashboard .room-indicators{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 .accommodation-dashboard .room-status-label{font-weight:650}
 .accommodation-dashboard .accommodation-room-card .guest-row{min-width:0}
 
 /* Canonical accommodation: readable room cards across desktop and handheld viewports. */
-#tab0 .accommodation-dashboard .rooms-grid{grid-template-columns:repeat(auto-fill,minmax(230px,262px));justify-content:start;align-items:start;gap:8px}
-#tab0 .accommodation-dashboard .accommodation-room-card{border-top:4px solid #98a3af;overflow-wrap:anywhere}
-#tab0 .accommodation-dashboard .accommodation-room-card.room-status-full{border-top-color:#2b9460}
-#tab0 .accommodation-dashboard .accommodation-room-card.room-status-partial{border-top-color:#e59a32}
-#tab0 .accommodation-dashboard .accommodation-room-card.room-status-over{border-top-color:#cf4750}
-#tab0 .accommodation-dashboard .accommodation-room-card.room-status-closed{border-top-color:#89939f}
+#tab0 .accommodation-dashboard .accommodation-room-card{overflow-wrap:anywhere}
 #tab0 .accommodation-dashboard .accommodation-room-card .room-card-header{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 #tab0 .accommodation-dashboard .accommodation-room-card .room-indicators{margin-inline-start:auto}
 #tab0 .accommodation-dashboard .accommodation-room-card .accommodation-room-toolbar{display:flex;flex-wrap:wrap;gap:8px}
-@media(max-width:680px){#tab0 .accommodation-dashboard .rooms-grid{grid-template-columns:minmax(0,1fr)}#tab0 .accommodation-dashboard .accommodation-house-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){#tab0 .accommodation-dashboard .accommodation-house-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Canonical guest detail parity; no local guest-state ownership. */
 #tab0 .accommodation-guest-row{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px}
@@ -1292,25 +1284,21 @@ tr:nth-child(even) td{background:#F7FBFF}
 
 /* The canonical renderer reuses the original accommodation card and workspace shell. */
 #tab0 .accommodation-dashboard .floor-container.is-collapsed>.rooms-grid{display:none}
-#tab0 .accommodation-dashboard .accommodation-room-card.rcard{display:block;padding:0;gap:0;border-inline-start:1px solid var(--app-border);overflow:visible}
+#tab0 .accommodation-dashboard .accommodation-room-card.rcard{padding:0;overflow:visible}
 #tab0 .accommodation-dashboard .accommodation-room-card.rcard .rcard-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:5px}
 #tab0 .accommodation-dashboard .accommodation-room-card.rcard .accommodation-room-occupancy-badge,#tab0 .accommodation-dashboard .accommodation-room-card.rcard .room-extra-badge{padding:3px 7px;border-radius:999px;background:#edf3f8;color:#315d86;font-size:9px;font-weight:800}
 #tab0 .accommodation-dashboard .accommodation-room-card.rcard .accommodation-room-key{width:100%;border-radius:8px;font-family:inherit;cursor:pointer}
 #tab0 .accommodation-dashboard .accommodation-room-card.rcard .accommodation-room-key:disabled{cursor:default}
-#tab0 .accommodation-dashboard .accommodation-room-card.rcard .accommodation-room-details{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;color:var(--app-text-muted);font-size:9px}
-#tab0 .accommodation-dashboard .accommodation-room-card.rcard .accommodation-room-details>span{padding:3px 6px;border-radius:6px;background:var(--app-surface-soft)}
-#tab0 .accommodation-dashboard .accommodation-room-card.rcard .accommodation-room-notes{width:100%}
 #tab0 .accommodation-dashboard .accommodation-room-card.rcard .room-more-actions summary{display:flex;align-items:center;justify-content:center;min-height:33px;list-style:none;cursor:pointer}
 #tab0 .accommodation-dashboard .accommodation-room-card.rcard .room-more-actions summary::-webkit-details-marker{display:none}
 #tab0 .accommodation-dashboard .accommodation-compact-occupants{display:grid;gap:0;min-height:34px}
-#tab0 .accommodation-dashboard .accommodation-compact-person{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px;min-height:27px;padding:3px 1px;border-bottom:1px solid var(--app-border);color:var(--app-text);font-size:10px}
+#tab0 .accommodation-dashboard .accommodation-compact-person{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:4px;min-height:27px;padding:3px 1px;border-bottom:1px solid var(--app-border);color:var(--app-text);font-size:10px}
 #tab0 .accommodation-dashboard .accommodation-compact-person:last-child{border-bottom:0}
 #tab0 .accommodation-dashboard .accommodation-compact-person.is-child{padding-inline-start:12px;background:var(--app-surface-soft)}
 #tab0 .accommodation-dashboard .accommodation-compact-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:var(--app-font-weight-bold)}
 #tab0 .accommodation-dashboard .accommodation-child-bed-badge,#tab0 .accommodation-dashboard .accommodation-guardian-missing{grid-column:1/-1;width:max-content;max-width:100%;padding:2px 6px;border-radius:var(--app-radius-pill);background:var(--app-warning-soft);color:var(--app-warning);font-size:8px;font-weight:var(--app-font-weight-bold)}
 #tab0 .accommodation-dashboard .accommodation-guardian-missing{background:var(--app-danger-soft);color:var(--app-danger)}
 #tab0 .accommodation-dashboard .accommodation-compact-key{font-size:11px}
-#tab0 .accommodation-dashboard .accommodation-compact-key-action{flex:0 0 34px;padding-inline:7px}
 #roomModal.canonical-room-readonly .canonical-room-child{margin-inline-start:26px;border-color:#efd9a8;background:#fffaf0}
 #roomModal.canonical-room-readonly .canonical-room-child .guest-slot-label{color:#8a5b12;font-weight:800}
 #tab0 .accommodation-house-description{margin:0;padding:0 13px 10px;color:var(--app-text-muted);font-size:11px;line-height:1.6}
@@ -1320,7 +1308,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 /* Canonical room details: one dismiss action, with scrollable content in constrained viewports. */
 #roomModal.canonical-room-readonly .room-editor-modal{max-height:calc(100dvh - 24px);min-height:0}
 #roomModal.canonical-room-readonly .mbody{min-height:0;overflow-y:auto;overscroll-behavior:contain}
-#roomModal.canonical-room-readonly .room-modal-footer{grid-template-columns:minmax(120px,160px);justify-content:center}
+#roomModal.canonical-room-readonly .room-modal-footer{grid-template-columns:repeat(2,minmax(120px,160px));justify-content:center}
 #roomModal.canonical-room-readonly .room-modal-header-icon{display:none}
 @media(max-height:540px){#roomModal.canonical-room-readonly .room-editor-modal{max-height:calc(100dvh - 12px)}#roomModal.canonical-room-readonly .room-modal-header{min-height:48px}#roomModal.canonical-room-readonly .mbody{padding:8px}}
 

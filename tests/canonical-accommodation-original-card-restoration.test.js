@@ -59,3 +59,43 @@ test('restored density uses the original compact width and shared design tokens'
   assert.match(css,/var\(--app-surface-soft\)/);
   assert.match(css,/canonical-room-child/);
 });
+
+test('room grid keeps the historical RTL layout through tablet width and calculates dense columns',()=>{
+  const owner=(css.match(/#tab0 \.accommodation-floor-rooms\{[^}]+\}/g)||[]).filter(rule=>rule.includes('display:grid'));
+  assert.equal(owner.length,1,'the original scoped grid must have one owner');
+  assert.match(owner[0],/direction:rtl/);
+  assert.match(owner[0],/justify-content:start/);
+  assert.match(owner[0],/gap:8px/);
+  assert.doesNotMatch(css,/@media\(max-width:680px\)\{[^}]*rooms-grid/);
+  const columns=width=>Math.max(1,Math.floor((width+8)/(230+8)));
+  assert.deepEqual([262,500,760,1020].map(columns),[1,2,3,4]);
+});
+
+test('compact room restores arrival and key tools while room closure uses the canonical revisioned mutation',async()=>{
+  const html=context.renderCanonicalAccommodationCompactOccupants([{occupancyId:'o1',participationId:'p1',bedType:'base',arrivedAt:null,person:{fullName:'نزيل'}}],null,true);
+  assert.match(html,/setCanonicalAccommodationArrival\('o1',true\)/);
+  let mutation;
+  Object.assign(context,{
+    currentConferenceSectionCapability:()=>true,
+    getCurrentConference:()=>({id:'conference',operationalDay:4}),
+    findCanonicalAccommodationEntity:()=>({roomId:'room',revision:7,roomNumber:'12',baseCapacity:2,extraBedCapacity:1,notes:'n',position:3,isClosed:false}),
+    confirm:()=>true,
+    getConferenceOperationalDay:()=>4,
+    showToast:()=>{},formatCanonicalAccommodationAssignmentFailure:()=>'',
+    window:{PlatformIntegration:{mutateConferenceAccommodationStructure:(id,operation,payload)=>{mutation={id,operation,payload};return Promise.resolve(true);}}},
+    canonicalAccommodationMutation:value=>value
+  });
+  await context.setCanonicalAccommodationRoomClosed('room',true);
+  assert.equal(mutation.id,'conference');
+  assert.equal(mutation.operation,'update_accommodation_room');
+  assert.equal(mutation.payload.p_expected_revision,7);
+  assert.equal(mutation.payload.p_is_closed,true);
+  assert.equal(mutation.payload.p_closed_day,4);
+});
+
+test('canonical room detail viewport keeps the historic width, two visible footer actions and bounded scrolling',()=>{
+  assert.match(css,/#roomModal \.room-editor-modal\{width:min\(880px,calc\(100vw - 32px\)\);max-width:880px\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-editor-modal\{max-height:calc\(100dvh - 24px\);min-height:0\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.mbody\{min-height:0;overflow-y:auto;overscroll-behavior:contain\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{grid-template-columns:repeat\(2,minmax\(120px,160px\)\);justify-content:center\}/);
+});

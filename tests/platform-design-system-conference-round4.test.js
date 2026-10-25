@@ -15,7 +15,7 @@ const guide=read('docs/platform-design-system.md');
 test('design layers have one documented runtime owner and deterministic cache graph',()=>{
   const assets=[
     'shared-design-tokens.css?rev=platform-design-system-consolidation-v2',
-    'style.css?rev=canonical-accommodation-original-ui-v1',
+    'style.css?rev=canonical-accommodation-final-parity-v1',
     'canonical-platform-shell.css?rev=conference-header-content-offset-v1'
   ];
   for(const asset of assets){
@@ -59,7 +59,7 @@ test('canonical accommodation composes shared states with scoped responsive patt
   assert.match(renderer,/getCanonicalAccommodationOccupanciesOnDay\(room,operationalDay\)/);
   assert.match(renderer,/room\.isClosed\?'disabled title="الغرفة مغلقة"'/);
   assert.match(style,/#tab0 \.accommodation-toolbar\{/);
-  assert.match(style,/#tab0 \.room-card\.room-closed\{/);
+  assert.match(style,/\.accommodation-dashboard \.accommodation-room-card\.room-status-closed\{--room-status-color:/);
   for(const breakpoint of ['900','600','420'])assert.match(style,new RegExp('@media\\(max-width:'+breakpoint+'px\\)'));
 });
 
