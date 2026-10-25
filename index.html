@@ -480,10 +480,11 @@
         <div><label for="canonicalAccommodationArrivalDay">يوم الوصول:</label><input id="canonicalAccommodationArrivalDay" type="number" min="1" step="1" inputmode="numeric"></div>
         <div><label for="canonicalAccommodationLeaveDay">يوم المغادرة (اتركه فارغًا إذا لم تُحدد المغادرة):</label><input id="canonicalAccommodationLeaveDay" type="number" min="2" step="1" inputmode="numeric"></div>
         <div id="canonicalAccommodationReplacementDayField" style="display:none"><label for="canonicalAccommodationReplacementDay">يوم سريان الاستبدال:</label><input id="canonicalAccommodationReplacementDay" type="number" min="1" step="1" inputmode="numeric"></div>
-        <div><label for="canonicalAccommodationBedType">نوع السرير: أساسي أو إضافي</label><select id="canonicalAccommodationBedType" onchange="renderCanonicalAccommodationAssignmentCandidates()"><option value="base">أساسي</option><option value="extra">إضافي</option></select></div>
+        <div><label for="canonicalAccommodationBedType">نوع الإقامة</label><select id="canonicalAccommodationBedType" onchange="renderCanonicalAccommodationAssignmentCandidates()"><option value="base">سرير أساسي</option><option value="extra">سرير إضافي</option><option value="shared">طفل مع المرافق دون سرير</option></select></div>
         <div id="canonicalAccommodationExtraPersonTypeField" style="display:none"><label for="canonicalAccommodationExtraPersonType">السرير الإضافي لشخص بالغ أم طفل؟ اكتب بالغ أو طفل</label><select id="canonicalAccommodationExtraPersonType"><option value="adult">بالغ</option><option value="child">طفل</option></select></div>
       </div>
       <button type="button" class="btn btn-blue canonical-accommodation-load-candidates" onclick="renderCanonicalAccommodationAssignmentCandidates()">عرض الأشخاص المتاحين</button>
+      <button id="canonicalAccommodationCreatePerson" type="button" class="btn btn-gray canonical-accommodation-create-person" onclick="openCanonicalAccommodationPersonDialog()">إضافة شخص من الدليل المركزي</button>
       <div id="canonicalAccommodationAssignmentError" role="alert" aria-live="polite"></div>
       <div id="canonicalAccommodationAssignmentCandidates" style="display:none">
         <label for="canonicalAccommodationAssignmentSearch">بحث...</label>
@@ -637,7 +638,7 @@
 <script src="js/warehouse/party-management.js?rev=warehouse-party-management-v1"></script>
 <script src="js/warehouse/remaining-operations.js?rev=adjustment-conversion-ux-v1"></script>
 <script src="js/warehouse/workspace.js?rev=item-unit-add-ui-v1"></script>
-<script src="script.js?rev=canonical-guardian-child-v1"></script>
+<script src="script.js?rev=canonical-accommodation-unification-v1"></script>
 <script src="version.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {

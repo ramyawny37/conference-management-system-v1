@@ -92,6 +92,32 @@ test('canonical occupancy edit reuses the protected move contract in the same ro
   const rendererEnd=ui.indexOf('\nfunction renderAccommodation()',rendererStart);
   assert.match(ui.slice(rendererStart,rendererEnd),/editCanonicalAccommodation/);
 });
+
+test('canonical assignment can add a central person and resume the same room draft',()=>{
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  const start=ui.indexOf('function openCanonicalAccommodationPersonDialog(');
+  const end=ui.indexOf('\nvar canonicalAccommodationAssignmentDraft=',start);
+  const body=ui.slice(start,end);
+  assert.ok(start>=0&&end>start);
+  assert.match(html,/onclick="openCanonicalAccommodationPersonDialog\(\)"/);
+  assert.match(body,/currentConferenceSectionCapability\('accommodationManage'\)/);
+  assert.match(body,/currentConferenceSectionCapability\('peopleManage'\)/);
+  assert.match(body,/accommodationAssignment:true/);
+  assert.match(body,/getConferenceParticipationState/);
+  assert.match(body,/resumeCanonicalAccommodationAssignmentForPerson/);
+  assert.match(body,/selectCanonicalAccommodationParticipation/);
+  assert.doesNotMatch(body,/peopleDb|localStorage|indexedDB|room\.guests/);
+});
+
+test('canonical assignment exposes shared child occupancy without consuming a bed',()=>{
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  assert.match(html,/id="canonicalAccommodationBedType"[\s\S]*option value="shared"/);
+  const start=ui.indexOf('function confirmCanonicalAccommodationAssignment(');
+  const end=ui.indexOf('\nfunction editCanonicalAccommodation(',start);
+  const body=ui.slice(start,end);
+  assert.match(body,/bedType:ge\('canonicalAccommodationBedType'\)\.value/);
+  assert.match(body,/extraBedPersonType:ge\('canonicalAccommodationBedType'\)\.value==='extra'/);
+});
 test('responsive room and guest layouts and collapsed floors exist',()=>{
   assert.match(css,/floor-container\.is-collapsed>\.rooms-grid\{display:none\}/);
   assert.match(css,/accommodation-house-metrics/);

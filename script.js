@@ -2842,9 +2842,33 @@ function assignCanonicalAccommodation(roomId){
   ge('canonicalAccommodationAssignmentError').textContent='';
   ge('canonicalAccommodationAssignmentCandidates').style.display='none';
   ge('canonicalAccommodationAssignmentConfirm').disabled=true;
+  ge('canonicalAccommodationCreatePerson').style.display=currentConferenceSectionCapability('peopleManage')?'':'none';
   modal.style.display='flex';
   ge('canonicalAccommodationArrivalDay').focus();
   return true;
+}
+
+function openCanonicalAccommodationPersonDialog(){
+  var draft=canonicalAccommodationAssignmentDraft,current=getCurrentConference();
+  if(!draft||!current||String(current.id)!==String(draft.conferenceId)||!currentConferenceSectionCapability('accommodationManage'))return false;
+  if(!currentConferenceSectionCapability('peopleManage')){ge('canonicalAccommodationAssignmentError').textContent='ليس لديك صلاحية إضافة أشخاص إلى المؤتمر.';return false;}
+  personDialogContext={guestRowId:null,childRowId:null,targetField:'',accommodationAssignment:true};
+  return openPersonDialog();
+}
+
+function resumeCanonicalAccommodationAssignmentForPerson(personId){
+  var draft=canonicalAccommodationAssignmentDraft,current=getCurrentConference(),integration=window.PlatformIntegration;
+  if(!draft||!current||String(current.id)!==String(draft.conferenceId)||!integration)return false;
+  var state=integration.getConferenceParticipationState(current.id);
+  var participation=state&&(state.items||[]).find(function(item){return item.status==='active'&&String(item.personId)===String(personId||'');});
+  if(!participation)return false;
+  draft.participations=(state.items||[]).filter(function(item){return item.status==='active';});
+  renderCanonicalAccommodationAssignmentCandidates();
+  if(!(draft.available||[]).some(function(item){return String(item.participationId)===String(participation.participationId);})){
+    ge('canonicalAccommodationAssignmentError').textContent='تمت إضافة الشخص للمؤتمر، لكنه غير متاح لفترة الإقامة المحددة.';
+    return false;
+  }
+  return selectCanonicalAccommodationParticipation(participation.participationId);
 }
 
 var canonicalAccommodationAssignmentDraft=null;
@@ -2919,6 +2943,7 @@ function syncCanonicalAccommodationReplacementFields(){
 function formatCanonicalAccommodationAssignmentFailure(error){
   var code=String(error&&error.code||'');
   if(code==='23P01'||/OVERLAP|EXCLUSION|CONFLICT/.test(code))return 'تغيرت بيانات التسكين على جهاز آخر أو توجد إقامة متداخلة. أعد اختيار الفترة والشخص.';
+  if(/SHARED_CHILD_GUARDIAN/.test(code)||/SHARED_CHILD_GUARDIAN/.test(String(error&&error.message||'')))return 'إقامة الطفل مع المرافق تتطلب ربطه بمرافق نشط ومسكن في الغرفة نفسها طوال الفترة.';
   if(/CAPACITY|FULL/.test(code))return 'لا توجد سعة متاحة لهذه الفترة.';
   return 'تعذر حفظ بيانات التسكين.';
 }
@@ -2989,6 +3014,7 @@ function editCanonicalAccommodation(occupancyId){
   ge('canonicalAccommodationAssignmentError').textContent='';
   ge('canonicalAccommodationAssignmentCandidates').style.display='block';
   ge('canonicalAccommodationAssignmentConfirm').disabled=false;
+  ge('canonicalAccommodationCreatePerson').style.display=currentConferenceSectionCapability('peopleManage')?'':'none';
   renderCanonicalAccommodationAssignmentCandidates();
   modal.style.display='flex';
   ge('canonicalAccommodationArrivalDay').focus();
@@ -8542,7 +8568,7 @@ function importLocalOnlyPeopleExcelFile(e){
   e.target.value = '';
 }
 
-var personDialogContext = { guestRowId: null, childRowId: null, targetField: '' };
+var personDialogContext = { guestRowId: null, childRowId: null, targetField: '', accommodationAssignment: false };
 
 var canonicalPersonSearchGeneration=0;
 var canonicalPersonSelectedId=null;
@@ -8632,7 +8658,7 @@ function closePersonDialog(){
   canonicalPersonSearchGeneration++;canonicalPersonSelectedId=null;canonicalPersonSelectedName='';canonicalPersonSelectedSnapshot=null;
   ge('personCanonicalSuggestions').style.display='none';ge('personCanonicalSuggestions').textContent='';
   ge('personModal').style.display = 'none';
-  personDialogContext = { guestRowId: null, childRowId: null, targetField: '' };
+  personDialogContext = { guestRowId: null, childRowId: null, targetField: '', accommodationAssignment: false };
 }
 
 function deletePersonFromDatabase(personId){
@@ -8716,15 +8742,16 @@ function savePersonDialog(){
 
 var canonicalPersonSavePending=false;
 function refreshCanonicalPeopleAfterDuplicate(localId,personId){
+  var accommodationAssignment=personDialogContext.accommodationAssignment===true;
   return hydrateCanonicalConferenceParticipations(localId,{silent:true}).then(function(){
     var current=getCurrentConference(),integration=window.PlatformIntegration;
     var state=integration&&integration.getConferenceParticipationState(localId);
     var exists=!!(current&&String(current.id)===String(localId)&&state&&Array.isArray(state.items)&&state.items.some(function(item){
       return String(item.personId||item.person&&item.person.id||'')===String(personId)&&item.status==='active';
     }));
-    renderSettings();
+    if(!accommodationAssignment)renderSettings();
     if(!exists){showToast('تعذر تأكيد مشاركة الشخص في المؤتمر الحالي. أعد تحميل القائمة والتحقق من البيانات.','#E74C3C');return false;}
-    closePersonDialog();showToast('الشخص موجود بالفعل في المؤتمر وتم تحديث القائمة.');return true;
+    closePersonDialog();if(accommodationAssignment)resumeCanonicalAccommodationAssignmentForPerson(personId);else renderSettings();showToast('الشخص موجود بالفعل في المؤتمر وتم تحديث القائمة.');return true;
   }).catch(function(){showToast('تعذر التحقق من مشاركة الشخص في المؤتمر الحالي.','#E74C3C');return false;});
 }
 function isCanonicalParticipationDuplicate(error){
@@ -8759,14 +8786,19 @@ function saveCanonicalConferenceParticipant(linkedCurrent,personId){
     if(!snapshot||ge('person_church').value.trim()!==snapshot.church||ge('person_phone').value.trim()!==snapshot.phone||ge('person_gender').value.trim()!==snapshot.gender||ge('person_date_of_birth').value!==snapshot.dateOfBirth){alert('لا يتم تحديث الدليل المركزي تلقائيًا. أعد اختيار الشخص دون تعديل بياناته.');return false;}
     canonicalPersonSavePending=true;
     var selectedPersonId=canonicalPersonSelectedId;
-    return window.PlatformIntegration.createConferenceParticipationForExistingPerson(linkedCurrent.id,selectedPersonId).then(function(){canonicalPersonSavePending=false;closePersonDialog();renderSettings();showToast('✅ تمت إضافة الشخص للمؤتمر');return true;}).catch(function(error){if(isCanonicalParticipationDuplicate(error))return refreshCanonicalPeopleAfterDuplicate(linkedCurrent.id,selectedPersonId);showToast('تعذر إضافة الشخص للمؤتمر.','#E74C3C');return false;}).finally(function(){canonicalPersonSavePending=false;});
+    var accommodationAssignment=personDialogContext.accommodationAssignment===true;
+    return window.PlatformIntegration.createConferenceParticipationForExistingPerson(linkedCurrent.id,selectedPersonId).then(function(){canonicalPersonSavePending=false;closePersonDialog();if(accommodationAssignment)resumeCanonicalAccommodationAssignmentForPerson(selectedPersonId);else renderSettings();showToast('✅ تمت إضافة الشخص للمؤتمر');return true;}).catch(function(error){if(isCanonicalParticipationDuplicate(error))return refreshCanonicalPeopleAfterDuplicate(linkedCurrent.id,selectedPersonId);showToast('تعذر إضافة الشخص للمؤتمر.','#E74C3C');return false;}).finally(function(){canonicalPersonSavePending=false;});
   }
   var genderValue=ge('person_gender').value.trim();
   if(genderValue==='ذكر')genderValue='male';
   else if(genderValue==='أنثى')genderValue='female';
   else if(genderValue!=='male'&&genderValue!=='female')genderValue=null;
   canonicalPersonSavePending=true;
-  return window.PlatformIntegration.createConferenceParticipationWithPerson(linkedCurrent.id,{fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null}).then(function(){canonicalPersonSavePending=false;closePersonDialog();renderSettings();showToast('✅ تم حفظ بيانات الشخص');return true;}).catch(function(){showToast('تعذر حفظ الشخص.','#E74C3C');return false;}).finally(function(){canonicalPersonSavePending=false;});
+  var accommodationAssignment=personDialogContext.accommodationAssignment===true;
+  var priorPersonIds={};
+  var priorState=window.PlatformIntegration.getConferenceParticipationState(linkedCurrent.id);
+  (priorState&&priorState.items||[]).forEach(function(item){priorPersonIds[String(item.personId)]=true;});
+  return window.PlatformIntegration.createConferenceParticipationWithPerson(linkedCurrent.id,{fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null}).then(function(response){var created=(response&&response.items||[]).find(function(item){return !priorPersonIds[String(item.personId)]&&String(item.person&&item.person.fullName||'')===linkedFullName;});var createdPersonId=created&&String(created.personId||'');canonicalPersonSavePending=false;closePersonDialog();if(accommodationAssignment)resumeCanonicalAccommodationAssignmentForPerson(createdPersonId);else renderSettings();showToast('✅ تم حفظ بيانات الشخص');return true;}).catch(function(){showToast('تعذر حفظ الشخص.','#E74C3C');return false;}).finally(function(){canonicalPersonSavePending=false;});
 }
 
 function saveLocalOnlyPersonDialog(personId){
@@ -8835,12 +8867,12 @@ function setCanonicalParticipantStatus(participationId,status){
 }
 
 function openQuickAddPersonForGuest(rowId){
-  personDialogContext = { guestRowId: rowId, childRowId: null, targetField: '' };
+  personDialogContext = { guestRowId: rowId, childRowId: null, targetField: '', accommodationAssignment: false };
   openPersonDialog();
 }
 
 function openQuickAddPersonForChild(rowId, field){
-  personDialogContext = { guestRowId: null, childRowId: rowId, targetField: field || 'child' };
+  personDialogContext = { guestRowId: null, childRowId: rowId, targetField: field || 'child', accommodationAssignment: false };
   openPersonDialog();
 }
 
