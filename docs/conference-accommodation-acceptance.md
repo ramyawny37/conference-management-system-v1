@@ -1,6 +1,6 @@
 # Conference Accommodation Acceptance Matrix
 
-Baseline for the complete original UX recovery: `4dbc348c1006e38bb7d1ec1b6e3955ead25f2b34`
+Baseline for the unified room editor recovery: `0e66a9a16ea58b8d80d06043d6072d2e79ce269a`
 
 Functional reference: `cccba23a9b13e800cd6e95c96c86bd02ad56bf2a`. The old commit is a behavior reference only; its local `conference.houses`, `room.guests`, `room.children`, `save()` and IndexedDB paths are not valid owners for a linked Conference.
 
@@ -24,6 +24,25 @@ The design chain was inspected component by component: `c0617e2` (exclusive room
 | Assignment lifecycle | Central `PlatformIntegration` contracts, dispatcher and PostgreSQL functions | Functional contracts existed but the picker interaction diverged from the original | Picker-first UI now feeds the same assign/move/atomic-replace contracts with permission, revision, lease, overlap, capacity, idempotency and hydration guards unchanged | PASS; live operational BLOCKED |
 
 The canonical adaptation intentionally uses the original picker interaction rather than restoring the old row-anchored room editor: `Person -> Conference Participation -> Accommodation Occupancy` remains the sole data route. DOM interaction coverage verifies immediate rendering, search by identity details, selection by `participationId`, enabled confirmation, and removal of the intermediate load step.
+
+## Unified canonical room editor
+
+The original interaction owner is the `cccba23` `openRoomEditor` / `createGuestSlotRow` / `openGuestPersonPicker` sequence, with the room layout and action refinements from `c0617e2` through `60e0381`. Only its slot-based interaction was recovered; its `saveRoomData`, `room.guests`, `room.children`, local `save()` and IndexedDB authority remain excluded.
+
+| Item | Original evidence | Central implementation | Status |
+| --- | --- | --- | --- |
+| One room editor | `openRoomEditor` and `roomModal` | `openCanonicalAccommodationRoomDetails` is opened by both Details and Add | PASS programmatic; visual BLOCKED |
+| Bed slots | `createGuestSlotRow`, base and extra slot labels | One rendered slot per `baseCapacity` and `extraBedCapacity`; occupied and empty states share the same editor | PASS programmatic |
+| Direct search | `openGuestPersonPicker` / `renderGuestPersonPickerList` | `renderCanonicalAccommodationRoomSlotCandidates` searches authorized active Participations inside the empty slot | PASS DOM |
+| Person selection | Historical hidden person id | Stable canonical `participationId`; changing visible text invalidates the selected identity | PASS DOM |
+| Assignment and cancellation | Historical room-wide local save | Explicit per-slot “تسكين” invokes `assignConferenceAccommodation`; closing the room discards only the UI draft and sends no assignment | PASS programmatic; operational BLOCKED |
+| New Person return | `openQuickAddPersonForGuest` returned to a local row | Central Person/Participation creation resumes the same room and exact slot draft | PASS programmatic |
+| Children | Historical child rows | `base`/`extra` children occupy a real slot; `shared` children remain under the exact guardian and consume no slot; missing link stays explicit | PASS programmatic |
+| Resident actions | Historical inline move/remove and stay controls | Arrival, key, edit/replace, move and remove remain exposed on the resident row and use existing central operations | PASS programmatic; operational BLOCKED |
+| Room structure save | `saveRoomData` local aggregate | `saveCanonicalAccommodationRoomData` changes only revisioned room structure through PlatformIntegration | PASS programmatic |
+| No parallel owner | Legacy local editor versus linked Conference route | Canonical room renderer and canonical mutations only; the separate assignment dialog is no longer called from normal room-card or room-detail addition | PASS programmatic |
+
+Room-structure save and resident assignment are deliberately separate explicit operations because the current protected contracts do not provide one transaction spanning both mutations. The UI therefore does not imply that the room Save button atomically commits pending residents: each empty slot has its own explicit assignment button and rehydrates from the central source after success.
 
 ## Original room-card restoration
 

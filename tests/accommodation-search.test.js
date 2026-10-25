@@ -69,7 +69,7 @@ assert.match(accommodationBlock,/floor\.rooms\|\|\[\]\)\.filter/,
   'canonical room-card rendering must use the filtered floor rooms');
 assert.match(accommodationBlock,/accommodation-room-card/,
   'full canonical room card must remain present');
-assert.match(accommodationBlock,/assignCanonicalAccommodation\(/,'canonical room actions must remain present');
+assert.match(accommodationBlock,/openCanonicalAccommodationRoomDetails\(/,'canonical room actions must open the unified room editor');
 assert.match(accommodationBlock,/currentConferenceSectionCapability\('accommodationManage'\)/,'viewing users must still reach filtering before action gating');
 assert.match(accommodationBlock,/accommodationSearchQuery/,'query must survive ordinary rerenders');
 assert.match(accommodationBlock,/function clearAccommodationSearch\(\)[\s\S]*accommodationSearchQuery=''/,

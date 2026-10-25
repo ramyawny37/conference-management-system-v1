@@ -190,6 +190,49 @@ test('canonical room editor reuses roomModal and saves only through the central 
   assert.doesNotMatch(body,/\bsave\(\)|current\.houses\s*=|room\.guests|room\.children/);
 });
 
+test('canonical room editor renders one integrated slot per base and extra bed without the separate assignment route',()=>{
+  const detailStart=ui.indexOf('function openCanonicalAccommodationRoomDetails(');
+  const detailEnd=ui.indexOf('\nfunction saveCanonicalAccommodationRoomData(',detailStart);
+  const body=ui.slice(detailStart,detailEnd);
+  assert.match(body,/for\(var baseIndex=0;baseIndex<Number\(room\.baseCapacity\|\|0\);baseIndex\+\+\)/);
+  assert.match(body,/for\(var extraIndex=0;extraIndex<Number\(room\.extraBedCapacity\|\|0\);extraIndex\+\+\)/);
+  assert.match(body,/canonicalAccommodationRoomEmptySlotHtml/);
+  assert.match(body,/renderCanonicalAccommodationDetailOccupant/);
+  assert.doesNotMatch(body,/closeRM\(\);assignCanonicalAccommodation/);
+  const slot=ui.slice(ui.indexOf('function canonicalAccommodationRoomEmptySlotHtml('),ui.indexOf('\nfunction renderCanonicalAccommodationCompactOccupants('));
+  assert.match(slot,/assignConferenceAccommodation\(current\.id,payload\)/);
+  assert.match(slot,/participationId:slot\.selectedParticipationId/);
+  assert.match(slot,/bedType:slot\.bedType/);
+  assert.doesNotMatch(slot,/saveRoomData|room\.guests|localStorage|indexedDB/);
+});
+
+test('integrated room slot picker searches central participations and invalidates a stale visible-name selection',()=>{
+  const dom=new JSDOM('<input id="canonicalRoomSlotSearch_base_0"><input id="canonicalRoomSlotParticipation_base_0"><input id="canonicalRoomSlotArrival_base_0" value="1"><input id="canonicalRoomSlotLeave_base_0"><div id="canonicalRoomSlotCandidates_base_0"></div><button id="canonicalRoomSlotAssign_base_0" disabled></button>');
+  const start=ui.indexOf('function getCanonicalAccommodationRoomSlotDraft(');
+  const end=ui.indexOf('\nfunction openCanonicalAccommodationRoomSlotPersonDialog(',start);
+  const draft={participations:[{participationId:'p1',status:'active',person:{fullName:'مريم حنا',phone:'0100',church:'مارمرقس'}},{participationId:'p2',status:'active',person:{fullName:'يوسف فريد'}}],slots:{base_0:{bedType:'base',selectedParticipationId:null,selectedLabel:'',available:[]}}};
+  const context={document:dom.window.document,String,Object,Number,canonicalAccommodationRoomEditorDraft:draft,ge:id=>dom.window.document.getElementById(id),normalizePersonKey:value=>String(value||'').trim().toLowerCase(),canonicalAccommodationState:()=>({houses:[]}),getCanonicalAccommodationAvailableParticipations:items=>items,esc:value=>String(value||'')};
+  vm.runInNewContext(ui.slice(start,end)+';this.renderCandidates=renderCanonicalAccommodationRoomSlotCandidates;this.select=selectCanonicalAccommodationRoomSlotParticipation;',context);
+  assert.equal(context.renderCandidates('base_0'),2);
+  assert.equal(dom.window.document.querySelectorAll('[role="option"]').length,2);
+  dom.window.document.querySelector('[role="option"]').click();
+  assert.equal(draft.slots.base_0.selectedParticipationId,'p1');
+  assert.equal(dom.window.document.getElementById('canonicalRoomSlotAssign_base_0').disabled,false);
+  dom.window.document.getElementById('canonicalRoomSlotSearch_base_0').value='اسم مختلف';
+  context.renderCandidates('base_0');
+  assert.equal(draft.slots.base_0.selectedParticipationId,null);
+  assert.equal(dom.window.document.getElementById('canonicalRoomSlotParticipation_base_0').value,'');
+  assert.equal(dom.window.document.getElementById('canonicalRoomSlotAssign_base_0').disabled,true);
+});
+
+test('central person creation resumes the same integrated room slot draft',()=>{
+  const save=ui.slice(ui.indexOf('function refreshCanonicalPeopleAfterDuplicate('),ui.indexOf('\nfunction saveLocalOnlyPersonDialog('));
+  assert.match(save,/accommodationRoomSlotKey=personDialogContext\.accommodationRoomSlotKey\|\|''/);
+  assert.match(save,/resumeCanonicalAccommodationRoomSlotForPerson\(selectedPersonId,accommodationRoomSlotKey\)/);
+  assert.match(save,/resumeCanonicalAccommodationRoomSlotForPerson\(createdPersonId,accommodationRoomSlotKey\)/);
+  assert.match(save,/resumeCanonicalAccommodationRoomSlotForPerson\(personId,accommodationRoomSlotKey\)/);
+});
+
 test('canonical move picker excludes closed, current and zero-capacity rooms without using current-day occupancy',()=>{
   const start=ui.indexOf('function moveCanonicalAccommodation(');
   const end=ui.indexOf('\nfunction removeCanonicalAccommodation(',start);

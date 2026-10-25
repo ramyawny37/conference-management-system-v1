@@ -108,14 +108,14 @@ test('account, device and audit reads use granular Platform permissions',()=>{
 
 test('cache references are atomically consistent for every changed runtime asset',()=>{
   const revision='platform-administration-canonical-sidebar-navigation-v2';
-  const styleRevision='canonical-accommodation-original-ux-v1';
+  const styleRevision='canonical-accommodation-unified-room-editor-v1';
   const deviceListRevision='platform-admin-security-retirement-v1';
   for(const asset of ['style.css','canonical-platform-shell.css','js/platform-integration.js','js/sync/user-management-ui.js','js/sync/module-permission-administration-ui.js','js/sync/platform-administration-ui.js','script.js']){
-    const assetRevision=asset==='style.css'?styleRevision:asset==='canonical-platform-shell.css'?'conference-header-content-offset-v1':asset==='script.js'?'canonical-accommodation-original-ux-v1':asset==='js/platform-integration.js'?'canonical-guardian-child-v1':asset==='js/sync/discovered-conference-open-service.js'?'conference-navigation-consolidation-v1':(asset==='js/sync/user-management-ui.js'||asset==='js/sync/platform-administration-ui.js')?deviceListRevision:revision;
+    const assetRevision=asset==='style.css'?styleRevision:asset==='canonical-platform-shell.css'?'conference-header-content-offset-v1':asset==='script.js'?'canonical-accommodation-unified-room-editor-v1':asset==='js/platform-integration.js'?'canonical-guardian-child-v1':asset==='js/sync/discovered-conference-open-service.js'?'conference-navigation-consolidation-v1':(asset==='js/sync/user-management-ui.js'||asset==='js/sync/platform-administration-ui.js')?deviceListRevision:revision;
     assert.ok(index.includes(asset+'?rev='+assetRevision),asset+' missing from index');
     assert.ok(worker.includes('./'+asset+'?rev='+assetRevision),asset+' missing from worker');
   }
-  assert.match(worker,/\? 'development-canonical-accommodation-original-ux-v1'/);
+  assert.match(worker,/\? 'development-canonical-accommodation-unified-room-editor-v1'/);
 });
 
 test('retired tenancy, direct database clients and local permission fallbacks remain absent',()=>{
