@@ -33,7 +33,7 @@ test('single editor Save submits selected slots and omits unchanged room structu
   assert.match(save,/structureChanged\?structure:null/);
   assert.match(script,/operationId:crypto\.randomUUID\(\)/);
   assert.match(script,/p_operation_id:draft\.operationId/);
-  assert.match(save,/if\(!structureChanged&&!assignments\.length\)\{closeRM\(\);return true;\}/);
+  assert.match(save,/if\(!structureChanged&&!assignments\.length&&!updates\.length\)\{closeRM\(\);return true;\}/);
   assert.doesNotMatch(save,/update_accommodation_room|assignConferenceAccommodation/);
 });
 

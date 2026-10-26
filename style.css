@@ -1401,6 +1401,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 #roomModal.canonical-room-readonly .canonical-room-guest .accommodation-arrival-badge{justify-self:start}
 #roomModal.canonical-room-readonly .room-information-section{padding-block:12px}
 #roomModal.canonical-room-readonly .room-modal-footer .btn{min-height:40px}
+#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-day,#roomModal.canonical-room-readonly .canonical-room-stay-bed,#roomModal.canonical-room-readonly .canonical-room-stay-extra{display:flex;min-width:92px;flex-direction:column;align-items:stretch;gap:3px;color:#536b80;font-size:9px;font-weight:700}#roomModal.canonical-room-readonly .canonical-room-guest input,#roomModal.canonical-room-readonly .canonical-room-guest select{width:100%;min-height:34px;padding:5px 7px;border:1px solid var(--room-modal-border);border-radius:8px;background:#fff;color:var(--room-modal-navy);font:inherit}#roomModal.canonical-room-readonly .canonical-room-guest[data-bed-type="shared"] .canonical-room-stay-extra{opacity:.65}
 #roomModal.canonical-room-readonly .canonical-room-stay-history{grid-column:1/-1;min-width:0;margin-top:12px;padding-top:12px;border-top:1px solid var(--app-border)}
 #roomModal.canonical-room-readonly .canonical-room-stay-history .canonical-room-guest{margin-top:8px}
 #roomModal.canonical-room-readonly .child-box .canonical-room-guest-actions{margin-top:8px}

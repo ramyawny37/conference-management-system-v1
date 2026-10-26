@@ -91,7 +91,9 @@ test('canonical occupancy edit reuses the protected move contract in the same ro
   assert.doesNotMatch(body,/saveRoomData|requireLocalOnlyAccommodationMutation/);
   const rendererStart=ui.indexOf('function renderCanonicalAccommodation(');
   const rendererEnd=ui.indexOf('\nfunction renderAccommodation()',rendererStart);
-  assert.match(ui.slice(ui.indexOf('function renderCanonicalAccommodationDetailOccupant('),rendererStart),/editCanonicalAccommodation/);
+  const unifiedRoomEditor=ui.slice(ui.indexOf('function renderCanonicalAccommodationDetailOccupant('),rendererStart);
+  assert.match(unifiedRoomEditor,/canonicalRoomStayArrival_/);
+  assert.doesNotMatch(unifiedRoomEditor,/editCanonicalAccommodation/);
 });
 
 test('canonical assignment can add a central person and resume the same room draft',()=>{
