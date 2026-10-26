@@ -1,20 +1,18 @@
 name: Root fix child key classification
-
-on: push
-
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
 permissions:
   contents: write
-
 jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout develop
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: develop
           fetch-depth: 0
-
       - name: Patch canonical child classification
         shell: bash
         run: |
@@ -47,7 +45,6 @@ jobs:
               raise SystemExit('EXPECTED_CHILD_CLASSIFIER_NOT_FOUND')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
-
       - name: Commit source fix and remove helper
         shell: bash
         run: |
