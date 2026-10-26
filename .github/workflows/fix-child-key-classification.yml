@@ -1,0 +1,46 @@
+name: Root fix child key classification
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'script.js'
+      - '.github/workflows/fix-child-key-classification.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message != 'fix: classify canonical child from participation relationship'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Patch canonical child classification
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('script.js')
+          s = p.read_text(encoding='utf-8')
+          old = """function isCanonicalAccommodationChild(occupancy){\n  return !!occupancy&&(occupancy.bedType==='shared'||occupancy.extraBedPersonType==='child'||!!occupancy.guardianParticipationId);\n}"""
+          new = """function isCanonicalAccommodationChild(occupancy){\n  if(!occupancy)return false;\n  if(occupancy.bedType==='shared'||occupancy.extraBedPersonType==='child'||!!occupancy.guardianParticipationId)return true;\n  var participationId=String(occupancy.participationId||'').trim();\n  if(!participationId)return false;\n  try{\n    var current=typeof getCurrentConference==='function'?getCurrentConference():null;\n    var integration=window.PlatformIntegration;\n    if(!current||!integration||typeof integration.getConferenceParticipationState!=='function')return false;\n    var state=integration.getConferenceParticipationState(current.id);\n    var item=(state&&Array.isArray(state.items)?state.items:[]).find(function(participation){\n      return String(participation&&participation.participationId||'')===participationId;\n    });\n    return !!(item&&item.guardianParticipationId);\n  }catch(error){\n    return false;\n  }\n}"""
+          if old not in s:
+              raise SystemExit('EXPECTED_CHILD_CLASSIFIER_NOT_FOUND')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Commit and remove helper workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/fix-child-key-classification.yml
+          git add script.js
+          git commit -m 'fix: classify canonical child from participation relationship'
+          git push origin HEAD:develop
