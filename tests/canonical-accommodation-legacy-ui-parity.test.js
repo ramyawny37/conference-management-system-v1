@@ -176,7 +176,7 @@ test('original accommodation workspace and room card shell use canonical data an
   assert.doesNotMatch(renderer,/openRoomEditor|saveRoomData/);
 });
 
-test('canonical room editor reuses roomModal and saves only through the central structure contract',()=>{
+test('canonical room editor reuses roomModal and saves through one central draft contract',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const detailStart=ui.indexOf('function openCanonicalAccommodationRoomDetails(');
   const detailEnd=ui.indexOf('\nfunction renderCanonicalAccommodation(',detailStart);
@@ -186,7 +186,9 @@ test('canonical room editor reuses roomModal and saves only through the central 
   assert.match(body,/getCanonicalAccommodationOccupanciesOnDay\(room,day\)/);
   assert.match(body,/saveButton\.onclick=saveCanonicalAccommodationRoomData/);
   assert.match(body,/ge\('roomModal'\)\.style\.display='flex'/);
-  assert.match(body,/PlatformIntegration\.mutateConferenceAccommodationStructure/);
+  assert.match(body,/save_conference_accommodation_room_draft/);
+  assert.match(body,/structureChanged\?structure:null/);
+  assert.doesNotMatch(body,/mutateConferenceAccommodationStructure\(current\.id,'update_accommodation_room'/);
   assert.doesNotMatch(body,/\bsave\(\)|current\.houses\s*=|room\.guests|room\.children/);
 });
 
@@ -200,9 +202,8 @@ test('canonical room editor renders one integrated slot per base and extra bed w
   assert.match(body,/renderCanonicalAccommodationDetailOccupant/);
   assert.doesNotMatch(body,/closeRM\(\);assignCanonicalAccommodation/);
   const slot=ui.slice(ui.indexOf('function canonicalAccommodationRoomEmptySlotHtml('),ui.indexOf('\nfunction renderCanonicalAccommodationCompactOccupants('));
-  assert.match(slot,/assignConferenceAccommodation\(current\.id,payload\)/);
-  assert.match(slot,/participationId:slot\.selectedParticipationId/);
-  assert.match(slot,/bedType:slot\.bedType/);
+  assert.match(slot,/يُطبّق عند حفظ الغرفة/);
+  assert.doesNotMatch(slot,/confirmCanonicalAccommodationRoomSlot|assignConferenceAccommodation/);
   assert.doesNotMatch(slot,/saveRoomData|room\.guests|localStorage|indexedDB/);
 });
 
@@ -217,12 +218,10 @@ test('integrated room slot picker searches central participations and invalidate
   assert.equal(dom.window.document.querySelectorAll('[role="option"]').length,2);
   dom.window.document.querySelector('[role="option"]').click();
   assert.equal(draft.slots.base_0.selectedParticipationId,'p1');
-  assert.equal(dom.window.document.getElementById('canonicalRoomSlotAssign_base_0').disabled,false);
   dom.window.document.getElementById('canonicalRoomSlotSearch_base_0').value='اسم مختلف';
   context.renderCandidates('base_0');
   assert.equal(draft.slots.base_0.selectedParticipationId,null);
   assert.equal(dom.window.document.getElementById('canonicalRoomSlotParticipation_base_0').value,'');
-  assert.equal(dom.window.document.getElementById('canonicalRoomSlotAssign_base_0').disabled,true);
 });
 
 test('central person creation resumes the same integrated room slot draft',()=>{
@@ -554,7 +553,7 @@ test('failed central room save restores action without closing the editor',()=>{
 test('canonical room save rejects duplicate clicks and new editor starts enabled',()=>{
   const save=ui.slice(ui.indexOf('function saveCanonicalAccommodationRoomData('),ui.indexOf('\nfunction renderCanonicalAccommodation('));
   assert.match(save,/if\(ge\('roomModalSaveButton'\)\.disabled\)return false/);
-  assert.ok(save.indexOf("if(ge('roomModalSaveButton').disabled)return false")<save.indexOf("mutateConferenceAccommodationStructure("));
+  assert.ok(save.indexOf("if(ge('roomModalSaveButton').disabled)return false")<save.indexOf('submitCanonicalAccommodationRoomDraft('));
   const open=ui.slice(ui.indexOf('function openCanonicalAccommodationRoomDetails('),ui.indexOf('\nfunction saveCanonicalAccommodationRoomData('));
   assert.match(open,/saveButton\.disabled=false/);
 });
