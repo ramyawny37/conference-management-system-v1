@@ -56,3 +56,11 @@ test('draft lock ordering, room assignment revision and operation replay are exp
   assert.match(scopedExtra,/room_assignment\.revision<>p_expected_assignment_revision/);
   assert.match(scopedExtra,/operation_id=p_operation_id[\s\S]*status','duplicate'/);
 });
+
+test('room draft save verifies its lease asynchronously through the canonical server-backed lease API',()=>{
+  const submit=script.slice(script.indexOf('function submitCanonicalAccommodationRoomDraft('),script.indexOf('\nfunction saveCanonicalAccommodationRoomData('));
+  assert.match(submit,/getResourceLease\('conference','accommodation_room',draft\.roomId,\{conferenceId:remoteId,scope:'edit'\}\)\.then/);
+  assert.doesNotMatch(submit,/getOwnedResourceLease\(/);
+  assert.match(submit,/acquireResourceLease\('conference','accommodation_room',draft\.roomId/);
+  assert.match(submit,/releaseResourceLease\('conference','accommodation_room',draft\.roomId/);
+});
