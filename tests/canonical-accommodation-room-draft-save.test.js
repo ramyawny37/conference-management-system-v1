@@ -64,3 +64,10 @@ test('room draft save verifies its lease asynchronously through the canonical se
   assert.match(submit,/acquireResourceLease\('conference','accommodation_room',draft\.roomId/);
   assert.match(submit,/releaseResourceLease\('conference','accommodation_room',draft\.roomId/);
 });
+
+test('room transfer capacity counts beds, not children sharing a bed',()=>{
+  const move=script.slice(script.indexOf('function confirmCanonicalAccommodationMoveDay('),script.indexOf('\nfunction ',script.indexOf('function confirmCanonicalAccommodationMoveDay(')+10));
+  assert.match(move,/var bedOccupants=occupants\.filter\(function\(item\)\{return item\.bedType!=='shared';\}\)/);
+  assert.match(move,/bedOccupants\.length>=capacity/);
+  assert.doesNotMatch(move,/return occupants\.length>=capacity/);
+});
