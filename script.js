@@ -3377,7 +3377,10 @@ function openCanonicalAccommodationRoomDetails(roomId){
     roomKeyButton.textContent='إدارة مفتاح الغرفة';
     roomKeyButton.addEventListener('click',function(){setCanonicalAccommodationRoomKey(room.roomId);});
     roomKeyAction.appendChild(roomKeyButton);
-    ge('m_guests').prepend(roomKeyAction);
+    var guestsSection=ge('m_guests').closest('.room-guests-section');
+    var guestsHeading=guestsSection&&guestsSection.querySelector('.room-modal-section-title');
+    if(guestsHeading)guestsHeading.appendChild(roomKeyAction);
+    else ge('m_guests').prepend(roomKeyAction);
   }
   var unlinkedSharedChildren=occupancyGroups.unlinkedChildren.filter(function(occupancy){return occupancy.bedType==='shared';});
   ge('m_children').innerHTML=unlinkedSharedChildren.map(function(occupancy){return renderCanonicalAccommodationDetailOccupant(occupancy,keyHolder,canManage,true,true);}).join('');
