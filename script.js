@@ -3302,11 +3302,21 @@ function openCanonicalAccommodationRoomSlotPersonDialog(slotKey){
 
 function resumeCanonicalAccommodationRoomSlotForPerson(personId,slotKey){
   var draft=canonicalAccommodationRoomEditorDraft,current=getCurrentConference(),integration=window.PlatformIntegration;
-  if(!draft||!current||String(current.id)!==draft.conferenceId||!getCanonicalAccommodationRoomSlotDraft(slotKey)||!integration)return false;
-  var state=integration.getConferenceParticipationState(current.id),participation=state&&(state.items||[]).find(function(item){return item.status==='active'&&String(item.personId)===String(personId||'');});
-  if(!participation)return false;draft.participations=(state.items||[]).filter(function(item){return item.status==='active';});ge('canonicalRoomSlotSearch_'+slotKey).value=participation.person&&participation.person.fullName||'';renderCanonicalAccommodationRoomSlotCandidates(slotKey);return selectCanonicalAccommodationRoomSlotParticipation(slotKey,participation.participationId);
+  if(!draft||!current||String(current.id)!==draft.conferenceId||!getCanonicalAccommodationRoomSlotDraft(slotKey)||!integration||!personId)return false;
+  var expectedConferenceId=String(current.id),expectedRoomId=String(draft.roomId);
+  return hydrateCanonicalConferenceParticipations(current.id,{silent:true}).then(function(){
+    var active=getCurrentConference(),state=integration.getConferenceParticipationState(expectedConferenceId);
+    if(canonicalAccommodationRoomEditorDraft!==draft||!active||String(active.id)!==expectedConferenceId||String(draft.roomId)!==expectedRoomId||!getCanonicalAccommodationRoomSlotDraft(slotKey))return false;
+    var participation=state&&(state.items||[]).find(function(item){return item.status==='active'&&String(item.personId)===String(personId);});
+    if(!participation){showToast('تم حفظ الشخص لكن لم تظهر مشاركته بعد. أعد فتح الغرفة للتحقق.','#E74C3C');return false;}
+    draft.participations=(state.items||[]).filter(function(item){return item.status==='active';});
+    var search=ge('canonicalRoomSlotSearch_'+slotKey);
+    if(!search)return false;
+    search.value=participation.person&&participation.person.fullName||'';
+    renderCanonicalAccommodationRoomSlotCandidates(slotKey);
+    return selectCanonicalAccommodationRoomSlotParticipation(slotKey,participation.participationId);
+  }).catch(function(){showToast('تم حفظ الشخص لكن تعذر تحديث قائمة المشاركين. أعد فتح الغرفة.','#E74C3C');return false;});
 }
-
 function renderCanonicalAccommodationCompactOccupants(occupancies,keyHolder,canManage){
   var groups=groupCanonicalAccommodationOccupancies(occupancies),renderRow=function(occupancy,isChild,unlinked){
     var person=occupancy.person||{};
