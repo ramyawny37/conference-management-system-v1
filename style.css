@@ -1337,6 +1337,8 @@ tr:nth-child(even) td{background:#F7FBFF}
 @media(max-width:820px){#roomModal.canonical-room-readonly .room-editor-modal{width:min(760px,calc(100vw - 16px))}}
 @media(max-width:600px){#roomModal.canonical-room-readonly .room-editor-modal{width:100%}#roomModal.canonical-room-readonly .mbody{padding:9px}#roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:minmax(0,1fr)}}
 
+#roomModal.canonical-room-readonly .canonical-room-shared-actions{display:flex;justify-content:flex-start;align-items:center;gap:8px;padding:5px 0 10px;margin-bottom:5px;border-bottom:1px solid var(--app-border)}
+#roomModal.canonical-room-readonly .canonical-room-shared-actions .btn{min-height:32px;padding:6px 12px}
 /* Compact guest actions: keep arrival immediate; other canonical operations remain available on demand. */
 #roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:4;grid-row:1;align-self:center;justify-content:flex-end;flex-wrap:nowrap;padding:0;border:0}
 #roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{white-space:nowrap}
