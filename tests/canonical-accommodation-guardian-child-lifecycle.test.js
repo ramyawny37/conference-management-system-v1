@@ -8,18 +8,38 @@ const script=fs.readFileSync('script.js','utf8');
 const css=fs.readFileSync('style.css','utf8');
 const migration=fs.readFileSync('supabase/migrations/20261026104500_canonical_guardian_child_accommodation_lifecycle.sql','utf8');
 const moveMigration=fs.readFileSync('supabase/migrations/20261026111500_reject_direct_linked_child_stay_moves.sql','utf8');
-const rendererSource=script.slice(script.indexOf('function isCanonicalAccommodationChild('),script.indexOf('\nfunction canonicalAccommodationRoomEmptySlotHtml('));
+const rendererSource=script.slice(script.indexOf('function isCanonicalAccommodationChild('),script.indexOf('\nfunction setCanonicalAccommodationRoomClosed('));
 const context={esc:value=>String(value)};
 vm.runInNewContext(rendererSource,context);
 
-test('linked child row is the compact unified-editor path with name and bed type only',()=>{
+test('linked child row is the compact unified-editor path with bed editing and removal only',()=>{
   const child={occupancyId:'child-stay',participationId:'child',guardianParticipationId:'guardian',bedType:'shared',arrivalDay:1,leaveDay:4,arrivedAt:'now',person:{fullName:'الطفل',phone:'010',church:'الكنيسة'}};
   const html=context.renderCanonicalAccommodationDetailOccupant(child,{occupancyId:'child-stay'},true,true,false,null);
   assert.match(html,/↳ الطفل/);
   assert.match(html,/canonicalRoomStayBed_child-stay/);
-  assert.match(html,/>مشترك</);
-  for(const forbidden of ['canonicalRoomStayArrival_','canonicalRoomStayLeave_','canonicalRoomStayExtraType_','setCanonicalAccommodationArrival','moveCanonicalAccommodation','removeCanonicalAccommodation','010','الكنيسة','accommodation-arrival-badge','accommodation-key-holder-badge'])assert.doesNotMatch(html,new RegExp(forbidden));
+  assert.match(html,/>بدون سرير</);
+  assert.match(html,/الوصول والمفتاح تابعان للوالد/);
+  assert.match(html,/removeCanonicalAccommodation/);
+  for(const forbidden of ['canonicalRoomStayArrival_','canonicalRoomStayLeave_','canonicalRoomStayExtraType_','setCanonicalAccommodationArrival','closeRM\(\);moveCanonicalAccommodation','010','الكنيسة','accommodation-arrival-badge','accommodation-key-holder-badge'])assert.doesNotMatch(html,new RegExp(forbidden));
   assert.match(css,/canonical-room-child\{display:grid;grid-template-columns:minmax\(180px,1fr\) minmax\(150px,220px\)/);
+});
+
+test('compact child row omits independent arrival and key controls',()=>{
+  const child={occupancyId:'child-stay',participationId:'child',guardianParticipationId:'guardian',bedType:'shared',arrivedAt:'now',person:{fullName:'الطفل'}};
+  const html=context.renderCanonicalAccommodationCompactOccupants([child],child,true);
+  assert.match(html,/↳ الطفل/);
+  assert.match(html,/طفل مرافق — بدون سرير/);
+  assert.match(html,/الوصول والمفتاح تابعان للوالد/);
+  for(const forbidden of ['accommodation-compact-key','accommodation-arrival','setCanonicalAccommodationArrival'])assert.doesNotMatch(html,new RegExp(forbidden));
+});
+
+test('arrival and key-recipient paths defensively reject children',()=>{
+  const arrival=script.slice(script.indexOf('function setCanonicalAccommodationArrival('),script.indexOf('\nfunction setCanonicalAccommodationRoomKey('));
+  const key=script.slice(script.indexOf('function setCanonicalAccommodationRoomKey('),script.indexOf('\nfunction canonicalAccommodationActiveKeyHolder('));
+  assert.match(arrival,/isCanonicalAccommodationChild\(occupancy\)/);
+  assert.match(arrival,/الوصول تابع للوالد ولا يُسجل للطفل بشكل مستقل\./);
+  assert.match(key,/\.filter\(function\(item\)\{return !isCanonicalAccommodationChild\(item\);\}\)/);
+  assert.match(key,/holder&&isCanonicalAccommodationChild\(holder\)/);
 });
 
 test('all linked child bed modes render under the guardian and consume only their own capacity',()=>{

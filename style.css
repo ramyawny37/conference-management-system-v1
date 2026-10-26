@@ -1315,7 +1315,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 #tab0 .accommodation-dashboard .accommodation-compact-person:last-child{border-bottom:0}
 #tab0 .accommodation-dashboard .accommodation-compact-person.is-child{padding-inline-start:12px;background:var(--app-surface-soft)}
 #tab0 .accommodation-dashboard .accommodation-compact-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:var(--app-font-weight-bold)}
-#tab0 .accommodation-dashboard .accommodation-child-bed-badge,#tab0 .accommodation-dashboard .accommodation-guardian-missing{grid-column:1/-1;width:max-content;max-width:100%;padding:2px 6px;border-radius:var(--app-radius-pill);background:var(--app-warning-soft);color:var(--app-warning);font-size:8px;font-weight:var(--app-font-weight-bold)}
+#tab0 .accommodation-dashboard .accommodation-child-bed-badge,#tab0 .accommodation-dashboard .accommodation-child-guardian-note,#tab0 .accommodation-dashboard .accommodation-guardian-missing{grid-column:1/-1;width:max-content;max-width:100%;padding:2px 6px;border-radius:var(--app-radius-pill);background:var(--app-warning-soft);color:var(--app-warning);font-size:8px;font-weight:var(--app-font-weight-bold)}
 #tab0 .accommodation-dashboard .accommodation-guardian-missing{background:var(--app-danger-soft);color:var(--app-danger)}
 #tab0 .accommodation-dashboard .accommodation-compact-key{font-size:11px}
 #roomModal.canonical-room-readonly .canonical-room-child{margin-inline-start:26px;border-color:#efd9a8;background:#fffaf0}
