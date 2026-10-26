@@ -65,8 +65,8 @@ test('room details use canonical actions for guests and children, and keep histo
   assert.match(room,/ge\('rmGuestsCount'\)\.textContent=guestOccupancies\.length/);
   assert.match(room,/ge\('rmChildrenCount'\)\.textContent=childOccupancies\.length/);
   assert.match(room,/groupCanonicalAccommodationOccupancies\(occupancies\)/);
-  assert.match(room,/sharedByGuardian/);
-  assert.match(room,/unlinkedSharedChildren\.map/);
+  assert.match(room,/occupancyGroups\.rows\.find/);
+  assert.match(room,/unlinkedChildren\.map/);
   const detailRenderer=script.slice(script.indexOf('function renderCanonicalAccommodationDetailOccupant('),start);
   for(const operation of ['canonicalRoomStayArrival_','moveCanonicalAccommodation','removeCanonicalAccommodation']){
     assert.ok(detailRenderer.includes(operation),operation+' missing for room occupants');

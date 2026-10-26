@@ -199,8 +199,9 @@ test('canonical room editor renders one integrated slot per base and extra bed w
   const detailStart=ui.indexOf('function openCanonicalAccommodationRoomDetails(');
   const detailEnd=ui.indexOf('\nfunction saveCanonicalAccommodationRoomData(',detailStart);
   const body=ui.slice(detailStart,detailEnd);
-  assert.match(body,/for\(var baseIndex=0;baseIndex<Number\(room\.baseCapacity\|\|0\);baseIndex\+\+\)/);
-  assert.match(body,/for\(var extraIndex=0;extraIndex<Number\(room\.extraBedCapacity\|\|0\);extraIndex\+\+\)/);
+  assert.match(body,/for\(var baseIndex=baseOccupancies\.length;baseIndex<Number\(room\.baseCapacity\|\|0\);baseIndex\+\+\)/);
+  assert.match(body,/for\(var extraIndex=extraOccupancies\.length;extraIndex<Number\(room\.extraBedCapacity\|\|0\);extraIndex\+\+\)/);
+  assert.match(body,/occupancyGroups\.rows\.find/);
   assert.match(body,/canonicalAccommodationRoomEmptySlotHtml/);
   assert.match(body,/renderCanonicalAccommodationDetailOccupant/);
   assert.doesNotMatch(body,/closeRM\(\);assignCanonicalAccommodation/);

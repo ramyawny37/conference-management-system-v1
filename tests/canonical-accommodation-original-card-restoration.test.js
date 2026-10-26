@@ -48,7 +48,7 @@ test('compact card excludes full person metadata and keeps full actions in room 
   assert.match(card,/renderCanonicalAccommodationCompactOccupants/);
   assert.doesNotMatch(card,/person\.phone|person\.church|arrivalDay|leaveDay|editCanonicalAccommodation|moveCanonicalAccommodation|removeCanonicalAccommodation/);
   const details=script.slice(script.indexOf('function renderCanonicalAccommodationDetailOccupant('),renderStart);
-  for(const action of ['editCanonicalAccommodation','moveCanonicalAccommodation','removeCanonicalAccommodation'])assert.match(details,new RegExp(action));
+  for(const action of ['moveCanonicalAccommodation','removeCanonicalAccommodation'])assert.match(details,new RegExp(action));
   assert.match(details,/arrivalDay/);
   assert.match(details,/person\.phone/);
 });
