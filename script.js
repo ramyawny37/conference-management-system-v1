@@ -2599,8 +2599,8 @@ document.addEventListener('keydown',function(event){
 
 function renderAccommodationQuickFilters(extraClass){
   var filters=[['all','home','كل الغرف'],['occupied','bed','الغرف المشغولة'],['empty','door','الغرف الفارغة'],['available','bed','بها أماكن'],['arrived','checkCircle','بها نزلاء وصلوا'],['not-arrived','circle','بها نزلاء لم يصلوا'],['key-delivered','key','المفتاح مُسلّم'],['key-not-delivered','key','المفتاح غير مُسلّم'],['extra-beds','bed','بها أسرة إضافية مستخدمة'],['children','users','بها أطفال'],['accompanied','users','بها مرافقون'],['closed','door','الغرف المغلقة']];
-  var h='<aside class="accommodation-sidebar '+String(extraClass||'')+'"><section class="accommodation-filter-panel sidebar-card" aria-label="فلترة سريعة"><h2>فلترة سريعة</h2><div class="accommodation-quick-filters">'+filters.map(function(item){return '<button type="button" class="filter-item '+(accommodationQuickFilter===item[0]?'active':'')+'" onclick="setAccommodationQuickFilter(\''+item[0]+'\')"><span>'+accommodationIcon(item[1])+'</span>'+item[2]+'</button>';}).join('')+'</div></section>';
-  h+='<section class="accommodation-legend sidebar-card"><h2>مفتاح الرموز</h2><div><span class="legend-item"><i class="legend-arrived">'+accommodationIcon('checkCircle')+'</i> وصل</span><span class="legend-item"><i class="legend-waiting">'+accommodationIcon('circle')+'</i> لم يصل</span><span class="legend-item"><i class="legend-arrived">'+accommodationIcon('key')+'</i> المفتاح مُسلّم</span><span class="legend-item"><i class="legend-warning">'+accommodationIcon('key')+'</i> المفتاح غير مُسلّم</span><span class="legend-item"><i>'+accommodationIcon('bed')+'</i> متبقي سرير</span></div></section></aside>';
+  var h='<nav class="accommodation-filter-strip '+String(extraClass||'')+'" aria-label="فلترة سريعة"><div class="accommodation-quick-filters">'+filters.map(function(item){return '<button type="button" class="filter-item '+(accommodationQuickFilter===item[0]?'active':'')+'" onclick="setAccommodationQuickFilter(\''+item[0]+'\')"><span>'+accommodationIcon(item[1])+'</span>'+item[2]+'</button>';}).join('')+'</div>';
+  h+='<details class="accommodation-legend-popover"><summary>مفتاح الرموز</summary><div class="accommodation-legend-content"><span class="legend-item"><i class="legend-arrived">'+accommodationIcon('checkCircle')+'</i> وصل</span><span class="legend-item"><i class="legend-waiting">'+accommodationIcon('circle')+'</i> لم يصل</span><span class="legend-item"><i class="legend-arrived">'+accommodationIcon('key')+'</i> المفتاح مُسلّم</span><span class="legend-item"><i class="legend-warning">'+accommodationIcon('key')+'</i> المفتاح غير مُسلّم</span><span class="legend-item"><i>'+accommodationIcon('bed')+'</i> متبقي سرير</span></div></details></nav>';
   return h;
 }
 
@@ -3489,6 +3489,7 @@ function renderCanonicalAccommodation(state){
   h+='<div class="accommodation-secondary-summary" aria-label="مؤشرات الإشغال والأسرة"><span>المغلقة: <strong>'+closedRooms+'</strong></span><span>الأسرة الأساسية: <strong>'+totalBaseBeds+'</strong></span><span>الأسرة الإضافية: <strong>'+totalExtraBeds+'</strong></span><span>المستخدم الإضافي: <strong>'+extraBedsUsed+'</strong></span><span>الأطفال: <strong>'+childrenCount+'</strong></span><span>المرتبطون بمرافق: <strong>'+accompaniedGuests+'</strong></span></div>';
   if((query||filter!=='all')&&!matchingRooms.length&&rooms.length)h+='<div class="ui-state" role="status">لا توجد غرف مطابقة للبحث أو الفلتر.</div>';
   if(!houses.length)h+='<div class="ui-state" role="status">لا توجد بيوت متاحة لهذا المؤتمر. استخدم زر اختيار بيت من بيوت المؤتمرات.</div>';
+  h+=renderAccommodationQuickFilters('canonical-accommodation-filter-strip');
   h+='<div class="accommodation-workspace'+(query?' is-searching':'')+'"><div class="accommodation-primary-column">';
   state.houses.forEach(function(house){
     var visibleHouseRooms=(house.floors||[]).some(function(floor){return (floor.rooms||[]).some(function(room){return matchingRooms.indexOf(room)>=0;});});
@@ -3525,7 +3526,7 @@ function renderCanonicalAccommodation(state){
     });
     h+='</section>';
   });
-  h+='</div>'+(query?'':renderAccommodationQuickFilters('canonical-accommodation-sidebar'))+'</div>';
+  h+='</div></div>';
   ge('tab0').innerHTML=h+'</main>';
 }
 
