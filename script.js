@@ -3243,7 +3243,16 @@ function resetCanonicalAccommodationRoomDetails(){
 }
 
 function isCanonicalAccommodationChild(occupancy){
-  return !!occupancy&&(occupancy.bedType==='shared'||occupancy.extraBedPersonType==='child'||!!occupancy.guardianParticipationId);
+  if(!occupancy)return false;
+  if(occupancy.bedType==='shared'||occupancy.extraBedPersonType==='child'||!!occupancy.guardianParticipationId)return true;
+  var participationId=String(occupancy.participationId||'').trim();
+  if(!participationId)return false;
+  try{
+    var current=typeof getCurrentConference==='function'?getCurrentConference():null,integration=window.PlatformIntegration;
+    if(!current||!integration||typeof integration.getConferenceParticipationState!=='function')return false;
+    var state=integration.getConferenceParticipationState(current.id),item=(state&&Array.isArray(state.items)?state.items:[]).find(function(participation){return String(participation&&participation.participationId||'')===participationId;});
+    return !!(item&&item.guardianParticipationId);
+  }catch(error){return false;}
 }
 
 function canonicalAccommodationChildBedLabel(occupancy){

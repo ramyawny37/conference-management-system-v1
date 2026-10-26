@@ -33,6 +33,22 @@ test('compact child row omits independent arrival and key controls',()=>{
   for(const forbidden of ['accommodation-compact-key','accommodation-arrival','setCanonicalAccommodationArrival'])assert.doesNotMatch(html,new RegExp(forbidden));
 });
 
+test('canonical participation guardian relation classifies an unmarked occupancy as a child',()=>{
+  Object.assign(context,{
+    getCurrentConference:()=>({id:'conference'}),
+    window:{PlatformIntegration:{getConferenceParticipationState:id=>({items:[
+      {participationId:'guardian',guardianParticipationId:null},
+      {participationId:'child',guardianParticipationId:'guardian'}
+    ]})}}
+  });
+  const child={occupancyId:'child-stay',participationId:'child',bedType:'base',extraBedPersonType:null,person:{fullName:'الطفل'}};
+  const guardian={occupancyId:'guardian-stay',participationId:'guardian',bedType:'base',extraBedPersonType:null,person:{fullName:'ولي الأمر'}};
+  assert.equal(context.isCanonicalAccommodationChild(child),true);
+  assert.equal(context.isCanonicalAccommodationChild(guardian),false);
+  const html=context.renderCanonicalAccommodationCompactOccupants([child],child,true);
+  for(const forbidden of ['accommodation-compact-key','accommodation-arrival','setCanonicalAccommodationArrival'])assert.doesNotMatch(html,new RegExp(forbidden));
+});
+
 test('arrival and key-recipient paths defensively reject children',()=>{
   const arrival=script.slice(script.indexOf('function setCanonicalAccommodationArrival('),script.indexOf('\nfunction setCanonicalAccommodationRoomKey('));
   const key=script.slice(script.indexOf('function setCanonicalAccommodationRoomKey('),script.indexOf('\nfunction canonicalAccommodationActiveKeyHolder('));
@@ -40,6 +56,9 @@ test('arrival and key-recipient paths defensively reject children',()=>{
   assert.match(arrival,/الوصول تابع للوالد ولا يُسجل للطفل بشكل مستقل\./);
   assert.match(key,/\.filter\(function\(item\)\{return !isCanonicalAccommodationChild\(item\);\}\)/);
   assert.match(key,/holder&&isCanonicalAccommodationChild\(holder\)/);
+  const classification=script.slice(script.indexOf('function isCanonicalAccommodationChild('),script.indexOf('\nfunction canonicalAccommodationChildBedLabel('));
+  assert.match(classification,/getConferenceParticipationState\(current\.id\)/);
+  assert.match(classification,/item&&item\.guardianParticipationId/);
 });
 
 test('all linked child bed modes render under the guardian and consume only their own capacity',()=>{
