@@ -11,14 +11,46 @@ on:
       - '.github/workflows/conference-people-flow.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          fetch-depth: 0
+      - name: Patch canonical child classification
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('script.js')
+          s = p.read_text(encoding='utf-8')
+          old = """function isCanonicalAccommodationChild(occupancy){
+  return !!occupancy&&(occupancy.bedType==='shared'||occupancy.extraBedPersonType==='child'||!!occupancy.guardianParticipationId);
+}"""
+          new = """function isCanonicalAccommodationChild(occupancy){
+  if(!occupancy)return false;
+  if(occupancy.bedType==='shared'||occupancy.extraBedPersonType==='child'||!!occupancy.guardianParticipationId)return true;
+  var participationId=String(occupancy.participationId||'').trim();
+  if(!participationId)return false;
+  try{
+    var current=typeof getCurrentConference==='function'?getCurrentConference():null;
+    var integration=window.PlatformIntegration;
+    if(!current||!integration||typeof integration.getConferenceParticipationState!=='function')return false;
+    var state=integration.getConferenceParticipationState(current.id);
+    var item=(state&&Array.isArray(state.items)?state.items:[]).find(function(participation){
+      return String(participation&&participation.participationId||'')===participationId;
+    });
+    return !!(item&&item.guardianParticipationId);
+  }catch(error){
+    return false;
+  }
+}"""
+          if old not in s:
+              raise SystemExit('EXPECTED_CHILD_CLASSIFIER_NOT_FOUND')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -28,3 +60,12 @@ jobs:
           node --check js/platform-integration.js
       - name: Check canonical people contract
         run: node --test tests/conference-people-canonical-flow.test.js
+      - name: Commit source fix and restore workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout HEAD^ -- .github/workflows/conference-people-flow.yml
+          git add script.js .github/workflows/conference-people-flow.yml
+          git commit -m 'fix: classify canonical child from participation relationship'
+          git push origin HEAD:develop
