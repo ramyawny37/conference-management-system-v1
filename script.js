@@ -3373,7 +3373,7 @@ function openCanonicalAccommodationRoomDetails(roomId){
 function submitCanonicalAccommodationRoomDraft(current,draft,structure,assignments){
   var integration=window.PlatformIntegration,state=integration&&integration.getConferenceAccommodationState(current.id),remoteId=state&&state.remoteConferenceId,leaseToken='',acquired=false;
   if(!integration||!remoteId)return Promise.reject({code:'CANONICAL_CONFERENCE_ACCOMMODATION_NOT_HYDRATED'});
-  return integration.getOwnedResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId}).then(function(lease){
+  return integration.getResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,scope:'edit'}).then(function(lease){
     if(lease&&lease.owned===true&&lease.leaseToken)return lease;
     return integration.acquireResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,ttlSeconds:120}).then(function(value){acquired=true;return value;});
   }).then(function(lease){
