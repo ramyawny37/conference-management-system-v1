@@ -3019,7 +3019,10 @@ function editCanonicalAccommodation(occupancyId){
   ge('canonicalAccommodationExtraPersonType').value=occupancy.extraBedPersonType||'adult';
   ge('canonicalAccommodationReplacementDay').value=String(occupancy.arrivalDay);
   ge('canonicalAccommodationReplacementDayField').style.display='none';
-  ge('canonicalAccommodationAssignmentSearch').value='';
+  // Editing an existing stay must display its current person rather than a blank search.
+  // Keep the canonical participation id selected; typing another name is an explicit replacement.
+  var currentParticipant=participations.find(function(item){return String(item.participationId)===String(occupancy.participationId);});
+  ge('canonicalAccommodationAssignmentSearch').value=currentParticipant&&currentParticipant.person&&currentParticipant.person.fullName||occupancy.person&&occupancy.person.fullName||'';
   ge('canonicalAccommodationAssignmentError').textContent='';
   ge('canonicalAccommodationAssignmentCandidates').style.display='block';
   ge('canonicalAccommodationAssignmentConfirm').disabled=false;
