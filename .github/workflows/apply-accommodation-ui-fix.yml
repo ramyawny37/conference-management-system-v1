@@ -1,0 +1,52 @@
+name: Apply accommodation UI fix
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 1
+      - name: Patch canonical accommodation UI
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('script.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = """var childBed=canManage?'<label class=\\\"canonical-room-child-bed\\\"><span>نوع السرير:</span><select id=\\\"canonicalRoomStayBed_'+id+'\\\"><option value=\\\"shared\\\"'+(bedType==='shared'?' selected':'')+'>مشترك</option><option value=\\\"base\\\"'+(bedType==='base'?' selected':'')+'>أساسي</option><option value=\\\"extra\\\"'+(bedType==='extra'?' selected':'')+'>إضافي</option></select></label>':'<span class=\\\"canonical-room-child-bed-label\\\">نوع السرير: '+(bedType==='shared'?'مشترك':bedType==='extra'?'إضافي':'أساسي')+'</span>';"""
+          new = """var childBed=canManage?'<label class=\\\"canonical-room-child-bed\\\"><span>نوع السرير:</span><select id=\\\"canonicalRoomStayBed_'+id+'\\\"><option value=\\\"shared\\\"'+(bedType==='shared'?' selected':'')+'>بدون سرير</option><option value=\\\"base\\\"'+(bedType==='base'?' selected':'')+'>أساسي</option><option value=\\\"extra\\\"'+(bedType==='extra'?' selected':'')+'>إضافي</option></select></label>':'<span class=\\\"canonical-room-child-bed-label\\\">نوع السرير: '+(bedType==='shared'?'بدون سرير':bedType==='extra'?'إضافي':'أساسي')+'</span>';"""
+          if old not in s:
+              raise SystemExit('child bed label marker not found')
+          s = s.replace(old, new, 1)
+
+          old = """return '<div class=\\\"guest-person-row canonical-room-guest canonical-room-child\\\" data-bed-type=\\\"'+bedType+'\\\" data-canonical-stay=\\\"'+id+'\\\"><div class=\\\"guest-slot-person\\\"><strong>↳ '+esc(person.fullName||'نزيل بدون اسم')+'</strong>'+(unlinked?'<div class=\\\"person-meta\\\">ربط ولي الأمر مفقود</div>':'')+'</div>'+childBed+'</div>';"""
+          new = """var childActions=canManage?'<div class=\\\"canonical-room-guest-actions\\\"><details class=\\\"canonical-room-guest-menu\\\"><summary aria-label=\\\"إجراءات الطفل\\\">المزيد ▾</summary><div class=\\\"canonical-room-guest-menu-items\\\"><button class=\\\"btn btn-red btn-sm\\\" onclick=\\\"closeRM();removeCanonicalAccommodation(\\\\''+id+\\\\'')\\\">إزالة من الغرفة</button></div></details></div>':'';\n    return '<div class=\\\"guest-person-row canonical-room-guest canonical-room-child\\\" data-bed-type=\\\"'+bedType+'\\\" data-canonical-stay=\\\"'+id+'\\\"><div class=\\\"guest-slot-person\\\"><strong>↳ '+esc(person.fullName||'نزيل بدون اسم')+'</strong>'+(unlinked?'<div class=\\\"person-meta\\\">ربط ولي الأمر مفقود</div>':'')+'</div>'+childBed+childActions+'</div>';"""
+          if old not in s:
+              raise SystemExit('child renderer marker not found')
+          s = s.replace(old, new, 1)
+
+          old = """canManage&&!hasLinkedChildren?'<div class=\\\"canonical-room-slot-picker\\\"><input type=\\\"search\\\" id=\\\"canonicalRoomReplacementSearch_'+id+'\\\" value=\\\"'+esc(person.fullName||'')+'\\\" aria-label=\\\"استبدال النزيل\\\" autocomplete=\\\"off\\\" oninput=\\\"renderCanonicalAccommodationReplacementCandidates(\\\\''+id+'\\\\')\\\" onfocus=\\\"renderCanonicalAccommodationReplacementCandidates(\\\\''+id+'\\\\')\\\"><div class=\\\"canonical-room-slot-candidates\\\" id=\\\"canonicalRoomReplacementCandidates_'+id+'\\\" role=\\\"listbox\\\"></div></div>':'<strong>'+esc(person.fullName||'نزيل بدون اسم')+'</strong>'+(canManage&&hasLinkedChildren?'<small class=\\\"person-meta\\\">الاستبدال غير متاح قبل معالجة ارتباط الأطفال</small>':'')"""
+          new = """canManage?'<div class=\\\"canonical-room-slot-picker\\\"><input type=\\\"search\\\" id=\\\"canonicalRoomReplacementSearch_'+id+'\\\" value=\\\"'+esc(person.fullName||'')+'\\\" aria-label=\\\"استبدال النزيل\\\" autocomplete=\\\"off\\\" oninput=\\\"renderCanonicalAccommodationReplacementCandidates(\\\\''+id+'\\\\')\\\" onfocus=\\\"renderCanonicalAccommodationReplacementCandidates(\\\\''+id+'\\\\')\\\"><div class=\\\"canonical-room-slot-candidates\\\" id=\\\"canonicalRoomReplacementCandidates_'+id+'\\\" role=\\\"listbox\\\"></div></div>':'<strong>'+esc(person.fullName||'نزيل بدون اسم')+'</strong>'"""
+          if old not in s:
+              raise SystemExit('guardian replacement guard marker not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add script.js
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(accommodation): restore child removal and guardian replacement"
+          git push origin develop
