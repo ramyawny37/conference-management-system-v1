@@ -170,8 +170,9 @@ test('responsive room and guest layouts and collapsed floors exist',()=>{
 });
 
 test('original accommodation workspace and room card shell use canonical data and actions',()=>{
-  for(const token of ['accommodation-workspace','accommodation-primary-column','canonical-accommodation-sidebar','floor-container','accommodation-floor-rooms','rcard-head','rcard-body','accommodation-compact-occupants','accommodation-room-actions','room-more-actions'])assert.match(renderer,new RegExp(token),token);
-  assert.match(renderer,/renderAccommodationQuickFilters\('canonical-accommodation-sidebar'\)/);
+  for(const token of ['accommodation-workspace','accommodation-primary-column','canonical-accommodation-filter-strip','floor-container','accommodation-floor-rooms','rcard-head','rcard-body','accommodation-compact-occupants','accommodation-room-actions','room-more-actions'])assert.match(renderer,new RegExp(token),token);
+  assert.match(renderer,/renderAccommodationQuickFilters\('canonical-accommodation-filter-strip'\)/);
+  assert.doesNotMatch(renderer,/renderAccommodationQuickFilters\('canonical-accommodation-sidebar'\)/);
   assert.match(renderer,/openCanonicalAccommodationRoomDetails/);
   assert.doesNotMatch(renderer,/openRoomEditor|saveRoomData/);
 });
