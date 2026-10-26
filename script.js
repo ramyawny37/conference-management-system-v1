@@ -2998,7 +2998,15 @@ function confirmCanonicalAccommodationAssignment(){
     ?runCanonicalAccommodationOccupancyMutation(current.id,draft.occupancyId,executeAssignmentMutation)
     :Promise.resolve().then(executeAssignmentMutation);
   return Promise.resolve(saved).then(function(result){
-    if(result){if(canonicalAccommodationAssignmentDraft===draft)closeCanonicalAccommodationAssignmentDialog();return result;}
+    if(result){
+      if(canonicalAccommodationAssignmentDraft===draft)closeCanonicalAccommodationAssignmentDialog();
+      // Refresh the underlying room after a successful canonical stay mutation.
+      var roomEditor=canonicalAccommodationRoomEditorDraft;
+      if(roomEditor&&String(roomEditor.roomId)===String(draft.roomId)&&ge('roomModal').style.display!=='none'){
+        openCanonicalAccommodationRoomDetails(draft.roomId);
+      }
+      return result;
+    }
     if(canonicalAccommodationAssignmentDraft===draft){button.disabled=false;error.textContent='تعذر حفظ بيانات التسكين.';}
     return false;
   },function(){
