@@ -3286,7 +3286,10 @@ function openCanonicalAccommodationStayEditorFromRoom(occupancyId){
     ||ge('m_closed').checked!==draft.original.isClosed
     ||(ge('m_closed_day').value?Number(ge('m_closed_day').value):null)!==draft.original.closedDay;
   var slotDirty=Object.keys(draft.slots||{}).some(function(key){return !!draft.slots[key].selectedParticipationId;});
-  if((structureDirty||slotDirty)&&!confirm('توجد تعديلات غير محفوظة على الغرفة. هل تريد تجاهلها وفتح تعديل إقامة النزيل؟'))return false;
+  if(structureDirty||slotDirty){
+    showToast('احفظ تعديلات الغرفة أولًا قبل تعديل إقامة نزيل موجود، حتى لا تتعارض المسودتان.','#E74C3C');
+    return false;
+  }
   // Keep the room editor mounted beneath the canonical stay editor. A cancelled
   // stay edit returns to the same room without destroying its draft.
   var opened=editCanonicalAccommodation(occupancyId);
