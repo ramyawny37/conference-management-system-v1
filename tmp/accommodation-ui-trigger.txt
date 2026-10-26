@@ -1,1 +1,0 @@
-trigger canonical accommodation UI patch workflow
