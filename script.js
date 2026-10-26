@@ -3108,7 +3108,8 @@ function confirmCanonicalAccommodationMoveDay(){
   var isFull=boundaries.some(function(checkDay){
     if(draft.leaveDay!=null&&draft.leaveDay!==''&&checkDay>=Number(draft.leaveDay))return false;
     var occupants=getCanonicalAccommodationOccupanciesOnDay(targetRoom,checkDay);
-    return occupants.length>=capacity||occupants.filter(function(item){return (item.bedType==='extra'?'extra':'base')===(draft.bedType==='extra'?'extra':'base');}).length>=bedCapacity;
+    var bedOccupants=occupants.filter(function(item){return item.bedType!=='shared';});
+    return draft.bedType!=='shared'&&(bedOccupants.length>=capacity||bedOccupants.filter(function(item){return (item.bedType==='extra'?'extra':'base')===(draft.bedType==='extra'?'extra':'base');}).length>=bedCapacity);
   });
   if(isFull){error.textContent='الغرفة ممتلئة خلال فترة النقل المطلوبة. اختر غرفة أخرى أو غيّر يوم النقل.';return false;}
   if(canonicalAccommodationOccupancyFlights[String(conference.id)+':'+String(draft.occupancyId)]){
