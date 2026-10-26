@@ -16,55 +16,32 @@ jobs:
         with:
           ref: develop
           fetch-depth: 1
-      - name: Patch canonical accommodation UI
+      - name: Correct canonical accommodation UI
         shell: python
         run: |
           from pathlib import Path
           import re
-          p = Path('script.js')
-          s = p.read_text(encoding='utf-8')
-          changed = []
+          p=Path('script.js')
+          s=p.read_text(encoding='utf-8')
+          changed=[]
 
-          n = s.count("(bedType==='shared'?'مشترك':")
+          s2,n=re.subn(r"^\s*var childActions=canManage\?.*?;$", r'''    var childActions=canManage?'<button type=\"button\" class=\"btn btn-red btn-sm\" onclick=\"removeCanonicalAccommodation(\\''+id+'\\')\">إزالة من الغرفة</button>':'';''', s, count=1, flags=re.M)
           if n:
-              s = s.replace("(bedType==='shared'?'مشترك':", "(bedType==='shared'?'بدون سرير':", 1)
-              changed.append('child-label')
-          n = s.count('>مشترك</option>')
-          if n:
-              s = s.replace('>مشترك</option>', '>بدون سرير</option>', 1)
-              changed.append('child-option')
+              s=s2; changed.append('child-action-escaping')
 
-          guard_count = s.count('canManage&&!hasLinkedChildren?')
-          if guard_count:
-              s = s.replace('canManage&&!hasLinkedChildren?', 'canManage?', 1)
-              changed.append('guardian-picker')
+          warning="+(canManage&&hasLinkedChildren?'<small class=\"person-meta\">الاستبدال غير متاح قبل معالجة ارتباط الأطفال</small>':'')"
+          if warning in s:
+              s=s.replace(warning,'',1); changed.append('guardian-warning')
 
-          warning_pattern = r"\+\(canManage&&hasLinkedChildren\?'<small class=\\\"person-meta\\\">الاستبدال غير متاح قبل معالجة ارتباط الأطفال</small>':''\)"
-          s2, warning_count = re.subn(warning_pattern, '', s, count=1)
-          if warning_count:
-              s = s2
-              changed.append('guardian-warning')
-
-          # Child rows currently return before the normal guest action toolbar.
-          # Add a dedicated removal action without exposing adult edit/replace controls.
-          child_pattern = re.compile(r"(?P<prefix>\n  if\(isChild\)\{.*?)(?P<return>\n    return '.*?canonical-room-child.*?\+childBed\+'</div>';)(?P<suffix>\n  \}\n  var stayFields=)", re.S)
-          m = child_pattern.search(s)
-          if m and 'removeCanonicalAccommodation' not in m.group(0):
-              block = m.group(0)
-              block = block.replace("\n    return ", "\n    var childActions=canManage?'<button type=\\\"button\\\" class=\\\"btn btn-red btn-sm\\\" onclick=\\\"removeCanonicalAccommodation(\\\\''+id+'\\\\')\\\">إزالة من الغرفة</button>':'';\n    return ", 1)
-              block = block.replace("+childBed+'</div>';", "+childBed+childActions+'</div>';", 1)
-              s = s[:m.start()] + block + s[m.end():]
-              changed.append('child-remove')
-
-          print('Accommodation UI patch changes:', changed)
           if not changed:
-              raise SystemExit('no accommodation UI markers found')
-          p.write_text(s, encoding='utf-8')
+              raise SystemExit('no final UI correction markers found')
+          print('Final accommodation UI corrections:',changed)
+          p.write_text(s,encoding='utf-8')
       - name: Commit patch
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add script.js
           git diff --cached --quiet && exit 0
-          git commit -m "fix(accommodation): restore child removal and guardian replacement"
+          git commit -m "fix(accommodation): correct child action escaping"
           git push origin develop
