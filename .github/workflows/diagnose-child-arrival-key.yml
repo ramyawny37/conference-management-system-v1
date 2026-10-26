@@ -1,0 +1,30 @@
+name: Diagnose Child Arrival Key UI
+on:
+  push:
+    paths:
+      - 'tmp/child-policy-trigger.txt'
+    branches: [develop]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect child accommodation UI
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('script.js').read_text()
+          needles=['set_arrival','set_room_key','arrivedAt','keyHolderOccupancyId','guardianParticipationId','guardian_participation_id','إزالة من الغرفة','استلام المفتاح','الوصول','childActions']
+          for needle in needles:
+              print(f'=== NEEDLE {needle} ===')
+              start=0
+              hits=0
+              while True:
+                  i=s.find(needle,start)
+                  if i<0 or hits>=8: break
+                  a=max(0,i-1200); b=min(len(s),i+1800)
+                  print(s[a:b])
+                  print('\n---\n')
+                  start=i+len(needle); hits+=1
+          PY
