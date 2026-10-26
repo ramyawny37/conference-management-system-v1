@@ -108,8 +108,8 @@ do $dispatch$
 declare d text; old_signature text; new_signature text; old_call text; new_call text;
 begin
   d:=pg_get_functiondef('platform_private.route_canonical_conference_operation(uuid,uuid,bytea,uuid,text,jsonb)'::regprocedure);
-  old_signature:='array[''p_operation_id'',''p_conference_id'',''p_room_id'',''p_expected_revision'',''p_expected_assignment_revision'',''p_structure'',''p_assignments'',''p_updates'',''p_replacements'',''p_room_lease_tokens'']';
-  new_signature:='array[''p_operation_id'',''p_conference_id'',''p_room_id'',''p_expected_revision'',''p_expected_assignment_revision'',''p_structure'',''p_assignments'',''p_updates'',''p_room_lease_tokens'']';
+  old_signature:='array[''p_operation_id'',''p_conference_id'',''p_room_id'',''p_expected_revision'',''p_expected_assignment_revision'',''p_structure'',''p_assignments'',''p_updates'',''p_room_lease_tokens'']';
+  new_signature:='array[''p_operation_id'',''p_conference_id'',''p_room_id'',''p_expected_revision'',''p_expected_assignment_revision'',''p_structure'',''p_assignments'',''p_updates'',''p_replacements'',''p_room_lease_tokens'']';
   old_call:='return public.save_conference_accommodation_room_draft(p_actor_device_id,(p_args->>''p_operation_id'')::uuid,(p_args->>''p_conference_id'')::uuid,(p_args->>''p_room_id'')::uuid,(p_args->>''p_expected_revision'')::bigint,(p_args->>''p_expected_assignment_revision'')::bigint,p_args->''p_structure'',p_args->''p_assignments'',p_args->''p_updates'');';
   new_call:='return public.save_conference_accommodation_room_draft(p_actor_device_id,(p_args->>''p_operation_id'')::uuid,(p_args->>''p_conference_id'')::uuid,(p_args->>''p_room_id'')::uuid,(p_args->>''p_expected_revision'')::bigint,(p_args->>''p_expected_assignment_revision'')::bigint,p_args->''p_structure'',p_args->''p_assignments'',p_args->''p_updates'',p_args->''p_replacements'');';
   if position(old_signature in d)=0 or position(old_call in d)=0 then raise exception 'ACCOMMODATION_ROOM_DRAFT_V4_DISPATCH_MARKER_MISSING'; end if;
