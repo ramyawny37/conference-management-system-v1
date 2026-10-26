@@ -2875,7 +2875,9 @@ function resumeCanonicalAccommodationAssignmentForPerson(personId){
 var canonicalAccommodationAssignmentDraft=null;
 function closeCanonicalAccommodationAssignmentDialog(){
   var modal=ge('canonicalAccommodationAssignmentModal');
-  if(modal)modal.style.display='none';
+  if(modal){modal.style.display='none';modal.style.zIndex='';}
+  var roomModal=ge('roomModal');
+  if(roomModal)roomModal.style.zIndex='';
   canonicalAccommodationAssignmentDraft=null;
 }
 function canonicalAccommodationIntervalsOverlap(firstArrival,firstLeave,secondArrival,secondLeave){
@@ -3277,8 +3279,17 @@ function openCanonicalAccommodationStayEditorFromRoom(occupancyId){
     ||(ge('m_closed_day').value?Number(ge('m_closed_day').value):null)!==draft.original.closedDay;
   var slotDirty=Object.keys(draft.slots||{}).some(function(key){return !!draft.slots[key].selectedParticipationId;});
   if((structureDirty||slotDirty)&&!confirm('توجد تعديلات غير محفوظة على الغرفة. هل تريد تجاهلها وفتح تعديل إقامة النزيل؟'))return false;
-  closeRM();
-  return editCanonicalAccommodation(occupancyId);
+  // Keep the room editor mounted beneath the canonical stay editor. A cancelled
+  // stay edit returns to the same room without destroying its draft.
+  var opened=editCanonicalAccommodation(occupancyId);
+  if(opened){
+    var stayModal=ge('canonicalAccommodationAssignmentModal'),roomModal=ge('roomModal');
+    if(stayModal&&roomModal){
+      stayModal.style.zIndex='10020';
+      roomModal.style.zIndex='10010';
+    }
+  }
+  return opened;
 }
 
 function renderCanonicalAccommodationDetailOccupant(occupancy,keyHolder,canManage,isChild,unlinked,slotLabel){
