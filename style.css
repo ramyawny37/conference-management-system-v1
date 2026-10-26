@@ -1340,8 +1340,15 @@ tr:nth-child(even) td{background:#F7FBFF}
 /* Canonical room occupancy cards: readable guest details and actions, without legacy editable grid columns. */
 #roomModal.canonical-room-readonly .canonical-room-guest{display:grid;grid-template-columns:96px minmax(180px,1fr) auto auto;grid-template-areas:none;align-items:center;column-gap:12px;row-gap:8px;min-width:0;padding:12px;border:1px solid var(--app-border);border-radius:10px;background:var(--app-surface)}
 #roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-person{min-width:0;overflow-wrap:anywhere}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions{display:flex;flex-wrap:wrap;grid-column:1/-1;min-width:0;gap:6px;padding-top:9px;border-top:1px solid var(--app-border)}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{max-width:100%;white-space:normal}
+#roomModal.canonical-room-readonly .canonical-room-guest-actions{display:flex;flex-wrap:wrap;align-items:center;grid-column:1/-1;min-width:0;gap:6px;padding-top:9px;border-top:1px solid var(--app-border)}
+#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{width:auto;max-width:100%;min-width:0;min-height:32px;padding:6px 10px;border-radius:7px;font-size:11px;line-height:1.3;white-space:normal}
+#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn-red{margin-inline-start:auto}
+#roomModal.canonical-room-readonly .canonical-room-child{margin-inline-start:20px;border-color:#efd9a8;background:#fffaf0}
+#roomModal.canonical-room-readonly .canonical-room-child .guest-slot-person{font-weight:600}
+#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-day{min-width:0;white-space:normal;color:var(--app-text-muted);line-height:1.5}
+#roomModal.canonical-room-readonly .canonical-room-guest .accommodation-arrival-badge{justify-self:start}
+#roomModal.canonical-room-readonly .room-information-section{padding-block:12px}
+#roomModal.canonical-room-readonly .room-modal-footer .btn{min-height:40px}
 #roomModal.canonical-room-readonly .canonical-room-stay-history{grid-column:1/-1;min-width:0;margin-top:12px;padding-top:12px;border-top:1px solid var(--app-border)}
 #roomModal.canonical-room-readonly .canonical-room-stay-history .canonical-room-guest{margin-top:8px}
 #roomModal.canonical-room-readonly .child-box .canonical-room-guest-actions{margin-top:8px}
