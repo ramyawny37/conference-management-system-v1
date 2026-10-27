@@ -3371,22 +3371,26 @@ function resumeCanonicalAccommodationRoomSlotForPerson(personId,slotKey){
 var canonicalRoomChildAdditionPending=false;
 function addCanonicalAccommodationChildFromRoom(roomId){
   var current=getCurrentConference(),room=findCanonicalAccommodationEntity('room',roomId);
-  if(!current||!room||room.isClosed||!currentConferenceSectionCapability('accommodationManage')||!currentConferenceSectionCapability('peopleManage')||canonicalRoomChildAdditionPending)return false;
-  var day=getConferenceOperationalDay(current),guardians=getCanonicalAccommodationOccupanciesOnDay(room,day).filter(function(stay){return !isCanonicalAccommodationChild(stay);});
+  if(!current||!room||room.isClosed||canonicalRoomChildAdditionPending||!currentConferenceSectionCapability('accommodationManage')||!currentConferenceSectionCapability('peopleManage'))return false;
+  var guardians=getCanonicalAccommodationOccupanciesOnDay(room,getConferenceOperationalDay(current)).filter(function(item){return !isCanonicalAccommodationChild(item);});
   if(!guardians.length){showToast('يجب تسكين ولي الأمر أولاً.','#E74C3C');return false;}
-  var choice=guardians.length===1?'1':prompt('اختر رقم ولي الأمر:\n'+guardians.map(function(stay,index){return (index+1)+' - '+(stay.person&&stay.person.fullName||'بدون اسم');}).join('\n'));
-  if(choice===null)return false;
-  var index=Number(choice)-1;
-  if(!Number.isInteger(index)||index<0||index>=guardians.length){showToast('اختيار ولي الأمر غير صحيح.','#E74C3C');return false;}
-  var name=prompt('اسم الطفل (من دليل الأشخاص أو اسم جديد):');
-  if(name===null)return false;
-  name=String(name).trim();if(!name){showToast('أدخل اسم الطفل.','#E74C3C');return false;}
-  var bedChoice=prompt('نوع السرير: 0 بدون سرير، 1 أساسي، 2 إضافي','0');
-  if(bedChoice===null)return false;
-  if(!['0','1','2'].includes(bedChoice)){showToast('نوع السرير غير صحيح.','#E74C3C');return false;}
-  var guardian=guardians[index],bedType=bedChoice==='1'?'base':bedChoice==='2'?'extra':'shared';
-  canonicalRoomChildAdditionPending=true;
-  return ensureCanonicalGuardianChildAccommodation(current,guardian.participationId,{name:name,bedType:bedType}).then(function(){return Promise.all([hydrateCanonicalConferenceParticipations(current.id,{silent:true}),retryCanonicalConferenceAccommodation()]);}).then(function(){showToast('تمت إضافة الطفل إلى الغرفة.','#27AE60');},function(error){showToast(formatCanonicalAccommodationAssignmentFailure(error),'#E74C3C');}).finally(function(){canonicalRoomChildAdditionPending=false;});
+  var old=ge('canonicalRoomChildDialog');if(old)old.remove();
+  var dialog=document.createElement('dialog');dialog.id='canonicalRoomChildDialog';dialog.dir='rtl';
+  dialog.style.cssText='border:0;border-radius:12px;padding:24px;width:min(94vw,460px);max-height:90vh;overflow:auto';
+  dialog.innerHTML='<h3>إضافة طفل للغرفة</h3><form method="dialog" style="display:grid;gap:12px"><label>ولي الأمر<select name="guardian" required style="display:block;width:100%"></select></label><label>اسم الطفل<input name="child" required autocomplete="off" style="display:block;width:100%"></label><label>نوع السرير<select name="bed" style="display:block;width:100%"><option value="shared">بدون سرير</option><option value="base">أساسي</option><option value="extra">إضافي</option></select></label><p role="alert" class="child-error"></p><div style="display:flex;gap:8px"><button type="button" class="btn btn-gray child-cancel">إلغاء</button><button type="submit" class="btn btn-green child-save">حفظ الطفل</button></div></form>';
+  var form=dialog.querySelector('form'),select=form.elements.guardian;
+  guardians.forEach(function(item){var option=document.createElement('option');option.value=item.participationId;option.textContent=item.person&&item.person.fullName||'ولي أمر';select.appendChild(option);});
+  dialog.querySelector('.child-cancel').onclick=function(){dialog.close();};
+  dialog.addEventListener('close',function(){dialog.remove();});
+  form.onsubmit=function(event){
+    event.preventDefault();
+    var name=String(form.elements.child.value||'').trim(),guardian=guardians.find(function(item){return String(item.participationId)===select.value;});
+    var fresh=findCanonicalAccommodationEntity('room',roomId);
+    if(!name||!guardian||!fresh||fresh.isClosed||!getCanonicalAccommodationOccupanciesOnDay(fresh,getConferenceOperationalDay(current)).some(function(item){return String(item.participationId)===String(guardian.participationId);})){dialog.querySelector('.child-error').textContent='تحقق من الطفل وولي الأمر والغرفة.';return;}
+    canonicalRoomChildAdditionPending=true;dialog.querySelector('.child-save').disabled=true;
+    ensureCanonicalGuardianChildAccommodation(current,guardian.participationId,{name:name,bedType:form.elements.bed.value}).then(function(){return Promise.all([hydrateCanonicalConferenceParticipations(current.id,{silent:true}),retryCanonicalConferenceAccommodation()]);}).then(function(){dialog.close();showToast('تمت إضافة الطفل.','#27AE60');},function(error){dialog.querySelector('.child-error').textContent=formatCanonicalAccommodationAssignmentFailure(error);}).finally(function(){canonicalRoomChildAdditionPending=false;dialog.querySelector('.child-save').disabled=false;});
+  };
+  document.body.appendChild(dialog);dialog.showModal();return true;
 }
 function renderCanonicalAccommodationCompactOccupants(occupancies,keyHolder,canManage){
   var groups=groupCanonicalAccommodationOccupancies(occupancies),renderRow=function(occupancy,isChild,unlinked){
