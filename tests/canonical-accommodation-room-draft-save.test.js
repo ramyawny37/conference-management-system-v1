@@ -71,3 +71,23 @@ test('room transfer capacity counts beds, not children sharing a bed',()=>{
   assert.match(move,/bedOccupants\.length>=capacity/);
   assert.doesNotMatch(move,/return occupants\.length>=capacity/);
 });
+
+const latestRoomDraft=fs.readFileSync('supabase/migrations/20261026143000_room_draft_atomic_occupant_replacement.sql','utf8');
+const guardianReplacement=fs.readFileSync('supabase/migrations/20261026170000_guardian_replacement_removes_housed_children.sql','utf8');
+
+test('latest canonical room draft retains atomic replacement, revisions, idempotency and device authority',()=>{
+  assert.match(latestRoomDraft,/p_replacements jsonb/);
+  assert.match(latestRoomDraft,/require_conference_accommodation_context\(p_device,p_conference,'conference\.accommodation\.manage',true\)/);
+  assert.match(latestRoomDraft,/validated_phase1c_device_authorization/);
+  assert.match(latestRoomDraft,/room_assignment\.revision<>p_expected_assignment_revision/);
+  assert.match(latestRoomDraft,/room\.revision<>p_expected_revision/);
+  assert.match(latestRoomDraft,/operation_id=p_operation_id[\s\S]*status','duplicate'/);
+  assert.match(latestRoomDraft,/public\.replace_conference_accommodation\(/);
+  assert.match(latestRoomDraft,/p_room_lease_tokens/);
+});
+
+test('guardian replacement retires only housed linked children in the same transaction',()=>{
+  assert.match(guardianReplacement,/Replacing a guardian removes only the children currently housed/);
+  assert.match(guardianReplacement,/guardian_participation_id/);
+  assert.match(guardianReplacement,/conference_accommodation_occupancies/);
+});
