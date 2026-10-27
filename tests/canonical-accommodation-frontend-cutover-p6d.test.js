@@ -355,3 +355,12 @@ test('central house directory floor names reject whitespace-only input',()=>{
   assert.ok(section.includes("name=String(name).trim()"));
   assert.ok(section.includes("if(!name){showToast('أدخل اسم الدور."));
 });
+
+test('room mutation fast path acquires a fresh server lease without redundant read and keeps lock fallback',()=>{
+  const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
+  assert.match(mutation,/getOwnedResourceLease\('conference','accommodation_room',id,'edit'\)\?getResourceLease/);
+  assert.match(mutation,/:acquireResourceLease\('conference','accommodation_room',id,/);
+  assert.match(mutation,/PLATFORM_RESOURCE_LEASE_LOCKED'\)return getResourceLease/);
+  assert.match(mutation,/args\.p_room_lease_tokens=affectedRooms\.map/);
+  assert.match(mutation,/releaseResourceLease\('conference','accommodation_room',item\.roomId/);
+});
