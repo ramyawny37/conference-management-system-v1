@@ -1,0 +1,32 @@
+begin;
+do $rename$
+declare d text;
+begin
+ select pg_get_functiondef('public.add_conference_guardian_child_accommodation(uuid,uuid,uuid,jsonb)'::regprocedure) into d;
+ if position('person_id uuid;room_id uuid;' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'person_id uuid;room_id uuid;','v_person_id uuid;v_room_id uuid;');
+ if position('room_id:=' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'room_id:=','v_room_id:=');
+ if position('if room_id is null' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'if room_id is null','if v_room_id is null');
+ if position('occupancies.room_id=room_id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'occupancies.room_id=room_id','occupancies.room_id=v_room_id');
+ if position('child_stay.room_id is distinct from room_id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'child_stay.room_id is distinct from room_id','child_stay.room_id is distinct from v_room_id');
+ if position('p_conference,room_id,child.id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'p_conference,room_id,child.id','p_conference,v_room_id,child.id');
+ if position('''roomId'',room_id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'''roomId'',room_id','''roomId'',v_room_id');
+ if position('person_id:=' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'person_id:=','v_person_id:=');
+ if position('returning id into person_id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'returning id into person_id','returning id into v_person_id');
+ if position('where id=person_id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'where id=person_id','where id=v_person_id');
+ if position('participations.person_id=person_id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'participations.person_id=person_id','participations.person_id=v_person_id');
+ if position('p_conference,person_id,guardian.id' in d)=0 then raise exception 'GUARDIAN_CHILD_RPC_SHAPE_CHANGED';end if;
+ d:=replace(d,'p_conference,person_id,guardian.id','p_conference,v_person_id,guardian.id');
+ execute d;
+end $rename$;
+commit;
