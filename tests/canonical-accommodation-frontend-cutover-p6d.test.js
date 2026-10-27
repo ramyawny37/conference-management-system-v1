@@ -379,3 +379,13 @@ test('accommodation mutation reports snapshot application separately from room l
   assert.match(mutation,/markTiming\('snapshotApplied'\);markTiming\('leaseReleaseStarted'\)/);
   assert.match(mutation,/markTiming\('leaseReleased'\);reportTiming\('success'\)/);
 });
+
+test('room lease release diagnostics distinguish committed mutations from cleanup failure',()=>{
+ const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
+ assert.match(mutation,/function releaseTrackedLease\(item\)/);
+ assert.match(mutation,/RESOURCE_LEASE_RELEASE_UNCONFIRMED/);
+ assert.match(mutation,/accommodation-lease-release-warning/);
+ assert.match(mutation,/committed:true/);
+ assert.match(mutation,/committed:false/);
+ assert.doesNotMatch(mutation,/releaseResourceLease\('conference','accommodation_room',item\.roomId[^;]*\.catch\(function\(\)\{\}\)/);
+});
