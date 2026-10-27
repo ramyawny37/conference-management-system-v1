@@ -91,3 +91,18 @@ test('guardian replacement retires only housed linked children in the same trans
   assert.match(guardianReplacement,/guardian_participation_id/);
   assert.match(guardianReplacement,/conference_accommodation_occupancies/);
 });
+
+const dispatchMigration=fs.readFileSync('supabase/migrations/20261026143000_room_draft_atomic_occupant_replacement.sql','utf8');
+test('room draft dispatch requires a room-scoped lease before invoking the atomic save',()=>{
+  assert.match(dispatchMigration,/new_signature:='array\[[^\n]*p_room_lease_tokens/);
+  assert.match(dispatchMigration,/new_call:='return public\.save_conference_accommodation_room_draft/);
+  assert.match(dispatchMigration,/revoke all on function public\.save_conference_accommodation_room_draft/);
+  assert.match(dispatchMigration,/grant execute on function public\.save_conference_accommodation_room_draft[^\n]*to service_role/);
+});
+test('guardian replacement keeps participation links and only retires overlapping housed child stays',()=>{
+  assert.match(guardianReplacement,/cp\.guardian_participation_id=old_stay\.participation_id/);
+  assert.match(guardianReplacement,/o\.room_id=old_stay\.room_id/);
+  assert.match(guardianReplacement,/o\.arrival_day<=p_effective_day/);
+  assert.match(guardianReplacement,/p_effective_day<coalesce\(o\.leave_day,days\+1\)/);
+  assert.match(guardianReplacement,/Their central participation and[\s\S]*guardian relationship remain intact/);
+});
