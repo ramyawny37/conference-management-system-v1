@@ -364,3 +364,12 @@ test('room mutation fast path acquires a fresh server lease without redundant re
   assert.match(mutation,/args\.p_room_lease_tokens=affectedRooms\.map/);
   assert.match(mutation,/releaseResourceLease\('conference','accommodation_room',item\.roomId/);
 });
+
+test('room draft save uses direct lease acquisition when no owned lease is cached and retains locked fallback',()=>{
+  const save=scriptSource.slice(scriptSource.indexOf('submitCanonicalAccommodationRoomDraft(current,draft'),scriptSource.indexOf('function saveCanonicalAccommodationRoomData()'));
+  assert.match(save,/getOwnedResourceLease\('conference','accommodation_room',draft\.roomId,'edit'\)/);
+  assert.match(save,/owned&&owned\.leaseToken\?integration\.getResourceLease/);
+  assert.match(save,/:integration\.acquireResourceLease\('conference','accommodation_room',draft\.roomId/);
+  assert.match(save,/PLATFORM_RESOURCE_LEASE_LOCKED'\)return integration\.getResourceLease/);
+  assert.match(save,/p_room_lease_tokens:\[\{roomId:draft\.roomId,token:leaseToken\}\]/);
+});

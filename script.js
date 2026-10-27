@@ -3459,10 +3459,9 @@ function submitCanonicalAccommodationRoomDraft(current,draft,structure,assignmen
   function mark(stage){stages[stage]=Date.now()-startedAt;}
   function report(status){mark('total');if(console&&typeof console.info==='function')console.info('[accommodation-room-save-timing]',{operation:'save_conference_accommodation_room_draft',status:status,elapsedMs:stages});}
   if(!integration||!remoteId)return Promise.reject({code:'CANONICAL_CONFERENCE_ACCOMMODATION_NOT_HYDRATED'});
-  return integration.getResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,scope:'edit'}).then(function(lease){
-    if(lease&&lease.owned===true&&lease.leaseToken)return lease;
-    return integration.acquireResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,ttlSeconds:120}).then(function(value){acquired=true;return value;});
-  }).then(function(lease){
+  var owned=integration.getOwnedResourceLease('conference','accommodation_room',draft.roomId,'edit');
+  var leaseReady=owned&&owned.leaseToken?integration.getResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,scope:'edit'}):integration.acquireResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,ttlSeconds:120}).then(function(value){acquired=true;return value;},function(error){if(error&&error.code==='PLATFORM_RESOURCE_LEASE_LOCKED')return integration.getResourceLease('conference','accommodation_room',draft.roomId,{conferenceId:remoteId,scope:'edit'});throw error;});
+  return leaseReady.then(function(lease){
     if(!lease||lease.owned!==true||!lease.leaseToken)throw {code:'PLATFORM_RESOURCE_LEASE_LOCKED'};
     leaseToken=lease.leaseToken;
     mark('leaseReady');

@@ -84,10 +84,10 @@ test('canonical shell owns administration workspace visibility alongside all pee
 });
 
 test('Development PWA serves the same revisioned canonical administration visibility CSS',()=>{
-  const asset='style.css?rev=accommodation-room-save-timing-v3';
+  const asset='style.css?rev=accommodation-room-save-lease-fastpath-v4';
   assert.ok(index.includes(asset),'HTML must request revised workspace stylesheet');
   assert.ok(worker.includes("'./"+asset+"'"),'service worker must precache the revised stylesheet');
-  assert.match(worker,/development-accommodation-room-save-timing-v3/);
+  assert.match(worker,/development-accommodation-room-save-lease-fastpath-v4/);
 });
 
 
