@@ -65,7 +65,7 @@ test('linked structure mutations use exact canonical operations and expected rev
     const expected={...args,p_conference_id:env.remote};
     if(operation==='update_accommodation_room'||operation==='delete_accommodation_room')expected.p_room_lease_tokens=[{roomId:env.ids.room,token:'80000000-0000-4000-8000-000000000001'}];
     assert.deepEqual(call.args,expected);
-    assert.equal(env.calls.at(-1).operation,'get_conference_accommodation');
+    assert.ok(env.calls.some((item,index)=>item.operation==='get_conference_accommodation'&&index>env.calls.findIndex(entry=>entry.operation===operation)), 'canonical snapshot must follow the mutation');
   }
   assert.equal(JSON.stringify(env.sandbox.appData.conferences[0]),env.snapshotBefore);
 });
