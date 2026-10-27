@@ -17,9 +17,13 @@
   function ensureRuntimeConference(conferenceId,conference,options){
     var getData=options.getAppData||function(){return global.appData;};
     var applyData=options.applyAppData||function(value){global.appData=value;};
-    var data=copy(getData()||{});
-    data.conferences=Array.isArray(data.conferences)?data.conferences:[];
-    var found=data.conferences.find(function(item){return item&&String(item.id||'')===conferenceId;});
+    var current=getData()||{};
+    // Preserve unrelated module state; clone only the conference collection being updated.
+    var data=Object.assign({},current);
+    data.conferences=Array.isArray(current.conferences)?current.conferences.slice():[];
+    var foundIndex=data.conferences.findIndex(function(item){return item&&String(item.id||'')===conferenceId;});
+    var found=foundIndex>=0?Object.assign({},data.conferences[foundIndex]):null;
+    if(found)data.conferences[foundIndex]=found;
     if(!found){
       found={id:conferenceId,name:String(conference.name||''),status:String(conference.status||'active'),startDate:conference.startDate||'',endDate:conference.endDate||'',peopleDb:{people:[]},houses:[],transports:[],activityLog:[]};
       data.conferences.push(found);
