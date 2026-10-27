@@ -373,3 +373,9 @@ test('room draft save uses direct lease acquisition when no owned lease is cache
   assert.match(save,/PLATFORM_RESOURCE_LEASE_LOCKED'\)return integration\.getResourceLease/);
   assert.match(save,/p_room_lease_tokens:\[\{roomId:draft\.roomId,token:leaseToken\}\]/);
 });
+
+test('accommodation mutation reports snapshot application separately from room lease release',()=>{
+  const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
+  assert.match(mutation,/markTiming\('snapshotApplied'\);markTiming\('leaseReleaseStarted'\)/);
+  assert.match(mutation,/markTiming\('leaseReleased'\);reportTiming\('success'\)/);
+});
