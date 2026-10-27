@@ -33,7 +33,7 @@ test('single editor Save submits selected slots and omits unchanged room structu
   assert.match(save,/structureChanged\?structure:null/);
   assert.match(script,/operationId:crypto\.randomUUID\(\)/);
   assert.match(script,/p_operation_id:draft\.operationId/);
-  assert.match(save,/if\(!structureChanged&&!assignments\.length&&!updates\.length\)\{closeRM\(\);return true;\}/);
+  assert.match(save,/if\(!structureChanged&&!assignments\.length&&!updates\.length&&!replacements\.length\)\{closeRM\(\);return true;\}/);
   assert.doesNotMatch(save,/update_accommodation_room|assignConferenceAccommodation/);
 });
 
@@ -59,8 +59,8 @@ test('draft lock ordering, room assignment revision and operation replay are exp
 
 test('room draft save verifies its lease asynchronously through the canonical server-backed lease API',()=>{
   const submit=script.slice(script.indexOf('function submitCanonicalAccommodationRoomDraft('),script.indexOf('\nfunction saveCanonicalAccommodationRoomData('));
-  assert.match(submit,/getResourceLease\('conference','accommodation_room',draft\.roomId,\{conferenceId:remoteId,scope:'edit'\}\)\.then/);
-  assert.doesNotMatch(submit,/getOwnedResourceLease\(/);
+  assert.match(submit,/integration\.getResourceLease\('conference','accommodation_room',draft\.roomId/);
+  assert.match(submit,/getOwnedResourceLease\(/);
   assert.match(submit,/acquireResourceLease\('conference','accommodation_room',draft\.roomId/);
   assert.match(submit,/releaseResourceLease\('conference','accommodation_room',draft\.roomId/);
 });

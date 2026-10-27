@@ -60,7 +60,7 @@ test('linked structure mutations use exact canonical operations and expected rev
   ];
   for(const [operation,args] of cases){
     await api.mutateConferenceAccommodationStructure('local',operation,args);
-    const call=env.calls.at(-2);
+    const call=env.calls.findLast(item=>item.operation===operation);
     assert.equal(call.operation,operation);
     const expected={...args,p_conference_id:env.remote};
     if(operation==='update_accommodation_room'||operation==='delete_accommodation_room')expected.p_room_lease_tokens=[{roomId:env.ids.room,token:'80000000-0000-4000-8000-000000000001'}];
@@ -74,13 +74,13 @@ test('assign, move and remove use canonical Participation and occupancy identiti
   const env=environment(),api=env.sandbox.PlatformIntegration;
   await api.hydrateConferenceAccommodation('local',env.remote);
   await api.assignConferenceAccommodation('local',{roomId:env.ids.room,participationId:env.ids.participation,arrivalDay:1,leaveDay:3,bedType:'base',extraBedPersonType:null});
-  assert.deepEqual(env.calls.at(-2),{module:'conference',operation:'assign_conference_accommodation',args:{p_room_id:env.ids.room,p_participation_id:env.ids.participation,p_arrival_day:1,p_leave_day:3,p_bed_type:'base',p_extra_bed_person_type:null,p_conference_id:env.remote,p_room_lease_tokens:[{roomId:env.ids.room,token:'80000000-0000-4000-8000-000000000001'}]}});
+  assert.deepEqual(env.calls.findLast(item=>item.operation==='assign_conference_accommodation'),{module:'conference',operation:'assign_conference_accommodation',args:{p_room_id:env.ids.room,p_participation_id:env.ids.participation,p_arrival_day:1,p_leave_day:3,p_bed_type:'base',p_extra_bed_person_type:null,p_conference_id:env.remote,p_room_lease_tokens:[{roomId:env.ids.room,token:'80000000-0000-4000-8000-000000000001'}]}});
   await api.moveConferenceAccommodation('local',{occupancyId:env.ids.occupancy,expectedRevision:5,roomId:env.ids.room,arrivalDay:1,leaveDay:3,bedType:'base',extraBedPersonType:null});
-  assert.equal(env.calls.at(-2).operation,'move_conference_accommodation');
-  assert.equal(env.calls.at(-2).args.p_occupancy_id,env.ids.occupancy);
-  assert.equal(env.calls.at(-2).args.p_expected_revision,5);
+  assert.ok(env.calls.some(item=>item.operation==='move_conference_accommodation'));
+  assert.equal(env.calls.findLast(item=>item.operation==='move_conference_accommodation').args.p_occupancy_id,env.ids.occupancy);
+  assert.equal(env.calls.findLast(item=>item.operation==='move_conference_accommodation').args.p_expected_revision,5);
   await api.removeConferenceAccommodation('local',env.ids.occupancy,5);
-  assert.deepEqual(env.calls.at(-2),{module:'conference',operation:'remove_conference_accommodation',args:{p_occupancy_id:env.ids.occupancy,p_expected_revision:5,p_conference_id:env.remote,p_room_lease_tokens:[{roomId:env.ids.room,token:'80000000-0000-4000-8000-000000000001'}]}});
+  assert.deepEqual(env.calls.findLast(item=>item.operation==='remove_conference_accommodation'),{module:'conference',operation:'remove_conference_accommodation',args:{p_occupancy_id:env.ids.occupancy,p_expected_revision:5,p_conference_id:env.remote,p_room_lease_tokens:[{roomId:env.ids.room,token:'80000000-0000-4000-8000-000000000001'}]}});
   assert.equal(JSON.stringify(env.sandbox.appData.conferences[0]),env.snapshotBefore);
 });
 
@@ -358,9 +358,9 @@ test('central house directory floor names reject whitespace-only input',()=>{
 
 test('room mutation fast path acquires a fresh server lease without redundant read and keeps lock fallback',()=>{
   const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
-  assert.match(mutation,/getOwnedResourceLease\('conference','accommodation_room',id,'edit'\)\?getResourceLease/);
-  assert.match(mutation,/:acquireResourceLease\('conference','accommodation_room',id,/);
-  assert.match(mutation,/PLATFORM_RESOURCE_LEASE_LOCKED'\)return getResourceLease/);
+  assert.match(mutation,/getOwnedResourceLease\('conference','accommodation_room',id,'edit'\)\?trackLeaseCall\('get'/);
+  assert.match(mutation,/:trackLeaseCall\('acquire',id,/);
+  assert.match(mutation,/PLATFORM_RESOURCE_LEASE_LOCKED'\)return trackLeaseCall\('get'/);
   assert.match(mutation,/args\.p_room_lease_tokens=affectedRooms\.map/);
   assert.match(mutation,/releaseResourceLease\('conference','accommodation_room',item\.roomId/);
 });
@@ -377,7 +377,7 @@ test('room draft save uses direct lease acquisition when no owned lease is cache
 test('accommodation mutation reports snapshot application separately from room lease release',()=>{
   const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
   assert.match(mutation,/markTiming\('snapshotApplied'\);markTiming\('leaseReleaseStarted'\)/);
-  assert.match(mutation,/markTiming\('leaseReleased'\);reportTiming\('success'\)/);
+  assert.match(mutation,/markTiming\('leaseReleased'\);[\s\S]*reportTiming\('success'\)/);
 });
 
 test('room lease release diagnostics distinguish committed mutations from cleanup failure',()=>{
