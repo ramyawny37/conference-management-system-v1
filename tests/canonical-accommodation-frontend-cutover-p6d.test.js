@@ -8,6 +8,14 @@ const integrationSource=fs.readFileSync('js/platform-integration.js','utf8');
 const scriptSource=fs.readFileSync('script.js','utf8');
 const propagationSource=fs.readFileSync('supabase/migrations/20260929160000_canonical_conference_participation_accommodation_propagation.sql','utf8');
 
+test('occupancy mutation resolves room and missing-occupancy guard in one traversal',()=>{
+  const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
+  assert.match(mutation,/var occupancyFound=!occupancyId/);
+  assert.match(mutation,/occupancyFound=true;roomId=/);
+  assert.match(mutation,/if\(!roomId\|\|!occupancyFound\)return Promise\.reject/);
+  assert.doesNotMatch(mutation,/record\.houses\.every\(/);
+});
+
 function environment(){
   const calls=[];
   let failure='';
