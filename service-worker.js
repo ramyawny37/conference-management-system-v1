@@ -66,7 +66,7 @@ const CORE_ASSETS = [
   './js/sync/module-permission-administration-ui.js?rev=platform-administration-canonical-sidebar-navigation-v2',
   './js/sync/platform-administration-ui.js?rev=platform-admin-security-retirement-v1',
   './js/sync/conference-linking-attempt-store.js',
-  './js/sync/discovered-conference-open-service.js?rev=conference-navigation-consolidation-v1',
+  './js/sync/discovered-conference-open-service.js?rev=conference-open-scoped-state-v2',
   './utils.js',
   './core.js?rev=conference-legacy-functional-cutover-v1',
   './people.js?rev=canonical-conference-schema-v1',
