@@ -74,7 +74,16 @@ jobs:
       - name: Owner synced-passkey canonical policy regression
         run: node tests/system-owner-synced-passkey-policy-reconciliation.test.js
       - name: Canonical accommodation room lifecycle regression
-        run: node --test tests/canonical-accommodation-room-draft-save.test.js tests/canonical-accommodation-frontend-cutover-p6d.test.js tests/canonical-accommodation-guardian-child-lifecycle.test.js
+        run: |
+          node --test \
+            tests/canonical-accommodation-room-draft-save.test.js \
+            tests/canonical-accommodation-frontend-cutover-p6d.test.js \
+            tests/canonical-accommodation-guardian-child-lifecycle.test.js \
+            tests/canonical-accommodation-atomic-replacement.test.js \
+            tests/canonical-accommodation-arrivals-room-keys.test.js \
+            tests/conference-accommodation-stay-segments.test.js \
+            tests/conference-accommodation-nightly-report.test.js \
+            tests/platform-conference-accommodation-lifecycle.test.js
       - name: Development preview validation
         if: always()
         run: npm run check:development-preview
