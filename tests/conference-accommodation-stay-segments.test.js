@@ -48,7 +48,8 @@ test('runtime resolves rooms by operational day and cards keep participation ide
 
 test('card rendering and PNG capture dimensions remain unchanged',()=>{
   assert.match(runtime,/captureCardElementAsPng/);
-  assert.match(runtime,/captureModernBannerCardAsPng/);
+  assert.match(runtime,/var exportWidth=90\*96\/25\.4/);
+  assert.match(runtime,/exportCard\.style\.width=exportWidth\+'px'/);
   assert.match(runtime,/html2canvas/);
   assert.match(runtime,/scale:\s*2/);
 });
