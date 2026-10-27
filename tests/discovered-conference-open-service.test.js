@@ -20,6 +20,22 @@ test('authorized open activates immediately without eagerly hydrating unrelated 
   assert.equal(env.sandbox.DiscoveredConferenceOpenService.getDiagnostics().canonicalHydrationCount,0);
   assert.equal(env.sandbox.appData.conferences[0].id,remote);
 });
+test('opening one conference preserves unrelated state and existing conference records',async()=>{
+  const env=environment();
+  const unrelated={largeModuleState:{items:[{id:1}]}};
+  const untouched={id:'another-conference',name:'Other',houses:[{id:'house-1'}]};
+  const existing={id:remote,name:'Old name',houses:[{id:'house-2'}]};
+  env.sandbox.appData={conferences:[untouched,existing],warehouseState:unrelated};
+  const before=env.sandbox.appData;
+  const result=await env.sandbox.DiscoveredConferenceOpenService.open(remote);
+  assert.equal(result.ok,true);
+  assert.notEqual(env.sandbox.appData,before);
+  assert.equal(env.sandbox.appData.warehouseState,unrelated);
+  assert.equal(env.sandbox.appData.conferences[0],untouched);
+  assert.notEqual(env.sandbox.appData.conferences[1],existing);
+  assert.equal(existing.name,'Old name');
+  assert.equal(env.sandbox.appData.conferences[1].name,'Canonical');
+});
 test('authorization denial fails closed without runtime activation',async()=>{
   const env=environment();
   env.sandbox.ConferenceActivationAuthorization.authorizeCloud=()=>({ok:false,active:false});
