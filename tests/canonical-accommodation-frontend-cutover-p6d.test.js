@@ -389,3 +389,11 @@ test('room lease release diagnostics distinguish committed mutations from cleanu
  assert.match(mutation,/committed:false/);
  assert.doesNotMatch(mutation,/releaseResourceLease\('conference','accommodation_room',item\.roomId[^;]*\.catch\(function\(\)\{\}\)/);
 });
+
+test('accommodation mutation logs individual room lease request durations without tokens',()=>{
+ const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
+ assert.match(mutation,/leaseRequests:leaseNetworkTimings/);
+ for(const action of ['acquire','get','renew','release']) assert.match(mutation,new RegExp("trackLeaseCall\\('"+action+"'"));
+ assert.match(mutation,/durationMs:Date\.now\(\)-started/);
+ assert.doesNotMatch(mutation,/leaseNetworkTimings\.push\(\{[^}]*leaseToken/);
+});

@@ -58,7 +58,7 @@ test('one operational coordinator owns polling, reconnection and visibility refr
 
 test('session reset invalidates dashboard state and PWA caches its exact asset revision',()=>{
   assert.match(dashboard,/platform-session-reset[\s\S]*deactivate\(\)[\s\S]*lastState=null/);
-  assert.match(worker,/development-accommodation-lease-release-diagnostics-v6/);
+  assert.match(worker,/development-accommodation-lease-request-timing-v7/);
   assert.match(worker,/\.\/js\/platform-home-dashboard\.js\?rev=unified-platform-state-home-v3/);
   assert.match(html,/js\/platform-home-dashboard\.js\?rev=unified-platform-state-home-v3/);
 });
