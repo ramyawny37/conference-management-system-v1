@@ -4,7 +4,7 @@ declare d text; a integer; b integer; replacement text;
 begin
  select pg_get_functiondef('reservations_private.read_scoped(uuid,text,jsonb)'::regprocedure) into d;
  a:=position('elsif p_operation=''get_booking_accommodation'' then' in d);
- b:=position('elsif p_operation=''get_dashboard_summary'' then' in d);
+ b:=a+position('elsif p_operation=''get_dashboard_summary'' then' in substring(d from a))-1;
  if a=0 or b<=a then raise exception 'RESERVATIONS_ACCOMMODATION_READ_PRECONDITION_FAILED' using errcode='55000'; end if;
  replacement:=$branch$
  elsif p_operation='get_booking_accommodation' then
