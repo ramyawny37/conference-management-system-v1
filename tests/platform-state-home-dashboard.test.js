@@ -28,6 +28,11 @@ test('dashboard reads module-owned protected services without a local data autho
   assert.doesNotMatch(dashboard,/localStorage|sessionStorage|indexedDB|\.from\(|\.rpc\(/);
 });
 
+test('independent home summaries run concurrently after access authorization',()=>{
+  assert.match(dashboard,/Promise\.all\(\[conferenceSummary\(map\.conference\),reservationsSummary\(map\.reservations\),warehouseSummary\(map\.warehouse\),platformSummary\(\)\]\)/);
+  assert.doesNotMatch(dashboard,/conferenceSummary\(map\.conference\)\.then\(/);
+});
+
 test('permission-denied modules expose no counts or actions',async()=>{
   const nodes=new Map(['platformHomeWorkspace','platformHomeConnectivity','platformHomeModules','platformHomeActivity','platformHomeActions','platformHomeAlerts'].map(id=>[id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){}}]));
   const listeners={};
