@@ -397,3 +397,13 @@ test('accommodation mutation logs individual room lease request durations withou
  assert.match(mutation,/durationMs:Date\.now\(\)-started/);
  assert.doesNotMatch(mutation,/leaseNetworkTimings\.push\(\{[^}]*leaseToken/);
 });
+
+test('accommodation mutation holds per-room flight until snapshot and cleanup settle',()=>{
+ const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));
+ assert.match(mutation,/markTiming\('mutationCommitted'\)[\s\S]*invokeProtected\('conference','get_conference_accommodation'/);
+ assert.match(mutation,/acceptConferenceAccommodation\(localId,record\.remoteConferenceId,response,sequence\)/);
+ assert.match(mutation,/markTiming\('snapshotApplied'\);markTiming\('leaseReleaseStarted'\)/);
+ assert.match(mutation,/newlyAcquired\.reduce\(function\(chain,item\)\{return chain\.then\(function\(\)\{return releaseTrackedLease\(item\)\}\)\}/);
+ assert.match(mutation,/affectedRooms\.forEach\(function\(id\)\{conferenceAccommodationMutationFlights\[localId\+':active:'\+id\]=flight\}\)/);
+ assert.match(mutation,/delete conferenceAccommodationMutationFlights\[localId\+':active:'\+id\]/);
+});
