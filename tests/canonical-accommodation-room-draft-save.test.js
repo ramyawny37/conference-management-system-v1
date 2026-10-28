@@ -32,8 +32,8 @@ test('single editor Save submits selected slots and omits unchanged room structu
   assert.match(save,/assignments\.push\(\{participationId:slot\.selectedParticipationId/);
   assert.match(save,/structureChanged\?structure:null/);
   assert.match(script,/operationId:crypto\.randomUUID\(\)/);
-  assert.match(script,/p_operation_id:draft\.operationId/);
-  assert.match(save,/if\(!structureChanged&&!assignments\.length&&!updates\.length&&!replacements\.length\)\{closeRM\(\);return true;\}/);
+  assert.match(script,/saveConferenceFamilyAccommodationDraft\(current\.id,\{operationId:draft\.operationId/);
+  assert.match(save,/if\(!structureChanged&&!assignments\.length&&!updates\.length&&!replacements\.length&&!\(draft\.children\|\|\[\]\)\.length\)\{closeRM\(\);return true;\}/);
   assert.doesNotMatch(save,/update_accommodation_room|assignConferenceAccommodation/);
 });
 
@@ -58,11 +58,13 @@ test('draft lock ordering, room assignment revision and operation replay are exp
 });
 
 test('room draft save verifies its lease asynchronously through the canonical server-backed lease API',()=>{
-  const submit=script.slice(script.indexOf('function submitCanonicalAccommodationRoomDraft('),script.indexOf('\nfunction saveCanonicalAccommodationRoomData('));
-  assert.match(submit,/integration\.getResourceLease\('conference','accommodation_room',draft\.roomId/);
-  assert.match(submit,/getOwnedResourceLease\(/);
-  assert.match(submit,/acquireResourceLease\('conference','accommodation_room',draft\.roomId/);
-  assert.match(submit,/releaseResourceLease\('conference','accommodation_room',draft\.roomId/);
+  const integration=fs.readFileSync('js/platform-integration.js','utf8');
+  const start=integration.indexOf('function saveConferenceFamilyAccommodationDraft(');
+  const save=integration.slice(start,integration.indexOf('\n  function conferenceAccommodationState(',start));
+  assert.match(save,/getOwnedResourceLease\('conference','accommodation_room',roomId/);
+  assert.match(save,/acquireResourceLease\('conference','accommodation_room',roomId/);
+  assert.match(save,/releaseResourceLease\('conference','accommodation_room',lease\.roomId/);
+  assert.match(save,/rooms=.*\.sort\(\)/);
 });
 
 test('room transfer capacity counts beds, not children sharing a bed',()=>{

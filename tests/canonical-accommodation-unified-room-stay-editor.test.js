@@ -25,7 +25,9 @@ test('draft includes original stay revisions and submits changed stays only',()=
   assert.match(save,/var changed=/);
   assert.match(save,/updates\.push\(\{occupancyId:occupancyId,expectedRevision:original\.expectedRevision/);
   assert.match(save,/!structureChanged&&!assignments\.length&&!updates\.length/);
-  assert.match(script,/p_updates:updates/);
+  const submit=script.slice(script.indexOf('function submitCanonicalAccommodationRoomDraft('),script.indexOf('\nfunction saveCanonicalAccommodationRoomData('));
+  assert.match(submit,/operation:'move',sourceRoomId:draft\.roomId,targetRoomId:draft\.roomId/);
+  assert.match(submit,/saveConferenceFamilyAccommodationDraft/);
 });
 
 test('central draft validates and locks every changed entity in deterministic order',()=>{
