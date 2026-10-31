@@ -365,13 +365,20 @@ test('room mutation fast path acquires a fresh server lease without redundant re
   assert.match(mutation,/releaseResourceLease\('conference','accommodation_room',item\.roomId/);
 });
 
-test('room draft save uses direct lease acquisition when no owned lease is cached and retains locked fallback',()=>{
+test('family room draft delegates multi-room lease ownership to the canonical integration',()=>{
   const save=scriptSource.slice(scriptSource.indexOf('submitCanonicalAccommodationRoomDraft(current,draft'),scriptSource.indexOf('function saveCanonicalAccommodationRoomData()'));
-  assert.match(save,/getOwnedResourceLease\('conference','accommodation_room',draft\.roomId,'edit'\)/);
-  assert.match(save,/owned&&owned\.leaseToken\?integration\.getResourceLease/);
-  assert.match(save,/:integration\.acquireResourceLease\('conference','accommodation_room',draft\.roomId/);
-  assert.match(save,/PLATFORM_RESOURCE_LEASE_LOCKED'\)return integration\.getResourceLease/);
-  assert.match(save,/p_room_lease_tokens:\[\{roomId:draft\.roomId,token:leaseToken\}\]/);
+  const family=integrationSource.slice(integrationSource.indexOf('function saveConferenceFamilyAccommodationDraft('),integrationSource.indexOf('function conferenceAccommodationState('));
+  assert.match(save,/integration\.saveConferenceFamilyAccommodationDraft\(current\.id,/);
+  assert.doesNotMatch(save,/getOwnedResourceLease|acquireResourceLease|save_conference_accommodation_room_draft'/);
+  assert.match(family,/\['sourceRoomId','targetRoomId','roomId'\]/);
+  assert.match(family,/draft\.children\|\|\[\]/);
+  assert.match(family,/new Set[\s\S]*\.sort\(\)/);
+  assert.match(family,/getOwnedResourceLease\('conference','accommodation_room',roomId,'edit'\)/);
+  assert.match(family,/acquireResourceLease\('conference','accommodation_room',roomId/);
+  assert.match(family,/PLATFORM_RESOURCE_LEASE_LOCKED/);
+  assert.match(family,/save_conference_family_accommodation_draft/);
+  assert.match(family,/roomLeaseTokens:leases\.map/);
+  assert.match(family,/\.finally\(function\(\)\{return leases\.filter/);
 });
 
 test('accommodation mutation reports snapshot application separately from room lease release',()=>{
