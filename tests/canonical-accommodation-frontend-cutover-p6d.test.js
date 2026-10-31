@@ -369,7 +369,7 @@ test('family room draft delegates multi-room lease ownership to the canonical in
   const save=scriptSource.slice(scriptSource.indexOf('submitCanonicalAccommodationRoomDraft(current,draft'),scriptSource.indexOf('function saveCanonicalAccommodationRoomData()'));
   const family=integrationSource.slice(integrationSource.indexOf('function saveConferenceFamilyAccommodationDraft('),integrationSource.indexOf('function conferenceAccommodationState('));
   assert.match(save,/integration\.saveConferenceFamilyAccommodationDraft\(current\.id,/);
-  assert.doesNotMatch(save,/getOwnedResourceLease|acquireResourceLease|save_conference_accommodation_room_draft'/);
+  assert.doesNotMatch(save,/getOwnedResourceLease|acquireResourceLease|invokeProtected\('conference','save_conference_accommodation_room_draft'/);
   assert.match(family,/\['sourceRoomId','targetRoomId','roomId'\]/);
   assert.match(family,/draft\.children\|\|\[\]/);
   assert.match(family,/new Set[\s\S]*\.sort\(\)/);
