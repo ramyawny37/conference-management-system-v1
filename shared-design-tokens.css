@@ -1,6 +1,17 @@
 /* Integrated Management Platform shared visual tokens.
    This framework-neutral source is intended for generated CSS/Tailwind adapters later. */
 :root{
+  /* Approved reservations visual palette: single source, unchanged rendered values. */
+  --platform-reservations-blue:#0a6fff;
+  --platform-reservations-green:#00c853;
+  --platform-reservations-orange:#ff9500;
+  --platform-reservations-red:#ff3830;
+  --platform-reservations-purple:#7b61ff;
+  --platform-reservations-cyan:#00bcd4;
+  --platform-reservations-surface:#fff;
+  --platform-reservations-border:#dce7f2;
+  --platform-reservations-text:#102a46;
+  --platform-reservations-muted:#64748b;
   --platform-primary:#1452ad;
   --platform-primary-dark:#0d3f89;
   --platform-primary-active:#1d65c8;
