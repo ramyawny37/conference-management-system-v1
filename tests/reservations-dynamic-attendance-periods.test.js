@@ -4,8 +4,16 @@ const fs=require('node:fs');
 
 const sql=fs.readFileSync('supabase/migrations/20261031213000_reservations_dynamic_attendance_periods.sql','utf8');
 
+test('missing period owners are backfilled without rewriting booking snapshots',()=>{
+  assert.match(sql,/with used_segments as materialized/);
+  assert.match(sql,/unnest\(booking_type\.eligible_attendance_segments\)/);
+  assert.match(sql,/unnest\(booking\.attendance_segments_snapshot\)/);
+  assert.match(sql,/insert into reservations\.event_periods/);
+  assert.doesNotMatch(sql,/update reservations\.bookings set attendance_segments_snapshot/);
+});
+
 test('event periods accept event-defined codes instead of the legacy two-value enum',()=>{
-  assert.match(sql,/drop constraint if exists reservations_event_periods_kind_check/);
+  assert.match(sql,/drop constraint if exists event_periods_kind_check/);
   assert.match(sql,/kind~'\^\[a-z\]\[a-z0-9_-\]\{0,39\}\$'/);
   assert.match(sql,/unique\(event_id,kind\)/);
   const rewritten=sql.slice(sql.indexOf('do $rewrite$'));

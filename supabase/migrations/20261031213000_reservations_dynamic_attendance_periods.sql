@@ -1,9 +1,38 @@
 begin;
 
-alter table reservations.event_periods drop constraint if exists reservations_event_periods_kind_check;
-alter table reservations.booking_types drop constraint if exists reservations_booking_types_eligible_attendance_segments_check;
-alter table reservations.bookings drop constraint if exists reservations_bookings_attendance_segments_snapshot_check;
-alter table reservations.attendance_records drop constraint if exists reservations_attendance_records_segment_check;
+alter table reservations.event_periods drop constraint if exists event_periods_kind_check;
+alter table reservations.booking_types drop constraint if exists booking_types_eligible_attendance_segments_check;
+alter table reservations.bookings drop constraint if exists bookings_attendance_segments_snapshot_check;
+alter table reservations.attendance_records drop constraint if exists attendance_records_segment_check;
+
+-- Repair the historical invariant before enforcing event-owned segment codes.
+-- Existing booking snapshots remain untouched; only their missing period owners
+-- are materialized with the event's own dates and actors.
+with used_segments as materialized(
+  select event_id,scope_partition_id,segment from(
+    select booking_type.event_id,booking_type.scope_partition_id,unnest(booking_type.eligible_attendance_segments) segment
+    from reservations.booking_types booking_type
+    union
+    select booking.event_id,booking.scope_partition_id,unnest(booking.attendance_segments_snapshot) segment
+    from reservations.bookings booking
+  ) used
+  where segment is not null and segment<>''
+), missing_periods as materialized(
+  select event.id event_id,event.scope_partition_id,event.start_date,event.end_date,
+         event.created_by,event.updated_by,used.segment,
+         row_number() over(partition by event.id order by used.segment)-1 display_order
+  from reservations.events event
+  join used_segments used on used.event_id=event.id and used.scope_partition_id=event.scope_partition_id
+  where not exists(
+    select 1 from reservations.event_periods period
+    where period.event_id=event.id and period.scope_partition_id=event.scope_partition_id and period.kind=used.segment
+  )
+)
+insert into reservations.event_periods(
+  scope_partition_id,event_id,kind,starts_on,ends_on,display_order,created_by,updated_by
+)
+select scope_partition_id,event_id,segment,start_date,end_date,display_order,created_by,updated_by
+from missing_periods order by event_id,display_order;
 
 alter table reservations.event_periods
   add constraint reservations_event_periods_kind_format_check
