@@ -1,0 +1,7 @@
+project_id = "gppwltrifgfxrkzvvxoe"
+
+[api]
+enabled = true
+
+[studio]
+enabled = true
