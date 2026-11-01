@@ -21,7 +21,7 @@ test('linked child row is the compact unified-editor path with bed editing and r
   assert.match(html,/الوصول والمفتاح تابعان للوالد/);
   assert.match(html,/removeCanonicalAccommodation/);
   for(const forbidden of ['canonicalRoomStayArrival_','canonicalRoomStayLeave_','canonicalRoomStayExtraType_','setCanonicalAccommodationArrival','closeRM\(\);moveCanonicalAccommodation','010','الكنيسة','accommodation-arrival-badge','accommodation-key-holder-badge'])assert.doesNotMatch(html,new RegExp(forbidden));
-  assert.match(css,/canonical-room-child\{display:grid;grid-template-columns:minmax\(180px,1fr\) minmax\(150px,220px\)/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-child\{\s*display:flex;align-items:center/);
 });
 
 test('compact child row omits independent arrival and key controls',()=>{
