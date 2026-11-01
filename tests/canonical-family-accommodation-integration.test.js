@@ -37,7 +37,10 @@ test('the canonical child editor offers existing and new children and keeps shar
   const body=scriptSource.slice(scriptSource.indexOf('function addCanonicalAccommodationChildFromRoom('),scriptSource.indexOf('\nfunction removeCanonicalAccommodationChildDraft('));
   assert.match(body,/name="source" value="existing"/);
   assert.match(body,/name="source" value="new"/);
-  assert.match(body,/form\.elements\.bed\.value==='shared'\?roomGuardians:guardians/);
+  assert.match(body,/bed==='shared'\?String\(item\.roomId\|\|roomId\)===target&&samePeriod:covers/);
+  assert.match(body,/candidateRoom\.occupancies\|\|\[\]/);
+  assert.doesNotMatch(body,/الغرفة المختارة لا تحتوي على سرير إضافي/);
+  assert.match(body,/سرير إضافي تلقائي/);
   assert.match(body,/يمكن أن يكون ولي الأمر مقيمًا في غرفة أخرى/);
   assert.match(body,/editor\.children\.push\(child\)/);
   assert.equal((scriptSource.match(/textContent='\+ إضافة طفل'/g)||[]).length,1);

@@ -66,7 +66,8 @@ test('all linked child bed modes render under the guardian and consume only thei
   assert.match(open,/occupancyGroups\.rows\.find/);
   assert.match(open,/\.children\.map\(function\(child\)/);
   assert.match(open,/baseIndex=baseOccupancies\.length/);
-  assert.match(open,/extraIndex=extraOccupancies\.length/);
+  assert.match(open,/extraIndex=manualExtraOccupancies\.length/);
+  assert.match(open,/item\.extraBedSource!==\'automatic\'/);
   assert.doesNotMatch(open,/sharedByGuardian\[String\(occupancy\.participationId\)\]/);
 });
 
