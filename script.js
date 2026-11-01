@@ -3162,6 +3162,20 @@ function runCanonicalAccommodationOccupancyMutation(conferenceId,occupancyId,ope
   });
 }
 
+function refreshCanonicalRoomEditorAfterRemoval(conferenceId,roomId,occupancyId,editor,initialFormState){
+  var current=getCurrentConference(),modal=ge('roomModal');
+  if(!current||String(current.id)!==String(conferenceId)||!modal||modal.style.display==='none'||!canonicalAccommodationRoomDetailsOpen||canonicalAccommodationRoomEditorDraft!==editor||String(editor.roomId)!==String(roomId))return;
+  var room=findCanonicalAccommodationEntity('room',roomId);
+  if(!room||getCanonicalAccommodationOccupanciesOnDay(room,getConferenceOperationalDay(current)).some(function(item){return String(item.occupancyId)===String(occupancyId);})){
+    showToast('تعذر التحقق من تحديث الغرفة بعد الإزالة. أعد فتح الغرفة.','#E74C3C');return;
+  }
+  var fields=Array.from(modal.querySelectorAll('input,select,textarea')).filter(function(field){return !field.disabled;});
+  var formState=fields.map(function(field){return [field.id||field.name||'',field.type==='checkbox'?field.checked:field.value];});
+  var hasDraftChanges=JSON.stringify(formState)!==initialFormState||(editor.children||[]).length>0||Object.keys(editor.slots||{}).some(function(key){var slot=editor.slots[key];return slot.selectedParticipationId||slot.guardianDraftId;});
+  if(hasDraftChanges){showToast('تمت الإزالة وتحديث البيانات. لديك تعديلات غير محفوظة؛ احفظها أو ألغها قبل إعادة فتح الغرفة.','#E74C3C');return;}
+  openCanonicalAccommodationRoomDetails(roomId);
+}
+
 function removeCanonicalAccommodation(occupancyId){
   if(!currentConferenceSectionCapability('accommodationManage')){showToast('ليس لديك صلاحية إدارة التسكين.','#E74C3C');return false;}
   var current=getCurrentConference(),integration=window.PlatformIntegration,occupancy=findCanonicalAccommodationEntity('occupancy',occupancyId);
@@ -3170,8 +3184,13 @@ function removeCanonicalAccommodation(occupancyId){
   if(canonicalAccommodationOccupancyFlights[key])return false;
   var occupantName=occupancy.person&&occupancy.person.fullName||'النزيل';
   if(!confirm('إزالة '+occupantName+' من الغرفة؟'))return false;
+  var editor=canonicalAccommodationRoomEditorDraft,roomId=editor&&editor.roomId,modal=ge('roomModal');
+  var initialFormState=editor&&modal&&modal.style.display!=='none'?JSON.stringify(Array.from(modal.querySelectorAll('input,select,textarea')).filter(function(field){return !field.disabled;}).map(function(field){return [field.id||field.name||'',field.type==='checkbox'?field.checked:field.value];})):null;
   return runCanonicalAccommodationOccupancyMutation(current.id,occupancy.occupancyId,function(){
-    return canonicalAccommodationMutation(integration.removeConferenceAccommodation(current.id,occupancy.occupancyId,occupancy.revision),'🗑️ تم حذف النزيل من الغرفة');
+    return canonicalAccommodationMutation(integration.removeConferenceAccommodation(current.id,occupancy.occupancyId,occupancy.revision),'🗑️ تم حذف النزيل من الغرفة').then(function(result){
+      if(result!==false&&initialFormState!==null)refreshCanonicalRoomEditorAfterRemoval(current.id,roomId,occupancy.occupancyId,editor,initialFormState);
+      return result;
+    });
   });
 }
 
