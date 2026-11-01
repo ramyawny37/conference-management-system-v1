@@ -1,8 +1,8 @@
 \set ON_ERROR_STOP on
 create extension if not exists pgcrypto;
-do $ begin create role anon; exception when duplicate_object or unique_violation then null; end $;
-do $ begin create role authenticated; exception when duplicate_object or unique_violation then null; end $;
-do $ begin create role service_role; exception when duplicate_object or unique_violation then null; end $;
+do $role_setup$ begin create role anon; exception when duplicate_object or unique_violation then null; end $role_setup$;
+do $role_setup$ begin create role authenticated; exception when duplicate_object or unique_violation then null; end $role_setup$;
+do $role_setup$ begin create role service_role; exception when duplicate_object or unique_violation then null; end $role_setup$;
 create schema auth; create schema platform; create schema platform_private;
 create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
 create function auth.uid() returns uuid language sql stable as $$select (auth.jwt()->>'sub')::uuid$$;
