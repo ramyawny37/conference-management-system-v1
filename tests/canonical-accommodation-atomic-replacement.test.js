@@ -78,9 +78,9 @@ test('room details use canonical actions for guests and children, and keep histo
 });
 
 
-test('canonical room details have isolated responsive styles instead of inheriting legacy editor grids',()=>{
+test('canonical room details use isolated flex actions and a responsive family editor',()=>{
   const css=fs.readFileSync('style.css','utf8');
-  assert.match(css,/#roomModal\.canonical-room-readonly \.canonical-room-guest-actions\{display:flex;flex-wrap:wrap/);
-  assert.match(css,/@media\(max-width:820px\)\{[\s\S]*?#roomModal\.canonical-room-readonly \.canonical-room-guest\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\);grid-template-areas:none/);
-  assert.match(css,/@media\(max-width:600px\)\{[\s\S]*?#roomModal\.canonical-room-readonly \.canonical-room-guest\{grid-template-columns:minmax\(0,1fr\);grid-template-areas:none/);
+  assert.match(css,/#roomModal\\.canonical-room-readonly \\.canonical-room-family-draft-actions\\{display:flex;[^}]*flex-wrap:wrap/);
+  assert.match(css,/#roomModal\\.canonical-room-readonly \\.guest-person-row\\.canonical-room-child\\{\\s*display:flex;align-items:center/);
+  assert.match(css,/@media\\(max-width:600px\\)\\{[^\\n]*\\.canonical-room-child-form\\{grid-template-columns:minmax\\(0,1fr\\)/);
 });
