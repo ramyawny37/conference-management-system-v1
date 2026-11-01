@@ -11,7 +11,7 @@ const script=fs.readFileSync('script.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
 const reservationsBundle=fs.readFileSync('modules/reservations/reservations-module.js','utf8');
-const reservationsRevision='reservations-dynamic-periods-16dadd1-v1';
+const reservationsRevision='reservations-booking-dialog-b402bd5-v1';
 
 function runtime(initialRoute,denyModule){
   let route=initialRoute;

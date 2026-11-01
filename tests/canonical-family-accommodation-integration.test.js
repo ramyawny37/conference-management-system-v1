@@ -19,19 +19,28 @@ function topFunction(source,name){
   assert.ok(start>=0&&end>start,name);return source.slice(start,end);
 }
 
-test('selecting an existing guardian immediately exposes the child interaction in the same room draft',()=>{
-  const dom=new JSDOM('<div data-canonical-slot="base_0"><input id="canonicalRoomSlotSearch_base_0"><input id="canonicalRoomSlotParticipation_base_0"><div id="canonicalRoomSlotCandidates_base_0" class="is-open"></div></div>');
-  const calls=[],slot={slotKey:'base_0',available:[{participationId:'guardian-1',person:{fullName:'ولي الأمر'}}]},context={
+test('the room owns one persistent family action while guardian selection only updates its draft status',()=>{
+  const dom=new JSDOM('<div class="canonical-room-family-draft-actions"><button>+ إضافة طفل</button><span id="canonicalRoomFamilyDraftStatus"></span></div><div data-canonical-slot="base_0"><input id="canonicalRoomSlotSearch_base_0"><input id="canonicalRoomSlotParticipation_base_0"><div id="canonicalRoomSlotCandidates_base_0" class="is-open"></div></div>');
+  const slot={slotKey:'base_0',available:[{participationId:'guardian-1',person:{fullName:'ولي الأمر'}}]},context={
     document:dom.window.document,canonicalAccommodationRoomEditorDraft:{roomId:'room-103'},
     getCanonicalAccommodationRoomSlotDraft:()=>slot,ge:id=>dom.window.document.getElementById(id),
-    addCanonicalAccommodationChildFromRoom:(...args)=>calls.push(args),String
+    String
   };
   vm.runInNewContext(topFunction(scriptSource,'renderCanonicalAccommodationRoomSlotGuardianActions')+'\n'+topFunction(scriptSource,'selectCanonicalAccommodationRoomSlotParticipation')+';this.select=selectCanonicalAccommodationRoomSlotParticipation;',context);
   assert.equal(context.select('base_0','guardian-1'),true);
-  const button=dom.window.document.querySelector('.canonical-room-draft-guardian-actions button');
-  assert.equal(button.textContent,'+ إضافة طفل');
-  button.click();
-  assert.deepEqual(calls,[['room-103','guardian-1',null]]);
+  assert.equal(dom.window.document.querySelectorAll('.canonical-room-family-draft-actions button').length,1);
+  assert.match(dom.window.document.getElementById('canonicalRoomFamilyDraftStatus').textContent,/تم اختيار ولي الأمر/);
+  assert.equal(dom.window.document.querySelectorAll('.canonical-room-draft-guardian-actions').length,0);
+});
+
+test('the canonical child editor offers existing and new children and keeps shared-bed guardian validation',()=>{
+  const body=scriptSource.slice(scriptSource.indexOf('function addCanonicalAccommodationChildFromRoom('),scriptSource.indexOf('\nfunction removeCanonicalAccommodationChildDraft('));
+  assert.match(body,/name="source" value="existing"/);
+  assert.match(body,/name="source" value="new"/);
+  assert.match(body,/form\.elements\.bed\.value==='shared'\?roomGuardians:guardians/);
+  assert.match(body,/يمكن أن يكون ولي الأمر مقيمًا في غرفة أخرى/);
+  assert.match(body,/editor\.children\.push\(child\)/);
+  assert.equal((scriptSource.match(/textContent='\+ إضافة طفل'/g)||[]).length,1);
 });
 
 test('PlatformIntegration exports the canonical family draft function from the frozen API',()=>{

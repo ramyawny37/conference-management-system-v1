@@ -1324,113 +1324,13 @@ tr:nth-child(even) td{background:#F7FBFF}
 #tab0 .accommodation-floor-summary{display:flex;align-items:center;gap:6px}#tab0 .accommodation-floor-summary b{padding:3px 7px;border-radius:var(--app-radius-pill);background:var(--app-surface-soft);color:var(--app-text-muted);font-size:9px}
 #tab0 .accommodation-room-stay-history{display:grid;gap:4px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--app-border)}#tab0 .accommodation-room-stay-history span{padding:4px 6px;border-radius:6px;background:var(--app-surface-soft);color:var(--app-text-muted);font-size:9px;line-height:1.5}#tab0 .accommodation-room-stay-history .upcoming{background:var(--app-primary-soft);color:var(--app-primary-dark)}#tab0 .accommodation-room-stay-history .departed{background:var(--app-neutral-soft);color:var(--app-neutral)}
 
-/* Canonical room editor uses the original compact full-width form and inline guest layout. */
-#roomModal.canonical-room-readonly .room-editor-modal{width:min(810px,calc(100vw - 24px));max-width:810px}
-#roomModal.canonical-room-readonly .mbody{display:flex;flex-direction:column;gap:8px;padding:12px 16px;background:#fff}
-#roomModal.canonical-room-readonly .room-modal-section{width:100%;padding:10px 12px;border-radius:9px;box-shadow:none}
-#roomModal.canonical-room-readonly .room-information-section{padding-block:10px}
-#roomModal.canonical-room-readonly .room-modal-header{min-height:54px}
-#roomModal.canonical-room-readonly .room-modal-footer{padding:10px 16px}
-#roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:76px minmax(160px,1fr) auto auto auto;gap:8px;padding:8px 10px}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions{padding-top:7px}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{min-height:30px;padding:5px 9px}
-@media(max-width:820px){#roomModal.canonical-room-readonly .room-editor-modal{width:min(760px,calc(100vw - 16px))}}
-@media(max-width:600px){#roomModal.canonical-room-readonly .room-editor-modal{width:100%}#roomModal.canonical-room-readonly .mbody{padding:9px}#roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:minmax(0,1fr)}}
-
-#roomModal.canonical-room-readonly .canonical-room-shared-actions{display:flex;justify-content:flex-start;align-items:center;gap:8px;padding:5px 0 10px;margin-bottom:5px;border-bottom:1px solid var(--app-border)}
-#roomModal.canonical-room-readonly .canonical-room-shared-actions .btn{min-height:32px;padding:6px 12px}
-/* Room editor parity: compact room fields and one operational row per occupant. */
-#roomModal.canonical-room-readonly .room-editor-modal{width:min(810px,calc(100vw - 20px));max-height:calc(100dvh - 20px);display:flex;flex-direction:column;overflow:hidden}
-#roomModal.canonical-room-readonly .mbody{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 16px 20px}
-#roomModal.canonical-room-readonly .room-modal-footer{position:relative;bottom:auto;flex:0 0 auto;margin:0;padding:9px 16px}
-#roomModal.canonical-room-readonly #m_guests,#roomModal.canonical-room-readonly #m_children{max-height:none;overflow:visible}
-#roomModal.canonical-room-readonly .room-information-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#roomModal.canonical-room-readonly .room-information-grid>.room-modal-field:nth-child(3){grid-column:auto}
-#roomModal.canonical-room-readonly .room-notes-field{grid-column:1/-1}
-#roomModal.canonical-room-readonly .room-closed-state{min-height:34px;align-self:end}
-@media(max-width:600px){#roomModal.canonical-room-readonly .room-information-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#roomModal.canonical-room-readonly .room-information-grid>.room-modal-field:nth-child(3){grid-column:1/-1}}
-
-#roomModal.canonical-room-readonly .room-modal-section{margin-bottom:9px;padding:10px 12px}
-#roomModal.canonical-room-readonly .canonical-room-guest{display:grid;grid-template-columns:72px minmax(170px,1fr) minmax(125px,auto) auto auto;align-items:center;gap:7px;padding:8px 9px;min-height:58px}
-#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-person{grid-column:auto;min-width:0}
-#roomModal.canonical-room-readonly .canonical-room-guest .person-meta{font-size:10px}
-#roomModal.canonical-room-readonly .canonical-room-stay-fields{display:flex;flex-wrap:wrap;gap:3px 8px}
-#roomModal.canonical-room-readonly .canonical-room-status-fields{display:flex;flex-wrap:wrap;gap:4px}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions{display:flex;grid-column:auto;grid-row:auto;flex-wrap:nowrap;align-self:center;gap:5px;padding:0;border:0}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{min-height:30px;padding:5px 8px;white-space:nowrap}
-#roomModal.canonical-room-readonly .canonical-room-child{margin-inline-start:22px;min-height:44px;background:#fffaf0}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu-items{z-index:10}
-@media(max-width:820px){#roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:70px minmax(120px,1fr) auto;gap:6px}#roomModal.canonical-room-readonly .canonical-room-stay-fields{grid-column:2}#roomModal.canonical-room-readonly .canonical-room-status-fields{grid-column:3;grid-row:1}#roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:3;grid-row:2}}
-@media(max-width:600px){#roomModal.canonical-room-readonly .mbody{padding:9px}#roomModal.canonical-room-readonly .room-information-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:60px minmax(0,1fr);gap:6px}#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-person{grid-column:2}#roomModal.canonical-room-readonly .canonical-room-stay-fields{grid-column:2}#roomModal.canonical-room-readonly .canonical-room-status-fields{grid-column:1;grid-row:2}#roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:1/-1;grid-row:auto;justify-content:flex-start}#roomModal.canonical-room-readonly .room-modal-footer{margin:0;padding:8px}}
-
-/* Compact guest actions: keep arrival immediate; other canonical operations remain available on demand. */
-#roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:4;grid-row:1;align-self:center;justify-content:flex-end;flex-wrap:nowrap;padding:0;border:0}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{white-space:nowrap}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu{position:relative;min-width:0}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu>summary{list-style:none;cursor:pointer;border:1px solid var(--app-border);border-radius:7px;background:var(--app-surface-soft);padding:7px 10px;color:var(--app-primary-dark);font-size:11px;font-weight:700;white-space:nowrap}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu>summary::-webkit-details-marker{display:none}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu[open]>summary{border-color:var(--app-primary)}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu-items{position:absolute;z-index:40;top:calc(100% + 4px);inset-inline-end:0;display:grid;gap:4px;min-width:160px;padding:7px;border:1px solid var(--app-border);border-radius:9px;background:#fff;box-shadow:0 12px 25px rgba(17,54,88,.2)}
-#roomModal.canonical-room-readonly .canonical-room-guest-menu-items .btn{width:100%;justify-content:center}
-#roomModal.canonical-room-readonly .canonical-room-guest{overflow:visible}
-#roomModal.canonical-room-readonly .mbody{padding-bottom:24px;scroll-padding-bottom:40px}
-@media(max-width:820px){#roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:1/-1;grid-row:auto;justify-content:flex-start}#roomModal.canonical-room-readonly .canonical-room-guest-menu-items{inset-inline-end:auto;inset-inline-start:0}}
-@media(max-width:600px){#roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:1;flex-wrap:wrap}}
-
-/* Canonical room details: one dismiss action, with scrollable content in constrained viewports. */
-#roomModal.canonical-room-readonly .room-editor-modal{max-height:calc(100dvh - 24px);min-height:0}
-#roomModal.canonical-room-readonly .mbody{min-height:0;overflow-y:auto;overscroll-behavior:contain}
-#roomModal.canonical-room-readonly .room-modal-footer{grid-template-columns:repeat(2,minmax(120px,160px));justify-content:center}
-#roomModal.canonical-room-readonly .room-modal-header-icon{display:none}
-@media(max-height:540px){#roomModal.canonical-room-readonly .room-editor-modal{max-height:calc(100dvh - 12px)}#roomModal.canonical-room-readonly .room-modal-header{min-height:48px}#roomModal.canonical-room-readonly .mbody{padding:8px}}
-
-/* Canonical read-only room header keeps its title and close button on a single row. */
-#roomModal.canonical-room-readonly .room-modal-header{display:grid;grid-template-columns:38px minmax(0,1fr);direction:ltr;align-items:center;min-height:62px}
-#roomModal.canonical-room-readonly .room-modal-heading{direction:rtl;grid-column:2;grid-row:1;justify-self:stretch;text-align:right;min-width:0}
-#roomModal.canonical-room-readonly .room-modal-header .room-modal-close{grid-column:1;grid-row:1;justify-self:center}
-#roomModal.canonical-room-readonly .room-modal-heading strong{white-space:normal;overflow-wrap:normal}
-
-/* Canonical room occupancy cards: readable guest details and actions, without legacy editable grid columns. */
-#roomModal.canonical-room-readonly .canonical-room-guest{display:grid;grid-template-columns:76px minmax(160px,1fr) minmax(145px,auto) auto;grid-template-areas:none;align-items:center;column-gap:10px;row-gap:7px;min-width:0;padding:9px 10px;border:1px solid var(--app-border);border-radius:9px;background:var(--app-surface)}
-#roomModal.canonical-room-readonly .canonical-room-stay-fields{display:flex;align-items:center;flex-wrap:wrap;gap:5px 9px;min-width:0}
-#roomModal.canonical-room-readonly .canonical-room-status-fields{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}
-#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-person{min-width:0;overflow-wrap:anywhere}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions{display:flex;flex-wrap:wrap;align-items:center;grid-column:1/-1;min-width:0;gap:6px;padding-top:9px;border-top:1px solid var(--app-border)}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{width:auto;max-width:100%;min-width:0;min-height:32px;padding:6px 10px;border-radius:7px;font-size:11px;line-height:1.3;white-space:normal}
-#roomModal.canonical-room-readonly .canonical-room-guest-actions .btn-red{margin-inline-start:auto}
-#roomModal.canonical-room-readonly .canonical-room-child{margin-inline-start:20px;border-color:#efd9a8;background:#fffaf0}
-#roomModal.canonical-room-readonly .canonical-room-child .guest-slot-person{font-weight:600}
-#roomModal.canonical-room-readonly .canonical-room-child{display:grid;grid-template-columns:minmax(180px,1fr) minmax(150px,220px);align-items:center;gap:10px;min-height:42px;padding:6px 10px}
-#roomModal.canonical-room-readonly .canonical-room-child .guest-slot-person{grid-column:auto;overflow:visible}
-#roomModal.canonical-room-readonly .canonical-room-child .person-meta{margin-top:2px}
-#roomModal.canonical-room-readonly .canonical-room-child-bed{display:flex;align-items:center;gap:7px;color:#536b80;font-size:9px;font-weight:700;white-space:nowrap}
-#roomModal.canonical-room-readonly .canonical-room-child-bed select{min-width:92px}
-#roomModal.canonical-room-readonly .canonical-room-child-bed-label{color:#536b80;font-size:10px;font-weight:700}
-#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-day{min-width:0;white-space:normal;color:var(--app-text-muted);line-height:1.5}
-#roomModal.canonical-room-readonly .canonical-room-guest .accommodation-arrival-badge{justify-self:start}
-#roomModal.canonical-room-readonly .room-information-section{padding-block:12px}
-#roomModal.canonical-room-readonly .room-modal-footer .btn{min-height:40px}
-#roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-day,#roomModal.canonical-room-readonly .canonical-room-stay-bed,#roomModal.canonical-room-readonly .canonical-room-stay-extra{display:flex;min-width:92px;flex-direction:column;align-items:stretch;gap:3px;color:#536b80;font-size:9px;font-weight:700}#roomModal.canonical-room-readonly .canonical-room-guest input,#roomModal.canonical-room-readonly .canonical-room-guest select{width:100%;min-height:34px;padding:5px 7px;border:1px solid var(--room-modal-border);border-radius:8px;background:#fff;color:var(--room-modal-navy);font:inherit}#roomModal.canonical-room-readonly .canonical-room-guest[data-bed-type="shared"] .canonical-room-stay-extra{opacity:.65}
-#roomModal.canonical-room-readonly .canonical-room-stay-history{grid-column:1/-1;min-width:0;margin-top:12px;padding-top:12px;border-top:1px solid var(--app-border)}
-#roomModal.canonical-room-readonly .canonical-room-stay-history .canonical-room-guest{margin-top:8px}
-#roomModal.canonical-room-readonly .child-box .canonical-room-guest-actions{margin-top:8px}
-#roomModal.canonical-room-readonly .canonical-room-empty-slot{position:relative;display:grid;grid-template-columns:88px minmax(220px,1fr) 100px 100px auto;align-items:start;gap:8px;overflow:visible;border-style:dashed;background:#f8fbfe}#roomModal.canonical-room-readonly .canonical-room-empty-slot[data-bed-type="extra"]{grid-template-columns:88px minmax(210px,1fr) 100px 100px 118px auto}#roomModal.canonical-room-readonly .canonical-room-slot-picker{position:relative;overflow:visible}#roomModal.canonical-room-readonly .canonical-room-slot-picker>input{width:100%}#roomModal.canonical-room-readonly .canonical-room-slot-candidates{position:absolute;z-index:30;top:39px;right:0;left:0;display:none;max-height:220px;padding:5px;border:1px solid var(--room-modal-border);border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(17,54,88,.18);overflow-y:auto}#roomModal.canonical-room-readonly .canonical-room-slot-candidates.is-open{display:block}#roomModal.canonical-room-readonly .canonical-room-slot-option{display:flex;width:100%;min-height:44px;flex-direction:column;justify-content:center;gap:2px;padding:6px 8px;border:0;border-bottom:1px solid #e8eff6;background:#fff;color:var(--room-modal-navy);font:inherit;text-align:right;cursor:pointer}#roomModal.canonical-room-readonly .canonical-room-slot-option:hover{background:#edf6ff}#roomModal.canonical-room-readonly .canonical-room-slot-option small{color:#6f8498;font-size:9px}#roomModal.canonical-room-readonly .canonical-room-slot-create{margin-top:4px;padding:0;border:0;background:transparent;color:var(--room-modal-blue);font:inherit;font-size:9px;font-weight:800;cursor:pointer}#roomModal.canonical-room-readonly .canonical-room-empty-slot .guest-slot-day{display:flex;flex-direction:column;align-items:stretch;gap:3px}#roomModal.canonical-room-readonly .canonical-room-empty-slot .guest-slot-day input{width:100%;min-height:36px}#roomModal.canonical-room-readonly .canonical-room-slot-assign{align-self:end;min-width:70px;min-height:36px}#roomModal.canonical-room-readonly .canonical-room-empty-slot .extra-bed-type-controls{align-self:end;min-height:36px}
-@media(max-width:820px){
-  #roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:none}
-  #roomModal.canonical-room-readonly .canonical-room-guest>*{grid-area:auto;min-width:0}
-  #roomModal.canonical-room-readonly .canonical-room-guest .guest-slot-person{grid-column:1/-1}
-  #roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:1/-1}
-}
-@media(max-width:600px){
-  #roomModal.canonical-room-readonly .canonical-room-guest{grid-template-columns:minmax(0,1fr);grid-template-areas:none}
-  #roomModal.canonical-room-readonly .canonical-room-guest>*{grid-column:1;grid-area:auto}
-  #roomModal.canonical-room-readonly .canonical-room-guest-actions{grid-column:1}
-}
-@media(max-width:600px){#roomModal.canonical-room-readonly .canonical-room-child{grid-template-columns:1fr;margin-inline-start:12px}#roomModal.canonical-room-readonly .canonical-room-child .guest-slot-person,#roomModal.canonical-room-readonly .canonical-room-child .canonical-room-child-bed,#roomModal.canonical-room-readonly .canonical-room-child .canonical-room-child-bed-label{grid-column:1}}
-@media(max-width:820px){#roomModal.canonical-room-readonly .canonical-room-empty-slot,#roomModal.canonical-room-readonly .canonical-room-empty-slot[data-bed-type="extra"]{grid-template-columns:88px minmax(0,1fr) 100px 100px;grid-template-areas:"slot picker picker picker" ". arrival leave action" ". type type type"}#roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-label{grid-area:slot}#roomModal.canonical-room-readonly .canonical-room-slot-picker{grid-area:picker}#roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-arrival{grid-area:arrival}#roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-left{grid-area:leave}#roomModal.canonical-room-readonly .canonical-room-empty-slot>.extra-bed-type-controls{grid-area:type}#roomModal.canonical-room-readonly .canonical-room-slot-assign{grid-area:action}}@media(max-width:600px){#roomModal.canonical-room-readonly .canonical-room-empty-slot,#roomModal.canonical-room-readonly .canonical-room-empty-slot[data-bed-type="extra"]{grid-template-columns:1fr 1fr;grid-template-areas:"slot slot" "picker picker" "arrival leave" "type type" "action action"}#roomModal.canonical-room-readonly .canonical-room-slot-assign{width:100%}}
-
+/* Canonical room editor geometry is owned by the single compact block below. */
 /* Canonical room editor: compact original-style guest lines, no competing grid areas. */
 #roomModal.canonical-room-readonly .room-editor-modal{width:min(810px,calc(100vw - 20px));max-height:calc(100dvh - 20px)}
+#roomModal.canonical-room-readonly .room-editor-modal{display:flex;min-height:0;flex-direction:column;overflow:hidden}
+#roomModal.canonical-room-readonly .mbody{display:block;min-height:0;flex:1 1 auto;padding:12px 16px 20px;overflow-y:auto;overscroll-behavior:contain}
+#roomModal.canonical-room-readonly .room-modal-footer{position:relative;bottom:auto;flex:0 0 auto;margin:0;padding:9px 16px}
+#roomModal.canonical-room-readonly #m_guests,#roomModal.canonical-room-readonly #m_children{max-height:none;overflow:visible}
 #roomModal.canonical-room-readonly .room-information-section{padding-block:8px}
 #roomModal.canonical-room-readonly .room-modal-section{margin-bottom:7px}
 #roomModal.canonical-room-readonly .room-modal-section-title{margin-bottom:6px}
@@ -1479,14 +1379,51 @@ tr:nth-child(even) td{background:#F7FBFF}
 #roomModal.canonical-room-readonly .canonical-room-child .person-meta{display:none}
 #roomModal.canonical-room-readonly .canonical-room-child .guest-slot-person{flex:1 1 auto}
 #roomModal.canonical-room-readonly .canonical-room-child .canonical-room-child-bed{flex:0 1 160px}
+#roomModal.canonical-room-readonly .canonical-room-empty-slot{position:relative;display:flex;align-items:flex-end;flex-wrap:wrap;gap:7px;padding:8px 10px;overflow:visible;border-style:dashed;background:var(--app-surface-soft)}
+#roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-label{flex:0 0 72px;align-self:center}
+#roomModal.canonical-room-readonly .canonical-room-slot-picker{position:relative;flex:1 1 230px;min-width:180px;overflow:visible}
+#roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-day{display:flex;flex:0 1 96px;min-width:82px;flex-direction:column;gap:3px}
+#roomModal.canonical-room-readonly .canonical-room-empty-slot>.extra-bed-type-controls{display:flex;flex:0 1 116px;min-width:96px;flex-direction:column;gap:3px}
+#roomModal.canonical-room-readonly .canonical-room-slot-candidates{position:absolute;z-index:30;top:39px;inset-inline:0;display:none;max-height:220px;padding:5px;border:1px solid var(--room-modal-border);border-radius:10px;background:var(--app-surface);box-shadow:0 12px 28px rgba(17,54,88,.18);overflow-y:auto}
+#roomModal.canonical-room-readonly .canonical-room-slot-candidates.is-open{display:block}
+#roomModal.canonical-room-readonly .canonical-room-slot-option{display:flex;width:100%;min-height:44px;flex-direction:column;justify-content:center;gap:2px;padding:6px 8px;border:0;border-bottom:1px solid var(--app-border);background:var(--app-surface);color:var(--room-modal-navy);font:inherit;text-align:right;cursor:pointer}
+#roomModal.canonical-room-readonly .canonical-room-slot-option:hover{background:var(--app-primary-soft)}
+#roomModal.canonical-room-readonly .canonical-room-slot-option small{color:var(--app-text-muted);font-size:9px}
+#roomModal.canonical-room-readonly .canonical-room-slot-create{margin-top:4px;padding:0;border:0;background:transparent;color:var(--room-modal-blue);font:inherit;font-size:9px;font-weight:800;cursor:pointer}
 @media(max-width:820px){
  #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields{flex-basis:250px}
 }
 @media(max-width:600px){
+ #roomModal.canonical-room-readonly .room-editor-modal{width:100%;max-height:100dvh}
+ #roomModal.canonical-room-readonly .mbody{padding:9px}
  #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.guest-slot-label{flex-basis:64px}
  #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields{flex:1 1 100%;flex-wrap:wrap}
  #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields>label{flex:1 1 calc(50% - 5px)}
+ #roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-label,#roomModal.canonical-room-readonly .canonical-room-slot-picker{flex-basis:100%;min-width:0}
+ #roomModal.canonical-room-readonly .canonical-room-empty-slot>.guest-slot-day,#roomModal.canonical-room-readonly .canonical-room-empty-slot>.extra-bed-type-controls{flex:1 1 calc(50% - 5px)}
 }
+
+/* Single family-draft action bar and child editor owned by the canonical room editor. */
+#roomModal.canonical-room-readonly .canonical-room-family-draft-actions{display:flex;flex:1 1 auto;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:7px;margin:0;padding:0;border:0}
+#roomModal.canonical-room-readonly .canonical-room-family-draft-actions .btn{width:auto;min-width:max-content;min-height:34px;padding:6px 11px}
+#roomModal.canonical-room-readonly .canonical-room-family-draft-actions .person-meta{flex:1 1 230px;min-width:0;color:var(--app-text-muted);font-size:10px;line-height:1.5}
+.canonical-room-child-dialog{box-sizing:border-box;width:min(94vw,620px);max-height:min(92dvh,760px);padding:0;border:1px solid var(--app-border);border-radius:14px;background:var(--app-surface);color:var(--app-text);box-shadow:0 20px 52px rgba(17,54,88,.28);overflow:hidden}
+.canonical-room-child-dialog[open]{display:flex;min-height:0;flex-direction:column}
+.canonical-room-child-dialog::backdrop{background:rgba(10,33,54,.5)}
+.canonical-room-child-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--app-border);background:var(--app-surface-soft)}
+.canonical-room-child-dialog-header h3{margin:0;color:var(--app-primary-dark);font-size:17px}
+.canonical-room-child-dialog-close{display:grid;width:34px;height:34px;place-items:center;padding:0;border:1px solid var(--app-border);border-radius:50%;background:var(--app-surface);color:var(--app-text);font:inherit;font-size:20px;cursor:pointer}
+.canonical-room-child-form{display:grid;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px;overflow-y:auto}
+.canonical-room-child-form>label{display:flex;min-width:0;flex-direction:column;gap:5px;color:var(--app-text);font-size:11px;font-weight:700}
+.canonical-room-child-form input:not([type="radio"]),.canonical-room-child-form select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:7px 9px;border:1px solid var(--app-border);border-radius:8px;background:var(--app-surface);color:var(--app-text);font:inherit}
+.canonical-room-child-source{display:flex;grid-column:1/-1;flex-wrap:wrap;gap:8px 18px;margin:0;padding:11px 13px;border:1px solid var(--app-border);border-radius:9px;background:var(--app-surface-soft)}
+.canonical-room-child-source legend{padding-inline:5px;color:var(--app-primary-dark);font-size:11px;font-weight:800}
+.canonical-room-child-source label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700}
+.canonical-room-child-form .guardian-help{min-height:30px;color:var(--app-text-muted);font-size:9px;font-weight:600;line-height:1.5}
+.canonical-room-child-form .child-error{grid-column:1/-1;min-height:20px;margin:0;color:var(--app-danger);font-size:11px;font-weight:800}
+.canonical-room-child-dialog-actions{display:flex;grid-column:1/-1;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--app-border)}
+.canonical-room-child-dialog-actions .btn{min-width:110px}
+@media(max-width:600px){.canonical-room-child-dialog{width:100vw;max-width:none;max-height:100dvh;border-radius:14px 14px 0 0}.canonical-room-child-form{grid-template-columns:minmax(0,1fr);padding:14px}.canonical-room-child-source,.canonical-room-child-form .child-error,.canonical-room-child-dialog-actions{grid-column:1}.canonical-room-child-dialog-actions{position:sticky;bottom:-14px;background:var(--app-surface);padding:12px 0 14px}.canonical-room-child-dialog-actions .btn{flex:1 1 120px}#roomModal.canonical-room-readonly .canonical-room-family-draft-actions .btn{flex:1 1 140px}#roomModal.canonical-room-readonly .canonical-room-family-draft-actions .person-meta{flex-basis:100%}}
 
 /* Print-only projection of the same canonical card DOM; never print the platform shell. */
 #conferenceCardPrintRoot{display:none}

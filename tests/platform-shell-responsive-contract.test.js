@@ -96,7 +96,7 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'development-family-dynamic-period-cutover-v1'/);
+  assert.match(worker,/\? 'development-family-booking-dialog-v2'/);
   assert.doesNotMatch(worker,/conference-owner-preflight-correction-v1/);
   assert.match(worker,/: 'production-3-6-0-release-v6'/);
 });
