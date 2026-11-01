@@ -20,7 +20,7 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
   assert(revisions,'missing environment-specific cache revisions');
   assert.strictEqual(
-    revisions[1],'development-accommodation-lease-request-timing-v7'
+    revisions[1],'development-family-dynamic-period-cutover-v1'
   );
   assert.notStrictEqual(revisions[1],'conference-owner-preflight-correction-v1');
   assert.strictEqual(revisions[2],'production-3-6-0-release-v6');

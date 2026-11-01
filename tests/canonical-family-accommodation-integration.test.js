@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
+const {JSDOM}=require('jsdom');
 
 const integrationSource=fs.readFileSync('js/platform-integration.js','utf8');
 const scriptSource=fs.readFileSync('script.js','utf8');
@@ -13,6 +14,25 @@ function functionSource(source,name,nextName){
   assert.ok(start>=0&&end>start,name);
   return source.slice(start,end);
 }
+function topFunction(source,name){
+  const start=source.indexOf('function '+name+'('),end=source.indexOf('\nfunction ',start+10);
+  assert.ok(start>=0&&end>start,name);return source.slice(start,end);
+}
+
+test('selecting an existing guardian immediately exposes the child interaction in the same room draft',()=>{
+  const dom=new JSDOM('<div data-canonical-slot="base_0"><input id="canonicalRoomSlotSearch_base_0"><input id="canonicalRoomSlotParticipation_base_0"><div id="canonicalRoomSlotCandidates_base_0" class="is-open"></div></div>');
+  const calls=[],slot={slotKey:'base_0',available:[{participationId:'guardian-1',person:{fullName:'ولي الأمر'}}]},context={
+    document:dom.window.document,canonicalAccommodationRoomEditorDraft:{roomId:'room-103'},
+    getCanonicalAccommodationRoomSlotDraft:()=>slot,ge:id=>dom.window.document.getElementById(id),
+    addCanonicalAccommodationChildFromRoom:(...args)=>calls.push(args),String
+  };
+  vm.runInNewContext(topFunction(scriptSource,'renderCanonicalAccommodationRoomSlotGuardianActions')+'\n'+topFunction(scriptSource,'selectCanonicalAccommodationRoomSlotParticipation')+';this.select=selectCanonicalAccommodationRoomSlotParticipation;',context);
+  assert.equal(context.select('base_0','guardian-1'),true);
+  const button=dom.window.document.querySelector('.canonical-room-draft-guardian-actions button');
+  assert.equal(button.textContent,'+ إضافة طفل');
+  button.click();
+  assert.deepEqual(calls,[['room-103','guardian-1',null]]);
+});
 
 test('PlatformIntegration exports the canonical family draft function from the frozen API',()=>{
   const exportStart=integrationSource.indexOf('global.PlatformIntegration=Object.freeze({');
