@@ -3518,7 +3518,7 @@ function openCanonicalAccommodationRoomDetails(roomId){
   ge('m_beds').value=Number(room.baseCapacity||0);
   ge('m_extra_beds').value=Number(room.extraBedCapacity||0);
   var manualExtraField=ge('m_extra_beds'),manualExtraLabel=manualExtraField&&manualExtraField.closest('.room-modal-field')&&manualExtraField.closest('.room-modal-field').querySelector('label');
-  if(manualExtraLabel)manualExtraLabel.textContent='الأسرة الإضافية اليدوية';
+  if(manualExtraLabel)manualExtraLabel.textContent='أسرة إضافية يدوية (تعديل السعة)';
   ge('m_closed').checked=room.isClosed===true;
   ge('m_closed_day').value=room.closedDay==null?'':String(room.closedDay);
   ge('m_notes').value=room.notes||'';
@@ -3541,13 +3541,18 @@ function openCanonicalAccommodationRoomDetails(roomId){
   ge('m_guests').innerHTML=slotsHtml||'<div class="accommodation-empty-room">لا توجد أسرة معرفة</div>';
   var automaticExtraNote=ge('canonicalRoomAutomaticExtraCount');
   if(!automaticExtraNote){automaticExtraNote=document.createElement('div');automaticExtraNote.id='canonicalRoomAutomaticExtraCount';automaticExtraNote.className='person-meta';var manualExtraContainer=ge('m_extra_beds').closest('.room-modal-field');if(manualExtraContainer)manualExtraContainer.appendChild(automaticExtraNote);}
-  automaticExtraNote.textContent='أسرة إضافية تلقائية مشغولة: '+automaticExtraOccupancies.length+' — لا تدخل في العدد اليدوي.';
+  var totalExtraCount=ge('canonicalRoomTotalExtraBeds');
+  if(!totalExtraCount){totalExtraCount=document.createElement('div');totalExtraCount.id='canonicalRoomTotalExtraBeds';totalExtraCount.className='person-meta';if(manualExtraContainer)manualExtraContainer.insertBefore(totalExtraCount,manualExtraContainer.firstChild);}
+  function updateDisplayedExtraBeds(){var manual=Number(ge('m_extra_beds').value||0),automatic=automaticExtraOccupancies.length;totalExtraCount.textContent='إجمالي الأسرة الإضافية: '+(manual+automatic)+' (يدوية '+manual+' + تلقائية '+automatic+')';}
+  automaticExtraNote.textContent='السرير التلقائي يُضاف مع الطفل ويُزال مع تسكينه؛ تعديل السعة اليدوية لا يغيّره.';
+  updateDisplayedExtraBeds();
   if(canManage)ge('m_extra_beds').oninput=function(){
     var desired=Number(this.value),minimum=manualExtraOccupancies.length;
     Object.keys(canonicalAccommodationRoomEditorDraft.slots).forEach(function(key){var slot=canonicalAccommodationRoomEditorDraft.slots[key];if(slot.bedType==='extra'&&(slot.selectedParticipationId||slot.guardianDraftId))minimum++;});
     if(!Number.isInteger(desired)||desired<minimum){this.value=String(Math.max(minimum,Number(room.extraBedCapacity||0)));showToast('لا يمكن تقليل الأسرة الإضافية تحت الإشغال أو الاختيارات الحالية.','#E74C3C');return;}
     Object.keys(canonicalAccommodationRoomEditorDraft.slots).filter(function(key){return canonicalAccommodationRoomEditorDraft.slots[key].bedType==='extra';}).forEach(function(key){var index=Number(key.split('_')[1]),slot=canonicalAccommodationRoomEditorDraft.slots[key];if(index>=desired&&!slot.selectedParticipationId&&!slot.guardianDraftId){var row=ge('m_guests').querySelector('[data-canonical-slot="'+key+'"]');if(row)row.remove();delete canonicalAccommodationRoomEditorDraft.slots[key];}});
     for(var index=manualExtraOccupancies.length;index<desired;index++){var slotKey='extra_'+index;if(!canonicalAccommodationRoomEditorDraft.slots[slotKey])ge('m_guests').insertAdjacentHTML('beforeend',renderEmptySlot('extra',index));}
+    updateDisplayedExtraBeds();
   };
   if(canManage){
     var roomKeyAction=document.createElement('div');
