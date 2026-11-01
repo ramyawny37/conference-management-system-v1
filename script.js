@@ -3440,7 +3440,7 @@ function addCanonicalAccommodationChildFromRoom(roomId,guardianParticipationId,g
   function guardianKey(item){return String(item&&item.participationId||item&&item.draftId||'');}
   function stayEnd(value){return value==null?Number.MAX_SAFE_INTEGER:Number(value);}
   function availableGuardians(){var bed=form.elements.bed.value,target=String(form.elements.targetRoom.value||roomId),arrival=Number(form.elements.arrival.value||operationalDay),leave=form.elements.leave.value?Number(form.elements.leave.value):null,options=guardians.filter(function(item){var samePeriod=Number(item.arrivalDay)===arrival&&stayEnd(item.leaveDay)===stayEnd(leave),covers=Number(item.arrivalDay)<=arrival&&stayEnd(item.leaveDay)>=stayEnd(leave);return bed==='shared'?String(item.roomId||roomId)===target&&samePeriod:covers;}),existing=sourceMode()==='existing'?selectedExistingChild():null,linked=String(existing&&existing.guardianParticipationId||'');return linked?options.filter(function(item){return String(item.participationId||'')===linked;}):options;}
-  function renderGuardianOptions(preferred){var options=availableGuardians(),previous=preferred||select.value;select.innerHTML='';options.forEach(function(item){var option=document.createElement('option');option.value=guardianKey(item);option.textContent=item.person&&item.person.fullName||'ولي أمر جديد';select.appendChild(option);});if(options.some(function(item){return guardianKey(item)===String(previous);}))select.value=String(previous);select.required=true;var shared=form.elements.bed.value==='shared';dialog.querySelector('.guardian-help').textContent=!options.length?'لا يوجد ولي أمر مؤهل للاختيار. راجع ارتباط الطفل بولي الأمر وحالة مشاركته، أو اختر سريرًا مناسبًا.':shared?'بدون سرير يتطلب ولي أمر بإقامة مطابقة في هذه الغرفة والفترة.':'يمكن أن يكون ولي الأمر مقيمًا في غرفة أخرى.';}
+  function renderGuardianOptions(preferred){var options=availableGuardians(),previous=preferred||select.value;select.innerHTML='';options.forEach(function(item){var option=document.createElement('option');option.value=guardianKey(item);option.textContent=item.person&&item.person.fullName||'ولي أمر جديد';select.appendChild(option);});if(options.some(function(item){return guardianKey(item)===String(previous);}))select.value=String(previous);select.required=true;var shared=form.elements.bed.value==='shared';dialog.querySelector('.guardian-help').textContent=!options.length?(!guardians.length?'لا يوجد ولي أمر نشط ومُسكّن فعليًا في المؤتمر. سكّن ولي الأمر أولًا، ثم أضف الطفل.':sourceMode()==='existing'&&selectedExistingChild()&&selectedExistingChild().guardianParticipationId&&!guardians.some(function(item){return String(item.participationId||'')===String(selectedExistingChild().guardianParticipationId);})?'الطفل مرتبط بولي أمر لا يملك إقامة نشطة مؤهلة. تحقق من تسكين ولي الأمر المرتبط به.':'يوجد ولي أمر مسكّن، لكن فترة إقامة الطفل أو الغرفة أو نوع السرير لا تتوافق مع إقامته. بدون سرير: نفس الغرفة والفترة؛ بسرير مستقل: إقامة ولي الأمر تغطي فترة الطفل.'):shared?'بدون سرير يتطلب ولي أمر بإقامة مطابقة في هذه الغرفة والفترة.':'يمكن أن يكون ولي الأمر مقيمًا في غرفة أخرى.';}
   function syncSource(){var existing=sourceMode()==='existing';dialog.querySelector('.child-existing-field').hidden=!existing;dialog.querySelector('.child-new-field').hidden=existing;form.elements.child.required=!existing;var child=existing&&selectedExistingChild(),preferred=child&&child.guardianParticipationId||guardianParticipationId||guardianDraftId;renderGuardianOptions(preferred);}
   function refreshGuardians(){renderGuardianOptions();}
   form.elements.source.forEach(function(input){input.addEventListener('change',syncSource);});form.elements.existingChild.addEventListener('change',syncSource);form.elements.bed.addEventListener('change',refreshGuardians);form.elements.targetRoom.addEventListener('change',refreshGuardians);form.elements.arrival.addEventListener('change',refreshGuardians);form.elements.leave.addEventListener('change',refreshGuardians);
@@ -3452,7 +3452,7 @@ function addCanonicalAccommodationChildFromRoom(roomId,guardianParticipationId,g
     event.preventDefault();
     var existingChild=sourceMode()==='existing'?selectedExistingChild():null,name=existingChild&&existingChild.person&&existingChild.person.fullName||String(form.elements.child.value||'').trim(),guardian=availableGuardians().find(function(item){return guardianKey(item)===select.value;}),bedType=form.elements.bed.value,arrival=Number(form.elements.arrival.value),leave=form.elements.leave.value?Number(form.elements.leave.value):null,targetRoomId=String(form.elements.targetRoom.value||roomId);
     var fresh=findCanonicalAccommodationEntity('room',roomId);
-    if(!name||!guardian||!fresh||fresh.isClosed){dialog.querySelector('.child-error').textContent=bedType==='shared'?'اختر ولي أمر له إقامة صالحة في الغرفة والفترة.':'تحقق من الطفل وولي الأمر والغرفة.';return;}
+    if(!name||!guardian||!fresh||fresh.isClosed){dialog.querySelector('.child-error').textContent=!guardian?'لا يوجد ولي أمر مؤهل لهذه الغرفة والفترة. تأكد من تسكين ولي الأمر فعليًا، وتطابق الغرفة والفترة للطفل بدون سرير، أو تغطية فترة الطفل للسرير المستقل.':!name?'أدخل اسم الطفل أو اختر طفلًا موجودًا.':'الغرفة غير متاحة للتسكين.';return;}
     if(existingChild&&existingChild.guardianParticipationId&&String(existingChild.guardianParticipationId)!==String(guardian.participationId||'')){dialog.querySelector('.child-error').textContent='الطفل مرتبط بالفعل بولي أمر آخر. اختر ولي الأمر المرتبط بالطفل، أو صحح العلاقة من إدارة المشاركين قبل التسكين.';return;}
     if(bedType==='extra'){var targetRoom=findCanonicalAccommodationEntity('room',targetRoomId);if(!targetRoom||targetRoom.isClosed){dialog.querySelector('.child-error').textContent='الغرفة المختارة غير متاحة للتسكين.';return;}}
     if(bedType==='shared'){targetRoomId=String(roomId);arrival=Number(guardian.arrivalDay);leave=guardian.leaveDay==null?null:Number(guardian.leaveDay);}
@@ -3496,6 +3496,7 @@ function openCanonicalAccommodationRoomDetails(roomId){
   var otherRoomStays=(room.occupancies||[]).filter(function(item){return !occupancies.some(function(active){return String(active.occupancyId)===String(item.occupancyId);});});
   var occupancyGroups=groupCanonicalAccommodationOccupancies(occupancies);
   var childOccupancies=occupancies.filter(isCanonicalAccommodationChild);
+  var automaticExtraOccupancies=occupancies.filter(function(item){return item.bedType==='extra'&&item.extraBedSource==='automatic';});
   var guestOccupancies=occupancies.filter(function(item){return !isCanonicalAccommodationChild(item);});
   canonicalAccommodationRoomDetailsOpen=true;
   var participationState=window.PlatformIntegration&&window.PlatformIntegration.getConferenceParticipationState(current.id),participations=(participationState&&participationState.items||[]).filter(function(item){return item.status==='active';});
@@ -3516,6 +3517,8 @@ function openCanonicalAccommodationRoomDetails(roomId){
   ge('m_num').value=room.roomNumber||'';
   ge('m_beds').value=Number(room.baseCapacity||0);
   ge('m_extra_beds').value=Number(room.extraBedCapacity||0);
+  var manualExtraField=ge('m_extra_beds'),manualExtraLabel=manualExtraField&&manualExtraField.closest('.room-modal-field')&&manualExtraField.closest('.room-modal-field').querySelector('label');
+  if(manualExtraLabel)manualExtraLabel.textContent='الأسرة الإضافية اليدوية';
   ge('m_closed').checked=room.isClosed===true;
   ge('m_closed_day').value=room.closedDay==null?'':String(room.closedDay);
   ge('m_notes').value=room.notes||'';
@@ -3536,6 +3539,9 @@ function openCanonicalAccommodationRoomDetails(roomId){
   extraGuardians.forEach(function(occupancy,index){slotsHtml+=renderGuardian(occupancy,'سرير إضافي '+(index+1));});
   for(var extraIndex=manualExtraOccupancies.length;extraIndex<Number(room.extraBedCapacity||0);extraIndex++)slotsHtml+=renderEmptySlot('extra',extraIndex);
   ge('m_guests').innerHTML=slotsHtml||'<div class="accommodation-empty-room">لا توجد أسرة معرفة</div>';
+  var automaticExtraNote=ge('canonicalRoomAutomaticExtraCount');
+  if(!automaticExtraNote){automaticExtraNote=document.createElement('div');automaticExtraNote.id='canonicalRoomAutomaticExtraCount';automaticExtraNote.className='person-meta';var manualExtraContainer=ge('m_extra_beds').closest('.room-modal-field');if(manualExtraContainer)manualExtraContainer.appendChild(automaticExtraNote);}
+  automaticExtraNote.textContent='أسرة إضافية تلقائية مشغولة: '+automaticExtraOccupancies.length+' — لا تدخل في العدد اليدوي.';
   if(canManage)ge('m_extra_beds').oninput=function(){
     var desired=Number(this.value),minimum=manualExtraOccupancies.length;
     Object.keys(canonicalAccommodationRoomEditorDraft.slots).forEach(function(key){var slot=canonicalAccommodationRoomEditorDraft.slots[key];if(slot.bedType==='extra'&&(slot.selectedParticipationId||slot.guardianDraftId))minimum++;});
