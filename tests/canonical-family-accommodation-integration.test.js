@@ -111,3 +111,21 @@ test('new guardian and children remain staged until the single family draft save
   assert.match(migration,/FAMILY_GUARDIAN_DRAFT_ASSIGNMENT_INVALID/);
   assert.match(migration,/insert into platform\.people\(full_name,phone,church,gender,date_of_birth/);
 });
+
+test('the unified room editor projects linked children housed in another room',()=>{
+  const editor=topFunction(scriptSource,'openCanonicalAccommodationRoomDetails');
+  assert.match(editor,/remoteChildrenByGuardian/);
+  assert.match(editor,/canonical-room-child-remote/);
+  assert.match(editor,/ولي الأمر:/);
+  assert.match(editor,/الغرفة الفعلية:/);
+  assert.match(editor,/canonicalAccommodationGuardianParticipationId\(child\)/);
+});
+
+test('the final lifecycle migration cascades family state without unlinking children',()=>{
+  const migration=fs.readFileSync('supabase/migrations/20261101203000_canonical_family_lifecycle_final_cutover.sql','utf8');
+  assert.doesNotMatch(migration,/update\s+public\.conference_participations[\s\S]{0,160}guardian_participation_id\s*=\s*null/i);
+  assert.match(migration,/deletedParticipationIds/);
+  assert.match(migration,/changedParticipationIds/);
+  assert.match(migration,/accommodation_removed/);
+  assert.match(migration,/FAMILY_MOVE_SHARED_ONLY_FILTER_REMAINS/);
+});

@@ -34,6 +34,7 @@ test('real migrations execute and preserve the independent-child and dynamic-per
       create table public.conference_participations(id uuid primary key,conference_id uuid not null,person_id uuid not null,status text not null default 'active',guardian_participation_id uuid,revision bigint not null default 1,updated_at timestamptz default now(),updated_by uuid,created_at timestamptz default now(),created_by uuid);
       create table public.conference_participation_operations(actor_user_id uuid,operation_id uuid,operation text,request jsonb,result jsonb,created_at timestamptz,primary key(actor_user_id,operation_id));
       create table public.conference_accommodation_occupancies(id uuid primary key,conference_id uuid,room_id uuid,participation_id uuid,arrival_day integer,leave_day integer,bed_type text,revision bigint default 1,updated_at timestamptz default now(),updated_by uuid);
+      create table public.conference_accommodation_rooms(id uuid primary key);
       create table public.conference_transport_assignments(id uuid primary key,conference_id uuid,vehicle_id uuid,participation_id uuid,assignment_mode text,rider_kind text,seat_number integer,revision bigint default 1);
       create table public.conference_restaurant_participation_overrides(id uuid primary key,conference_id uuid,participation_id uuid);
       create function platform_private.validated_phase1c_device_authorization(uuid,uuid) returns uuid language sql stable as $$select '${authz}'::uuid$$;
@@ -43,6 +44,7 @@ test('real migrations execute and preserve the independent-child and dynamic-per
       create function platform_private.cleanup_conference_accommodation_for_participation(uuid,uuid,uuid,jsonb,text,uuid) returns uuid language plpgsql as $$declare found_id uuid;begin delete from public.conference_accommodation_occupancies where participation_id=$1 returning id into found_id;return found_id;end$$;
       create function platform_private.sync_shared_child_removal() returns trigger language plpgsql as $$begin delete from public.conference_accommodation_occupancies stay using public.conference_participations child where child.id=stay.participation_id and child.guardian_participation_id=old.participation_id and stay.bed_type='shared';return old;end$$;
       create trigger sync_shared_child_removal after delete on public.conference_accommodation_occupancies for each row when(old.bed_type<>'shared') execute function platform_private.sync_shared_child_removal();
+      create function public.move_conference_accommodation(uuid,uuid,uuid,bigint,uuid,integer,integer,text,text) returns jsonb language plpgsql as $$declare participation public.conference_participations%rowtype; child_stay public.conference_accommodation_occupancies%rowtype;begin for child_stay in select o.* from public.conference_accommodation_occupancies o join public.conference_participations cp on cp.id=o.participation_id where cp.guardian_participation_id=participation.id and o.bed_type='shared' loop null;end loop;return '{}'::jsonb;end$$;
 
       create table reservations.events(id uuid primary key,scope_partition_id uuid not null,start_date date,end_date date,created_by uuid,updated_by uuid,unique(scope_partition_id,id));
       create table reservations.event_periods(id uuid primary key default gen_random_uuid(),scope_partition_id uuid not null,event_id uuid not null,kind text not null check(kind in('conference','caravans')),starts_on date,ends_on date,display_order integer not null,revision bigint default 1,created_at timestamptz default now(),updated_at timestamptz default now(),created_by uuid,updated_by uuid,unique(event_id,display_order) deferrable initially deferred);
@@ -55,6 +57,7 @@ test('real migrations execute and preserve the independent-child and dynamic-per
       insert into reservations.bookings values('24000000-0000-0000-0000-000000000001','${event}','${partition}',array['conference']);
     `);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031210000_conference_operational_lifecycle_unification.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261101203000_canonical_family_lifecycle_final_cutover.sql')]);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031213000_reservations_dynamic_attendance_periods.sql')]);
     assert.equal(query(`select count(*) from reservations.event_periods where event_id='${event}' and kind='conference'`),'1');
     query(`insert into reservations.event_periods(scope_partition_id,event_id,kind,starts_on,ends_on,display_order,created_by,updated_by) values('${partition}','${event}','workshop','2026-10-12','2026-10-14',1,'${actor}','${actor}')`);
@@ -64,21 +67,39 @@ test('real migrations execute and preserve the independent-child and dynamic-per
     function family(seed){
       const guardian=`3${seed}000000-0000-0000-0000-000000000001`,shared=`3${seed}000000-0000-0000-0000-000000000002`,independent=`3${seed}000000-0000-0000-0000-000000000003`;
       query(`insert into platform.people values('${guardian}','guardian'),('${shared}','shared'),('${independent}','independent');insert into public.conference_participations(id,conference_id,person_id,guardian_participation_id,updated_by,created_by) values('${guardian}','${conference}','${guardian}',null,'${actor}','${actor}'),('${shared}','${conference}','${shared}','${guardian}','${actor}','${actor}'),('${independent}','${conference}','${independent}','${guardian}','${actor}','${actor}');insert into public.conference_accommodation_occupancies values('4${seed}000000-0000-0000-0000-000000000001','${conference}',gen_random_uuid(),'${guardian}',1,5,'base',1,now(),'${actor}'),('4${seed}000000-0000-0000-0000-000000000002','${conference}',gen_random_uuid(),'${shared}',1,5,'shared',1,now(),'${actor}'),('4${seed}000000-0000-0000-0000-000000000003','${conference}',gen_random_uuid(),'${independent}',1,5,'base',1,now(),'${actor}');insert into public.conference_transport_assignments values('5${seed}000000-0000-0000-0000-000000000001','${conference}',gen_random_uuid(),'${guardian}','independent','adult',1,1),('5${seed}000000-0000-0000-0000-000000000002','${conference}',gen_random_uuid(),'${shared}','shared','child',null,1),('5${seed}000000-0000-0000-0000-000000000003','${conference}',gen_random_uuid(),'${independent}','independent','child',2,1)`);
-      return {guardian,shared,independent};
+      return {guardian,shared,independent,guardianStay:`4${seed}000000-0000-0000-0000-000000000001`};
     }
     const apology=family('1');
     query(`begin;select set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true);select public.set_conference_participation_status('${device}',gen_random_uuid(),'${apology.guardian}',1,'apologized');commit`);
-    assert.equal(query(`select count(*) from public.conference_transport_assignments where participation_id in('${apology.guardian}','${apology.shared}')`),'0');
-    assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id='${apology.independent}'`),'1');
-    assert.equal(query(`select count(*) from public.conference_transport_assignments where participation_id='${apology.independent}'`),'1');
+    assert.equal(query(`select count(*) from public.conference_participations where id in('${apology.guardian}','${apology.shared}','${apology.independent}') and status='apologized'`),'3');
+    assert.equal(query(`select count(*) from public.conference_transport_assignments where participation_id in('${apology.guardian}','${apology.shared}','${apology.independent}')`),'0');
+    assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id in('${apology.guardian}','${apology.shared}','${apology.independent}')`),'0');
 
     const deleting=family('2');
     const deleted=JSON.parse(query(`begin;select set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true);select public.delete_conference_participation('${device}',gen_random_uuid(),'${deleting.guardian}',1);commit`).split('\n').filter(line=>line.startsWith('{')).pop());
     assert.equal(deleted.deleted,true);
     assert.equal(query(`select count(*) from public.conference_participations where id='${deleting.guardian}'`),'0');
-    assert.equal(query(`select count(*) from public.conference_participations where id in('${deleting.shared}','${deleting.independent}') and guardian_participation_id is null`),'2');
+    assert.equal(query(`select count(*) from public.conference_participations where id in('${deleting.shared}','${deleting.independent}')`),'0');
     assert.equal(query(`select count(*) from platform.people where id in('${deleting.guardian}','${deleting.shared}','${deleting.independent}')`),'3');
-    assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id='${deleting.independent}'`),'1');
+    assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id in('${deleting.guardian}','${deleting.shared}','${deleting.independent}')`),'0');
+    assert.equal(query(`select pg_get_functiondef('public.move_conference_accommodation(uuid,uuid,uuid,bigint,uuid,integer,integer,text,text)'::regprocedure) not like '%o.bed_type=''shared''%'`),'t');
+
+    const removal=family('3');
+    query(`select public.remove_conference_accommodation('${device}','${conference}','${removal.guardianStay}',1)`);
+    assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id in('${removal.guardian}','${removal.shared}','${removal.independent}')`),'0');
+    assert.equal(query(`select count(*) from public.conference_participations where id in('${removal.guardian}','${removal.shared}','${removal.independent}')`),'3');
+    assert.equal(query(`select count(*) from public.conference_participations where id in('${removal.shared}','${removal.independent}') and guardian_participation_id='${removal.guardian}'`),'2');
+
+    const childDelete=family('4');
+    query(`begin;select set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true);select public.delete_conference_participation('${device}',gen_random_uuid(),'${childDelete.independent}',1);commit`);
+    assert.equal(query(`select count(*) from public.conference_participations where id in('${childDelete.guardian}','${childDelete.shared}')`),'2');
+    assert.equal(query(`select count(*) from public.conference_participations where id='${childDelete.independent}'`),'0');
+
+    const replay=family('5'),operation='65000000-0000-0000-0000-000000000001';
+    const first=query(`select public.set_conference_participation_status('${device}','${operation}','${replay.guardian}',1,'apologized')`);
+    const second=query(`select public.set_conference_participation_status('${device}','${operation}','${replay.guardian}',1,'apologized')`);
+    assert.equal(second,first);
+    assert.throws(()=>query(`select public.set_conference_participation_status('${device}',gen_random_uuid(),'${replay.guardian}',1,'active')`),/CONFERENCE_PARTICIPATION_REVISION_CONFLICT/);
   }finally{
     try{command('dropdb',['--if-exists',database]);}catch{}
   }

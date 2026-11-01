@@ -3477,6 +3477,16 @@ function openCanonicalAccommodationRoomDetails(roomId){
   var guestOccupancies=occupancies.filter(function(item){return !isCanonicalAccommodationChild(item);});
   canonicalAccommodationRoomDetailsOpen=true;
   var participationState=window.PlatformIntegration&&window.PlatformIntegration.getConferenceParticipationState(current.id),participations=(participationState&&participationState.items||[]).filter(function(item){return item.status==='active';});
+  var remoteChildrenByGuardian={};
+  (canonicalAccommodationState().houses||[]).forEach(function(house){(house.floors||[]).forEach(function(floor){(floor.rooms||[]).forEach(function(candidateRoom){
+    if(String(candidateRoom.roomId)===String(room.roomId))return;
+    getCanonicalAccommodationOccupanciesOnDay(candidateRoom,day).filter(isCanonicalAccommodationChild).forEach(function(child){
+      var guardianId=canonicalAccommodationGuardianParticipationId(child);
+      if(!guardianId)return;
+      if(!remoteChildrenByGuardian[guardianId])remoteChildrenByGuardian[guardianId]=[];
+      remoteChildrenByGuardian[guardianId].push({occupancy:child,roomNumber:candidateRoom.roomNumber});
+    });
+  });});});
   canonicalAccommodationRoomEditorDraft={conferenceId:String(current.id),roomId:String(room.roomId),revision:Number(room.revision),assignmentRevision:Number(room.roomAssignmentRevision||0),operationId:crypto.randomUUID(),position:Number(room.position||0),participations:participations,children:[],slots:{},stays:{},original:{roomNumber:String(room.roomNumber||''),baseCapacity:Number(room.baseCapacity||0),extraBedCapacity:Number(room.extraBedCapacity||0),notes:String(room.notes||''),isClosed:room.isClosed===true,closedDay:room.closedDay==null?null:Number(room.closedDay)}};
   ge('rmTitle').textContent='تفاصيل الغرفة '+room.roomNumber;
   ge('roomModal').classList.add('canonical-room-readonly');
@@ -3491,7 +3501,12 @@ function openCanonicalAccommodationRoomDetails(roomId){
   var bedOccupancies=occupancies.filter(function(item){return item.bedType!=='shared';}),baseOccupancies=bedOccupancies.filter(function(item){return item.bedType!=='extra';}),extraOccupancies=bedOccupancies.filter(function(item){return item.bedType==='extra';});
   function registerStay(occupancy){canonicalAccommodationRoomEditorDraft.stays[String(occupancy.occupancyId)]={occupancyId:String(occupancy.occupancyId),expectedRevision:Number(occupancy.revision),arrivalDay:Number(occupancy.arrivalDay),leaveDay:occupancy.leaveDay==null?null:Number(occupancy.leaveDay),bedType:occupancy.bedType==='extra'?'extra':occupancy.bedType==='shared'?'shared':'base',extraBedPersonType:occupancy.extraBedPersonType||null,isChild:isCanonicalAccommodationChild(occupancy),personName:occupancy.person&&occupancy.person.fullName||'',replacementParticipationId:null,replacementLabel:''};}
   function renderExisting(occupancy,label,child,unlinked){registerStay(occupancy);var row=occupancyGroups.rows.find(function(item){return item.occupancy===occupancy;});var hasLinkedChildren=!!(row&&row.children&&row.children.length);canonicalAccommodationRoomEditorDraft.stays[String(occupancy.occupancyId)].hasLinkedChildren=hasLinkedChildren;return renderCanonicalAccommodationDetailOccupant(occupancy,keyHolder,canManage,child,unlinked,label,hasLinkedChildren);}
-  function renderGuardian(occupancy,label){return renderExisting(occupancy,label,false,false)+(occupancyGroups.rows.find(function(row){return row.occupancy===occupancy;})||{children:[]}).children.map(function(child){return renderExisting(child,null,true,false);}).join('');}
+  function renderGuardian(occupancy,label){
+    var guardianId=String(occupancy.participationId||''),guardianName=occupancy.person&&occupancy.person.fullName||'ولي الأمر';
+    var localChildren=(occupancyGroups.rows.find(function(row){return row.occupancy===occupancy;})||{children:[]}).children.map(function(child){return renderExisting(child,null,true,false);}).join('');
+    var remoteChildren=(remoteChildrenByGuardian[guardianId]||[]).map(function(item){var child=item.occupancy,person=child.person||{};return '<div class="guest-person-row canonical-room-guest canonical-room-child canonical-room-child-remote"><div class="guest-slot-person"><strong>↳ '+esc(person.fullName||'نزيل بدون اسم')+'</strong><div class="person-meta">ولي الأمر: '+esc(guardianName)+' • الغرفة الفعلية: '+esc(item.roomNumber||'')+' • '+canonicalAccommodationChildBedLabel(child)+'</div></div></div>';}).join('');
+    return renderExisting(occupancy,label,false,false)+localChildren+remoteChildren;
+  }
   function renderEmptySlot(bedType,index){var slotKey=bedType+'_'+index;canonicalAccommodationRoomEditorDraft.slots[slotKey]={slotKey:slotKey,bedType:bedType,guardianDraftId:null,selectedParticipationId:null,selectedLabel:'',available:[]};return canonicalAccommodationRoomEmptySlotHtml(slotKey,bedType,index+1,day,canManage&&!room.isClosed);}
   var baseGuardians=baseOccupancies.filter(function(item){return !isCanonicalAccommodationChild(item);}),extraGuardians=extraOccupancies.filter(function(item){return !isCanonicalAccommodationChild(item);}),slotsHtml='';
   baseGuardians.forEach(function(occupancy,index){slotsHtml+=renderGuardian(occupancy,'سرير أساسي '+(index+1));});
