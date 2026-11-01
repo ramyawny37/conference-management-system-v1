@@ -227,9 +227,15 @@ test('canonical accommodation shows guardian relationship without local person f
   const end=scriptSource.indexOf('function ',start+10);
   const render=scriptSource.slice(start,end);
   assert.ok(render.includes('accompaniedGuests'));
-  const grouping=scriptSource.slice(scriptSource.indexOf('function groupCanonicalAccommodationOccupancies('),start);
-  assert.ok(grouping.includes('occupancy.guardianParticipationId'));
-  assert.doesNotMatch(grouping,/guardianFullName/);
+  const groupingStart=scriptSource.indexOf('function groupCanonicalAccommodationOccupancies(');
+  const groupingEnd=scriptSource.indexOf('function canonicalAccommodationGuardianParticipationId(',groupingStart);
+  assert.ok(groupingStart>=0&&groupingEnd>groupingStart,'canonical grouping function boundaries must exist');
+  const grouping=scriptSource.slice(groupingStart,groupingEnd);
+  assert.ok(grouping.includes('canonicalAccommodationGuardianParticipationId(occupancy)'));
+  assert.doesNotMatch(grouping,/guardianFullName/,'grouping must use participation links, not guardian names');
+  const guardianLookup=scriptSource.slice(groupingEnd,scriptSource.indexOf('function renderCanonicalAccommodationDetailOccupant(',groupingEnd));
+  assert.ok(guardianLookup.includes('occupancy.guardianParticipationId'));
+  assert.ok(guardianLookup.includes('getConferenceParticipationState'));
 });
 
 test('canonical transfer rejects blank and fractional effective days before mutation',()=>{
