@@ -483,6 +483,12 @@
             <button id="canonicalAccommodationCreatePerson" type="button" class="btn btn-gray canonical-accommodation-create-person" onclick="openCanonicalAccommodationPersonDialog()">➕ إضافة شخص جديد</button>
           </div>
           <label class="canonical-accommodation-search" for="canonicalAccommodationAssignmentSearch"><span aria-hidden="true">⌕</span><input id="canonicalAccommodationAssignmentSearch" type="search" placeholder="بحث..." autocomplete="off" oninput="renderCanonicalAccommodationAssignmentCandidateList()"></label>
+          <div class="canonical-accommodation-candidate-filters">
+            <select id="canonicalAccommodationCategoryFilter" aria-label="فلتر تصنيف الأشخاص" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">الكل</option><option value="male">ذكر</option><option value="female">أنثى</option><option value="child">طفل</option><option value="unspecified">غير محدد</option></select>
+            <select id="canonicalAccommodationBookingTypeFilter" aria-label="فلتر نوع الاشتراك" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">كل أنواع الاشتراك</option><option value="none">بدون نوع اشتراك</option></select>
+            <select id="canonicalAccommodationPeriodFilter" aria-label="فلتر فترة الحضور" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">كل فترات الحضور</option></select>
+          </div>
+          <div id="canonicalAccommodationAssignmentResultCount" class="canonical-accommodation-result-count" aria-live="polite"></div>
           <div id="canonicalAccommodationAssignmentCandidates">
             <div id="canonicalAccommodationAssignmentList" role="listbox" aria-label="الأشخاص المتاحون"></div>
           </div>

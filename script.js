@@ -2915,25 +2915,42 @@ function renderCanonicalAccommodationAssignmentCandidates(){
   var nextSelection=priorSelection||originalSelection;
   if(!draft.available.some(function(item){return String(item.participationId)===nextSelection;}))nextSelection='';
   draft.selectedParticipationId=nextSelection||null;
+  populateCanonicalAccommodationCandidateFilters();
   syncCanonicalAccommodationReplacementFields();
   error.textContent='';ge('canonicalAccommodationAssignmentConfirm').disabled=!draft.selectedParticipationId;
   renderCanonicalAccommodationAssignmentCandidateList();return true;
 }
+function populateCanonicalAccommodationCandidateFilters(){
+  var draft=canonicalAccommodationAssignmentDraft,typeSelect=ge('canonicalAccommodationBookingTypeFilter'),periodSelect=ge('canonicalAccommodationPeriodFilter');
+  if(!draft||!typeSelect||!periodSelect)return false;
+  var selectedType=typeSelect.value||'all',selectedPeriod=periodSelect.value||'all',types={},periods={};
+  (draft.available||[]).forEach(function(item){(item.bookings||[]).forEach(function(booking){
+    if(booking.bookingTypeId)types[booking.bookingTypeId]=booking.bookingTypeNameSnapshot||'نوع اشتراك بدون اسم';
+    if((booking.attendancePeriods||[]).length)(booking.attendancePeriods||[]).forEach(function(period){periods[String(period.kind)]=String(period.label||period.kind);});
+    else (booking.attendanceSegmentsSnapshot||[]).forEach(function(segment){periods[String(segment)]=String(segment);});
+  });});
+  typeSelect.innerHTML='<option value="all">كل أنواع الاشتراك</option><option value="none">بدون نوع اشتراك</option>'+Object.keys(types).sort(function(a,b){return types[a].localeCompare(types[b],'ar');}).map(function(id){return '<option value="'+esc(id)+'">'+esc(types[id])+'</option>';}).join('');
+  periodSelect.innerHTML='<option value="all">كل فترات الحضور</option>'+Object.keys(periods).sort(function(a,b){return periods[a].localeCompare(periods[b],'ar');}).map(function(code){return '<option value="'+esc(code)+'">'+esc(periods[code])+'</option>';}).join('');
+  typeSelect.value=Object.prototype.hasOwnProperty.call(types,selectedType)||selectedType==='all'||selectedType==='none'?selectedType:'all';
+  periodSelect.value=Object.prototype.hasOwnProperty.call(periods,selectedPeriod)||selectedPeriod==='all'?selectedPeriod:'all';
+  return true;
+}
 function renderCanonicalAccommodationAssignmentCandidateList(){
   var draft=canonicalAccommodationAssignmentDraft,list=ge('canonicalAccommodationAssignmentList'),input=ge('canonicalAccommodationAssignmentSearch');
   if(!draft||!list)return false;
-  var query=normalizePersonKey(input&&input.value||'');list.innerHTML='';
+  var query=normalizePersonKey(input&&input.value||''),category=ge('canonicalAccommodationCategoryFilter')&&ge('canonicalAccommodationCategoryFilter').value||'all',bookingType=ge('canonicalAccommodationBookingTypeFilter')&&ge('canonicalAccommodationBookingTypeFilter').value||'all',period=ge('canonicalAccommodationPeriodFilter')&&ge('canonicalAccommodationPeriodFilter').value||'all';list.innerHTML='';
   var candidates=draft.available||[];
-  var shown=0;candidates.forEach(function(item){var person=item.person||{},search=normalizePersonKey([person.fullName,person.phone,person.church].join(' '));if(query&&search.indexOf(query)<0)return;
+  var shown=0;candidates.forEach(function(item){var person=item.person||{},bookings=item.bookings||[],isChild=!!item.guardianParticipationId,gender=String(person.gender||'').toLowerCase(),search=normalizePersonKey([person.fullName,person.phone,person.church].join(' '));if(query&&search.indexOf(query)<0)return;if(category==='child'&&!isChild||category==='male'&&['male','ذكر','m'].indexOf(gender)<0||category==='female'&&['female','أنثى','انثى','f'].indexOf(gender)<0||category==='unspecified'&&!!gender)return;if(bookingType==='none'&&bookings.length||bookingType!=='all'&&bookingType!=='none'&&!bookings.some(function(booking){return booking.bookingTypeId===bookingType;}))return;if(period!=='all'&&!bookings.some(function(booking){return booking.attendanceSegmentsSnapshot.indexOf(period)>=0;}))return;
     var selected=String(draft.selectedParticipationId)===String(item.participationId);
     var button=document.createElement('button');button.type='button';button.className='canonical-accommodation-person-option'+(selected?' selected':'');button.setAttribute('role','option');button.setAttribute('aria-selected',selected?'true':'false');
     var icon=document.createElement('span');icon.className='canonical-accommodation-person-icon';icon.setAttribute('aria-hidden','true');icon.textContent=selected?'✓':'●';
     var text=document.createElement('span');text.className='canonical-accommodation-person-text';var name=document.createElement('strong');name.textContent=person.fullName||'';text.appendChild(name);
-    var secondary=[person.phone,person.church].filter(Boolean).join(' • ');if(secondary){var detail=document.createElement('small');detail.textContent=secondary;text.appendChild(detail);}
+    var bookingLabels=bookings.map(function(booking){return booking.bookingTypeNameSnapshot;}).filter(Boolean),secondary=[person.phone,person.church,isChild?'طفل — ولي الأمر: '+(item.guardianFullName||'غير محدد'):(gender||'الجنس غير محدد'),bookingLabels.length?bookingLabels.join('، '):'بدون نوع اشتراك'].filter(Boolean).join(' • ');if(secondary){var detail=document.createElement('small');detail.textContent=secondary;text.appendChild(detail);}
     var arrow=document.createElement('span');arrow.className='canonical-accommodation-person-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='‹';
     button.appendChild(icon);button.appendChild(text);button.appendChild(arrow);button.onclick=function(){selectCanonicalAccommodationParticipation(item.participationId);};list.appendChild(button);shown++;
   });
   if(!shown)list.innerHTML='<div class="modal-empty-state">لا توجد نتائج</div>';
+  var count=ge('canonicalAccommodationAssignmentResultCount');if(count)count.textContent='النتائج المطابقة: '+shown+' من '+candidates.length;
   var selectedItem=candidates.find(function(item){return String(item.participationId)===String(draft.selectedParticipationId||'');});
   var selectedLabel=ge('canonicalAccommodationSelectedPerson');if(selectedLabel)selectedLabel.textContent=selectedItem&&selectedItem.person&&selectedItem.person.fullName?selectedItem.person.fullName:'اختر شخصًا أولًا';
   return shown;
