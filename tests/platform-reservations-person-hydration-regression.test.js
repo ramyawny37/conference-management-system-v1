@@ -30,3 +30,5 @@ test('booking creation preserves DOB in the canonical mutation payload', () => {
 test('service sector remains a fixed reference list in the booking form', () => {
   assert.ok(source.includes('Bi.map(Z=>'));
 });
+
+test('canonical profile hydration includes address and service',()=>{for(const key of ['governorate','cityOrVillage','serviceSector','serviceSectorOther'])assert.ok(source.includes('V("'+key+'",Z.'+key+'??""')));});
