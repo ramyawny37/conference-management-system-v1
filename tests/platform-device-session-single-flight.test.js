@@ -129,3 +129,18 @@ test('protected HTTP errors preserve safe status and server code without leaking
     return true;
   });
 });
+
+test('protected HTTP errors preserve a top-level dispatcher application code',async()=>{
+  const begin=deferred();
+  const context={status:409,json(){return Promise.resolve({code:'RESERVATIONS_PERSON_ALREADY_REGISTERED_IN_EVENT',message:'duplicate',diagnostic:{sqlstate:'23505',applicationCode:'RESERVATIONS_PERSON_ALREADY_REGISTERED_IN_EVENT'},private:'must-not-leak'});}};
+  const state=runtime([begin],{error:{context,message:'Edge Function returned a non-2xx status code'}});
+  const request=state.api.invokeModuleProtected('reservations','create_booking',{});
+  await drain();successfulBegin(begin);
+  await assert.rejects(request,error=>{
+    assert.equal(error.code,'RESERVATIONS_PERSON_ALREADY_REGISTERED_IN_EVENT');
+    assert.equal(error.status,409);
+    assert.equal(error.diagnostic.sqlstate,'23505');
+    assert.equal(error.private,undefined);
+    return true;
+  });
+});

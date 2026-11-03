@@ -27,8 +27,9 @@ test('booking creation and edit contracts preserve canonical choice and historic
   assert.match(migration,/if p_args \? ''p_person_update_revision''/);
   assert.match(runtime,/p_date_of_birth:t\.dateOfBirth/);
   assert.match(runtime,/p_person_update_revision:t\.personUpdateRevision/);
-  assert.match(runtime,/value:"save-local"/);
-  assert.match(runtime,/value:"update-canonical"/);
+  assert.match(runtime,/onClick:\(\)=>a\("save-local"\)/);
+  assert.match(runtime,/onClick:\(\)=>a\("update-canonical"\)/);
+  assert.match(runtime,/تحديد نطاق حفظ بيانات الشخص/);
   assert.doesNotMatch(runtime,/window\.prompt/);
 });
 

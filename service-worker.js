@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'development-family-lifecycle-v4'
+  ? 'development-reservations-save-lifecycle-issue18-v1'
   : 'production-3-6-0-release-v6';
 // Reinstall the Development worker so the canonical accommodation parity assets refresh atomically.
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
@@ -19,7 +19,7 @@ const CORE_ASSETS = [
   './shared-design-tokens.css?rev=platform-design-system-consolidation-v2',
   './style.css?rev=accommodation-lease-request-timing-v7',
   './canonical-platform-shell.css?rev=conference-header-content-offset-v1',
-  './modules/reservations/reservations-module.css?rev=reservations-booking-dialog-b402bd5-v1',
+  './modules/reservations/reservations-module.css?rev=reservations-save-lifecycle-issue18-v1',
   './js/application-routing.js?rev=conference-room-assignments-v1',
   './js/storage/environment-namespace.js',
   './js/storage/indexeddb.js?rev=single-local-persistence-v1',
@@ -28,7 +28,7 @@ const CORE_ASSETS = [
   './js/supabase/public-config.js',
   './js/supabase/runtime-config.js',
   './js/supabase/device-storage-namespace.js?rev=project-device-storage-isolation-v1',
-  './js/supabase/device-session.js?rev=device-key-store-recovery-v1',
+  './js/supabase/device-session.js?rev=reservations-error-envelope-issue18-v1',
   './js/supabase/conference-device-operation-contract.js?rev=permission-audit-closure-v1',
   './js/supabase/warehouse-device-operation-contract.js?rev=opening-balance-ux-correction-v1',
   './js/supabase/platform-device-operation-contract.js?rev=canonical-bundle-v1',
@@ -42,7 +42,7 @@ const CORE_ASSETS = [
   './js/supabase/canonical-conference-restaurant.js?rev=p6i-b3-v1',
   './js/supabase/canonical-template-library.js?rev=canonical-template-read-write-v2',
   './js/supabase/conference-canonical-bundle.js?rev=canonical-bundle-v1',
-  './modules/reservations/reservations-module.js?rev=reservations-booking-dialog-b402bd5-v1',
+  './modules/reservations/reservations-module.js?rev=reservations-save-lifecycle-issue18-v1',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',
   './js/sync/diagnostics-privacy-policy.js?rev=platform-capability-authority-v1',
   './js/sync/access-diagnostics-ui.js?rev=platform-first-login-coordinator-v1',

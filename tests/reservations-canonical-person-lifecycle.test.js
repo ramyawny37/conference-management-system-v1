@@ -60,13 +60,15 @@ test('view and mutation remain unavailable to browser roles',()=>{
 test('editing selected person retains explicit central/local choice and identity switching is deliberate',()=>{
   assert.match(runtime,/onChange:Z=>\{V\("fullName",Z,\{shouldValidate:!0\}\)\},onClear:/);
   assert.match(runtime,/children:"تغيير الشخص المختار"/);
-  assert.match(runtime,/onClear:\(\)=>\{c\(null\),u\("save-local"\)/);
-  assert.match(runtime,/const Re=s&&sb\(s,Z\)\?r:"save-local"/);
+  assert.match(runtime,/chooseScope/);
+  assert.match(runtime,/await r\(!!\(s&&sb\(s,Z\)\)\)/);
   assert.match(runtime,/\.\.\.s\?\{p_person_id:s\.personId/);
 });
 
 test('batch booking also requires explicit person switch without retaining inherited fields',()=>{
-  assert.match(runtime,/onClear:\(\)=>fe\(P\.id,\{fullName:"",personId:null,selectedPerson:null,personUpdateMode:"save-local",phone:"",age:"",churchOverride:null\}\)/);
+  assert.match(runtime,/onClear:\(\)=>fe\(P\.id,\{fullName:"",personId:null,selectedPerson:null,personUpdateMode:"",phone:"",gender:"",dateOfBirth:"",age:"",churchOverride:null\}\)/);
+  assert.match(runtime,/p_gender:H\.data\.gender/);
+  assert.match(runtime,/p_date_of_birth:H\.data\.dateOfBirth/);
 });
 
 test('clearing selected name releases inherited identity and renaming requires explicit confirmation',()=>{
@@ -77,10 +79,11 @@ test('clearing selected name releases inherited identity and renaming requires e
 });
 
 test('editing an existing central person requires an explicit persistence scope',()=>{
-  assert.ok(runtime.includes('[r,u]=x.useState("")'));
-  assert.ok(runtime.includes('onSelect:Z=>{c(Z),u("")'));
-  assert.ok(runtime.includes('s&&sb(s,Z)&&r!=="save-local"&&r!=="update-canonical"'));
-  assert.ok(runtime.includes('children:"اختر نطاق الحفظ"'));
+  assert.ok(runtime.includes('تحديد نطاق حفظ بيانات الشخص'));
+  assert.ok(runtime.includes('حفظ التعديلات في الحجز الحالي فقط'));
+  assert.ok(runtime.includes('تحديث بيانات الشخص في الدليل المركزي'));
+  assert.ok(runtime.includes('إلغاء والعودة للنموذج'));
+  assert.doesNotMatch(runtime,/children:"اختر نطاق الحفظ"/);
   assert.ok(runtime.includes('الشخص المختار من البنك المركزي: '));
 });
 
@@ -93,10 +96,20 @@ test('duplicate booking guard is part of the canonical writer',()=>{
 });
 
 test('single, batch and booking edit require explicit scope when canonical profile changes',()=>{
-  assert.ok(runtime.includes('[r,u]=x.useState("")'));
-  assert.ok(runtime.includes('E.personUpdateMode:"save-local";if(E.selectedPerson&&sb('));
-  assert.ok(runtime.includes('اختر نطاق حفظ بيانات الشخص قبل التسجيل.'));
-  assert.ok(runtime.includes('اختر نطاق حفظ بيانات الشخص قبل تعديل الحجز.'));
-  assert.ok(runtime.includes('selectedPerson:B,personUpdateMode:""'));
-  assert.ok(runtime.includes('qe=()=>{fe(""),I(""),u(""),b({...d})'));
+  assert.equal((runtime.match(/=hb\(\)/g)||[]).length,4);
+  assert.match(runtime,/const O=await X\(/);
+  assert.match(runtime,/const Ge=await r\(/);
+  assert.match(runtime,/const Le=await r\(/);
+  assert.match(runtime,/Ge==="update-canonical"/);
+  assert.match(runtime,/Le==="update-canonical"/);
+});
+
+test('duplicate and successful registration use outcome modals with real booking navigation',()=>{
+  assert.match(runtime,/RESERVATIONS_PERSON_ALREADY_REGISTERED_IN_EVENT/);
+  assert.match(runtime,/existingBookingForPerson/);
+  assert.match(runtime,/الشخص مسجل بالفعل في هذه الفعالية/);
+  assert.match(runtime,/تم تسجيل الحجز بنجاح/);
+  assert.match(runtime,/عرض الحجز الحالي/);
+  assert.match(runtime,/عرض المشتركين/);
+  assert.match(runtime,/تسجيل شخص جديد/);
 });
