@@ -83,3 +83,11 @@ test('editing an existing central person requires an explicit persistence scope'
   assert.ok(runtime.includes('children:"اختر نطاق الحفظ"'));
   assert.ok(runtime.includes('الشخص المختار من البنك المركزي: '));
 });
+
+test('duplicate booking guard is part of the canonical writer',()=>{
+  const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261103163000_reservations_reject_duplicate_event_person.sql'),'utf8');
+  assert.ok(migration.includes('RESERVATIONS_PERSON_ALREADY_REGISTERED_IN_EVENT'));
+  assert.ok(migration.includes('existing_booking.event_id=v_event.id'));
+  assert.ok(migration.includes('existing_participant.person_id=v_person_id'));
+  assert.ok(runtime.includes('الشخص مسجل بالفعل في هذه الفعالية'));
+});
