@@ -96,7 +96,10 @@ test('duplicate booking guard is part of the canonical writer',()=>{
 });
 
 test('single, batch and booking edit require explicit scope when canonical profile changes',()=>{
-  assert.equal((runtime.match(/=hb\(\)/g)||[]).length,4);
+  assert.equal((runtime.match(/=useReservationScopeDialog\(\)/g)||[]).length,4);
+  assert.equal((runtime.match(/function useReservationScopeDialog\(\)/g)||[]).length,1);
+  assert.equal((runtime.match(/function hb\(t,a,i\)/g)||[]).length,1);
+  assert.doesNotMatch(runtime,/function hb\(\)/);
   assert.match(runtime,/const O=await X\(/);
   assert.match(runtime,/const Ge=await r\(/);
   assert.match(runtime,/const Le=await r\(/);
