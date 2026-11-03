@@ -56,3 +56,8 @@ test('view and mutation remain unavailable to browser roles',()=>{
   assert.match(migration,/revoke all on function reservations_private\.mutate_scoped\(uuid,text,jsonb\) from public,anon,authenticated/);
   assert.equal((migration.match(/update_canonical_person/g)||[]).length,0,'the lifecycle migration must not add a second canonical writer');
 });
+
+test('editing the name after selecting a person releases the old canonical identity',()=>{
+  assert.match(runtime,/onChange:Z=>\{if\(s&&Z!==s\.fullName\)\{c\(null\),u\("save-local"\)\}V\("fullName",Z,\{shouldValidate:!0\}\)\}/);
+  assert.match(runtime,/\.\.\.s\?\{p_person_id:s\.personId/);
+});
