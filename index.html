@@ -547,7 +547,7 @@
   <div class="mhead"><span id="personModalTitle">➕ إضافة شخص جديد</span><button type="button" class="person-modal-close" aria-label="إغلاق" onclick="closePersonDialog()">✕</button></div>
   <div class="mbody">
     <input type="hidden" id="personDialogId">
-    <div style="margin-bottom:9px"><label class="lbl">الاسم الكامل *</label><input id="person_full_name" placeholder="الاسم الكامل" autocomplete="off" oninput="searchCanonicalPersonSuggestions()" aria-controls="personCanonicalSuggestions" aria-autocomplete="list"><div id="personCanonicalSuggestions" role="listbox" style="display:none;max-height:180px;overflow-y:auto"></div></div>
+    <div style="margin-bottom:9px"><label class="lbl">الاسم الكامل *</label><input id="person_full_name" placeholder="الاسم الكامل" autocomplete="off" oninput="searchCanonicalPersonSuggestions()" aria-controls="personCanonicalSuggestions" aria-autocomplete="list"><div id="personCanonicalSuggestions" role="listbox" style="display:none;max-height:180px;overflow-y:auto"></div><button type="button" class="btn btn-gray" style="margin-top:6px" onclick="clearCanonicalConferencePersonSelection()">تغيير الشخص المختار</button></div>
     <div class="row" style="margin-bottom:9px;gap:8px">
       <div style="flex:1"><label class="lbl">الكنيسة</label><input id="person_church" placeholder="الكنيسة"></div>
       <div style="flex:1"><label class="lbl">الهاتف</label><input id="person_phone" placeholder="الهاتف"></div>
