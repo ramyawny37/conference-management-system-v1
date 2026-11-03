@@ -68,3 +68,10 @@ test('editing selected person retains explicit central/local choice and identity
 test('batch booking also requires explicit person switch without retaining inherited fields',()=>{
   assert.match(runtime,/onClear:\(\)=>fe\(P\.id,\{fullName:"",personId:null,selectedPerson:null,personUpdateMode:"save-local",phone:"",age:"",churchOverride:null\}\)/);
 });
+
+test('clearing selected name releases inherited identity and renaming requires explicit confirmation',()=>{
+  assert.match(runtime,/c&&h&&!b\.target\.value\.trim\(\)\?h\(\):a\(b\.target\.value\)/);
+  assert.match(runtime,/Z\.fullName\.trim\(\)!==String\(s\.fullName\|\|""\)\.trim\(\)/);
+  assert.match(runtime,/window\.confirm\("تم تغيير الاسم/);
+  assert.match(runtime,/إلغاء: ارجع واضغط «تغيير الشخص المختار»/);
+});
