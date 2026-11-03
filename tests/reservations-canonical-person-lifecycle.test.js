@@ -75,3 +75,11 @@ test('clearing selected name releases inherited identity and renaming requires e
   assert.match(runtime,/window\.confirm\("تم تغيير الاسم/);
   assert.match(runtime,/إلغاء: ارجع واضغط «تغيير الشخص المختار»/);
 });
+
+test('editing an existing central person requires an explicit persistence scope',()=>{
+  assert.ok(runtime.includes('[r,u]=x.useState("")'));
+  assert.ok(runtime.includes('onSelect:Z=>{c(Z),u("")'));
+  assert.ok(runtime.includes('s&&sb(s,Z)&&r!=="save-local"&&r!=="update-canonical"'));
+  assert.ok(runtime.includes('children:"اختر نطاق الحفظ"'));
+  assert.ok(runtime.includes('الشخص المختار من البنك المركزي: '));
+});
