@@ -8997,7 +8997,7 @@ function searchCanonicalPersonSuggestions(){
   if(ge('personDialogId').value)return;
   var current=getCurrentConference(),field=ge('person_full_name'),box=ge('personCanonicalSuggestions');
   var generation=++canonicalPersonSearchGeneration;
-  canonicalPersonSelectedId=null;canonicalPersonSelectedName='';canonicalPersonSelectedSnapshot=null;box.style.display='none';box.textContent='';
+  if(canonicalPersonSelectedId){box.style.display='none';box.textContent='';return;}canonicalPersonSelectedName='';canonicalPersonSelectedSnapshot=null;box.style.display='none';box.textContent='';
   if(!current||!getCanonicalConferenceCoreLink(current.id)||!window.PlatformIntegration||typeof window.PlatformIntegration.searchConferencePeople!=='function')return;
   var query=field.value.trim();if(query.length<2)return;
   window.PlatformIntegration.searchConferencePeople(current.id,query,12).then(function(items){
@@ -9006,6 +9006,16 @@ function searchCanonicalPersonSuggestions(){
     items.forEach(function(person){var option=document.createElement('button');option.type='button';option.className='btn btn-gray';option.style.cssText='display:block;width:100%;text-align:right;margin:3px 0';option.setAttribute('role','option');option.textContent=String(person.fullName||'')+(person.phone?' — '+person.phone:'');option.onclick=function(){canonicalPersonSearchGeneration++;canonicalPersonSelectedId=person.personId;canonicalPersonSelectedName=String(person.fullName||'');canonicalPersonSelectedSnapshot={revision:Number(person.revision),church:String(person.church||''),phone:String(person.phone||''),gender:String(person.gender||''),dateOfBirth:String(person.dateOfBirth||'').slice(0,10)};field.value=canonicalPersonSelectedName;ge('person_church').value=person.church||'';ge('person_phone').value=person.phone||'';ge('person_gender').value=person.gender||'';ge('person_date_of_birth').value=String(person.dateOfBirth||'').slice(0,10);ge('person_age').value=canonicalPersonAgeFromBirthDate(person.dateOfBirth);box.style.display='none';};box.appendChild(option);});
     box.style.display=items.length?'block':'none';
   }).catch(function(){if(generation===canonicalPersonSearchGeneration){box.style.display='none';showToast('تعذر البحث في دليل الأشخاص.','#E74C3C');}});
+}
+function clearCanonicalConferencePersonSelection(){
+  if(canonicalPersonSavePending||ge('personDialogId').value)return false;
+  canonicalPersonSearchGeneration++;
+  canonicalPersonSelectedId=null;canonicalPersonSelectedName='';canonicalPersonSelectedSnapshot=null;
+  ge('personCanonicalSuggestions').style.display='none';
+  ge('personCanonicalSuggestions').textContent='';
+  ['person_full_name','person_church','person_phone','person_gender','person_date_of_birth','person_age'].forEach(function(id){ge(id).value='';});
+  ge('person_full_name').focus();
+  return true;
 }
 function openPersonDialog(personId){
   if(canonicalPersonSavePending)return false;
