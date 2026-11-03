@@ -64,3 +64,7 @@ test('editing selected person retains explicit central/local choice and identity
   assert.match(runtime,/const Re=s&&sb\(s,Z\)\?r:"save-local"/);
   assert.match(runtime,/\.\.\.s\?\{p_person_id:s\.personId/);
 });
+
+test('batch booking also requires explicit person switch without retaining inherited fields',()=>{
+  assert.match(runtime,/onClear:\(\)=>fe\(P\.id,\{fullName:"",personId:null,selectedPerson:null,personUpdateMode:"save-local",phone:"",age:"",churchOverride:null\}\)/);
+});
