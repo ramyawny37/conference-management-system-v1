@@ -91,3 +91,12 @@ test('duplicate booking guard is part of the canonical writer',()=>{
   assert.ok(migration.includes('existing_participant.person_id=v_person_id'));
   assert.ok(runtime.includes('الشخص مسجل بالفعل في هذه الفعالية'));
 });
+
+test('single, batch and booking edit require explicit scope when canonical profile changes',()=>{
+  assert.ok(runtime.includes('[r,u]=x.useState("")'));
+  assert.ok(runtime.includes('E.personUpdateMode:"save-local";if(E.selectedPerson&&sb('));
+  assert.ok(runtime.includes('اختر نطاق حفظ بيانات الشخص قبل التسجيل.'));
+  assert.ok(runtime.includes('اختر نطاق حفظ بيانات الشخص قبل تعديل الحجز.'));
+  assert.ok(runtime.includes('selectedPerson:B,personUpdateMode:""'));
+  assert.ok(runtime.includes('qe=()=>{fe(""),I(""),u(""),b({...d})'));
+});
