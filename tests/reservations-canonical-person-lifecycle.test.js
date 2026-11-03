@@ -57,7 +57,10 @@ test('view and mutation remain unavailable to browser roles',()=>{
   assert.equal((migration.match(/update_canonical_person/g)||[]).length,0,'the lifecycle migration must not add a second canonical writer');
 });
 
-test('editing the name after selecting a person releases the old canonical identity',()=>{
-  assert.match(runtime,/onChange:Z=>\{if\(s&&Z!==s\.fullName\)\{c\(null\),u\("save-local"\)\}V\("fullName",Z,\{shouldValidate:!0\}\)\}/);
+test('editing selected person retains explicit central/local choice and identity switching is deliberate',()=>{
+  assert.match(runtime,/onChange:Z=>\{V\("fullName",Z,\{shouldValidate:!0\}\)\},onClear:/);
+  assert.match(runtime,/children:"تغيير الشخص المختار"/);
+  assert.match(runtime,/onClear:\(\)=>\{c\(null\),u\("save-local"\)/);
+  assert.match(runtime,/const Re=s&&sb\(s,Z\)\?r:"save-local"/);
   assert.match(runtime,/\.\.\.s\?\{p_person_id:s\.personId/);
 });
