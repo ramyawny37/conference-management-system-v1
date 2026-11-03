@@ -1,0 +1,58 @@
+'use strict';
+
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const test=require('node:test');
+
+const root=path.join(__dirname,'..');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261103094152_reservations_person_lifecycle_snapshots.sql'),'utf8');
+const runtime=fs.readFileSync(path.join(root,'modules/reservations/reservations-module.js'),'utf8');
+
+test('reservation snapshots own historical gender and birth date without deriving birth date from age',()=>{
+  assert.match(migration,/add column if not exists gender_snapshot text/);
+  assert.match(migration,/add column if not exists date_of_birth_snapshot date/);
+  assert.match(migration,/gender_snapshot=person\.gender/);
+  assert.match(migration,/date_of_birth_snapshot=person\.date_of_birth/);
+  assert.doesNotMatch(migration,/(?:to_date|make_date|make_interval)\s*\([^)]*age/i);
+  assert.match(migration,/nullif\(p_args->>''p_gender''/);
+  assert.match(migration,/nullif\(p_args->>''p_date_of_birth''/);
+});
+
+test('booking read exposes independent historical and canonical nine-field profiles',()=>{
+  assert.match(migration,/participant\.gender_snapshot gender/);
+  assert.match(migration,/participant\.date_of_birth_snapshot date_of_birth/);
+  for(const column of ['canonical_full_name','canonical_phone','canonical_gender','canonical_date_of_birth','canonical_church','canonical_governorate','canonical_city_or_village','canonical_service_sector','canonical_service_sector_other']){
+    assert.match(migration,new RegExp(column));
+    assert.match(runtime,new RegExp(column));
+  }
+  assert.match(runtime,/canonicalPerson/);
+});
+
+test('booking-only edit is distinct from explicit revision-guarded canonical update',()=>{
+  assert.match(runtime,/save-local/);
+  assert.match(runtime,/update-canonical/);
+  assert.match(runtime,/personUpdateRevision/);
+  assert.match(runtime,/PERSON_REVISION_CONFLICT|تغير السجل منذ فتحه/);
+  assert.match(runtime,/sb\([^)]*canonicalPerson/);
+  assert.doesNotMatch(runtime,/window\.prompt/);
+});
+
+test('historical commercial and demographic state is not rewritten implicitly',()=>{
+  assert.match(migration,/booking_type_id=v_type\.id,booking_type_name_snapshot=v_type\.name,notes=/);
+  assert.doesNotMatch(migration,/new_text:='booking_type_id=v_type\.id,booking_type_name_snapshot=v_type\.name,price_snapshot=/);
+  assert.match(runtime,/يظل السعر التاريخي للحجز محفوظًا عند تغيير النوع/);
+  assert.match(runtime,/min:\s*"0"/);
+});
+
+test('partial source notifications merge loaded fields instead of erasing them',()=>{
+  assert.match(runtime,/Object\.hasOwn\([^,]+,\s*Le\)/);
+  assert.match(runtime,/\{\.\.\.s,\.\.\.qe\.person\}/);
+});
+
+test('view and mutation remain unavailable to browser roles',()=>{
+  assert.match(migration,/security_invoker=true/);
+  assert.match(migration,/revoke all on reservations\.participants_canonical from public,anon,authenticated,service_role/);
+  assert.match(migration,/revoke all on function reservations_private\.mutate_scoped\(uuid,text,jsonb\) from public,anon,authenticated/);
+  assert.equal((migration.match(/update_canonical_person/g)||[]).length,0,'the lifecycle migration must not add a second canonical writer');
+});
