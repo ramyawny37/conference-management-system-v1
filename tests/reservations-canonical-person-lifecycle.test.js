@@ -116,3 +116,23 @@ test('duplicate and successful registration use outcome modals with real booking
   assert.match(runtime,/عرض المشتركين/);
   assert.match(runtime,/تسجيل شخص جديد/);
 });
+
+test('single booking submits the complete validated profile to the one canonical writer',()=>{
+  const start=runtime.indexOf('function Lw({defaultEventId:');
+  const end=runtime.indexOf('function ',start+15);
+  const single=runtime.slice(start,end>start?end:undefined);
+  assert.ok(single.includes('resolver:rv(lb)'), 'single registration must validate the complete schema');
+  assert.ok(single.includes('onSubmit:w(N)'), 'the form must submit validated values');
+  assert.ok(single.includes('const Re=await r(!!(s&&sb(s,Z)))'), 'scope choice must compare the submitted profile');
+  for(const [field,arg] of Object.entries({
+    fullName:'p_full_name',phone:'p_phone',gender:'p_gender',dateOfBirth:'p_date_of_birth',
+    church:'p_church',governorate:'p_governorate',cityOrVillage:'p_city_or_village',
+    serviceSector:'p_service_sector',serviceSectorOther:'p_service_sector_other'
+  })){
+    assert.ok(single.includes(arg+':Z.'+field),arg+' must use submitted '+field);
+  }
+  for(const field of ['church','cityOrVillage']){
+    assert.ok(single.includes('...S("'+field+'")'),field+' must be registered in the form');
+    assert.ok(single.includes('V("'+field+'",Z.'+field+'??""'),field+' must hydrate from the chosen person');
+  }
+});
