@@ -21,3 +21,14 @@ test('conference canonical update uses expected revision and never silent update
   assert.match(save,/PERSON_REVISION_CONFLICT/);
   assert.match(save,/createConferenceParticipationForExistingPerson\(linkedCurrent\.id,selectedPersonId\)/);
 });
+
+test('conference person identity is never silently cleared by editing name',()=>{
+  const start=source.indexOf('function searchCanonicalPersonSuggestions()');
+  const end=source.indexOf('function clearCanonicalConferencePersonSelection()',start);
+  const search=source.slice(start,end);
+  assert.match(search,/if\(canonicalPersonSelectedId\)\{box\.style\.display='none';box\.textContent='';return;\}/);
+  assert.doesNotMatch(search,/canonicalPersonSelectedId=null/);
+  assert.match(source,/function clearCanonicalConferencePersonSelection\(\)/);
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  assert.match(html,/onclick="clearCanonicalConferencePersonSelection\(\)"/);
+});
