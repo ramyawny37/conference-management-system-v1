@@ -17,3 +17,12 @@ test('new period codes are generated uniquely and remain immutable in the existi
   assert.match(editor,/disabled:!0,value:V\.kind/);
   assert.doesNotMatch(editor,/onChange:\$=>w\(V\.draftKey,\{kind:/);
 });
+
+test('event mutations refresh the shared booking creation context without a browser reload',()=>{
+  const s=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');
+  const editor=s.slice(s.indexOf('function DN('),s.indexOf('function DN(')+6500);
+  assert.match(editor,/const \{refreshContext:refreshBookingContext\}=tr\(\)/);
+  assert.match(editor,/a\(ye\),await refreshBookingContext\(\),y\(!1\)/);
+  assert.match(editor,/a\(ye\.event\),await refreshBookingContext\(\)/);
+  assert.match(editor,/onSaved:async\(\)=>\{await I\(\);await refreshBookingContext\(\)\}/);
+});
