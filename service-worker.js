@@ -29,6 +29,7 @@ const CORE_ASSETS = [
   './js/supabase/runtime-config.js',
   './js/supabase/device-storage-namespace.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-session.js?rev=reservations-error-envelope-issue18-v1',
+  './js/supabase/reservations-person-identity-resolution.js?rev=canonical-manual-person-identity-v1',
   './js/supabase/conference-device-operation-contract.js?rev=permission-audit-closure-v1',
   './js/supabase/warehouse-device-operation-contract.js?rev=opening-balance-ux-correction-v1',
   './js/supabase/platform-device-operation-contract.js?rev=canonical-bundle-v1',
