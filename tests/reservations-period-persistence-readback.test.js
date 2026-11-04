@@ -6,3 +6,14 @@ test('period reordering follows the edited draft order rather than server respon
 test('period save readback rejects incorrect persisted order',()=>{const source=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');const editor=source.slice(source.indexOf('function TN('),source.indexOf('const RN='));assert.ok(editor.includes('V.some((F,se)=>J.periods[se]?.kind!==F.kind'));assert.ok(editor.includes('J.periods[se]?.label!==F.label'));assert.ok(editor.includes('J.periods[se]?.from!==F.from'));assert.ok(editor.includes('J.periods[se]?.to!==F.to'));});
 
 test('period editor validates the same 40-character letter-prefixed code as the canonical database',()=>{const s=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');const editor=s.slice(s.indexOf('function TN('),s.indexOf('const RN='));assert.match(editor,/\/\^\[a-z\]\[a-z0-9_-\]\{0,39\}\$\/\.test\(q\.kind\)/);assert.doesNotMatch(editor,/\/\^\[a-z0-9\]\[a-z0-9_-\]\{0,63\}\$/);});
+
+test('new period codes are generated uniquely and remain immutable in the existing editor',()=>{
+  const s=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');
+  const editor=s.slice(s.indexOf('const _g='),s.indexOf('const RN='));
+  assert.match(editor,/const i=new Set\(t\.map\(s=>s\.kind\)\)/);
+  assert.match(editor,/while\(i\.has\(`period_\$\{a\}`\)\)a\+\+/);
+  assert.match(editor,/kind:`period_\$\{a\}`/);
+  assert.match(editor,/onClick:\(\)=>m\(V=>\[\.\.\.V,zN\(V\)\]\)/);
+  assert.match(editor,/disabled:!0,value:V\.kind/);
+  assert.doesNotMatch(editor,/onChange:\$=>w\(V\.draftKey,\{kind:/);
+});
