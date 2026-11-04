@@ -9,7 +9,9 @@ const end=source.indexOf('const yb=',start);
 const page=source.slice(start,end);
 test('participant details can close without hiding or shrinking the full bookings list',()=>{
   assert.ok(start>=0&&end>start);
-  assert.match(page,/\[detailOpen,setDetailOpen\]=x\.useState\(!0\)/);
+  assert.match(page,/\[detailOpen,setDetailOpen\]=x\.useState\(!1\)/);
+  assert.match(page,/W=detailOpen\?C\.find\(ae=>ae\.booking\.id===_\):void 0/);
+  assert.doesNotMatch(page,/W=C\.find\(ae=>ae\.booking\.id===_\)\?\?C\[0\]/);
   assert.match(page,/style:detailOpen\?void 0:\{gridTemplateColumns:"minmax\(0,1fr\)"\}/);
   assert.match(page,/detailOpen&&W&&l\.jsxs\(Te/);
   assert.match(page,/aria-label:"إغلاق تفاصيل الحجز"/);
