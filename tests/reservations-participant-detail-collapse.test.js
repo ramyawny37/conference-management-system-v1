@@ -1,0 +1,19 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');
+const start=source.indexOf('function bb({defaultEventId:');
+const end=source.indexOf('const yb=',start);
+const page=source.slice(start,end);
+test('participant details can close without hiding or shrinking the full bookings list',()=>{
+  assert.ok(start>=0&&end>start);
+  assert.match(page,/\[detailOpen,setDetailOpen\]=x\.useState\(!0\)/);
+  assert.match(page,/style:detailOpen\?void 0:\{gridTemplateColumns:"minmax\(0,1fr\)"\}/);
+  assert.match(page,/detailOpen&&W&&l\.jsxs\(Te/);
+  assert.match(page,/aria-label:"إغلاق تفاصيل الحجز"/);
+  assert.match(page,/onClick:\(\)=>\{Re\(\),setDetailOpen\(!1\)\}/);
+  assert.match(page,/A\(ae\.booking\.id\),setDetailOpen\(!0\),Re\(\)/);
+  assert.match(page,/"data-ui":"bookings-results-list"/);
+});
