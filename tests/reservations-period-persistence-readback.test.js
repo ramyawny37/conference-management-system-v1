@@ -37,3 +37,8 @@ test('booking type update sends immutable event scope through device dispatcher'
   assert.match(writer,/operation:"create_booking_type"/);
   assert.match(writer,/args:\{\.\.\.a,p_event_id:t\.eventId\}/);
 });
+
+test('period update carries event scope required by the same canonical dispatcher',()=>{
+  const s=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');
+  assert.match(s,/dn\("update_event_period",`update-period:\$\{a\.id\}:\$\{a\.revision\}`,\{\.\.\.i,p_event_id:t,p_period_id:a\.id,p_expected_revision:a\.revision\?\?0\}\)/);
+});
