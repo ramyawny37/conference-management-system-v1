@@ -86,6 +86,8 @@ jobs:
             tests/conference-accommodation-stay-segments.test.js \
             tests/conference-accommodation-nightly-report.test.js \
             tests/platform-conference-accommodation-lifecycle.test.js
+      - name: Reservations identity replay regression
+        run: node --test tests/reservations-identity-replay-order.test.js tests/reservations-manual-person-identity-resolution.test.js
       - name: Development preview validation
         if: always()
         run: npm run check:development-preview
