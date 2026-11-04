@@ -26,3 +26,14 @@ test('event mutations refresh the shared booking creation context without a brow
   assert.match(editor,/a\(ye\.event\),await refreshBookingContext\(\)/);
   assert.match(editor,/onSaved:async\(\)=>\{await I\(\);await refreshBookingContext\(\)\}/);
 });
+
+test('booking type update sends immutable event scope through device dispatcher',()=>{
+  const s=fs.readFileSync(path.join(__dirname,'../modules/reservations/reservations-module.js'),'utf8');
+  const start=s.indexOf('function nN('),end=s.indexOf('function fd(',start);
+  assert.ok(start>=0&&end>start);
+  const writer=s.slice(start,end);
+  assert.match(writer,/operation:"update_booking_type"/);
+  assert.match(writer,/args:\{\.\.\.a,p_event_id:t\.eventId,p_booking_type_id:t\.id,p_expected_revision:t\.revision\?\?0\}/);
+  assert.match(writer,/operation:"create_booking_type"/);
+  assert.match(writer,/args:\{\.\.\.a,p_event_id:t\.eventId\}/);
+});
