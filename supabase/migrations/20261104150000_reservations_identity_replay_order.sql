@@ -1,0 +1,2 @@
+-- Replay check must precede manual identity challenge consumption.
+-- Pending implementation after validating canonical function contract.
