@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 const read=file=>fs.readFileSync(file,'utf8');
-const migration=read('supabase/migrations/20261009120000_retire_linked_whole_snapshot_infrastructure.sql');
+const migration=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261009120000_retire_linked_whole_snapshot_infrastructure.sql');
 const runtime=[read('index.html'),read('service-worker.js'),read('state.js'),read('script.js'),read('js/sync/discovered-conference-open-service.js'),read('js/sync/startup-conference-discovery.js'),read('js/supabase/conference-device-operation-contract.js')].join('\n');
 test('C1C destructive migration retires the complete database snapshot ledger',()=>{
   for(const name of ['conference_snapshots','sync_operations','sync_conflicts','conference_snapshot_guard_intents'])assert.match(migration,new RegExp(`drop table if exists public\\.${name}`,'i'));

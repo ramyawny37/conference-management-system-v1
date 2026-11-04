@@ -3,11 +3,11 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),test=require("n
 const conferenceSource=fs.readFileSync("js/supabase/conference-device-operation-contract.js","utf8");
 const warehouseSource=fs.readFileSync("js/supabase/warehouse-device-operation-contract.js","utf8");
 const platformSource=fs.readFileSync("js/supabase/platform-device-operation-contract.js","utf8");
-const migration=fs.readFileSync("supabase/migrations/20260903180000_unified_platform_warehouse_device_operation.sql","utf8");
-const partyFinanceMigration=fs.readFileSync("supabase/migrations/20260904160000_warehouse_party_financial_ledger.sql","utf8");
-const cancellationMigration=fs.readFileSync("supabase/migrations/20260905133000_warehouse_draft_cancellation.sql","utf8");
-const itemUnitMigration=fs.readFileSync("supabase/migrations/20260905170000_warehouse_item_unit_conversion.sql","utf8");
-const moduleAdministrationMigration=fs.readFileSync("supabase/migrations/20260907150000_module_permission_administration_backend_surface.sql","utf8");
+const migration=fs.readFileSync("supabase/migrations/20260903165251_unified_platform_warehouse_device_operation.sql","utf8");
+const partyFinanceMigration=fs.readFileSync("supabase/migrations/20260904143412_warehouse_party_financial_ledger.sql","utf8");
+const cancellationMigration=fs.readFileSync("supabase/migrations/20260905111848_warehouse_draft_cancellation.sql","utf8");
+const itemUnitMigration=fs.readFileSync("supabase/migrations/20260905124809_warehouse_item_unit_conversion.sql","utf8");
+const moduleAdministrationMigration=fs.readFileSync("supabase/migrations/20260907004613_module_permission_administration_backend_surface.sql","utf8");
 const edge=fs.readFileSync("supabase/functions/platform-device-operation/index.ts","utf8");
 const session=fs.readFileSync("js/supabase/device-session.js","utf8");
 const transport=fs.readFileSync("js/supabase/warehouse-transport.js","utf8");

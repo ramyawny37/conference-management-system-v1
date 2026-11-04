@@ -1,8 +1,6 @@
 begin;
-
 alter function reservations.read(uuid,text,jsonb)
   rename to read_pre_report_booking_pagination;
-
 create function reservations.read(
   p_device_id uuid,
   p_operation text,
@@ -94,10 +92,8 @@ begin
   );
 end
 $$;
-
 alter function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
   rename to execute_device_operation_pre_report_booking_pagination;
-
 create function platform.execute_device_operation(
   p_user_id uuid,
   p_session_id uuid,
@@ -154,12 +150,10 @@ begin
   return reservations.read(v_session.device_id,p_operation,p_args);
 end
 $$;
-
 revoke all on function reservations.read_pre_report_booking_pagination(uuid,text,jsonb),platform.execute_device_operation_pre_report_booking_pagination(uuid,uuid,bytea,text,text,jsonb) from public,anon,authenticated,service_role;
 grant execute on function reservations.read_pre_report_booking_pagination(uuid,text,jsonb),platform.execute_device_operation_pre_report_booking_pagination(uuid,uuid,bytea,text,text,jsonb) to postgres;
 revoke all on function reservations.read(uuid,text,jsonb) from public,anon,authenticated;
 grant execute on function reservations.read(uuid,text,jsonb) to service_role;
 revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb) from public,anon,authenticated;
 grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb) to service_role;
-
 commit;

@@ -13,7 +13,7 @@ test('all atomic APPLY entries use one complete executor-owned transaction',()=>
   assert.equal(atomicEntries.length,13);
   for(const entry of atomicEntries){
     const sql=executor.atomicExecutionSql(entry);
-    const body=fs.readFileSync(entry.filename,'utf8');
+    const body=executor.bodyFor(entry);
     assert.ok(sql.startsWith(`BEGIN;\n${body}\n`),entry.version);
     assert.ok(sql.endsWith('\nCOMMIT;'),entry.version);
     assert.equal(sql.match(/\$controlled_semantic_guard\$/g)?.length,2,entry.version);
@@ -48,7 +48,7 @@ test('atomic builder rejects non-atomic entries and delimiter injection',()=>{
 test('Step 57 atomic SQL retains canonical body and corrected predicates unchanged',()=>{
   const entry=manifest.entries.find(item=>item.version==='20260907150000');
   const sql=executor.atomicExecutionSql(entry);
-  assert.ok(sql.includes(fs.readFileSync(entry.filename,'utf8')));
+  assert.ok(sql.includes(executor.bodyFor(entry)));
   assert.ok(sql.includes(entry.verificationSql));
   assert.equal(entry.sha256,'25c93aba3eb25f8136f446490983b165150559e0c30c85e5753d38f0690515c5');
 });

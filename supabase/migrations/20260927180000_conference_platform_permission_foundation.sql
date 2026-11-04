@@ -1,11 +1,9 @@
 begin;
-
 -- U2B REVISION: 29 business catalog rows in the existing Platform engine only.
 -- No new framework objects, grants, memberships, or runtime checks.
 -- Resource IDs are canonical public.conferences.id::text, never Organization IDs.
 -- Templates remain library-scoped consumers pending a separate scope decision.
 lock table public.module_permission_catalog in share row exclusive mode;
-
 do $$
 declare
   expected record;
@@ -74,5 +72,4 @@ begin
     ) on conflict (permission_key) do nothing;
   end loop;
 end $$;
-
 commit;

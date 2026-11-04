@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261019090000_restore_user_management_target_action_capabilities.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261019060039_restore_user_management_target_action_capabilities.sql'),'utf8');
 const service=fs.readFileSync(path.join(root,'js/sync/user-management-read-service.js'),'utf8');
 const ui=fs.readFileSync(path.join(root,'js/sync/user-management-ui.js'),'utf8');
 assert.match(migration,/create or replace function public\.get_user_management_account/);

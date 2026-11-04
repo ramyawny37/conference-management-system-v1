@@ -5,7 +5,7 @@ const path=require('node:path');
 const test=require('node:test');
 const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const sql=read('supabase/migrations/20261021203000_conference_canonical_bundle_export_restore.sql');
+const sql=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261021203000_conference_canonical_bundle_export_restore.sql');
 const edge=read('supabase/functions/platform-device-operation/index.ts');
 const contract=read('js/supabase/platform-device-operation-contract.js');
 const client=read('js/supabase/conference-canonical-bundle.js');

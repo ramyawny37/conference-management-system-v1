@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const migration=fs.readFileSync(
-  'supabase/migrations/20260921121500_member_multi_device_approval_invariant_correction.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260921121500_member_multi_device_approval_invariant_correction.sql',
   'utf8'
 );
 const fn=migration.match(/create or replace function platform_private\.apply_member_device_authorization[\s\S]*?end; \$\$;/i)?.[0]||'';

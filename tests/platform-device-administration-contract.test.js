@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const test = require("node:test");
 
-const migration = fs.readFileSync("supabase/migrations/20260831040000_platform_device_administration_contract.sql", "utf8");
+const migration = fs.readFileSync("supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260831040000_platform_device_administration_contract.sql", "utf8");
 const canonicalClient = fs.readFileSync("js/supabase/device-authorization-administration-service.js", "utf8");
 
 test("Platform SQL administration remains actor-device, permission, pending, and audit guarded", () => {

@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20260910160000_reservations_report_booking_pagination.sql','utf8');
+const sql=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260910160000_reservations_report_booking_pagination.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 
 test('report booking pages use deterministic compound keyset pagination',()=>{

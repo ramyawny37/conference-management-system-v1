@@ -6,7 +6,7 @@ const migration=fs.readFileSync(
   'supabase/migrations/20260925143000_reservations_effective_capability_dispatch_reconciliation.sql','utf8'
 );
 const contract=fs.readFileSync(
-  'supabase/migrations/20260922113000_reservations_effective_capability_contract.sql','utf8'
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260922113000_reservations_effective_capability_contract.sql','utf8'
 );
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 

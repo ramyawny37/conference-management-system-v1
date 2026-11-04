@@ -4,7 +4,7 @@ const crypto=require("node:crypto");
 const fs=require("node:fs");
 const test=require("node:test");
 
-const migration=fs.readFileSync("supabase/migrations/20260902122033_platform_device_session_foundation_1b.sql","utf8");
+const migration=fs.readFileSync("supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260902122033_platform_device_session_foundation_1b.sql","utf8");
 const edge=fs.readFileSync("supabase/functions/platform-device-session/index.ts","utf8");
 const browser=fs.readFileSync("js/supabase/device-session.js","utf8");
 const page=fs.readFileSync("platform-device-session.html","utf8");

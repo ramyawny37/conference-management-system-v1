@@ -10,7 +10,7 @@ const integration=read('js/platform-integration.js');
 const script=read('script.js');
 const cards=read('cards.js');
 const accounts=read('js/conference/accounts.js');
-const migration=read('supabase/migrations/20261007120000_linked_conference_activity_projection.sql');
+const migration=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261007120000_linked_conference_activity_projection.sql');
 
 function environment(){
   const calls=[],remote='51000000-0000-4000-8000-000000000001';

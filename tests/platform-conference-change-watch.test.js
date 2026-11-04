@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 const vm=require('node:vm');
 const source=fs.readFileSync('js/platform-integration.js','utf8');
-const migration=fs.readFileSync('supabase/migrations/20261015090000_conference_person_change_activity_projection.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20261015054629_conference_person_change_activity_projection.sql','utf8');
 const remote='10000000-0000-4000-8000-000000000001';
 const personId='30000000-0000-4000-8000-000000000001';
 function participant(name,revision){return {participationId:'20000000-0000-4000-8000-000000000001',conferenceId:remote,personId,status:'active',revision:1,guardianParticipationId:null,guardianPersonId:null,guardianFullName:null,guardianParticipationStatus:null,person:{personId,fullName:name,phone:'0100',gender:'female',dateOfBirth:'1990-01-02',church:'Church',revision}}}

@@ -58,4 +58,4 @@ revoke all on function public.get_system_owner_platform_device_administration_st
 grant execute on function public.get_system_owner_platform_device_administration_state(uuid,uuid)
   to service_role;
 
-commit;
+commit;;

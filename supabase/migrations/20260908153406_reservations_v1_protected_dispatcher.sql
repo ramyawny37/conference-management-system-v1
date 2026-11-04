@@ -86,3 +86,4 @@ grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text
   to service_role;
 
 commit;
+;

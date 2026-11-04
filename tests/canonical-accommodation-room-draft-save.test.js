@@ -2,11 +2,11 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20261025223000_atomic_accommodation_room_draft_save.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20261025202253_atomic_accommodation_room_draft_save.sql','utf8');
 const script=fs.readFileSync('script.js','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 const session=fs.readFileSync('js/supabase/device-session.js','utf8');
-const scopedExtra=fs.readFileSync('supabase/migrations/20261025224500_conference_scoped_extra_bed_capacity.sql','utf8');
+const scopedExtra=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261025224500_conference_scoped_extra_bed_capacity.sql','utf8');
 
 test('room draft save is permission checked, leased, revision checked, idempotent and audited',()=>{
   assert.match(sql,/require_conference_accommodation_context\(p_device,p_conference,'conference\.accommodation\.manage',true\)/);
@@ -74,8 +74,8 @@ test('room transfer capacity counts beds, not children sharing a bed',()=>{
   assert.doesNotMatch(move,/return occupants\.length>=capacity/);
 });
 
-const latestRoomDraft=fs.readFileSync('supabase/migrations/20261026143000_room_draft_atomic_occupant_replacement.sql','utf8');
-const guardianReplacement=fs.readFileSync('supabase/migrations/20261026170000_guardian_replacement_removes_housed_children.sql','utf8');
+const latestRoomDraft=fs.readFileSync('supabase/migrations/20261026111612_room_draft_atomic_occupant_replacement.sql','utf8');
+const guardianReplacement=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261026170000_guardian_replacement_removes_housed_children.sql','utf8');
 
 test('latest canonical room draft retains atomic replacement, revisions, idempotency and device authority',()=>{
   assert.match(latestRoomDraft,/p_replacements jsonb/);
@@ -94,7 +94,7 @@ test('guardian replacement retires only housed linked children in the same trans
   assert.match(guardianReplacement,/conference_accommodation_occupancies/);
 });
 
-const dispatchMigration=fs.readFileSync('supabase/migrations/20261026143000_room_draft_atomic_occupant_replacement.sql','utf8');
+const dispatchMigration=fs.readFileSync('supabase/migrations/20261026111612_room_draft_atomic_occupant_replacement.sql','utf8');
 test('room draft dispatch requires a room-scoped lease before invoking the atomic save',()=>{
   assert.match(dispatchMigration,/new_signature:='array\[[^\n]*p_room_lease_tokens/);
   assert.match(dispatchMigration,/new_call:='return public\.save_conference_accommodation_room_draft/);

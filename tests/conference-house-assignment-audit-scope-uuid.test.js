@@ -3,10 +3,10 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20261022103823_conference_house_assignment_audit_scope_uuid.sql','utf8');
-const foundation=fs.readFileSync('supabase/migrations/20261020131411_conference_room_assignment_foundation.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261022103823_conference_house_assignment_audit_scope_uuid.sql','utf8');
+const foundation=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261020131411_conference_room_assignment_foundation.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
-const dispatcher=fs.readFileSync('supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql','utf8');
+const dispatcher=fs.readFileSync('supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql','utf8');
 
 test('repair targets both protected assignment functions and only the audit scope expression',()=>{
   assert.match(migration,/assign_conference_house\(uuid,uuid,uuid,uuid,boolean,bigint\)/);

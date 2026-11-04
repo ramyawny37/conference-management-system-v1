@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.join(__dirname, '..', 'supabase', 'migrations');
+const root = path.join(__dirname, '..', 'supabase', 'migration-archive', 'development-pre-canonical-reconciliation-20261104');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 const write = read('20261027114000_reservations_canonical_booking_write_cutover.sql');
 const accommodation = read('20261027114500_reservations_canonical_accommodation_read_cutover.sql');

@@ -3,8 +3,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20260905213000_warehouse_system_owner_self_approval_exception.sql','utf8');
-const constraintSql=fs.readFileSync('supabase/migrations/20260905214500_warehouse_system_owner_self_approval_record_constraint.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260905175225_warehouse_system_owner_self_approval_exception.sql','utf8');
+const constraintSql=fs.readFileSync('supabase/migrations/20260905175426_warehouse_system_owner_self_approval_record_constraint.sql','utf8');
 const adjustment=sql.slice(0,sql.indexOf('create or replace function warehouse.decide_reversal_approval'));
 const reversal=sql.slice(sql.indexOf('create or replace function warehouse.decide_reversal_approval'));
 

@@ -298,3 +298,4 @@ grant usage on schema reservations to service_role;
 grant execute on function reservations.read(uuid,text,jsonb),reservations.mutate(uuid,text,jsonb) to service_role;
 
 commit;
+;

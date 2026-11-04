@@ -140,4 +140,4 @@ grant execute on function platform_private.create_permission_grant(uuid,uuid,uui
 
 drop function platform_private.revoke_permission_grant(uuid,uuid,uuid,text);
 
-commit;
+commit;;

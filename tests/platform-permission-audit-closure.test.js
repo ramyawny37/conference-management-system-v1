@@ -5,7 +5,7 @@ const path=require('node:path');
 const test=require('node:test');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const migration=read('supabase/migrations/20261019113121_close_legacy_permission_path_and_audit_grants.sql');
+const migration=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261019113121_close_legacy_permission_path_and_audit_grants.sql');
 const edge=read('supabase/functions/platform-device-operation/index.ts');
 const service=read('js/sync/module-permission-administration-service.js');
 const contract=read('js/supabase/conference-device-operation-contract.js');

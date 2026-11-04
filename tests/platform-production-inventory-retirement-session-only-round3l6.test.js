@@ -2,8 +2,8 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
-const compatibility=fs.readFileSync('supabase/migrations/20260907161000_production_platform_device_admin_compatibility.sql','utf8');
-const file='supabase/migrations/20260907163000_production_inventory_authority_retirement_session_only_reconciliation.sql';
+const compatibility=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907161000_production_platform_device_admin_compatibility.sql','utf8');
+const file='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907163000_production_inventory_authority_retirement_session_only_reconciliation.sql';
 const sql=fs.readFileSync(file,'utf8');
 const executable=sql.replace(/--[^\n]*/g,'');
 

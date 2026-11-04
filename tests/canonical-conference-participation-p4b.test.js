@@ -6,7 +6,7 @@ const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 const root=path.join(__dirname,'..');
-const migration='supabase/migrations/20260928150000_canonical_conference_participation_foundation.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928150000_canonical_conference_participation_foundation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
 
 test('P4B is one relational participation root with existing authority',()=>{

@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const test=require('node:test');
 
 const runtime=fs.readFileSync('js/supabase/canonical-template-library.js','utf8');
-const migration=fs.readFileSync('supabase/migrations/20261021193000_canonical_library_template_read.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20261021194949_canonical_library_template_read.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');

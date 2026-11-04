@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
-const sql=fs.readFileSync('supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260912100553_reservations_scope_partition_integrity.sql','utf8');
 const executable=sql.replace(/\/\*[\s\S]*?\*\//g,'').replace(/--[^\n]*/g,'');
 const body=(name)=>executable.match(new RegExp(`function reservations_private\\.${name}[\\s\\S]*?\\$\\$;`))[0];
 

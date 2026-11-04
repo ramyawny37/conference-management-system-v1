@@ -7,7 +7,7 @@ const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migrationPath='supabase/migrations/20260928130000_canonical_server_conference_core_foundation.sql';
+const migrationPath='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928130000_canonical_server_conference_core_foundation.sql';
 const sql=fs.readFileSync(path.join(root,migrationPath),'utf8');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const mutation=sql.match(/create function public\.mutate_conference_core\([\s\S]*?end \$\$;/i);
@@ -31,7 +31,7 @@ test('new mutation uses exact U2B authority and the existing protected session d
   assert.match(sql,/public\.mutate_conference_core\(v_session\.device_id/);
   assert.doesNotMatch(mutation[0],/organization_members|organizations|organization_id/);
   assert.doesNotMatch(sql,/legacy authority|\bor\s+public\.has_conference_role/i);
-  assert.match(read('supabase/migrations/20260927180000_conference_platform_permission_foundation.sql'),
+  assert.match(read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260927180000_conference_platform_permission_foundation.sql'),
     /'conference\.lifecycle\.create'[\s\S]*?'module',null,true/);
 });
 

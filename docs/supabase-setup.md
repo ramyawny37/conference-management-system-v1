@@ -2,7 +2,7 @@
 
 1. Create a Supabase project from the Supabase dashboard.
 2. Open the SQL editor and run the migration in
-   `supabase/migrations/20260728_3_3_0_online_schema.sql`, or apply it with the
+   `supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260728_3_3_0_online_schema.sql`, or apply it with the
    Supabase CLI from a separately initialized local Supabase project.
 3. Find the Project URL and Publishable Key in the project's API settings.
 4. Enable Email authentication and configure the permitted site and redirect

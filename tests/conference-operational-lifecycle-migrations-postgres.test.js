@@ -56,9 +56,9 @@ test('real migrations execute and preserve the independent-child and dynamic-per
       insert into reservations.booking_types values('23000000-0000-0000-0000-000000000001','${event}','${partition}',array['conference'],1);
       insert into reservations.bookings values('24000000-0000-0000-0000-000000000001','${event}','${partition}',array['conference']);
     `);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031210000_conference_operational_lifecycle_unification.sql')]);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261101203000_canonical_family_lifecycle_final_cutover.sql')]);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031213000_reservations_dynamic_attendance_periods.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031190103_conference_operational_lifecycle_unification.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261101213650_canonical_family_lifecycle_final_cutover.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031190106_reservations_dynamic_attendance_periods.sql')]);
     assert.equal(query(`select count(*) from reservations.event_periods where event_id='${event}' and kind='conference'`),'1');
     query(`insert into reservations.event_periods(scope_partition_id,event_id,kind,starts_on,ends_on,display_order,created_by,updated_by) values('${partition}','${event}','workshop','2026-10-12','2026-10-14',1,'${actor}','${actor}')`);
     query(`update reservations.booking_types set eligible_attendance_segments=array['conference','workshop'] where id='23000000-0000-0000-0000-000000000001'`);

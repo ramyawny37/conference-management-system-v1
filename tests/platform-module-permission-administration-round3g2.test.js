@@ -5,10 +5,10 @@ const fs=require('node:fs');
 const test=require('node:test');
 const vm=require('node:vm');
 
-const migration=fs.readFileSync('supabase/migrations/20260907150000_module_permission_administration_backend_surface.sql','utf8');
-const foundation=fs.readFileSync('supabase/migrations/20260829120000_module_authorization_foundation.sql','utf8');
-const catalogGrant=fs.readFileSync('supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql','utf8');
-const delegation=fs.readFileSync('supabase/migrations/20260907140000_module_access_delegation_enforcement.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260907004613_module_permission_administration_backend_surface.sql','utf8');
+const foundation=fs.readFileSync('supabase/migrations/20260828235929_module_authorization_foundation.sql','utf8');
+const catalogGrant=fs.readFileSync('supabase/migrations/20260829121535_module_permission_catalog_and_grant_adapter.sql','utf8');
+const delegation=fs.readFileSync('supabase/migrations/20260907001707_module_access_delegation_enforcement.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 const conferenceContractSource=fs.readFileSync('js/supabase/conference-device-operation-contract.js','utf8');
 const warehouseContractSource=fs.readFileSync('js/supabase/warehouse-device-operation-contract.js','utf8');

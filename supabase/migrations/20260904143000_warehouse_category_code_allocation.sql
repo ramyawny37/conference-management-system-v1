@@ -1,7 +1,5 @@
 begin;
-
 create sequence warehouse.category_code_sequence;
-
 create function warehouse_private.next_category_code() returns text
 language plpgsql volatile
 set search_path=pg_catalog,warehouse
@@ -16,9 +14,7 @@ begin
   return candidate;
 end;
 $$;
-
 revoke all on function warehouse_private.next_category_code() from public,anon,authenticated;
-
 create or replace function warehouse.upsert_item_master(p_device_id uuid,p_operation_id uuid,p_entity_kind text,p_entity_id uuid,p_expected_revision bigint,p_payload jsonb) returns jsonb
 language plpgsql security definer set search_path=pg_catalog,public,warehouse,warehouse_private as $$
 declare permission text; context jsonb; replay jsonb; actor uuid; result jsonb; row_id uuid; next_revision bigint; identifier text;
@@ -76,5 +72,4 @@ begin
   perform warehouse_private.write_audit(context,'item_master.changed',permission,'{}',p_operation_id,null,p_entity_kind,null,null,next_revision,null,null,null,null,result);
   return warehouse_private.complete_operation(p_operation_id,result);
 end; $$;
-
 commit;

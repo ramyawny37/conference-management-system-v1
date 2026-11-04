@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),test=require('node:test');
-const sql=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261010180000_platform_scoped_permission_foundation.sql'),'utf8');
+const sql=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261006082750_platform_scoped_permission_foundation.sql'),'utf8');
 test('canonical permission catalog covers all live modules',()=>{
  for(const domain of ['platform','conference','warehouse','reservations']) assert.match(sql,new RegExp(domain));
  assert.match(sql,/allowed_scope_mode/); assert.match(sql,/allowed_resource_type/);

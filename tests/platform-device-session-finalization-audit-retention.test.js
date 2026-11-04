@@ -3,9 +3,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const migration=fs.readFileSync('supabase/migrations/20260909220000_device_session_finalization_audit_retention.sql','utf8');
-const foundation=fs.readFileSync('supabase/migrations/20260902122033_platform_device_session_foundation_1b.sql','utf8');
-const boundary=fs.readFileSync('supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260909220000_device_session_finalization_audit_retention.sql','utf8');
+const foundation=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260902122033_platform_device_session_foundation_1b.sql','utf8');
+const boundary=fs.readFileSync('supabase/migrations/20260903100433_conference_device_session_execution_boundary.sql','utf8');
 const rehearsal=fs.readFileSync('tests/sql/platform-device-session-finalization-audit-retention-rehearsal.sql','utf8');
 
 test('finalization retains historical sessions and immutable audit history',()=>{

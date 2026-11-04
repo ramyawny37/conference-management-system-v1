@@ -1,15 +1,11 @@
 begin;
 
--- platform.audit_events requires Conference audit scope as
--- scope_type='conference' with a uuid scope_id. The room-assignment foundation
--- wrote scope_type='resource' and cast the Conference id to text. The bad cast
--- failed first at operation_dispatch with 42804 and masked the scope invariant.
 do $repair$
 declare
   signature regprocedure;
   definition text;
-  broken_expression constant text:='''resource'',p_conference::text,result,jsonb_build_object';
-  corrected_expression constant text:='''conference'',p_conference,result,jsonb_build_object';
+  broken_expression constant text:='p_conference::text,result,jsonb_build_object';
+  corrected_expression constant text:='p_conference,result,jsonb_build_object';
 begin
   foreach signature in array array[
     'public.assign_conference_house(uuid,uuid,uuid,uuid,boolean,bigint)'::regprocedure,
@@ -36,4 +32,4 @@ comment on function public.assign_conference_house(uuid,uuid,uuid,uuid,boolean,b
 comment on function public.assign_conference_room(uuid,uuid,uuid,uuid,boolean,bigint) is
 'Protected, idempotent Conference room assignment with overlap and occupancy guards. Audit scope_id preserves the canonical Conference UUID type.';
 
-commit;
+commit;;

@@ -53,7 +53,7 @@ revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,te
 grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb) to service_role;
 grant usage on schema platform to service_role;
 
-\ir ../../supabase/migrations/20261018214500_canonical_owner_pending_device_session_read.sql
+\ir ../../supabase/migrations/20261018173157_canonical_owner_pending_device_session_read.sql
 
 insert into auth.users values
  ('10000000-0000-4000-8000-000000000001','owner@test'),('10000000-0000-4000-8000-000000000002','other@test'),('10000000-0000-4000-8000-000000000003','target@test');

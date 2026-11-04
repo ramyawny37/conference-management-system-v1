@@ -2,8 +2,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const fix=fs.readFileSync('supabase/migrations/20260904200000_warehouse_issue_post_financial_snapshot_fix.sql','utf8');
-const ledger=fs.readFileSync('supabase/migrations/20260904160000_warehouse_party_financial_ledger.sql','utf8');
+const fix=fs.readFileSync('supabase/migrations/20260904221256_warehouse_issue_post_financial_snapshot_fix.sql','utf8');
+const ledger=fs.readFileSync('supabase/migrations/20260904143412_warehouse_party_financial_ledger.sql','utf8');
 
 const snapshots=['previous_balance_snapshot','operation_total_snapshot','remaining_snapshot','resulting_balance_snapshot'];
 

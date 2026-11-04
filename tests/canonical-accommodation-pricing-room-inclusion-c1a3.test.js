@@ -6,8 +6,8 @@ const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 const root=path.join(__dirname,'..');
-const migration=path.join(root,'supabase/migrations/20261007120000_canonical_accommodation_pricing_room_inclusion.sql');
-const pricing=path.join(root,'supabase/migrations/20261003180000_canonical_conference_accommodation_pricing.sql');
+const migration=path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261007120000_canonical_accommodation_pricing_room_inclusion.sql');
+const pricing=path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003180000_canonical_conference_accommodation_pricing.sql');
 const sql=fs.readFileSync(migration,'utf8');
 
 test('C1A.3 persists exclusions only under the existing Accommodation Pricing owner',()=>{

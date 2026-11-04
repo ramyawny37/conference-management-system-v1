@@ -48,3 +48,4 @@ exception when exclusion_violation then raise exception 'ACCOMMODATION_STAY_OVER
 end $$;
 
 commit;
+;

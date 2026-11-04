@@ -34,3 +34,4 @@ revoke all on function public.get_system_owner_device_challenge_verification_mat
   from public,anon,authenticated;
 grant execute on function public.get_system_owner_device_challenge_verification_material(uuid,uuid,uuid,uuid)
   to service_role;
+;

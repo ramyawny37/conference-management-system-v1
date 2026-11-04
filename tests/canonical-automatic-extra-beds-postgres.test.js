@@ -45,7 +45,7 @@ test('automatic child extra beds are occupancy-owned and guardian-stay protected
       insert into public.conference_participations values('${guardian}','${conference}','active',null),('${child}','${conference}','active','${guardian}'),('${adult}','${conference}','active',null),('${unhousedGuardian}','${conference}','active',null),('${unqualifiedChild}','${conference}','active','${unhousedGuardian}');
       insert into public.conference_accommodation_occupancies(conference_id,room_id,participation_id,arrival_day,leave_day,bed_type) values('${conference}','${roomA}','${guardian}',1,5,'base');
     `);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261102100000_canonical_automatic_extra_beds_and_guardian_stays.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261101223613_canonical_automatic_extra_beds_and_guardian_stays.sql')]);
     const automatic=JSON.parse(query(`select public.assign_conference_accommodation(gen_random_uuid(),'${conference}','${roomB}','${child}',1,5,'extra','child')`));
     assert.equal(query(`select extra_bed_source from public.conference_accommodation_occupancies where id='${automatic.id}'`),'automatic');
     assert.equal(query(`select extra_bed_capacity from public.conference_room_assignments where conference_id='${conference}' and room_id='${roomB}'`),'0');

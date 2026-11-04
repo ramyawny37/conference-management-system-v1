@@ -4,9 +4,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const finalCutover=fs.readFileSync('supabase/migrations/20261010202600_system_access_device_authority_cutover.sql','utf8');
-const organizationApiRetirement=fs.readFileSync('supabase/migrations/20261010201500_organization_api_root_retirement.sql','utf8');
-const organizationStorageRetirement=fs.readFileSync('supabase/migrations/20261010201400_organization_subsystem_storage_retirement.sql','utf8');
+const finalCutover=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202600_system_access_device_authority_cutover.sql','utf8');
+const organizationApiRetirement=fs.readFileSync('supabase/migrations/20261007132211_organization_api_root_retirement.sql','utf8');
+const organizationStorageRetirement=fs.readFileSync('supabase/migrations/20261007132253_organization_subsystem_storage_retirement.sql','utf8');
 const indexedDb=fs.readFileSync('js/storage/indexeddb.js','utf8');
 
 test('final authority cutover drops every legacy Public account and device authority table',()=>{

@@ -6,7 +6,7 @@ const managerSource=fs.readFileSync(path.join(__dirname,'../js/sync/conference-e
 const scriptSource=fs.readFileSync(path.join(__dirname,'../script.js'),'utf8');
 const stateSource=fs.readFileSync(path.join(__dirname,'../state.js'),'utf8');
 const lockClientSource=fs.readFileSync(path.join(__dirname,'../js/sync/conference-locks.js'),'utf8');
-const migrationSource=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260806_6_0_0_conference_section_locks.sql'),'utf8');
+const migrationSource=fs.readFileSync(path.join(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260806_6_0_0_conference_section_locks.sql'),'utf8');
 
 function device(id,server){
   const local='local-a',remote='11111111-1111-4111-8111-111111111111';

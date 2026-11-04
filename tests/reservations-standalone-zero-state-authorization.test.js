@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const migration = fs.readFileSync(
-  path.join(__dirname, '..', 'supabase', 'migrations', '20260922113000_reservations_standalone_zero_state_authorization_reconciliation.sql'),
+  path.join(__dirname, '..', 'supabase', 'migration-archive', 'development-pre-canonical-reconciliation-20261104', '20260922113000_reservations_standalone_zero_state_authorization_reconciliation.sql'),
   'utf8'
 );
 

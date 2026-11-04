@@ -47,3 +47,4 @@ end $$;
 revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb),platform.execute_device_operation_pre_reservations_event_booking(uuid,uuid,bytea,text,text,jsonb) from public,anon,authenticated,service_role;
 grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb),platform.execute_device_operation_pre_reservations_event_booking(uuid,uuid,bytea,text,text,jsonb) to service_role;
 commit;
+;

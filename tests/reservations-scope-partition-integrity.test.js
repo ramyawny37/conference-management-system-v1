@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260912100553_reservations_scope_partition_integrity.sql','utf8');
 
 test('Reservations uses an immutable internal scope partition with standalone null organization',()=>{
   assert.match(sql,/add column if not exists scope_type text/);

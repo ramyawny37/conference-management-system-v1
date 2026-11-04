@@ -181,3 +181,4 @@ grant execute on function public.mutate_conference_accommodation_operations(uuid
 comment on column public.conference_accommodation_occupancies.arrived_at is 'Actual Conference arrival confirmation for this canonical stay; null means not yet arrived.';
 comment on column public.conference_room_assignments.key_holder_occupancy_id is 'Current room-key recipient stay. Read projection suppresses stale recipients after move/removal.';
 commit;
+;

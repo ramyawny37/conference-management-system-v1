@@ -8,7 +8,7 @@ const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migration='supabase/migrations/20260928160000_canonical_conference_routing_consolidation.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928160000_canonical_conference_routing_consolidation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
 const routerSignature='platform_private.route_canonical_conference_operation(uuid,uuid,bytea,uuid,text,jsonb)';
 

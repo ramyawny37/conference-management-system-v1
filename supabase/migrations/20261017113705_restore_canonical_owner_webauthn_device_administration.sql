@@ -456,3 +456,4 @@ grant execute on function public.get_system_owner_device_operation_result(uuid,u
   to service_role;
 
 commit;
+;

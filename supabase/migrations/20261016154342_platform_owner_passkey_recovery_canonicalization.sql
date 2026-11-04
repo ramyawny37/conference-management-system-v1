@@ -397,3 +397,4 @@ begin
       'targetPlatform','MacIntel','independentOfApprovedDevice',true,
       'reviewReference','PLATFORM_OWNER_PASSKEY_RECOVERY_20261016_CURRENT_MACINTEL'));
 end $$;
+;

@@ -87,5 +87,5 @@ test('dead duplicate and linked snapshot recovery runtime are absent while Reser
   assert.doesNotMatch(serviceWorker,/tmp_script/);
   assert.equal(fs.existsSync('js/recovery/recovery-preview-service.js'),false);
   assert.equal(fs.existsSync('modules/reservations'),true);
-  assert.equal(fs.existsSync('supabase/migrations/20260909160000_reservations_conference_lifecycle_round1.sql'),true);
+  assert.equal(fs.existsSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260909160000_reservations_conference_lifecycle_round1.sql'),true);
 });

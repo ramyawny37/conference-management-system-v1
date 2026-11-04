@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20261027150000_atomic_guardian_child_accommodation.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261027150000_atomic_guardian_child_accommodation.sql','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 const script=fs.readFileSync('script.js','utf8');
 

@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 const vm=require('node:vm');
 
-const migration=fs.readFileSync('supabase/migrations/20261010202600_system_access_device_authority_cutover.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202600_system_access_device_authority_cutover.sql','utf8');
 const serviceSource=fs.readFileSync('js/supabase/first-system-bootstrap-service.js','utf8');
 
 test('first bootstrap creates Platform account and owner authority only',()=>{

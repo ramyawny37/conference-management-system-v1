@@ -8,9 +8,9 @@ const {promisify}=require('node:util');
 const test=require('node:test');
 const execFileAsync=promisify(execFile);
 const root=path.join(__dirname,'..');
-const p5a='supabase/migrations/20260928170000_canonical_conference_accommodation_data_foundation.sql';
-const p5b='supabase/migrations/20260929120000_canonical_conference_accommodation_protected_mutations.sql';
-const migration='supabase/migrations/20260929160000_canonical_conference_participation_accommodation_propagation.sql';
+const p5a='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928170000_canonical_conference_accommodation_data_foundation.sql';
+const p5b='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929120000_canonical_conference_accommodation_protected_mutations.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929160000_canonical_conference_participation_accommodation_propagation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
 
 test('P5C extends canonical participation lifecycle without new routing or ledger',()=>{

@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20261022125139_canonical_accommodation_stay_segments.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261022125139_canonical_accommodation_stay_segments.sql','utf8');
 const core=fs.readFileSync('core.js','utf8');
 const cards=fs.readFileSync('cards.js','utf8');
 const runtime=fs.readFileSync('script.js','utf8');
@@ -17,7 +17,7 @@ test('stay segments replace single-participation storage with a half-open overla
 });
 
 test('partial live application is reconciled without replaying matching temporal consumers',()=>{
-  const projection=fs.readFileSync('supabase/migrations/20261022125335_accommodation_temporal_consumer_projection.sql','utf8');
+  const projection=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261022125335_accommodation_temporal_consumer_projection.sql','utf8');
   assert.match(projection,/if position\(new_join in definition\)>0 then[\s\S]*continue/);
   assert.match(projection,/elsif position\(old_join in definition\)>0 then/);
   assert.match(projection,/ACCOMMODATION_TEMPORAL_CONSUMER_DRIFT/);

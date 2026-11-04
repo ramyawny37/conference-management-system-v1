@@ -1,7 +1,6 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
 const crypto=require('node:crypto');
 const executor=require('../tools/production-release/controlled-production-executor.cjs');
 const manifest=require('../tools/production-release/controlled-production-manifest.json');
@@ -14,7 +13,8 @@ const finalDispatcherSha='a878c59a41e17ca9e60e0540b2bf425675c929c497832b4694e651
 const entry=()=>manifest.entries.find(item=>item.version===version);
 
 test('Step 57 canonical body and SHA remain unchanged',()=>{
-  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(canonical)).digest('hex'),canonicalSha);
+  assert.equal(entry().filename,canonical);
+  assert.equal(crypto.createHash('sha256').update(executor.bodyFor(entry())).digest('hex'),canonicalSha);
   assert.equal(entry().sha256,canonicalSha);
 });
 

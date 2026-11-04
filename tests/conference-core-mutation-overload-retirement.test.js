@@ -5,14 +5,14 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const migration=fs.readFileSync(
-  'supabase/migrations/20261010120000_retire_legacy_conference_core_mutation_overloads.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010120000_retire_legacy_conference_core_mutation_overloads.sql',
   'utf8'
 );
 const contract=fs.readFileSync(
   'js/supabase/platform-device-operation-contract.js','utf8'
 );
 const router=fs.readFileSync(
-  'supabase/migrations/20261009123000_final_canonical_conference_creation_reconciliation.sql',
+  'supabase/migrations/20261006061933_20261009123000_final_canonical_conference_creation_reconciliation.sql',
   'utf8'
 );
 

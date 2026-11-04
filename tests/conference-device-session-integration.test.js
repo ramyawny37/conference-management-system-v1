@@ -1,8 +1,8 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),test=require("node:test"),vm=require("node:vm");
-const migration=fs.readFileSync("supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql","utf8");
-const canonicalDispatcher=fs.readFileSync("supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql","utf8");
-const finalizationCorrection=fs.readFileSync("supabase/migrations/20260909220000_device_session_finalization_audit_retention.sql","utf8");
+const migration=fs.readFileSync("supabase/migrations/20260903100433_conference_device_session_execution_boundary.sql","utf8");
+const canonicalDispatcher=fs.readFileSync("supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql","utf8");
+const finalizationCorrection=fs.readFileSync("supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260909220000_device_session_finalization_audit_retention.sql","utf8");
 const edge=fs.readFileSync("supabase/functions/conference-device-operation/index.ts","utf8");
 const session=fs.readFileSync("js/supabase/device-session.js","utf8");
 const client=fs.readFileSync("js/supabase/client.js","utf8");

@@ -59,3 +59,4 @@ begin
  execute d;
 end $migration$;
 commit;
+;

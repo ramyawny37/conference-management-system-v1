@@ -7,7 +7,7 @@ const test=require('node:test');
 
 const root=path.join(__dirname,'..');
 const migration=fs.readFileSync(
-  path.join(root,'supabase/migrations/20261010130000_reservations_scope_partition_links_rls.sql'),
+  path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010130000_reservations_scope_partition_links_rls.sql'),
   'utf8'
 );
 

@@ -116,3 +116,4 @@ revoke all on function platform.execute_device_operation(uuid,uuid,bytea,text,te
   from public,anon,authenticated,service_role;
 grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
   to service_role;
+;

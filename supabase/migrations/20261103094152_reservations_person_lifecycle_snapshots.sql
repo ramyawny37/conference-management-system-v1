@@ -73,3 +73,4 @@ begin
 end $migration$;
 
 revoke all on function reservations_private.mutate_scoped(uuid,text,jsonb) from public,anon,authenticated;
+;

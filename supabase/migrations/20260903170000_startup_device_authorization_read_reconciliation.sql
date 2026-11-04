@@ -75,3 +75,4 @@ begin
     'enforcementEnabled',coalesce(enforcement_enabled,false),
     'checkedAt',pg_catalog.clock_timestamp());
 end; $$;
+;

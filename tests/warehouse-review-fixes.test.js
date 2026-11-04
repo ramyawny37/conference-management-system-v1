@@ -141,7 +141,7 @@ test('Reports and top search accurately disclose their limited current behavior'
 });
 
 test('opening-balance invariant and established guarded lifecycles remain source-enforced',()=>{
-  const sql=fs.readFileSync('supabase/migrations/20260829150000_warehouse_post_document_revision_ambiguity_correction.sql','utf8');
+  const sql=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260829150000_warehouse_post_document_revision_ambiguity_correction.sql','utf8');
   const remaining=fs.readFileSync('js/warehouse/remaining-operations.js','utf8');
   const historical=fs.readFileSync('js/warehouse/historical-operations.js','utf8');
   assert.match(sql,/WAREHOUSE_OPENING_BALANCE_EXISTING_HISTORY/);

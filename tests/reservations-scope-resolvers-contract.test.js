@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const sql=fs.readFileSync('supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260912100553_reservations_scope_partition_integrity.sql','utf8');
 test('Round A resolvers derive every scope from stored Reservations roots',()=>{
  for(const fn of ['resolve_event_scope','resolve_booking_scope','resolve_payment_scope','resolve_event_period_scope','resolve_booking_type_scope'])assert.match(sql,new RegExp(`function reservations_private\\.${fn}`));
  assert.match(sql,/select \* into v_event from reservations\.events where id=p_event_id/);

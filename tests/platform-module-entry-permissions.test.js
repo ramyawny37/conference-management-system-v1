@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),test=require('node:test');
-const sql=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261010189000_platform_module_entry_permissions.sql'),'utf8');
+const sql=fs.readFileSync(path.join(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010189000_platform_module_entry_permissions.sql'),'utf8');
 test('all live modules have explicit canonical entry and management permissions',()=>{
  for(const module of ['conference','warehouse','reservations']){
   assert.match(sql,new RegExp(module+'\\.module\\.access'));

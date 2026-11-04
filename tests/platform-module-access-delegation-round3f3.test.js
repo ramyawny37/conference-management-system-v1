@@ -4,12 +4,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const migration=fs.readFileSync('supabase/migrations/20260907140000_module_access_delegation_enforcement.sql','utf8');
-const foundation=fs.readFileSync('supabase/migrations/20260829120000_module_authorization_foundation.sql','utf8');
-const systemAccess=fs.readFileSync('supabase/migrations/20260730_5_0_0_system_access_foundation.sql','utf8');
-const catalog=fs.readFileSync('supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql','utf8');
-const warehouse=fs.readFileSync('supabase/migrations/20260829140200_warehouse_v1_guarded_rpc.sql','utf8');
-const warehouseCatalog=fs.readFileSync('supabase/migrations/20260829140000_warehouse_module_permission_catalog.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260907001707_module_access_delegation_enforcement.sql','utf8');
+const foundation=fs.readFileSync('supabase/migrations/20260828235929_module_authorization_foundation.sql','utf8');
+const systemAccess=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260730_5_0_0_system_access_foundation.sql','utf8');
+const catalog=fs.readFileSync('supabase/migrations/20260829121535_module_permission_catalog_and_grant_adapter.sql','utf8');
+const warehouse=fs.readFileSync('supabase/migrations/20260829162813_warehouse_v1_guarded_rpc.sql','utf8');
+const warehouseCatalog=fs.readFileSync('supabase/migrations/20260829162729_warehouse_module_permission_catalog.sql','utf8');
 const contract=fs.readFileSync('js/supabase/warehouse-device-operation-contract.js','utf8');
 
 function body(name){

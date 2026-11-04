@@ -8,15 +8,15 @@ var vm=require('vm');
 var root=path.resolve(__dirname,'..');
 var authority=fs.readFileSync(path.join(
   root,
-  'supabase/migrations/20261010202000_platform_account_authority_cutover.sql'
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202000_platform_account_authority_cutover.sql'
 ),'utf8');
 var startup=fs.readFileSync(path.join(
   root,
-  'supabase/migrations/20261010202200_startup_platform_system_access.sql'
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202200_startup_platform_system_access.sql'
 ),'utf8');
 var retirement=fs.readFileSync(path.join(
   root,
-  'supabase/migrations/20261010202600_system_access_device_authority_cutover.sql'
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202600_system_access_device_authority_cutover.sql'
 ),'utf8');
 
 assert.match(authority,/from platform\.profiles/i);

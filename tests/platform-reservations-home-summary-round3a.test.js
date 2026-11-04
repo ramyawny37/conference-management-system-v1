@@ -7,7 +7,7 @@ const vm=require('node:vm');
 
 const dashboard=fs.readFileSync('js/platform-home-dashboard.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
-const migration=fs.readFileSync('supabase/migrations/20261020072812_reservations_platform_dashboard_summary.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261020072812_reservations_platform_dashboard_summary.sql','utf8');
 
 function createDashboard(reservationResults){
   const nodes=new Map(['platformHomeConnectivity','platformHomeModules','platformHomeActivity','platformHomeActions','platformHomeAlerts'].map(id=>[id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){}}]));

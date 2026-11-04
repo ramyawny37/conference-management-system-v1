@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const file='supabase/migrations/20260907162000_production_phase1c_session_only_reconciliation.sql';
+const file='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907162000_production_phase1c_session_only_reconciliation.sql';
 const sql=fs.readFileSync(file,'utf8');
 const executable=sql.replace(/--[^\n]*/g,'');
 
@@ -51,5 +51,5 @@ test('9 migration fabricates no authority or credential rows',()=>{
 });
 test('10 Production substitute ordering is explicit',()=>{
   assert.ok(file.split('/').pop()>'20260907161000_production_platform_device_admin_compatibility.sql');
-  assert.ok(fs.existsSync('supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql'));
+  assert.ok(fs.existsSync('supabase/migrations/20260903100433_conference_device_session_execution_boundary.sql'));
 });

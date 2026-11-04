@@ -9,10 +9,10 @@ const test=require('node:test');
 const execFileAsync=promisify(execFile);
 const root=path.join(__dirname,'..');
 const migrations=[
-  'supabase/migrations/20260928170000_canonical_conference_accommodation_data_foundation.sql',
-  'supabase/migrations/20260929120000_canonical_conference_accommodation_protected_mutations.sql',
-  'supabase/migrations/20260929160000_canonical_conference_participation_accommodation_propagation.sql',
-  'supabase/migrations/20261002120000_canonical_conference_guardian_participation_relation.sql'
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928170000_canonical_conference_accommodation_data_foundation.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929120000_canonical_conference_accommodation_protected_mutations.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929160000_canonical_conference_participation_accommodation_propagation.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261002120000_canonical_conference_guardian_participation_relation.sql'
 ];
 const sql=fs.readFileSync(path.join(root,migrations[3]),'utf8');
 const integration=fs.readFileSync(path.join(root,'js/platform-integration.js'),'utf8');

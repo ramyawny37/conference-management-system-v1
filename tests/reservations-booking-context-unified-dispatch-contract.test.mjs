@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const migration = readFileSync(new URL('../supabase/migrations/20261012110000_reservations_booking_creation_context_dispatch_contract.sql', import.meta.url), 'utf8');
+const migration = readFileSync(new URL('../supabase/migrations/20261011231546_reservations_booking_creation_context_dispatch_contract.sql', import.meta.url), 'utf8');
 const client = readFileSync(new URL('../modules/reservations/reservations-module.js', import.meta.url), 'utf8');
 
 test('booking context dispatch accepts only standalone or canonical conference scope', () => {

@@ -5,8 +5,9 @@ const path=require('node:path');
 const test=require('node:test');
 
 const root=path.resolve(__dirname,'..');
-const linkMigration=fs.readFileSync(path.join(root,'supabase','migrations','20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql'),'utf8');
-const paymentMigration=fs.readFileSync(path.join(root,'supabase','migrations','20260914151500_reservations_payment_history_relink_guard_fix.sql'),'utf8');
+const archive=path.join(root,'supabase','migration-archive','development-pre-canonical-reconciliation-20261104');
+const linkMigration=fs.readFileSync(path.join(archive,'20260914150000_reservations_standalone_event_link_constraint_resolution_fix.sql'),'utf8');
+const paymentMigration=fs.readFileSync(path.join(archive,'20260914151500_reservations_payment_history_relink_guard_fix.sql'),'utf8');
 
 test('standalone event link keeps the security-definer boundary and defers transaction constraints without search-path name lookup',()=>{
   assert.match(linkMigration,/create or replace function reservations_private\.link_standalone_event_to_conference\([\s\S]*?security definer[\s\S]*?set search_path=''[\s\S]*?set constraints all deferred;/i);

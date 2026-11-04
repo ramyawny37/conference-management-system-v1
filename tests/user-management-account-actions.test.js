@@ -2,8 +2,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.resolve(__dirname,'../js/sync/user-management-ui.js'),'utf8');
 const serviceSource=fs.readFileSync(path.resolve(__dirname,'../js/sync/user-management-read-service.js'),'utf8');
-const dispatcher=fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql'),'utf8');
-const cutover=fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/20261010202400_legacy_system_access_runtime_retirement.sql'),'utf8');
+const dispatcher=fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql'),'utf8');
+const cutover=fs.readFileSync(path.resolve(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202400_legacy_system_access_runtime_retirement.sql'),'utf8');
 assert.match(serviceSource,/rpc\(ctx,'device_guarded_manage_system_user'/);
 assert.match(dispatcher,/when 'device_guarded_manage_system_user' then/);
 assert.match(cutover,/perform platform\.set_account_status\(p_target_user_id,target_status/);

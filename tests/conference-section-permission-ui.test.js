@@ -5,7 +5,7 @@ const test=require('node:test');
 const script=fs.readFileSync('script.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const css=fs.readFileSync('style.css','utf8');
-const sql=fs.readFileSync('supabase/migrations/20261015143000_conference_section_manage_capabilities.sql','utf8');
+const sql=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261015143000_conference_section_manage_capabilities.sql','utf8');
 function body(name,next){const start=script.indexOf('function '+name+'('),end=script.indexOf('\nfunction '+next+'(',start);assert.ok(start>=0&&end>start);return script.slice(start,end);}
 test('discovery resolves view and manage independently and preserves protected ACL',()=>{
   assert.match(sql,/conference\.people\.view','people'/);

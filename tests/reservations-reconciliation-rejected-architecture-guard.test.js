@@ -10,7 +10,7 @@ const permissionService=read('js/sync/module-permission-administration-service.j
 const permissionUi=read('js/sync/module-permission-administration-ui.js');
 const warehouse=read('js/warehouse/workspace.js');
 const reservations=read('modules/reservations/reservations-module.js');
-const moduleGate=read('supabase/migrations/20260912192000_platform_module_entry_access_gate.sql');
+const moduleGate=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260912192000_platform_module_entry_access_gate.sql');
 
 test('temporary Reservations shell shims stay rejected',()=>{
   assert.equal(fs.existsSync('js/platform-integration-core.js'),false);

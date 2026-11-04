@@ -3,15 +3,15 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const file='supabase/migrations/20260907155000_production_structural_platform_foundation.sql';
+const file='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907155000_production_structural_platform_foundation.sql';
 const sql=fs.readFileSync(file,'utf8');
 const executable=sql.replace(/--[^\n]*/g,'');
 const migrations={
-  sessions:fs.readFileSync('supabase/migrations/20260902122033_platform_device_session_foundation_1b.sql','utf8'),
-  conference:fs.readFileSync('supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql','utf8'),
-  enrollment:fs.readFileSync('supabase/migrations/20260903175000_platform_native_device_enrollment.sql','utf8'),
-  warehouse:fs.readFileSync('supabase/migrations/20260903180000_unified_platform_warehouse_device_operation.sql','utf8'),
-  round3k:fs.readFileSync('supabase/migrations/20260907160000_production_foundation_reconciliation.sql','utf8')
+  sessions:fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260902122033_platform_device_session_foundation_1b.sql','utf8'),
+  conference:fs.readFileSync('supabase/migrations/20260903100433_conference_device_session_execution_boundary.sql','utf8'),
+  enrollment:fs.readFileSync('supabase/migrations/20260903165250_platform_native_device_enrollment.sql','utf8'),
+  warehouse:fs.readFileSync('supabase/migrations/20260903165251_unified_platform_warehouse_device_operation.sql','utf8'),
+  round3k:fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907160000_production_foundation_reconciliation.sql','utf8')
 };
 
 test('1 package is ordered immediately before Round 3K',()=>assert.ok(file.split('/').pop()<'20260907160000_production_foundation_reconciliation.sql'));
@@ -103,18 +103,18 @@ test('23 package is forward-only and transaction bounded',()=>{
   assert.doesNotMatch(executable,/\b(?:drop|truncate)\b/i);
 });
 test('24 canonical Warehouse permission authority remains separate',()=>{
-  const catalog=fs.readFileSync('supabase/migrations/20260829140000_warehouse_module_permission_catalog.sql','utf8');
+  const catalog=fs.readFileSync('supabase/migrations/20260829162729_warehouse_module_permission_catalog.sql','utf8');
   assert.match(catalog,/warehouse\./);
   assert.doesNotMatch(sql,/'warehouse\./);
 });
 test('25 dedicated package and immutable prerequisite migration sources exist',()=>{
   assert.ok(fs.existsSync(file));
   for(const prerequisite of [
-    'supabase/migrations/20260902122033_platform_device_session_foundation_1b.sql',
-    'supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql',
-    'supabase/migrations/20260903175000_platform_native_device_enrollment.sql',
-    'supabase/migrations/20260903180000_unified_platform_warehouse_device_operation.sql',
-    'supabase/migrations/20260907160000_production_foundation_reconciliation.sql'
+    'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260902122033_platform_device_session_foundation_1b.sql',
+    'supabase/migrations/20260903100433_conference_device_session_execution_boundary.sql',
+    'supabase/migrations/20260903165250_platform_native_device_enrollment.sql',
+    'supabase/migrations/20260903165251_unified_platform_warehouse_device_operation.sql',
+    'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907160000_production_foundation_reconciliation.sql'
   ])assert.ok(fs.existsSync(prerequisite),prerequisite);
 });
 test('26 regression test is independent of unpublished git status',()=>{

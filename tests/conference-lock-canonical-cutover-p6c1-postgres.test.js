@@ -12,7 +12,7 @@ const migrations=[
   '20261009121000_cut_conference_locks_to_canonical_permissions.sql',
   '20261009121500_final_conference_membership_consumer_demolition.sql',
   '20261009122000_retire_conference_membership_plane.sql'
-].map(name=>path.resolve('supabase/migrations',name));
+].map(name=>path.resolve('supabase/migration-archive/development-pre-canonical-reconciliation-20261104',name));
 const pgApp='/Applications/Postgres.app/Contents/Versions/latest/bin';
 const pgBin=fs.existsSync(path.join(pgApp,'psql'))?pgApp:'';
 const database=`conference_p6c1_${process.pid}_${Date.now()}`;

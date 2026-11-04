@@ -1,4 +1,4 @@
--- Phase 1B: Supabase-owned short-lived device sessions established by bound-key proof.
+-- Phase 1B: Supabase-owned, key-established short-lived device sessions.
 
 create table platform_private.device_session_challenges (
   id uuid primary key default extensions.gen_random_uuid(),
@@ -280,3 +280,4 @@ grant execute on function platform.begin_device_session_challenge(uuid) to authe
 grant execute on function platform.get_device_session_challenge_context(uuid,uuid) to service_role;
 grant execute on function platform.complete_device_session(uuid,uuid,uuid,uuid,uuid,text,uuid,bytea) to service_role;
 grant execute on function platform.verify_device_session(uuid,uuid,bytea) to service_role;
+;

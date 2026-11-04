@@ -88,7 +88,7 @@ test('editing an existing central person requires an explicit persistence scope'
 });
 
 test('duplicate booking guard is part of the canonical writer',()=>{
-  const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261103163000_reservations_reject_duplicate_event_person.sql'),'utf8');
+  const migration=fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261103163000_reservations_reject_duplicate_event_person.sql'),'utf8');
   assert.ok(migration.includes('RESERVATIONS_PERSON_ALREADY_REGISTERED_IN_EVENT'));
   assert.ok(migration.includes('existing_booking.event_id=v_event.id'));
   assert.ok(migration.includes('existing_participant.person_id=v_person_id'));

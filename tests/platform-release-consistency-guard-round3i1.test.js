@@ -11,9 +11,9 @@ const ui=read('js/sync/module-permission-administration-ui.js');
 const index=read('index.html');
 const worker=read('service-worker.js');
 const edge=read('supabase/functions/platform-device-operation/index.ts');
-const foundation=read('supabase/migrations/20260907140000_module_access_delegation_enforcement.sql');
-const administration=read('supabase/migrations/20260907150000_module_permission_administration_backend_surface.sql');
-const catalog=read('supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql');
+const foundation=read('supabase/migrations/20260907001707_module_access_delegation_enforcement.sql');
+const administration=read('supabase/migrations/20260907004613_module_permission_administration_backend_surface.sql');
+const catalog=read('supabase/migrations/20260829121535_module_permission_catalog_and_grant_adapter.sql');
 
 function contract(file,globalName){
   const sandbox={window:{}};
@@ -80,8 +80,8 @@ test('Module Administration frontend assets remain in the authoritative PWA shel
   assert.doesNotMatch(index+worker,/module-permission-administration-ui\.js\?rev=generic-permission-resources-v1/);
 });
 test('required migration sources and dispatcher contracts remain present',()=>{
-  assert.ok(fs.existsSync(path.join(root,'supabase/migrations/20260907140000_module_access_delegation_enforcement.sql')));
-  assert.ok(fs.existsSync(path.join(root,'supabase/migrations/20260907150000_module_permission_administration_backend_surface.sql')));
+  assert.ok(fs.existsSync(path.join(root,'supabase/migrations/20260907001707_module_access_delegation_enforcement.sql')));
+  assert.ok(fs.existsSync(path.join(root,'supabase/migrations/20260907004613_module_permission_administration_backend_surface.sql')));
   assert.match(foundation,/create or replace function public\.manage_foundation_module_grant/);
   for(const operation of ['search_module_permission_candidates','list_module_permission_catalog_for_administration','manage_catalog_module_grant','list_permission_administration_stores'])assert.match(administration,new RegExp("'"+operation+"'"));
 });

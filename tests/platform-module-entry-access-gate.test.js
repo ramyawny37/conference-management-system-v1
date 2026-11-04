@@ -6,7 +6,7 @@ const vm=require('node:vm');
 
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
-const migration=fs.readFileSync('supabase/migrations/20260912192000_platform_module_entry_access_gate.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260912192000_platform_module_entry_access_gate.sql','utf8');
 const script=fs.readFileSync('script.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');

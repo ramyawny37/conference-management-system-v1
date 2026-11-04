@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const manifest=require('../tools/production-release/controlled-production-manifest.json');
-const migration=fs.readFileSync('supabase/migrations/20260902010000_warehouse_postgrest_exposed_schema_reconciliation.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260902010000_warehouse_postgrest_exposed_schema_reconciliation.sql','utf8');
 const entry=manifest.entries.find(item=>item.version==='20260902010000');
 
 test('Step 27 accepts a missing managed override without weakening conflict rejection',()=>{

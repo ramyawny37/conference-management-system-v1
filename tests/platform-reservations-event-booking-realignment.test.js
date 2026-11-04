@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const schema = fs.readFileSync(path.join(root, 'supabase/migrations/20260908171814_reservations_event_booking_domain_reconciliation.sql'), 'utf8');
-const dispatcher = fs.readFileSync(path.join(root, 'supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql'), 'utf8');
+const dispatcher = fs.readFileSync(path.join(root, 'supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql'), 'utf8');
 const dispatcherBody = dispatcher.match(/create or replace function platform\.execute_device_operation\([\s\S]*?end \$\$;/i)[0];
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/platform-device-operation/index.ts'), 'utf8');
 

@@ -26,7 +26,7 @@ function candidateCommit(base,replacements={}){
 }
 const releaseBase=()=>candidateCommit(git(['rev-parse','HEAD']),{
   'tools/production-release/controlled-production-manifest.json':()=>fs.readFileSync(path.join(root,'tools/production-release/controlled-production-manifest.json'),'utf8'),
-  'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql':()=>fs.readFileSync(path.join(root,'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql'),'utf8'),
+  'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql':()=>fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260920221928_canonical_platform_device_authority_reconciliation.sql'),'utf8'),
   'js/supabase/public-config.js':()=>fs.readFileSync(path.join(root,'js/supabase/public-config.js'),'utf8'),
   'service-worker.js':()=>fs.readFileSync(path.join(root,'service-worker.js'),'utf8'),
   'version.js':()=>fs.readFileSync(path.join(root,'version.js'),'utf8')

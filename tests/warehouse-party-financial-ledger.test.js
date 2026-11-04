@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20260904160000_warehouse_party_financial_ledger.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260904143412_warehouse_party_financial_ledger.sql','utf8');
 const contract=fs.readFileSync('js/supabase/warehouse-device-operation-contract.js','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 

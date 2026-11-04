@@ -2,8 +2,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20261024133000_canonical_accommodation_atomic_guest_replacement.sql','utf8');
-const arrivalPolicy=fs.readFileSync('supabase/migrations/20261024161500_replacement_arrival_state_policy.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261024133000_canonical_accommodation_atomic_guest_replacement.sql','utf8');
+const arrivalPolicy=fs.readFileSync('supabase/migrations/20261024131955_replacement_arrival_state_policy.sql','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 const script=fs.readFileSync('script.js','utf8');
 const edge=fs.readFileSync('supabase/functions/conference-device-operation/index.ts','utf8');

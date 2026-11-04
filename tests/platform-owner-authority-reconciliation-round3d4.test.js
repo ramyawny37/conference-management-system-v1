@@ -4,8 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const authority=fs.readFileSync('supabase/migrations/20261010202000_platform_account_authority_cutover.sql','utf8');
-const retirement=fs.readFileSync('supabase/migrations/20261010202600_system_access_device_authority_cutover.sql','utf8');
+const authority=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202000_platform_account_authority_cutover.sql','utf8');
+const retirement=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010202600_system_access_device_authority_cutover.sql','utf8');
 
 test('Platform roles are the sole owner and admin authority',()=>{
   assert.match(authority,/from platform\.user_roles/i);

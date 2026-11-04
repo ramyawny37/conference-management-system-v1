@@ -36,9 +36,9 @@ begin
     select jsonb_build_object(
       'scope','platform',
       'events',count(*)::bigint,
-      'standaloneEvents',count(*) filter (where scope_type='standalone'),
-      'conferenceEvents',count(*) filter (where scope_type='conference'),
-      'bookings',coalesce(sum(booking_count) filter (where can_view_bookings),0)::bigint,
+      'standaloneEvents',count(*) filter(where scope_type='standalone'),
+      'conferenceEvents',count(*) filter(where scope_type='conference'),
+      'bookings',coalesce(sum(booking_count) filter(where can_view_bookings),0)::bigint,
       'bookingMetricsAvailable',coalesce(bool_or(can_view_bookings),false),
       'bookingMetricsComplete',coalesce(bool_and(can_view_bookings),false),
       'activities',coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
@@ -110,4 +110,4 @@ from public,anon,authenticated;
 grant execute on function platform.execute_device_operation(uuid,uuid,bytea,text,text,jsonb)
 to service_role;
 
-commit;
+commit;;

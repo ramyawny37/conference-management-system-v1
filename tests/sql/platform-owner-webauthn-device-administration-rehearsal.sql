@@ -134,15 +134,15 @@ begin
   return result;
 end $$;
 
-\ir ../../supabase/migrations/20260902122033_platform_device_session_foundation_1b.sql
+\ir ../../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260902122033_platform_device_session_foundation_1b.sql
 \ir ../../supabase/migrations/20261017113705_restore_canonical_owner_webauthn_device_administration.sql
 \ir ../../supabase/migrations/20261017115255_reconcile_owner_device_challenge_expiration_anchor.sql
 \ir ../../supabase/migrations/20261017121130_restore_compact_owner_webauthn_verification_material.sql
-\ir ../../supabase/migrations/20261016163453_platform_owner_passkey_recovery_counter_guard.sql
+\ir ../../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261016163453_platform_owner_passkey_recovery_counter_guard.sql
 \ir ../../supabase/migrations/20261017141821_reconcile_synced_owner_assertion_counter_device_guard.sql
 \ir ../../supabase/migrations/20261018132246_canonical_platform_device_revocation.sql
-\ir ../../supabase/migrations/20261018232937_allow_owner_revoke_without_target_key_binding.sql
-\ir ../../supabase/migrations/20261019000421_canonical_device_revocation_lifecycle.sql
+\ir ../../supabase/migrations/20261018203208_allow_owner_revoke_without_target_key_binding.sql
+\ir ../../supabase/migrations/20261018210900_canonical_device_revocation_lifecycle.sql
 
 insert into auth.users values
  ('10000000-0000-4000-8000-000000000001','owner@example.test'),

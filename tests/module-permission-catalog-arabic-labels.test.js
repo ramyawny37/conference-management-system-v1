@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 
-const migration=fs.readFileSync(path.join(__dirname,'..','supabase','migrations','20260913173000_module_permission_catalog_arabic_labels.sql'),'utf8');
+const migration=fs.readFileSync(path.join(__dirname,'..','supabase','migration-archive','development-pre-canonical-reconciliation-20261104','20260913173000_module_permission_catalog_arabic_labels.sql'),'utf8');
 
 const expected={
   reservations:[

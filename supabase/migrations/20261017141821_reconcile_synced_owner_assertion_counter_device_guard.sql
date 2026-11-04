@@ -117,3 +117,4 @@ end; $$;
 
 revoke all on function public.guard_device_security_credential_lifecycle()
   from public,anon,authenticated;
+;

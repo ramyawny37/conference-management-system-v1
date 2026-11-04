@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
-const migration=fs.readFileSync('supabase/migrations/20261015110000_conference_people_operation_contract_reconciliation.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20261015061242_conference_people_operation_contract_reconciliation.sql','utf8');
 
 test('Edge admits the complete canonical Conference people operation set before protected dispatch',()=>{
   for(const operation of ['search_conference_people','get_conference_canonical_person','update_conference_canonical_person','create_conference_participation','create_conference_participation_with_person','delete_conference_participation'])

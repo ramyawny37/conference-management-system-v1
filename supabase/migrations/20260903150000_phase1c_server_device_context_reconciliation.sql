@@ -184,3 +184,4 @@ grant execute on function platform.begin_current_device_ownership_handoff(text) 
 grant execute on function platform.get_current_device_handoff_assertion_claims(uuid,text) to authenticated;
 grant execute on function platform.complete_device_ownership_handoff(uuid,uuid,uuid,uuid,text,jsonb,uuid,bytea,timestamptz,timestamptz) to service_role;
 grant execute on function platform.complete_device_binding_recovery(uuid,uuid,uuid,uuid,uuid,text,jsonb,text,uuid,bytea,timestamptz,timestamptz) to service_role;
+;

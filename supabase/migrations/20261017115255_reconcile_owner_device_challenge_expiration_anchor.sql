@@ -78,3 +78,4 @@ revoke all on function public.begin_system_owner_device_possession_challenge(uui
   from public,anon,authenticated;
 grant execute on function public.begin_system_owner_device_possession_challenge(uuid,uuid,uuid,uuid,text,uuid,uuid,uuid,text,text,text,bytea)
   to service_role;
+;

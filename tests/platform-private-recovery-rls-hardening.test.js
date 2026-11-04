@@ -4,7 +4,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const test=require("node:test");
 
-const sql=fs.readFileSync("supabase/migrations/20260913141000_platform_private_recovery_rls_hardening.sql","utf8");
+const sql=fs.readFileSync("supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260913141000_platform_private_recovery_rls_hardening.sql","utf8");
 
 const tables=[
   "stable_device_recovery_authorizations",

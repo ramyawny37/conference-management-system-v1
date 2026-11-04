@@ -10,9 +10,9 @@ const test=require('node:test');
 
 const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const migration='supabase/migrations/20261003120000_canonical_conference_discovery_foundation.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003120000_canonical_conference_discovery_foundation.sql';
 const sql=read(migration);
-const capabilityMigration='supabase/migrations/20261003130000_canonical_discovery_activation_capabilities.sql';
+const capabilityMigration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003130000_canonical_discovery_activation_capabilities.sql';
 const capabilitySql=read(capabilityMigration);
 const discovery=read('js/supabase/canonical-conference-discovery.js');
 const startup=read('js/sync/startup-conference-discovery.js');

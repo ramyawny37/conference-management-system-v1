@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const migration=fs.readFileSync(
-  'supabase/migrations/20260915220000_reservations_authorization_architecture_reconciliation.sql','utf8'
+  'supabase/migrations/20260915221515_reservations_authorization_architecture_reconciliation.sql','utf8'
 );
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 const bundleSource=fs.readFileSync(
@@ -85,7 +85,7 @@ test('deterministic ownership cannot cross users and administrative self-grant r
   assert.match(primitive,/'targetUserId',v_actor/);
   assert.match(primitive,/p_operation_id,'grant',v_actor,v_device,v_actor/);
   const administration=fs.readFileSync(
-    'supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql','utf8'
+    'supabase/migrations/20260829121535_module_permission_catalog_and_grant_adapter.sql','utf8'
   );
   assert.match(administration,/p_action = 'grant' and actor_id = p_target_user_id[\s\S]*MODULE_GRANT_SELF_GRANT_PROHIBITED/);
 });
@@ -123,7 +123,7 @@ test('retired permissions and legacy dispatchers are not revived',()=>{
 
 test('create_booking still rechecks exact Event booking.create server-side',()=>{
   const scoped=fs.readFileSync(
-    'supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql','utf8'
+    'supabase/migrations/20260912100553_reservations_scope_partition_integrity.sql','utf8'
   );
   assert.match(scoped,/p_operation='create_booking'[\s\S]*resolve_event_scope\(p_device_id,\(p_args->>'p_event_id'\)::uuid,'reservations\.booking\.create'\)/);
   assert.match(migration,/return reservations\.mutate_pre_authorization_architecture_reconciliation\(p_device_id,p_operation,p_args\)/);

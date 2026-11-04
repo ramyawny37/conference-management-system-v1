@@ -5,16 +5,16 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const {JSDOM}=require('jsdom');
 
-const sql=fs.readFileSync('supabase/migrations/20260905170000_warehouse_item_unit_conversion.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260905124809_warehouse_item_unit_conversion.sql','utf8');
 const remaining=fs.readFileSync('js/warehouse/remaining-operations.js','utf8');
 const historical=fs.readFileSync('js/warehouse/historical-operations.js','utf8');
 const workspace=fs.readFileSync('js/warehouse/workspace.js','utf8');
 const contract=fs.readFileSync('js/supabase/warehouse-device-operation-contract.js','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
-const ambiguityFix=fs.readFileSync('supabase/migrations/20260905193000_warehouse_item_unit_upsert_ambiguity_fix.sql','utf8');
-const statusAmbiguityFix=fs.readFileSync('supabase/migrations/20260905200000_warehouse_item_unit_status_ambiguity_fix.sql','utf8');
-const draftCostFix=fs.readFileSync('supabase/migrations/20260905203000_warehouse_unit_conversion_draft_wrapper_and_cost_fix.sql','utf8');
-const hierarchy=fs.readFileSync('supabase/migrations/20260909210000_warehouse_item_unit_hierarchy.sql','utf8');
+const ambiguityFix=fs.readFileSync('supabase/migrations/20260905154348_warehouse_item_unit_upsert_ambiguity_fix.sql','utf8');
+const statusAmbiguityFix=fs.readFileSync('supabase/migrations/20260905160416_warehouse_item_unit_status_ambiguity_fix.sql','utf8');
+const draftCostFix=fs.readFileSync('supabase/migrations/20260905163245_warehouse_unit_conversion_draft_wrapper_and_cost_fix.sql','utf8');
+const hierarchy=fs.readFileSync('supabase/migrations/20260909175208_warehouse_item_unit_hierarchy.sql','utf8');
 
 test('item-unit relation is item-specific, guarded, revisioned and not globally attached to units',()=>{
   assert.match(sql,/create table warehouse\.item_units/);
@@ -51,7 +51,7 @@ test('all draft families canonicalize before established idempotency and posting
   assert.match(sql,/canonical:=warehouse_private\.canonicalize_unit_lines\(p_payload\);[\s\S]*update_document_draft_pre_unit_conversion/);
   for(const kind of ['receipt','issue','transfer'])assert.match(sql,new RegExp("p_kind='"+kind+"'"));
   assert.match(sql,/else update warehouse\.adjustment_lines/);
-  const post=fs.readFileSync('supabase/migrations/20260829150000_warehouse_post_document_revision_ambiguity_correction.sql','utf8');
+  const post=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260829150000_warehouse_post_document_revision_ambiguity_correction.sql','utf8');
   assert.match(post,/line\.quantity/);
   assert.match(post,/WAREHOUSE_OPENING_BALANCE_EXISTING_HISTORY/);
 });
@@ -123,7 +123,7 @@ test('cost, price, opening, transfer and approval snapshot scenarios are mathema
   assert.deepEqual({baseQuantity:6*factor,baseCost:100/factor,inventory:6*100},{baseQuantity:60,baseCost:10,inventory:600});
   assert.deepEqual({out:2*factor,in:2*factor},{out:20,in:20});
   assert.match(sql,/conversion_factor_snapshot/);
-  assert.match(fs.readFileSync('supabase/migrations/20260829150000_warehouse_post_document_revision_ambiguity_correction.sql','utf8'),/submitted_revision<>p_expected_revision/);
+  assert.match(fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260829150000_warehouse_post_document_revision_ambiguity_correction.sql','utf8'),/submitted_revision<>p_expected_revision/);
 });
 
 test('dual quantity display uses immutable line snapshots and suppresses factor-one duplication',()=>{

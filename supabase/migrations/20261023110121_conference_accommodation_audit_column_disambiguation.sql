@@ -14,3 +14,4 @@ begin
   execute replace(definition,marker,replacement);
 end $migration$;
 commit;
+;

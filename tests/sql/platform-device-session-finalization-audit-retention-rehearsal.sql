@@ -34,7 +34,7 @@ create table platform_private.device_session_audit(
   public_key_thumbprint text not null,purpose text not null check(purpose='PLATFORM_DEVICE_SESSION'),created_at timestamptz not null default statement_timestamp()
 );
 
-\ir ../../supabase/migrations/20260909220000_device_session_finalization_audit_retention.sql
+\ir ../../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260909220000_device_session_finalization_audit_retention.sql
 
 do $$
 declare

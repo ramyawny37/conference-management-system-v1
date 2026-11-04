@@ -1,4 +1,3 @@
--- Applied to Conference Development as migration 20261020131411.
 begin;
 
 create table public.conference_room_assignments(
@@ -156,3 +155,4 @@ grant execute on function public.assign_conference_room(uuid,uuid,uuid,uuid,bool
 comment on table public.conference_room_assignments is 'Authoritative Conference allocation of permanent central rooms. Inclusive date overlap is rejected per room.';
 comment on function public.assign_conference_room(uuid,uuid,uuid,uuid,boolean,bigint) is 'Device-session guarded, idempotent and audited room allocation mutation.';
 commit;
+;

@@ -64,7 +64,7 @@ begin
   return v_id;
 end $$;
 
-\ir ../../supabase/migrations/20260908220000_platform_zero_approved_owner_device_recovery.sql
+\ir ../../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260908220000_platform_zero_approved_owner_device_recovery.sql
 
 create function pg_temp.reset_fixture(
   p_account_status text default 'approved',p_owner boolean default true,

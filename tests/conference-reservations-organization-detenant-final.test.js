@@ -6,8 +6,8 @@ const path=require('node:path');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const runtime=fs.readFileSync(path.join(root,'supabase/migrations/20261010201000_reservations_organization_free_scope_runtime.sql'),'utf8');
-const schema=fs.readFileSync(path.join(root,'supabase/migrations/20261010201100_conference_reservations_organization_schema_retirement.sql'),'utf8');
+const runtime=fs.readFileSync(path.join(root,'supabase/migrations/20261007121524_reservations_organization_free_scope_runtime.sql'),'utf8');
+const schema=fs.readFileSync(path.join(root,'supabase/migrations/20261007121553_conference_reservations_organization_schema_retirement.sql'),'utf8');
 const contract=fs.readFileSync(path.join(root,'js/supabase/platform-device-operation-contract.js'),'utf8');
 
 test('runtime cutover precedes the destructive schema cutover',()=>{

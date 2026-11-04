@@ -8,8 +8,8 @@ const {promisify}=require('node:util');
 const test=require('node:test');
 const execFileAsync=promisify(execFile);
 const root=path.join(__dirname,'..');
-const migration='supabase/migrations/20260929120000_canonical_conference_accommodation_protected_mutations.sql';
-const p5a='supabase/migrations/20260928170000_canonical_conference_accommodation_data_foundation.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929120000_canonical_conference_accommodation_protected_mutations.sql';
+const p5a='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928170000_canonical_conference_accommodation_data_foundation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
 
 test('P5B extends only the canonical router with protected Accommodation operations',()=>{

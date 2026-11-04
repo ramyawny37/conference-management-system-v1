@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-const migration = fs.readFileSync('supabase/migrations/20260909120000_reservations_platform_tenant_boundary_reconciliation.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/20260909133920_reservations_platform_tenant_boundary_reconciliation.sql', 'utf8');
 const edge = fs.readFileSync('supabase/functions/platform-device-operation/index.ts', 'utf8');
 
 test('Reservations scope is server-owned and Conference membership is not authorization', () => {

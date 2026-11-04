@@ -423,3 +423,4 @@ grant execute on function reservations.list_reservations(uuid,uuid,text,date,dat
 grant execute on function reservations.mutate(uuid,text,jsonb) to service_role;
 
 commit;
+;

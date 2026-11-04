@@ -8,8 +8,8 @@ const {JSDOM}=require('jsdom');
 
 const serviceSource=fs.readFileSync('js/sync/module-permission-administration-service.js','utf8');
 const uiSource=fs.readFileSync('js/sync/module-permission-administration-ui.js','utf8');
-const migration=fs.readFileSync('supabase/migrations/20260916120000_generic_module_permission_resource_administration.sql','utf8');
-const canonicalGrantMigration=fs.readFileSync('supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260916120000_generic_module_permission_resource_administration.sql','utf8');
+const canonicalGrantMigration=fs.readFileSync('supabase/migrations/20260829121535_module_permission_catalog_and_grant_adapter.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 
 test('Platform dispatcher session SELECT parses in PostgreSQL',()=>{

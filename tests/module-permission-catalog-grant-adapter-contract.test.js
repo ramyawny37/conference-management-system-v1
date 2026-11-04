@@ -6,10 +6,10 @@ var path=require('path');
 
 var root=path.resolve(__dirname,'..');
 var migration=fs.readFileSync(path.join(root,
-  'supabase/migrations/20260829130000_module_permission_catalog_and_grant_adapter.sql'
+  'supabase/migrations/20260829121535_module_permission_catalog_and_grant_adapter.sql'
 ),'utf8');
 var foundation=fs.readFileSync(path.join(root,
-  'supabase/migrations/20260829120000_module_authorization_foundation.sql'
+  'supabase/migrations/20260828235929_module_authorization_foundation.sql'
 ),'utf8');
 var runtime=fs.readFileSync(path.join(root,
   'supabase/module-permission-catalog-grant-adapter-deferred-runtime-verification.sql'

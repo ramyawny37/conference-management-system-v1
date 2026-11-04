@@ -4,11 +4,11 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const migration=fs.readFileSync('supabase/migrations/20261018132246_canonical_platform_device_revocation.sql','utf8');
-const correction=fs.readFileSync('supabase/migrations/20261018232937_allow_owner_revoke_without_target_key_binding.sql','utf8');
-const lifecycle=fs.readFileSync('supabase/migrations/20261019000421_canonical_device_revocation_lifecycle.sql','utf8');
+const correction=fs.readFileSync('supabase/migrations/20261018203208_allow_owner_revoke_without_target_key_binding.sql','utf8');
+const lifecycle=fs.readFileSync('supabase/migrations/20261018210900_canonical_device_revocation_lifecycle.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-authorization/index.ts','utf8');
-const dispatcher=fs.readFileSync('supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql','utf8');
-const sessionGuard=fs.readFileSync('supabase/migrations/20260909120555_production_validated_phase1c_variable_disambiguation.sql','utf8');
+const dispatcher=fs.readFileSync('supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql','utf8');
+const sessionGuard=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260909120555_production_validated_phase1c_variable_disambiguation.sql','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
 

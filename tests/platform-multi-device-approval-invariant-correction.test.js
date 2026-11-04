@@ -5,12 +5,12 @@ const fs = require('node:fs');
 const test = require('node:test');
 
 const migration = fs.readFileSync(
-  'supabase/migrations/20260921100500_platform_multi_device_approval_invariant_correction.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260921100500_platform_multi_device_approval_invariant_correction.sql',
   'utf8'
 );
 
 const canonical = fs.readFileSync(
-  'supabase/migrations/20260920221928_canonical_platform_device_authority_reconciliation.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260920221928_canonical_platform_device_authority_reconciliation.sql',
   'utf8'
 );
 

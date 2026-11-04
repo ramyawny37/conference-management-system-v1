@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
-const file='supabase/migrations/20260907160000_production_foundation_reconciliation.sql';
+const file='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260907160000_production_foundation_reconciliation.sql';
 const sql=fs.readFileSync(file,'utf8');
 const normalized=sql.replace(/--[^\n]*/g,'');
 function before(a,b){assert.ok(sql.indexOf(a)>=0,a);assert.ok(sql.indexOf(b)>sql.indexOf(a),b+' must follow '+a);}
@@ -37,9 +37,9 @@ test('18 malformed and conflicting device state fails closed',()=>{assert.match(
 test('19 Conference and Organization data are untouched',()=>assert.doesNotMatch(normalized,/(?:insert into|update|delete from|alter table)\s+(?:public\.)?(?:conferences|organizations|organization_members)/i));
 test('20 Warehouse has no Organization dependency',()=>assert.doesNotMatch(sql,/warehouse|organization/i));
 test('21 inventory authority is absent',()=>assert.doesNotMatch(sql,/inventory\./i));
-test('22 account projection is compatible with ongoing reconciliation',()=>{const later=fs.readFileSync('supabase/migrations/20260906120000_system_access_platform_profile_reconciliation.sql','utf8');for(const field of ['account_status','approved_at','approved_by','blocked_at','blocked_by']){assert.match(sql,new RegExp(field));assert.match(later,new RegExp(field));}});
-test('23 owner projection metadata matches ongoing one-way bridge',()=>{const later=fs.readFileSync('supabase/migrations/20260907120000_system_owner_platform_owner_reconciliation.sql','utf8');for(const value of ['authoritySource','system_owner','compatibilityProjection']){assert.match(sql,new RegExp(value));assert.match(later,new RegExp(value));}});
-test('24 Development-only recovery migrations remain separate files',()=>{assert.ok(fs.existsSync('supabase/migrations/20260831050000_one_time_stable_development_device_recovery.sql'));assert.doesNotMatch(sql,/one_time_stable_development_device_recovery/);});
+test('22 account projection is compatible with ongoing reconciliation',()=>{const later=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260906120000_system_access_platform_profile_reconciliation.sql','utf8');for(const field of ['account_status','approved_at','approved_by','blocked_at','blocked_by']){assert.match(sql,new RegExp(field));assert.match(later,new RegExp(field));}});
+test('23 owner projection metadata matches ongoing one-way bridge',()=>{const later=fs.readFileSync('supabase/migrations/20260906222211_system_owner_platform_owner_reconciliation.sql','utf8');for(const value of ['authoritySource','system_owner','compatibilityProjection']){assert.match(sql,new RegExp(value));assert.match(later,new RegExp(value));}});
+test('24 Development-only recovery migrations remain separate files',()=>{assert.ok(fs.existsSync('supabase/migrations/20260831042642_one_time_stable_development_device_recovery.sql'));assert.doesNotMatch(sql,/one_time_stable_development_device_recovery/);});
 test('25 migration history is not fabricated',()=>assert.doesNotMatch(sql,/schema_migrations|migration_history/i));
 test('26 source and pre-existing contradiction guards precede identity seeding and projection',()=>{const identitySeed='insert into platform.profiles(user_id,display_name)';const stateProjection='insert into platform.profiles(\n  user_id,account_status';before('PRODUCTION_ACCOUNT_SOURCE_INVALID','PLATFORM_PROFILE_LEGACY_CONFLICT');before('PLATFORM_PROFILE_LEGACY_CONFLICT',identitySeed);before(identitySeed,stateProjection);before('INDEPENDENT_PLATFORM_OWNER_CONTRADICTION','insert into platform.user_roles');});
 test('27 migration is forward-only and transaction bounded',()=>{assert.match(sql,/^--[\s\S]*begin;/i);assert.match(sql,/commit;\s*$/i);assert.doesNotMatch(normalized,/\bdrop\b|\btruncate\b/i);});

@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20261031210000_conference_operational_lifecycle_unification.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20261031190103_conference_operational_lifecycle_unification.sql','utf8');
 
 test('accommodation removal atomically cleans transport and returns removed assignment ids',()=>{
   assert.match(sql,/create or replace function public\.remove_conference_accommodation/);

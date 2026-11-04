@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 
-const migration=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261008120000_reservations_canonical_conference_integration.sql'),'utf8');
+const migration=fs.readFileSync(path.join(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261008120000_reservations_canonical_conference_integration.sql'),'utf8');
 
 test('Reservations creates canonical participation and keeps only integration identity',()=>{
   assert.match(migration,/truncate table reservations\.conference_person_links/i);

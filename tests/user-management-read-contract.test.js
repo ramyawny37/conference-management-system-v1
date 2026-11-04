@@ -1,6 +1,6 @@
 'use strict';
 var assert=require('assert'),fs=require('fs'),path=require('path');
-var sql=fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/20261009121500_final_conference_membership_consumer_demolition.sql'),'utf8');
+var sql=fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/20261005112647_20261009121500_final_conference_membership_consumer_demolition.sql'),'utf8');
 ['search_user_management_users','get_user_management_overview'].forEach(function(name){assert.match(sql,new RegExp('function\\s+public\\.'+name,'i'));});
 assert.ok((sql.match(/security definer/gi)||[]).length>=3);
 assert.ok((sql.match(/set search_path=''/gi)||[]).length>=3);

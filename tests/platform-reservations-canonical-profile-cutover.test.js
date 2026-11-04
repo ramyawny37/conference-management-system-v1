@@ -6,7 +6,7 @@ const path=require('node:path');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261102210000_canonical_people_reservations_full_profile_cutover.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261102161615_canonical_people_reservations_full_profile_cutover.sql'),'utf8');
 const runtime=fs.readFileSync(path.join(root,'modules/reservations/reservations-module.js'),'utf8');
 
 test('one guarded canonical writer owns all nine current profile fields',()=>{

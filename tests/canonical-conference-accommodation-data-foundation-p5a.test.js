@@ -8,7 +8,7 @@ const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migration='supabase/migrations/20260928170000_canonical_conference_accommodation_data_foundation.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260928170000_canonical_conference_accommodation_data_foundation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
 const documentation=fs.readFileSync(path.join(root,'docs/canonical-conference-accommodation-data-foundation-p5a.md'),'utf8');
 const tables=['houses','floors','rooms','occupancies'].map(name=>`conference_accommodation_${name}`);

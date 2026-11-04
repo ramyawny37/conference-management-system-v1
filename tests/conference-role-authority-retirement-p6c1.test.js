@@ -8,10 +8,10 @@ retired.forEach(file=>assert.equal(exists(file),false,`retired file remains: ${f
 runtime.forEach(file=>assert.doesNotMatch(read(file),forbidden,`legacy authority remains in ${file}`));
 assert.doesNotMatch(read('supabase/functions/conference-device-operation/index.ts'),forbidden);
 assert.doesNotMatch(read('supabase/functions/platform-device-operation/index.ts'),forbidden);
-const retirement=read('supabase/migrations/20261009120000_retire_conference_role_membership_authority.sql');
-const locks=read('supabase/migrations/20261009121000_cut_conference_locks_to_canonical_permissions.sql');
-const consumers=read('supabase/migrations/20261009121500_final_conference_membership_consumer_demolition.sql');
-const demolition=read('supabase/migrations/20261009122000_retire_conference_membership_plane.sql');
+const retirement=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261009120000_retire_conference_role_membership_authority.sql');
+const locks=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261009121000_cut_conference_locks_to_canonical_permissions.sql');
+const consumers=read('supabase/migrations/20261005112647_20261009121500_final_conference_membership_consumer_demolition.sql');
+const demolition=read('supabase/migrations/20261005133028_20261009122000_retire_conference_membership_plane.sql');
 assert.match(retirement,/drop table if exists public\.conference_membership_operations/i);
 assert.match(locks,/conference\.accommodation\.manage/);assert.match(locks,/conference\.sync\.write/);assert.match(locks,/CONFERENCE_LOCK_ROLE_AUTHORITY_REMAINS/);assert.doesNotMatch(locks,/conference membership required/i);
 assert.match(consumers,/drop function if exists public\.add_conference_owner_membership\(\)/i);assert.match(consumers,/drop function if exists public\.enforce_conference_lock_manager\(\)/i);assert.match(consumers,/drop function if exists public\.device_guarded_list_available_conferences\(uuid\)/i);assert.match(consumers,/FINAL_CONFERENCE_MEMBERSHIP_CONSUMER_REMAINS/i);assert.doesNotMatch(consumers,/drop[^;]*cascade/i);

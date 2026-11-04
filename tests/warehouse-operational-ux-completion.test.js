@@ -2,8 +2,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20260905133000_warehouse_draft_cancellation.sql','utf8');
-const openingBalanceMigration=fs.readFileSync('supabase/migrations/20260905150000_opening_balance_reason_normalization.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260905111848_warehouse_draft_cancellation.sql','utf8');
+const openingBalanceMigration=fs.readFileSync('supabase/migrations/20260905114731_opening_balance_reason_normalization.sql','utf8');
 const historical=fs.readFileSync('js/warehouse/historical-operations.js','utf8');
 const remaining=fs.readFileSync('js/warehouse/remaining-operations.js','utf8');
 const workspace=fs.readFileSync('js/warehouse/workspace.js','utf8');

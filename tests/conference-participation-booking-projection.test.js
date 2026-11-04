@@ -9,7 +9,7 @@ const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migration=path.join(root,'supabase/migrations/20261102120000_conference_participation_booking_projection.sql');
+const migration=path.join(root,'supabase/migrations/20261102050256_conference_participation_booking_projection.sql');
 const sql=fs.readFileSync(migration,'utf8');
 const script=fs.readFileSync(path.join(root,'script.js'),'utf8');
 const integration=fs.readFileSync(path.join(root,'js/platform-integration.js'),'utf8');

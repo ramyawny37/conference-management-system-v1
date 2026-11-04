@@ -2,8 +2,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20261025103000_canonical_guardian_shared_child_accommodation.sql','utf8');
-const updateGuard=fs.readFileSync('supabase/migrations/20261025111500_enforce_transport_resident_on_assignment_updates.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20261025062003_canonical_guardian_shared_child_accommodation.sql','utf8');
+const updateGuard=fs.readFileSync('supabase/migrations/20261025062017_enforce_transport_resident_on_assignment_updates.sql','utf8');
 const script=fs.readFileSync('script.js','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 

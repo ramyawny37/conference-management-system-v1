@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migrationPath='supabase/migrations/20260908220000_platform_zero_approved_owner_device_recovery.sql';
+const migrationPath='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260908220000_platform_zero_approved_owner_device_recovery.sql';
 const sql=fs.readFileSync(migrationPath,'utf8');
 
 test('recovery is a dedicated service-only SECURITY DEFINER contract',()=>{

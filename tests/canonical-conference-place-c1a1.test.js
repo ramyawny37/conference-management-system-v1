@@ -6,7 +6,7 @@ const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 const root=path.join(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261005120000_canonical_conference_place_foundation.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261005120000_canonical_conference_place_foundation.sql'),'utf8');
 const contract=fs.readFileSync(path.join(root,'js/supabase/platform-device-operation-contract.js'),'utf8');
 
 test('C1A.1 owns place in Conference Core without legacy migration',()=>{
@@ -94,7 +94,7 @@ test('C1A.1 executable PostgreSQL proof covers authorization, replay, revision, 
       insert into platform.user_device_authorizations values('${authorization}','${actor}','${device}','approved',null),(gen_random_uuid(),'${actor}','${wrongDevice}','approved',null),(gen_random_uuid(),'${actor}','${revokedDevice}','revoked',now()),(gen_random_uuid(),'${pending}','${pendingDevice}','approved',null),(gen_random_uuid(),'${unauthorized}','${wrongDevice}','approved',null);
       insert into public.test_access values('${actor}',true,null),('${unauthorized}',false,null),('${pending}',true,null);
       insert into public.conferences values('${conference}','Conference','${actor}','2026-11-01','2026-11-03','active',null,1,null,now(),null);`);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261005120000_canonical_conference_place_foundation.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261005120000_canonical_conference_place_foundation.sql')]);
     assert.equal(query(`select place||':'||revision from public.conferences where id='${conference}'`),':1');
     assert.match(query(`begin;${context(actor,device)}select public.get_conference_core('${device}','${conference}');commit;`),/"place": ""/);
     for(const role of roles){assert.equal(query(`select has_table_privilege('${role}','public.conferences','UPDATE')`),'f');assert.equal(query(`select has_function_privilege('${role}','public.mutate_conference_core(uuid,uuid,uuid,bigint,text,text,date,date,text)','EXECUTE')`),'f');}

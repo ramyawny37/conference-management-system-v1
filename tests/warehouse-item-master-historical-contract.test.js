@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const migration=fs.readFileSync('supabase/migrations/20260904130000_warehouse_item_master_historical_contract.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260904100748_warehouse_item_master_historical_contract.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 const source=fs.readFileSync('js/warehouse/workspace.js','utf8');
 const css=fs.readFileSync('style.css','utf8');

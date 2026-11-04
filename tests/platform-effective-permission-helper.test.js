@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 
-const sql=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261010200000_platform_effective_permission_helper.sql'),'utf8');
+const sql=fs.readFileSync(path.join(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010200000_platform_effective_permission_helper.sql'),'utf8');
 
 test('platform effective permission uses canonical Platform authority only',()=>{
   assert.match(sql,/platform_private\.is_canonical_platform_owner\(p_user_id\)/);

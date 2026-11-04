@@ -1,9 +1,9 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),test=require("node:test"),vm=require("node:vm");
 const migration=fs.readFileSync("supabase/migrations/20260903150000_phase1c_server_device_context_reconciliation.sql","utf8");
-const dispatcher=fs.readFileSync("supabase/migrations/20260903090000_conference_device_session_execution_boundary.sql","utf8");
+const dispatcher=fs.readFileSync("supabase/migrations/20260903100433_conference_device_session_execution_boundary.sql","utf8");
 const initialHandoff=fs.readFileSync("supabase/migrations/20260902020000_platform_device_ownership_handoff_1a.sql","utf8");
-const recoveryHandoff=fs.readFileSync("supabase/migrations/20260903120000_device_key_binding_lost_private_key_rotation.sql","utf8");
+const recoveryHandoff=fs.readFileSync("supabase/migrations/20260903104351_device_key_binding_lost_private_key_rotation.sql","utf8");
 const contractSource=fs.readFileSync("js/supabase/conference-device-operation-contract.js","utf8");
 const sandbox={window:{}};vm.runInNewContext(contractSource,sandbox);const contract=sandbox.window.ConferenceDeviceOperationContract;
 const platformAdmin=new Set(["list_system_owner_pending_device_authorizations"]);

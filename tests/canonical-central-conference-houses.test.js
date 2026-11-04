@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),test=require("node:test"),vm=require("node:vm");
-const sql=fs.readFileSync("supabase/migrations/20261020143000_canonical_central_conference_houses.sql","utf8");
+const sql=fs.readFileSync("supabase/migrations/20261020113924_canonical_central_conference_houses.sql","utf8");
 const edge=fs.readFileSync("supabase/functions/platform-device-operation/index.ts","utf8");
 const ui=fs.readFileSync("script.js","utf8");
 test("one permanent hierarchy and conference assignment own separate state",()=>{

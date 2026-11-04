@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const migration=fs.readFileSync('supabase/migrations/20261018214500_canonical_owner_pending_device_session_read.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20261018173157_canonical_owner_pending_device_session_read.sql','utf8');
 const operationEdge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 
 test('canonical owner list is routed behind the unified session-derived device context',()=>{

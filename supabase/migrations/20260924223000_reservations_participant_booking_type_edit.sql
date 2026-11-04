@@ -218,3 +218,4 @@ from public,anon,authenticated,service_role;
 grant execute on function
   reservations_private.mutate_scoped(uuid,text,jsonb)
 to postgres;
+;

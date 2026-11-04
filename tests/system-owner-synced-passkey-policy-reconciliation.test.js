@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('assert'),fs=require('fs'),path=require('path');
 const root=path.resolve(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260827125056_system_owner_synced_passkey_policy_full_reconciliation_6_20_4.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260827125056_20260827_6_20_4_system_owner_synced_passkey_policy_full_reconciliation.sql'),'utf8');
 const edge=fs.readFileSync(path.join(root,'supabase/functions/platform-device-authorization/index.ts'),'utf8');
 
 function accepts(backupEligible,backupState,userVerified=true,verified=true,registrationInfo=true){

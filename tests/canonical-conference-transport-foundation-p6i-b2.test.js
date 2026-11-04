@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const test=require('node:test');
 const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const sql=read('supabase/migrations/20261003140000_canonical_conference_transport_foundation.sql');
+const sql=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003140000_canonical_conference_transport_foundation.sql');
 const runtime=read('js/supabase/canonical-conference-transport.js');
 const transport=read('transport.js');
 const script=read('script.js');

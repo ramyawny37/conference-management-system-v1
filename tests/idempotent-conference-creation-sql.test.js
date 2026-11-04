@@ -6,7 +6,7 @@ var path=require('path');
 
 var sql=fs.readFileSync(path.resolve(
   __dirname,
-  '../supabase/migrations/20260728_3_3_0_idempotent_conference_creation.sql'
+  '../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260728_3_3_0_idempotent_conference_creation.sql'
 ),'utf8');
 
 [

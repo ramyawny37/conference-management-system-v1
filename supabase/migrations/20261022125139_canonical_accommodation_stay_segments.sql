@@ -3,34 +3,16 @@ begin;
 create extension if not exists btree_gist with schema extensions;
 
 alter table public.conference_accommodation_occupancies
-  drop constraint if exists conference_accommodation_occupancies_participation_id_key;
+  drop constraint conference_accommodation_occupancies_participation_id_key;
 
-do $constraint_reconciliation$
-declare existing record;definition text;
-begin
- select c.contype,pg_get_constraintdef(c.oid,true) into existing
- from pg_constraint c
- where c.conrelid='public.conference_accommodation_occupancies'::regclass
-   and c.conname='conference_accommodation_occupancies_participation_period_excl';
- if found then
-   definition:=existing.pg_get_constraintdef;
-   if existing.contype<>'x'
-      or position('participation_id WITH =' in definition)=0
-      or position('int4range(arrival_day, COALESCE(leave_day, 2147483647)' in definition)=0
-      or position('WITH &&' in definition)=0 then
-     raise exception 'ACCOMMODATION_STAY_EXCLUSION_DRIFT: %',definition using errcode='55000';
-   end if;
- else
-   alter table public.conference_accommodation_occupancies
-     add constraint conference_accommodation_occupancies_participation_period_excl
-     exclude using gist (
-       participation_id with =,
-       int4range(arrival_day,coalesce(leave_day,2147483647),'[)') with &&
-     );
- end if;
-end $constraint_reconciliation$;
+alter table public.conference_accommodation_occupancies
+  add constraint conference_accommodation_occupancies_participation_period_excl
+  exclude using gist (
+    participation_id with =,
+    int4range(arrival_day,coalesce(leave_day,2147483647),'[)') with &&
+  );
 
-create index if not exists conference_accommodation_occupancies_participation_period_idx
+create index conference_accommodation_occupancies_participation_period_idx
   on public.conference_accommodation_occupancies(participation_id,arrival_day,leave_day,id);
 
 create or replace function platform_private.conference_room_has_capacity(
@@ -142,3 +124,4 @@ revoke all on function platform_private.conference_room_has_capacity(uuid,uuid,t
 comment on table public.conference_accommodation_occupancies is 'Canonical half-open Accommodation stay segments. Multiple non-overlapping periods per participation preserve room history.';
 
 commit;
+;

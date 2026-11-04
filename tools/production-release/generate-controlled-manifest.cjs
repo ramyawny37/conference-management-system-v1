@@ -5,7 +5,14 @@ const crypto=require('node:crypto');
 
 const root=path.resolve(__dirname,'../..');
 const migration=name=>`supabase/migrations/${name}`;
-const sha=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
+const developmentArchive='supabase/migration-archive/development-pre-canonical-reconciliation-20261104';
+const sourcePath=file=>{
+  const logicalPath=path.join(root,file);
+  const archivedPath=path.join(root,developmentArchive,path.basename(file));
+  return fs.existsSync(archivedPath)?archivedPath:logicalPath;
+};
+const read=file=>fs.readFileSync(sourcePath(file));
+const sha=file=>crypto.createHash('sha256').update(read(file)).digest('hex');
 const version=name=>name.match(/^([0-9]{14})_/)[1];
 const apply=[
   '20260829120000_module_authorization_foundation.sql',
@@ -154,7 +161,7 @@ const incrementalMigrationClassification=[
 ].sort((left,right)=>left.sourceFile.localeCompare(right.sourceFile));
 function incrementalEntry(name,index){
   const sourceFile=migration(name);
-  const body=fs.readFileSync(path.join(root,sourceFile),'utf8');
+  const body=read(sourceFile).toString('utf8');
   const entry={
     order:index+1,
     version:version(name),
@@ -288,7 +295,7 @@ function oldStateExpression(name){
   if(!checks[key])throw new Error(`EXPLICIT_PREDECESSOR_STATE_CONTRACT_REQUIRED:${key}`);
   return checks[key];
 }
-function applyEntry(name){const file=migration(name),body=fs.readFileSync(path.join(root,file),'utf8'),executable=body.replace(/^\s*--[^\n]*$/gm,'').trim(),bounded=/^(begin|start\s+transaction)\s*;/i.test(executable)&&/commit\s*;\s*$/i.test(executable),semantic=semanticExpression(name),oldState=oldStateExpression(name);return {version:version(name),filename:file,sha256:sha(file),action:'APPLY',transaction:{startsExplicitly:/^(begin|start\s+transaction)\s*;/i.test(executable),commitsExplicitly:/commit\s*;\s*$/i.test(executable),safeOuterAtomicWrap:!bounded},preconditionSql:`select (${oldState})::text`,verificationSql:`select (${semantic})::text`,prerequisites:['exact preceding controlled history tail','explicit body-specific predecessor-state detector'],expectedPostconditions:['semantic verifier independently succeeds','locked APPLY provenance recorded'],sourceReason:'Round 3L reviewed Production dependency order'};}
+function applyEntry(name){const file=migration(name),body=read(file).toString('utf8'),executable=body.replace(/^\s*--[^\n]*$/gm,'').trim(),bounded=/^(begin|start\s+transaction)\s*;/i.test(executable)&&/commit\s*;\s*$/i.test(executable),semantic=semanticExpression(name),oldState=oldStateExpression(name);return {version:version(name),filename:file,sha256:sha(file),action:'APPLY',transaction:{startsExplicitly:/^(begin|start\s+transaction)\s*;/i.test(executable),commitsExplicitly:/commit\s*;\s*$/i.test(executable),safeOuterAtomicWrap:!bounded},preconditionSql:`select (${oldState})::text`,verificationSql:`select (${semantic})::text`,prerequisites:['exact preceding controlled history tail','explicit body-specific predecessor-state detector'],expectedPostconditions:['semantic verifier independently succeeds','locked APPLY provenance recorded'],sourceReason:'Round 3L reviewed Production dependency order'};}
 function skipEntry(name){const file=migration(name),key=version(name),conditions={
   '20260829123000':"to_regprocedure('public.manage_foundation_module_grant(uuid,uuid,text,uuid,text,text,uuid,text)') is null or to_regprocedure('public.manage_catalog_module_grant(uuid,uuid,text,uuid,text,text,text,text,uuid,text)') is not null",
   '20260831023000':"to_regclass('platform.profiles') is not null and to_regclass('platform_private.legacy_device_reconciliation_boundaries') is not null",

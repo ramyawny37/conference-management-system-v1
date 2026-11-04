@@ -5,6 +5,7 @@ const path=require('node:path');
 const test=require('node:test');
 
 const migrations=path.join(__dirname,'../supabase/migrations');
+const archive=path.join(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104');
 const reconciliation=fs.readdirSync(migrations)
   .filter(name=>name.endsWith('_phase1c_dispatch_context_reconciliation.sql'))
   .sort().at(-1);
@@ -14,7 +15,7 @@ const executable=sql.replace(/--[^\n]*/g,'');
 
 test('migration changes the Conference core only by installing strict context',()=>{
   if(!reconciliation)return;
-  const foundation=fs.readFileSync(path.join(migrations,
+  const foundation=fs.readFileSync(path.join(archive,
     '20260903090000_conference_device_session_execution_boundary.sql'),'utf8');
   const foundationStart=foundation.indexOf(
     'create or replace function platform.execute_conference_device_operation(');
@@ -89,7 +90,7 @@ test('migration changes no guards, authority data, shared module wrappers, or fa
 test('module-permission, Warehouse, and Reservations dispatchers retain their own strict context',()=>{
   for(const file of ['20260907150000_module_permission_administration_backend_surface.sql',
     '20260905170000_warehouse_item_unit_conversion.sql','20260908153406_reservations_v1_protected_dispatcher.sql']){
-    const wrapper=fs.readFileSync(path.join(migrations,file),'utf8');
+    const wrapper=fs.readFileSync(path.join(archive,file),'utf8');
     assert.match(wrapper,/set_config\('platform\.phase1c_context',[\s\S]*,\s*true\)/,file);
     assert.match(wrapper,/DEVICE_SESSION_INVALID/,file);
   }

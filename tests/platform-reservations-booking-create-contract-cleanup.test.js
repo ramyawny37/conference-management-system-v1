@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const migration = fs.readFileSync(
-  path.join(__dirname, '..', 'supabase', 'migrations', '20260915210000_reservations_booking_create_contract_cleanup.sql'),
+  path.join(__dirname, '..', 'supabase', 'migrations', '20260915090945_reservations_booking_create_contract_cleanup.sql'),
   'utf8'
 );
 

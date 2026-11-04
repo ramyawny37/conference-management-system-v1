@@ -1,7 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const migration=fs.readFileSync('supabase/migrations/20261020131411_conference_room_assignment_foundation.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261020131411_conference_room_assignment_foundation.sql','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 const script=fs.readFileSync('script.js','utf8');
 const routing=fs.readFileSync('js/application-routing.js','utf8');

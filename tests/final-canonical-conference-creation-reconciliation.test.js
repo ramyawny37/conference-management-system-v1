@@ -8,7 +8,7 @@ const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migrationPath='supabase/migrations/20261009123000_final_canonical_conference_creation_reconciliation.sql';
+const migrationPath='supabase/migrations/20261006061933_20261009123000_final_canonical_conference_creation_reconciliation.sql';
 const sql=fs.readFileSync(path.join(root,migrationPath),'utf8');
 const creation=sql.match(/create or replace function public\.create_canonical_conference\([\s\S]*?end \$\$;/i);
 

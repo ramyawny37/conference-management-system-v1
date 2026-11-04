@@ -7,25 +7,25 @@ const test=require('node:test');
 
 const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const migration=read('supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql');
+const migration=read('supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql');
 const edge=read('supabase/functions/platform-device-operation/index.ts');
-const conferenceRouter=read('supabase/migrations/20261010201000_reservations_organization_free_scope_runtime.sql');
-const conferenceCore=read('supabase/migrations/20261010201600_platform_dispatcher_organization_retirement.sql');
+const conferenceRouter=read('supabase/migrations/20261007121524_reservations_organization_free_scope_runtime.sql');
+const conferenceCore=read('supabase/migrations/20261007132807_platform_dispatcher_organization_retirement.sql');
 const conferencePeoplePatches=[
-  'supabase/migrations/20261014182000_conference_people_search_canonical_device_route.sql',
-  'supabase/migrations/20261014210000_conference_canonical_person_revision_update.sql',
-  'supabase/migrations/20261014220000_conference_canonical_person_exact_read.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261014182000_conference_people_search_canonical_device_route.sql',
+  'supabase/migrations/20261014172510_conference_canonical_person_revision_update.sql',
+  'supabase/migrations/20261014174526_conference_canonical_person_exact_read.sql',
 ].map(read).join('\n');
-const conferenceHousePatch=read('supabase/migrations/20261020143000_canonical_central_conference_houses.sql')+'\n'+read('supabase/migrations/20261020131411_conference_room_assignment_foundation.sql');
+const conferenceHousePatch=read('supabase/migrations/20261020113924_canonical_central_conference_houses.sql')+'\n'+read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261020131411_conference_room_assignment_foundation.sql');
 const dispatcher=migration.match(/create or replace function platform\.execute_device_operation\([\s\S]*?end \$\$;/i)?.[0]||'';
-const dispatcherPatches=read('supabase/migrations/20261013141000_reservations_canonical_people_device_dispatch.sql');
-const ownerPendingReadPatch=read('supabase/migrations/20261018214500_canonical_owner_pending_device_session_read.sql');
-const canonicalTemplateReadPatch=read('supabase/migrations/20261021193000_canonical_library_template_read.sql');
-const canonicalBundlePatch=read('supabase/migrations/20261021203000_conference_canonical_bundle_export_restore.sql');
+const dispatcherPatches=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261013141000_reservations_canonical_people_device_dispatch.sql');
+const ownerPendingReadPatch=read('supabase/migrations/20261018173157_canonical_owner_pending_device_session_read.sql');
+const canonicalTemplateReadPatch=read('supabase/migrations/20261021194949_canonical_library_template_read.sql');
+const canonicalBundlePatch=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261021203000_conference_canonical_bundle_export_restore.sql');
 const canonicalAccommodationOperationsPatch=[
   'supabase/migrations/20261023103201_canonical_accommodation_arrivals_and_room_keys.sql',
-  'supabase/migrations/20261025223000_atomic_accommodation_room_draft_save.sql',
-  'supabase/migrations/20261025224500_conference_scoped_extra_bed_capacity.sql'
+  'supabase/migrations/20261025202253_atomic_accommodation_room_draft_save.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261025224500_conference_scoped_extra_bed_capacity.sql'
 ].map(read).join('\n');
 const effectiveDispatcher=dispatcher+dispatcherPatches+ownerPendingReadPatch+canonicalTemplateReadPatch+canonicalBundlePatch;
 

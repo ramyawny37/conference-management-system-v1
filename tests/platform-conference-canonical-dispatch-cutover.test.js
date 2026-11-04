@@ -7,7 +7,7 @@ const test=require('node:test');
 
 const root=path.join(__dirname,'..');
 const sql=fs.readFileSync(
-  path.join(root,'supabase/migrations/20261010140000_platform_conference_canonical_dispatch_cutover.sql'),
+  path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261010140000_platform_conference_canonical_dispatch_cutover.sql'),
   'utf8'
 );
 

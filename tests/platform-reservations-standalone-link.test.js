@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const migration=fs.readFileSync(
-  'supabase/migrations/20260914133000_reservations_standalone_event_conference_link.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260914133000_reservations_standalone_event_conference_link.sql',
   'utf8'
 );
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');

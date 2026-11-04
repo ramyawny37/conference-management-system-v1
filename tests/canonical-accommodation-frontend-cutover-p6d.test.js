@@ -6,7 +6,7 @@ const test=require('node:test');
 
 const integrationSource=fs.readFileSync('js/platform-integration.js','utf8');
 const scriptSource=fs.readFileSync('script.js','utf8');
-const propagationSource=fs.readFileSync('supabase/migrations/20260929160000_canonical_conference_participation_accommodation_propagation.sql','utf8');
+const propagationSource=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929160000_canonical_conference_participation_accommodation_propagation.sql','utf8');
 
 test('occupancy mutation resolves room and missing-occupancy guard in one traversal',()=>{
   const mutation=integrationSource.slice(integrationSource.indexOf('function mutateAccommodation('),integrationSource.indexOf('function mutateConferenceAccommodationStructure('));

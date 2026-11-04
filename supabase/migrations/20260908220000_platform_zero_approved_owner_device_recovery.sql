@@ -1,7 +1,6 @@
 -- One-time-condition, service-only recovery for a Platform Owner with no approved active device.
 -- This is deliberately separate from normal device administration and creates no device session.
 begin;
-
 create table platform_private.zero_approved_owner_device_recovery_operations (
   operation_id uuid primary key,
   target_user_id uuid not null references platform.profiles(user_id) on delete restrict,
@@ -14,7 +13,6 @@ create table platform_private.zero_approved_owner_device_recovery_operations (
   audit_event_id uuid not null unique references platform.audit_events(id) on delete restrict,
   created_at timestamptz not null default pg_catalog.statement_timestamp()
 );
-
 create or replace function platform_private.prevent_zero_approved_owner_device_recovery_operation_mutation()
 returns trigger language plpgsql set search_path=''
 as $$
@@ -22,14 +20,11 @@ begin
   raise exception 'ZERO_APPROVED_OWNER_RECOVERY_OPERATION_IMMUTABLE' using errcode='55000';
 end;
 $$;
-
 create trigger zero_approved_owner_device_recovery_operations_immutable
 before update or delete on platform_private.zero_approved_owner_device_recovery_operations
 for each row execute function platform_private.prevent_zero_approved_owner_device_recovery_operation_mutation();
-
 revoke all on platform_private.zero_approved_owner_device_recovery_operations
 from public,anon,authenticated,service_role;
-
 create or replace function platform.recover_zero_approved_owner_device(
   p_target_user_id uuid,
   p_target_device_id uuid,
@@ -182,11 +177,9 @@ begin
   return v_result;
 end;
 $$;
-
 alter function platform.recover_zero_approved_owner_device(uuid,uuid,uuid,uuid,uuid,text) owner to postgres;
 revoke all on function platform.recover_zero_approved_owner_device(uuid,uuid,uuid,uuid,uuid,text)
 from public,anon,authenticated,service_role;
 grant execute on function platform.recover_zero_approved_owner_device(uuid,uuid,uuid,uuid,uuid,text)
 to service_role;
-
 commit;

@@ -5,11 +5,11 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const migration=fs.readFileSync(
-  'supabase/migrations/20260920120000_reservations_report_event_authorization_scope.sql',
+  'supabase/migrations/20260920051257_reservations_report_event_authorization_scope.sql',
   'utf8'
 );
 const pagination=fs.readFileSync(
-  'supabase/migrations/20260911120000_reservations_scope_partition_integrity.sql',
+  'supabase/migrations/20260912100553_reservations_scope_partition_integrity.sql',
   'utf8'
 );
 

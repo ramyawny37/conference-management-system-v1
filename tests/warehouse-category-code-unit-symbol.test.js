@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const source=fs.readFileSync('js/warehouse/workspace.js','utf8');
-const migration=fs.readFileSync('supabase/migrations/20260904143000_warehouse_category_code_allocation.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260904143000_warehouse_category_code_allocation.sql','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
 

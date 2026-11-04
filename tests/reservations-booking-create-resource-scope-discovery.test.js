@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 
-const migration=fs.readFileSync('supabase/migrations/20260922090000_reservations_booking_create_resource_scope_discovery_reconciliation.sql','utf8');
+const migration=fs.readFileSync('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260922090000_reservations_booking_create_resource_scope_discovery_reconciliation.sql','utf8');
 
 test('booking creation discovery authenticates device without demanding module-wide booking.create',()=>{
   assert.match(migration,/v_actor:=public\.require_current_approved_device\(p_device_id\)/);

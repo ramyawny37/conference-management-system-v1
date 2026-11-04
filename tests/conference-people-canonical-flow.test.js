@@ -7,7 +7,7 @@ const root=path.join(__dirname,'..');
 const ui=fs.readFileSync(path.join(root,'script.js'),'utf8');
 const integration=fs.readFileSync(path.join(root,'js/platform-integration.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const searchSql=fs.readFileSync(path.join(root,'supabase/migrations/20261014182000_conference_people_search_canonical_device_route.sql'),'utf8');
+const searchSql=fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261014182000_conference_people_search_canonical_device_route.sql'),'utf8');
 test('canonical conference people search stays behind device-scoped permission and single router',()=>{
  assert.match(searchSql,/require_conference_participation_context/);
  assert.match(searchSql,/conference\.people\.view/);
@@ -46,7 +46,7 @@ test('conference removal explicitly preserves central identity and explains acco
 });
 
 test('apology and removal cascade through the canonical accommodation cleanup function',()=>{
- const sql=fs.readFileSync(path.join(root,'supabase/migrations/20260929160000_canonical_conference_participation_accommodation_propagation.sql'),'utf8');
+ const sql=fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929160000_canonical_conference_participation_accommodation_propagation.sql'),'utf8');
  assert.match(sql,/create function platform_private\.cleanup_conference_accommodation_for_participation/);
  assert.match(sql,/delete from public\.conference_accommodation_occupancies where id=v_occupancy\.id/);
  assert.match(sql,/if v_current\.status='active' and p_status='apologized' then\s*perform platform_private\.cleanup_conference_accommodation_for_participation/);
@@ -54,7 +54,7 @@ test('apology and removal cascade through the canonical accommodation cleanup fu
  assert.match(sql,/conference\.accommodation\.participation_cleanup/);
 });
 test('Reservations update is a revision-guarded central person write with module permission',()=>{
- const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261012200000_reservations_shared_people_permission_scope_fix.sql'),'utf8');
+ const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261012154859_reservations_shared_people_permission_scope_fix.sql'),'utf8');
  assert.match(sql,/require_effective_module_permission\(p_device_id,'reservations','reservations\.people\.manage',null,null\)/);
  assert.match(sql,/update platform\.people set full_name=/);
  assert.match(sql,/where id=v_person_id and revision=\(p_args->>'p_person_update_revision'\)::bigint/);
@@ -112,8 +112,8 @@ test('canonical person modal cannot be replaced or closed while update is pendin
 });
 
 test('conference and reservations share one revision-guarded platform person writer',()=>{
- const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261014230000_shared_canonical_person_update.sql'),'utf8');
- const scope=fs.readFileSync(path.join(root,'supabase/migrations/20261014231000_shared_person_conference_scope_guard.sql'),'utf8');
+ const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261014175548_shared_canonical_person_update.sql'),'utf8');
+ const scope=fs.readFileSync(path.join(root,'supabase/migrations/20261014175938_shared_person_conference_scope_guard.sql'),'utf8');
  assert.match(sql,/create function platform_private\.update_canonical_person/);
  assert.match(sql,/where id=p_person_id and revision=p_expected_revision/);
  assert.match(sql,/PERSON_REVISION_CONFLICT/);

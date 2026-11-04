@@ -11,3 +11,4 @@ begin
  execute replace(d,marker,replacement);
 end $migration$;
 commit;
+;

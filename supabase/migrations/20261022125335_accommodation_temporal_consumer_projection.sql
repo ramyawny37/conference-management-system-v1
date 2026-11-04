@@ -21,14 +21,9 @@ begin
    old_join:='left join platform.people gperson on gperson.id=gp.person_id left join public.conference_accommodation_occupancies o on o.participation_id=p.id';
    new_join:='left join platform.people gperson on gperson.id=gp.person_id left join lateral (select stay.room_id from public.conference_accommodation_occupancies stay where stay.participation_id=p.id and stay.arrival_day<=platform_private.conference_operational_day(p.conference_id) and coalesce(stay.leave_day,platform_private.conference_accommodation_duration(p.conference_id)+1)>platform_private.conference_operational_day(p.conference_id) order by stay.arrival_day desc,stay.id limit 1) o on true';
   end if;
-  if position(new_join in definition)>0 then
-   continue;
-  elsif position(old_join in definition)>0 then
-   definition:=replace(definition,old_join,new_join);
-   execute definition;
-  else
-   raise exception 'ACCOMMODATION_TEMPORAL_CONSUMER_DRIFT: %',signature using errcode='55000';
-  end if;
+  if position(old_join in definition)=0 then raise exception 'ACCOMMODATION_TEMPORAL_CONSUMER_DRIFT: %',signature using errcode='55000';end if;
+  definition:=replace(definition,old_join,new_join);
+  execute definition;
  end loop;
 end $repair$;
 
@@ -36,3 +31,4 @@ revoke all on function platform_private.conference_operational_day(uuid) from pu
 comment on function platform_private.conference_operational_day(uuid) is 'Current bounded Conference day used only for present-time projections; historical consumers must pass their explicit business day.';
 
 commit;
+;

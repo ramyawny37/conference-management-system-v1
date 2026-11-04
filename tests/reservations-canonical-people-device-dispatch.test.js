@@ -5,16 +5,16 @@ const fs=require('node:fs');
 const test=require('node:test');
 
 const dispatcher=fs.readFileSync(
-  'supabase/migrations/20261010201800_flatten_platform_device_operation_dispatcher.sql','utf8'
+  'supabase/migrations/20261007135551_flatten_platform_device_operation_dispatcher.sql','utf8'
 );
 const bookingContextPatch=fs.readFileSync(
-  'supabase/migrations/20261012110000_reservations_booking_creation_context_dispatch_contract.sql','utf8'
+  'supabase/migrations/20261011231546_reservations_booking_creation_context_dispatch_contract.sql','utf8'
 );
 const searchReadRoute=fs.readFileSync(
-  'supabase/migrations/20261012174500_reservations_canonical_people_read_route.sql','utf8'
+  'supabase/migrations/20261012141559_reservations_canonical_people_read_route.sql','utf8'
 );
 const migration=fs.readFileSync(
-  'supabase/migrations/20261013141000_reservations_canonical_people_device_dispatch.sql','utf8'
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261013141000_reservations_canonical_people_device_dispatch.sql','utf8'
 );
 
 test('canonical people search joins the existing device-session dispatcher after its guards',()=>{
@@ -26,7 +26,7 @@ test('canonical people search joins the existing device-session dispatcher after
 test('Reservations read route retains the booking-create permission check for people search',()=>{
   assert.match(searchReadRoute,/p_operation='search_people'[\s\S]*require_exact_jsonb_keys\(p_args,array\['p_query'\],array\['p_limit'\]\)[\s\S]*search_reservations_people\(p_device_id/);
   assert.match(
-    fs.readFileSync('supabase/migrations/20261012170000_reservations_guarded_canonical_people_search.sql','utf8'),
+    fs.readFileSync('supabase/migrations/20261012133528_reservations_guarded_canonical_people_search.sql','utf8'),
     /require_effective_module_permission\(p_actor_device_id,'reservations','reservations\.booking\.create',null,null\)/
   );
   assert.match(migration,/revoke all on function public\.search_reservations_people\(uuid,text,integer\)[\s\S]*from public,anon,authenticated/);

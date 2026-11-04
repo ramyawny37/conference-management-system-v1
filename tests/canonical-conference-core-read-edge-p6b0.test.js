@@ -8,7 +8,7 @@ const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 
 const root=path.join(__dirname,'..');
-const migration='supabase/migrations/20260929170000_canonical_conference_core_read_edge_foundation.sql';
+const migration='supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260929170000_canonical_conference_core_read_edge_foundation.sql';
 const sql=fs.readFileSync(path.join(root,migration),'utf8');
 const conferenceEdge=fs.readFileSync(path.join(root,'supabase/functions/conference-device-operation/index.ts'),'utf8');
 const platformEdge=fs.readFileSync(path.join(root,'supabase/functions/platform-device-operation/index.ts'),'utf8');

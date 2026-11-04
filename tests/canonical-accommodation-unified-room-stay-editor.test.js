@@ -4,7 +4,7 @@ const fs=require('node:fs');
 
 const script=fs.readFileSync('script.js','utf8');
 const css=fs.readFileSync('style.css','utf8');
-const sql=fs.readFileSync('supabase/migrations/20261026120000_unified_accommodation_room_stay_draft.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20261026091613_unified_accommodation_room_stay_draft.sql','utf8');
 
 test('existing current stays are editable in the unified room editor',()=>{
   const renderer=script.slice(script.indexOf('function renderCanonicalAccommodationDetailOccupant('),script.indexOf('\nfunction canonicalAccommodationRoomEmptySlotHtml('));

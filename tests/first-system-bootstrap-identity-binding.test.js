@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('assert'),fs=require('fs'),path=require('path');
-const sql=fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/20260809_6_5_1_first_system_bootstrap_identity_binding.sql'),'utf8');
+const sql=fs.readFileSync(path.resolve(__dirname,'../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260809_6_5_1_first_system_bootstrap_identity_binding.sql'),'utf8');
 assert.match(sql,/add column intended_user_id uuid null references auth\.users\(id\)/i);
 assert.match(sql,/alter column intended_user_id set not null/i);
 assert.match(sql,/intended_id<>actor_id[\s\S]*not_authorized/i);

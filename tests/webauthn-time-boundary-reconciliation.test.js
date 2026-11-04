@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('assert'),fs=require('fs'),path=require('path');
 const root=path.resolve(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260827130503_webauthn_time_boundary_reconciliation_6_20_5.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20260827130503_webauthn_time_boundary_reconciliation_6_20_5.sql'),'utf8');
 const effectiveMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261017115255_reconcile_owner_device_challenge_expiration_anchor.sql'),'utf8');
 const materialMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261017121130_restore_compact_owner_webauthn_verification_material.sql'),'utf8');
 

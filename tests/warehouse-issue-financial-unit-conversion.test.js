@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const migration=fs.readFileSync('supabase/migrations/20260905210000_warehouse_issue_financial_unit_conversion_fix.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260905171853_warehouse_issue_financial_unit_conversion_fix.sql','utf8');
 const financialExpression=/case when entered_quantity is not null and selected_unit_price is not null then entered_quantity\*selected_unit_price else quantity\*unit_price end/;
 
 test('Issue create enrichment preserves selected price and normalizes base unit price',()=>{

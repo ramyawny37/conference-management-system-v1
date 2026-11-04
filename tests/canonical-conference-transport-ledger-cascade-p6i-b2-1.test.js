@@ -6,7 +6,7 @@ const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const test=require('node:test');
 const root=path.join(__dirname,'..');
-const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261003140000_canonical_conference_transport_foundation.sql'),'utf8');
+const sql=fs.readFileSync(path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003140000_canonical_conference_transport_foundation.sql'),'utf8');
 
 test('1 Transport reuses the canonical Participation operation ledger',()=>assert.match(sql,/public\.conference_participation_operations/));
 test('2 no parallel Transport ledger or replay helper remains',()=>assert.doesNotMatch(sql,/conference_transport_operations|transport_replay/));
@@ -73,8 +73,8 @@ test('disposable PostgreSQL proves ledger replay, complete cleanup audits and at
         insert into public.conference_participation_operations values(a,p_operation_id,'delete',jsonb_build_object('participationId',p_participation_id,'expectedRevision',p_expected_revision),result,statement_timestamp());
         return result;
       end \$\$;`);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261003140000_canonical_conference_transport_foundation.sql')]);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261003160000_canonical_conference_restaurant_foundation.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003140000_canonical_conference_transport_foundation.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261003160000_canonical_conference_restaurant_foundation.sql')]);
     query(`create function public.search_conference_people(uuid,uuid,text,integer) returns jsonb language sql as \$\$select '{}'::jsonb\$\$;
       create function public.get_conference_canonical_person(uuid,uuid,uuid) returns jsonb language sql as \$\$select '{}'::jsonb\$\$;
       create function public.update_conference_canonical_person(uuid,uuid,uuid,bigint,text,text,text,text,date) returns jsonb language sql as \$\$select '{}'::jsonb\$\$;
@@ -89,7 +89,7 @@ test('disposable PostgreSQL proves ledger replay, complete cleanup audits and at
         elsif p_operation='create_conference_participation_with_person' then return public.create_conference_participation_with_person(p_actor_device_id,null,null,null,null,null,null,null);
         elsif p_operation='delete_conference_participation' then return public.delete_conference_participation(p_actor_device_id,null,null,null); end if;
         return '{}'::jsonb; end \$\$;`);
-    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261015110000_conference_people_operation_contract_reconciliation.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261015061242_conference_people_operation_contract_reconciliation.sql')]);
     query(`create function platform_private.run_delete(uuid,uuid,bigint) returns jsonb language plpgsql security definer set search_path='' as \$\$ begin perform set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true); return public.delete_conference_participation('${device}',\$1,\$2,\$3); end \$\$;
       create function platform_private.run_remove(uuid,uuid,bigint) returns jsonb language plpgsql security definer set search_path='' as \$\$ begin perform set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true); return public.remove_conference_transport_assignment('${device}',\$1,\$2,\$3); end \$\$;`);
     let sequence=1;

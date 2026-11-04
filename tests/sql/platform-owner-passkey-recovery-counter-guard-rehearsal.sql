@@ -49,7 +49,7 @@ begin
   return result;
 end $$;
 
-\ir ../../supabase/migrations/20261016163453_platform_owner_passkey_recovery_counter_guard.sql
+\ir ../../supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261016163453_platform_owner_passkey_recovery_counter_guard.sql
 create trigger device_security_credentials_lifecycle_guard
 before insert or update or delete on public.device_security_credentials
 for each row execute function public.guard_device_security_credential_lifecycle();

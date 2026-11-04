@@ -6,10 +6,10 @@ const fs = require('node:fs');
 const read = path => fs.readFileSync(path, 'utf8');
 const contract = read('docs/canonical-family-accommodation-cutover-contract.md');
 const migrations = [
-  'supabase/migrations/20261026111500_reject_direct_linked_child_stay_moves.sql',
-  'supabase/migrations/20261026162000_guardian_move_cascades_children.sql',
-  'supabase/migrations/20261026170000_guardian_replacement_removes_housed_children.sql',
-  'supabase/migrations/20261027150000_atomic_guardian_child_accommodation.sql'
+  'supabase/migrations/20261026094312_reject_direct_linked_child_stay_moves.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261026162000_guardian_move_cascades_children.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261026170000_guardian_replacement_removes_housed_children.sql',
+  'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261027150000_atomic_guardian_child_accommodation.sql'
 ];
 
 test('family accommodation contract requires independently bedded child stays', () => {

@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20261031213000_reservations_dynamic_attendance_periods.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20261031190106_reservations_dynamic_attendance_periods.sql','utf8');
 
 test('missing period owners are backfilled without rewriting booking snapshots',()=>{
   assert.match(sql,/with used_segments as materialized/);
