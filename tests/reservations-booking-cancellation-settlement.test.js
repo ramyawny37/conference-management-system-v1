@@ -75,3 +75,25 @@ test('outstanding credit report is source-allocated and event-scoped, not accoun
 });
 
 test.todo('unified runtime dialog awaits reconciliation of the canonical platform bundle with its source repository');
+
+const gatewayCreditCutover=fs.readFileSync(path.join(root,'supabase/migrations/20261105210000_reservations_credit_gateway_source_contract.sql'),'utf8');
+const childGuardCutover=fs.readFileSync(path.join(root,'supabase/migrations/20261105211000_reservations_guard_all_linked_child_bookings.sql'),'utf8');
+
+test('canonical device dispatcher accepts the credit source required by the scoped writer',()=>{
+  assert.match(gatewayCreditCutover,/p_settlement_id/);
+  assert.match(gatewayCreditCutover,/CREDIT_GATEWAY_CONTRACT_DRIFT/);
+  assert.match(gatewayCreditCutover,/platform\.execute_device_operation/);
+  assert.match(creditCorrection,/p_settlement_id/);
+});
+
+test('guardian cancellation protects unpaid as well as paid linked child bookings',()=>{
+  assert.match(childGuardCutover,/reservations_private\.cancel_booking_scoped/);
+  assert.match(childGuardCutover,/join reservations\.payments child_payment/);
+  assert.match(childGuardCutover,/CHILD_SETTLEMENT_GUARD_DRIFT/);
+  assert.match(migration,/RESERVATIONS_CHILD_BOOKING_SETTLEMENT_REQUIRED/);
+});
+
+test('credit redemption is source allocated, but is not yet booked as a payment against another booking',()=>{
+  assert.match(creditCorrection,/settlement\.id/);
+  assert.doesNotMatch(creditCorrection,/insert into reservations\.payments/);
+});
