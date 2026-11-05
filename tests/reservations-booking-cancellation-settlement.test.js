@@ -97,3 +97,10 @@ test('credit redemption is source allocated, but is not yet booked as a payment 
   assert.match(creditCorrection,/settlement\.id/);
   assert.doesNotMatch(creditCorrection,/insert into reservations\.payments/);
 });
+
+test('apologized booking details cannot offer edits or new payments',()=>{
+  assert.match(runtime,/onClick:qe,disabled:xe\|\|m\.lifecycleStatus==="apologized"/);
+  assert.match(runtime,/m\.lifecycleStatus!=="apologized"&&l\.jsxs\(Se,\{onClick:\(\)=>\$\(!0\)/);
+  assert.match(runtime,/action:m\.lifecycleStatus!=="apologized"\?/);
+  assert.match(runtime,/V&&m\.lifecycleStatus!=="apologized"&&l\.jsx\(Jo/);
+});
