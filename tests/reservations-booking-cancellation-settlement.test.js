@@ -63,4 +63,15 @@ test('active capacity and dashboard values exclude apologized bookings while his
   assert.doesNotMatch(migration,/list_bookings[^;]+lifecycle_status=''active''/);
 });
 
+test('outstanding credit report is source-allocated and event-scoped, not account-wide',()=>{
+  const corrected=creditCorrection.match(/'''outstandingCredits''',[^\n]+/g)||[];
+  assert.ok(corrected.length>=2,'migration must match and replace the old account-wide calculation');
+  const replacement=corrected[corrected.length-1];
+  assert.match(replacement,/s\.credit_amount-coalesce\(redeemed\.amount,0\)/);
+  assert.match(replacement,/entry\.settlement_id=s\.id/);
+  assert.match(replacement,/entry\.entry_kind=''redeem''/);
+  assert.match(replacement,/credit_booking\.event_id=v_event_id/);
+  assert.doesNotMatch(replacement,/sum\(a\.balance\)/);
+});
+
 test.todo('unified runtime dialog awaits reconciliation of the canonical platform bundle with its source repository');
