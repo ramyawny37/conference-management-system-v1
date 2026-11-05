@@ -113,3 +113,11 @@ test('post-apology payment history cannot be voided through the canonical SQL wr
   assert.match(runtime,/disabled:m\.lifecycleStatus==="apologized",children:\[l\.jsx\(Gj/);
   assert.match(runtime,/q&&m\.lifecycleStatus!=="apologized"&&l\.jsx\(mb/);
 });
+
+const recordPaymentGuardCutover=fs.readFileSync(path.join(root,'supabase/migrations/20261105214000_reservations_payment_record_scope_guard.sql'),'utf8');
+test('record-payment immutability check runs after canonical scope authorization',()=>{
+  assert.match(recordPaymentGuardCutover,/resolve_booking_scope/);
+  assert.match(recordPaymentGuardCutover,/reservations\.payment\.record/);
+  assert.match(recordPaymentGuardCutover,/RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE/);
+  assert.match(recordPaymentGuardCutover,/RECORD_PAYMENT_GUARD_DRIFT/);
+});
