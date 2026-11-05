@@ -137,3 +137,10 @@ test('payment recording locks booking before testing apology state',()=>{
   assert.match(paymentLockMigration,/v_booking\.lifecycle_status/);
   assert.match(paymentLockMigration,/PAYMENT_BOOKING_LOCK_CONTRACT_DRIFT/);
 });
+
+const voidPaymentLockMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261105221000_reservations_payment_void_booking_lock.sql'),'utf8');
+test('payment void locks booking before mutating payment history',()=>{
+  assert.match(voidPaymentLockMigration,/for update/);
+  assert.match(voidPaymentLockMigration,/v_booking\.lifecycle_status/);
+  assert.match(voidPaymentLockMigration,/VOID_PAYMENT_LOCK_CONTRACT_DRIFT/);
+});
