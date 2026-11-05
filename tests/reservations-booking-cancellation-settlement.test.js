@@ -121,3 +121,5 @@ test('record-payment immutability check runs after canonical scope authorization
   assert.match(recordPaymentGuardCutover,/RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE/);
   assert.match(recordPaymentGuardCutover,/RECORD_PAYMENT_GUARD_DRIFT/);
 });
+
+// Cancellation lifecycle: booking updates must be rejected after apology at the canonical writer.
