@@ -123,3 +123,10 @@ test('record-payment immutability check runs after canonical scope authorization
 });
 
 // Cancellation lifecycle: booking updates must be rejected after apology at the canonical writer.
+
+const immutableUpdateMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261105215000_reservations_apologized_booking_update_guard.sql'),'utf8');
+test('canonical booking update refuses apologized bookings before person changes',()=>{
+  assert.match(immutableUpdateMigration,/v_booking\.lifecycle_status/);
+  assert.match(immutableUpdateMigration,/RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE/);
+  assert.match(immutableUpdateMigration,/BOOKING_UPDATE_CONTRACT_DRIFT/);
+});
