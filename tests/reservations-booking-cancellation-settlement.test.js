@@ -104,3 +104,12 @@ test('apologized booking details cannot offer edits or new payments',()=>{
   assert.match(runtime,/action:m\.lifecycleStatus!=="apologized"\?/);
   assert.match(runtime,/V&&m\.lifecycleStatus!=="apologized"&&l\.jsx\(Jo/);
 });
+
+const voidGuardCutover=fs.readFileSync(path.join(root,'supabase/migrations/20261105213000_reservations_apologized_payment_void_guard.sql'),'utf8');
+test('post-apology payment history cannot be voided through the canonical SQL writer',()=>{
+  assert.match(voidGuardCutover,/resolve_payment_scope/);
+  assert.match(voidGuardCutover,/guard_booking\.lifecycle_status<>''active''/);
+  assert.match(voidGuardCutover,/RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE/);
+  assert.match(runtime,/disabled:m\.lifecycleStatus==="apologized",children:\[l\.jsx\(Gj/);
+  assert.match(runtime,/q&&m\.lifecycleStatus!=="apologized"&&l\.jsx\(mb/);
+});
