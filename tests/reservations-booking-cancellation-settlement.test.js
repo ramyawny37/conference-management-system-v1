@@ -130,3 +130,10 @@ test('canonical booking update refuses apologized bookings before person changes
   assert.match(immutableUpdateMigration,/RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE/);
   assert.match(immutableUpdateMigration,/BOOKING_UPDATE_CONTRACT_DRIFT/);
 });
+
+const paymentLockMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261105220000_reservations_payment_booking_lock.sql'),'utf8');
+test('payment recording locks booking before testing apology state',()=>{
+  assert.match(paymentLockMigration,/for update; if not found/);
+  assert.match(paymentLockMigration,/v_booking\.lifecycle_status/);
+  assert.match(paymentLockMigration,/PAYMENT_BOOKING_LOCK_CONTRACT_DRIFT/);
+});
