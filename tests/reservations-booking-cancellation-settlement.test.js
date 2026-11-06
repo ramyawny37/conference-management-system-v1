@@ -144,3 +144,9 @@ test('payment void locks booking before mutating payment history',()=>{
   assert.match(voidPaymentLockMigration,/v_booking\.lifecycle_status/);
   assert.match(voidPaymentLockMigration,/VOID_PAYMENT_LOCK_CONTRACT_DRIFT/);
 });
+
+const creditDestinationGuard=fs.readFileSync(path.join(root,'supabase/migrations/20261106000000_reservations_credit_destination_fail_closed.sql'),'utf8');
+test('credit redemption cannot debit a balance without a destination payment',()=>{
+  assert.match(creditDestinationGuard,/RESERVATIONS_CREDIT_DESTINATION_REQUIRED/);
+  assert.match(creditDestinationGuard,/CREDIT_REDEMPTION_CONTRACT_DRIFT/);
+});
