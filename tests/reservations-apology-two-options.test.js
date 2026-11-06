@@ -42,3 +42,14 @@ test('reservations browser bundle is valid JavaScript after payout dialog insert
 test("financial summary does not display retired person-credit balance", () => {
   assert.doesNotMatch(source, /\["الأرصدة المستحقة","outstandingCredits"\]/);
 });
+
+test('completed refund review remains accessible without reopening payout', () => {
+  const start = source.indexOf('function Kw(');
+  assert.ok(start >= 0);
+  const detail = source.slice(start, source.indexOf('function ', start + 10) > start ? source.indexOf('function ', start + 10) : undefined);
+  assert.match(detail, /Me\.bookingSettlement\(m\.id\)/);
+  assert.match(detail, /settlement\.pending_refund_amount\?\?settlement\.pendingRefundAmount/);
+  assert.match(detail, /setRefundDialog\(!0\)/);
+  assert.match(detail, /تمت مراجعة التسوية: لا يوجد مبلغ متبقٍ للرد/);
+  assert.match(detail, /settlement\.refunded_amount\?\?settlement\.refundedAmount/);
+});
