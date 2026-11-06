@@ -43,13 +43,17 @@ test("financial summary does not display retired person-credit balance", () => {
   assert.doesNotMatch(source, /\["الأرصدة المستحقة","outstandingCredits"\]/);
 });
 
-test('completed refund review remains accessible without reopening payout', () => {
-  const start = source.indexOf('function Kw(');
-  assert.ok(start >= 0);
-  const detail = source.slice(start, source.indexOf('function ', start + 10) > start ? source.indexOf('function ', start + 10) : undefined);
+test('refund review shows ledger even after pending amount reaches zero', () => {
+  const start = source.indexOf('function RefundPayoutDialog(');
+  const end = source.indexOf('function Kw(', start);
+  const dialog = source.slice(start, end);
+  const detail = source.slice(end, source.indexOf('function ', end + 10));
+  assert.match(dialog, /refundDisbursements/);
+  assert.match(dialog, /عمليات الرد السابقة/);
+  assert.match(dialog, /d\.date/);
+  assert.match(dialog, /due>0&&field\("المبلغ"/);
+  assert.match(dialog, /due>0&&l\.jsx\(Se,\{disabled:busy\|\|!valid/);
   assert.match(detail, /Me\.bookingSettlement\(m\.id\)/);
-  assert.match(detail, /settlement\.pending_refund_amount\?\?settlement\.pendingRefundAmount/);
-  assert.match(detail, /setRefundDialog\(!0\)/);
-  assert.match(detail, /تمت مراجعة التسوية: لا يوجد مبلغ متبقٍ للرد/);
-  assert.match(detail, /settlement\.refunded_amount\?\?settlement\.refundedAmount/);
+  assert.match(detail, /setRefundSettlement\(settlement\);setRefundDialog\(!0\)/);
+  assert.doesNotMatch(detail, /if\(Number\(settlement\.pending_refund_amount/);
 });
