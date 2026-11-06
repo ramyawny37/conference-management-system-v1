@@ -69,6 +69,11 @@ jobs:
           }
           if (!tool.includes("branch !== 'develop'")) throw Error('Missing develop guard');
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
+          const staleRevision = 'reservations-cancellation-settlement-v1';
+          const testFiles = require('child_process').execFileSync('find', ['tests', '-maxdepth', '1', '-name', '*.test.js', '-print'], { encoding: 'utf8' }).trim().split(/\n+/).filter(Boolean);
+          for (const file of testFiles) {
+            if (fs.readFileSync(file, 'utf8').includes(staleRevision)) throw Error('Stale Reservations runtime revision in ' + file);
+          }
           console.log('Source boundary and references: PASS');
           NODE
       - name: Install PostgreSQL client
