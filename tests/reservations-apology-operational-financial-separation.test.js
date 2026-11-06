@@ -1,0 +1,34 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const moduleSource = fs.readFileSync(path.join(__dirname, "..", "modules", "reservations", "reservations-module.js"), "utf8");
+
+test("apologized bookings are excluded from operational payments and attendance", () => {
+  assert.match(moduleSource, /Ao\(a\)\.filter\(D=>D\.booking\.lifecycleStatus!==["']apologized["']\)/);
+  assert.match(moduleSource, /Ao\(a\)\.filter\(N=>N\.booking\.lifecycleStatus!==["']apologized["']\)/);
+});
+
+test("dashboard derives operational KPIs and recent bookings from active bookings only", () => {
+  assert.match(moduleSource, /activeBookings=.*\.filter\(S=>S\.lifecycleStatus!==["']apologized["']\)/);
+  assert.match(moduleSource, /bookingCount:activeBookings\.length/);
+  assert.match(moduleSource, /bookingValue:activeBookings\.reduce/);
+  assert.match(moduleSource, /collected:activeBookings\.reduce/);
+});
+
+test("reports preserve historical totals while separating active and apologized finance", () => {
+  for (const label of [
+    "إجمالي الاشتراكات التاريخية",
+    "الحجوزات الفعالة",
+    "المحصل من الفعالين",
+    "المتبقي المطلوب تحصيله",
+    "المعتذرون",
+    "المحصل من المعتذرين",
+    "حجوزات فعالة عليها رصيد",
+    "التسويات المالية والاعتذارات",
+    "سجل رد المبالغ حسب تاريخ الصرف الفعلي"
+  ]) assert.ok(moduleSource.includes(label), label);
+  assert.match(moduleSource, /apologyReportRows=.*lifecycleStatus===["']apologized["']/);
+  assert.match(moduleSource, /activeReportRows=.*lifecycleStatus!==["']apologized["']/);
+});
