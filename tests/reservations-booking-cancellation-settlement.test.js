@@ -176,3 +176,9 @@ test('canonical cancellation retires the unused credit wallet writer only when n
   assert.match(legacyCreditRetirement,/insert into reservations\.person_credit_accounts/);
   assert.match(legacyCreditRetirement,/LEGACY_CREDIT_WRITER_BOUNDARY_DRIFT/);
 });
+
+const settlementEventJoin=fs.readFileSync(path.join(root,'supabase/migrations/20261106050000_reservations_settlement_credit_event_join.sql'),'utf8');
+test('booking settlement lookup cannot use credit account from another event',()=>{
+  assert.match(settlementEventJoin,/a\.event_id=credit_booking\.event_id/);
+  assert.match(settlementEventJoin,/BOOKING_SETTLEMENT_EVENT_JOIN_DRIFT/);
+});
