@@ -150,3 +150,9 @@ test('credit redemption cannot debit a balance without a destination payment',()
   assert.match(creditDestinationGuard,/RESERVATIONS_CREDIT_DESTINATION_REQUIRED/);
   assert.match(creditDestinationGuard,/CREDIT_REDEMPTION_CONTRACT_DRIFT/);
 });
+
+const eventCreditGuard=fs.readFileSync(path.join(root,'supabase/migrations/20261106010000_reservations_event_credit_issuance_guard.sql'),'utf8');
+test('cancellation cannot pool credit across events using partition-only accounts',()=>{
+  assert.match(eventCreditGuard,/RESERVATIONS_EVENT_CREDIT_ISOLATION_REQUIRED/);
+  assert.match(eventCreditGuard,/CANCELLATION_CREDIT_ALLOCATION_CONTRACT_DRIFT/);
+});
