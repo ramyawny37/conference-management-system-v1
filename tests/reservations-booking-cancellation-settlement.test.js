@@ -163,3 +163,9 @@ test('credit account identity and ledger entries are event-scoped',()=>{
   assert.match(eventCreditSchema,/foreign key\(scope_partition_id,event_id,person_id\)/);
   assert.match(eventCreditSchema,/EVENT_CREDIT_MIGRATION_REQUIRES_RECONCILIATION/);
 });
+
+const refundDisbursementGuard=fs.readFileSync(path.join(root,'supabase/migrations/20261106030000_reservations_refund_disbursement_guard.sql'),'utf8');
+test('actual refund requires a recorded disbursement instead of apology-only allocation',()=>{
+  assert.match(refundDisbursementGuard,/RESERVATIONS_REFUND_DISBURSEMENT_REQUIRED/);
+  assert.match(refundDisbursementGuard,/CANCELLATION_CONTRACT_DRIFT/);
+});
