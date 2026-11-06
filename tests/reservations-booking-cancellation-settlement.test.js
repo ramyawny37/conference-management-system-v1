@@ -182,3 +182,13 @@ test('booking settlement lookup cannot use credit account from another event',()
   assert.match(settlementEventJoin,/a\.event_id=credit_booking\.event_id/);
   assert.match(settlementEventJoin,/BOOKING_SETTLEMENT_EVENT_JOIN_DRIFT/);
 });
+
+const refundLedger=fs.readFileSync(path.join(root,'supabase/migrations/20261106060000_reservations_refund_disbursement_ledger.sql'),'utf8');
+const refundLedgerIntegrity=fs.readFileSync(path.join(root,'supabase/migrations/20261106061000_reservations_refund_settlement_booking_integrity.sql'),'utf8');
+test('refund disbursement is dated, event-bound and cannot reference another booking settlement',()=>{
+  assert.match(refundLedger,/disbursed_on date not null/);
+  assert.match(refundLedger,/refund_disbursements_event_booking_fk/);
+  assert.match(refundLedger,/enable row level security/);
+  assert.match(refundLedgerIntegrity,/refund_disbursements_settlement_booking_fk/);
+  assert.match(refundLedgerIntegrity,/foreign key\(scope_partition_id,booking_id,settlement_id\)/);
+});
