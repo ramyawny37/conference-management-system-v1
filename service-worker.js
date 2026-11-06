@@ -175,6 +175,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Development Preview must load its own deployed files directly. Intercepting
+  // every asset through the worker can stall a reload while a new release is
+  // activating and also hides network failures behind stale cache responses.
+  if (IS_DEVELOPMENT) {
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(handleNavigationRequest(request));
     return;
