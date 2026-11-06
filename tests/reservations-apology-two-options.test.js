@@ -20,3 +20,14 @@ test('refund payout stays on canonical financial writer', () => {
   assert.match(source, /function RefundPayoutDialog\(/);
   assert.match(source, /pending_refund_amount/);
 });
+
+test('refund payout validates cents, due balance and local disbursement date', () => {
+  const start = source.indexOf('function RefundPayoutDialog(');
+  const end = source.indexOf('function Kw(', start);
+  assert.ok(start >= 0 && end > start);
+  const dialog = source.slice(start, end);
+  assert.match(dialog, /Number\(amount\)<=due/);
+  assert.match(dialog, /date<=new Date\(\)\.toLocaleDateString\("en-CA"\)/);
+  assert.match(dialog, /Me\.disburseRefund\(t,/);
+  assert.match(dialog, /method!=="other"\|\|other\.trim\(\)/);
+});
