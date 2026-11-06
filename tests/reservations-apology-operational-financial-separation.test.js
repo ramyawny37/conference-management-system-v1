@@ -32,3 +32,9 @@ test("reports preserve historical totals while separating active and apologized 
   assert.match(moduleSource, /apologyReportRows=.*lifecycleStatus===["']apologized["']/);
   assert.match(moduleSource, /activeReportRows=.*lifecycleStatus!==["']apologized["']/);
 });
+
+
+test("report financial summary passes the icon component type, not a rendered element", () => {
+  assert.match(moduleSource, /l\.jsx\(Yd,\{label,value:Ae\(Number\(financialSummary\[key\]\?\?0\)\),detail:["']من التسويات المركزية["'],icon:An\},key\)/);
+  assert.doesNotMatch(moduleSource, /financialSummary\[key\][\s\S]{0,180}icon:l\.jsx\(An/);
+});
