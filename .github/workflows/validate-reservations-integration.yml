@@ -45,6 +45,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install dependencies
+        run: npm ci
       - name: Check integration script syntax
         run: node --check tools/integrate-reservations-artifact.cjs
       - name: Check reservations browser bundle syntax
@@ -69,8 +71,6 @@ jobs:
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
           console.log('Source boundary and references: PASS');
           NODE
-      - name: Install dependencies
-        run: npm ci
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
       - name: Conference Development platform regression tests
