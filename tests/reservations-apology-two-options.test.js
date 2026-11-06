@@ -28,11 +28,17 @@ test('refund payout validates cents, due balance and local disbursement date', (
   assert.ok(start >= 0 && end > start);
   const dialog = source.slice(start, end);
   assert.match(dialog, /Number\(amount\)<=due/);
-  assert.match(dialog, /date<=new Date\(\)\.toLocaleDateString\("en-CA"\)/);
+  assert.match(dialog, /date<=\[new Date\(\)\.getFullYear\(\)/);
+  assert.match(dialog, /getMonth\(\)\+1/);
+  assert.match(dialog, /getDate\(\)/);
   assert.match(dialog, /Me\.disburseRefund\(t,/);
   assert.match(dialog, /method!=="other"\|\|other\.trim\(\)/);
 });
 
 test('reservations browser bundle is valid JavaScript after payout dialog insertion', () => {
   assert.doesNotThrow(() => new vm.Script(source, { filename: 'reservations-module.js' }));
+});
+
+test("financial summary does not display retired person-credit balance", () => {
+  assert.doesNotMatch(source, /\["الأرصدة المستحقة","outstandingCredits"\]/);
 });
