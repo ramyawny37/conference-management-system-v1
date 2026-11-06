@@ -156,3 +156,10 @@ test('cancellation cannot pool credit across events using partition-only account
   assert.match(eventCreditGuard,/RESERVATIONS_EVENT_CREDIT_ISOLATION_REQUIRED/);
   assert.match(eventCreditGuard,/CANCELLATION_CREDIT_ALLOCATION_CONTRACT_DRIFT/);
 });
+
+const eventCreditSchema=fs.readFileSync(path.join(root,'supabase/migrations/20261106020000_reservations_event_scoped_credit_accounts.sql'),'utf8');
+test('credit account identity and ledger entries are event-scoped',()=>{
+  assert.match(eventCreditSchema,/primary key\(scope_partition_id,event_id,person_id\)/);
+  assert.match(eventCreditSchema,/foreign key\(scope_partition_id,event_id,person_id\)/);
+  assert.match(eventCreditSchema,/EVENT_CREDIT_MIGRATION_REQUIRES_RECONCILIATION/);
+});
