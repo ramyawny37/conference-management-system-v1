@@ -169,3 +169,10 @@ test('actual refund requires a recorded disbursement instead of apology-only all
   assert.match(refundDisbursementGuard,/RESERVATIONS_REFUND_DISBURSEMENT_REQUIRED/);
   assert.match(refundDisbursementGuard,/CANCELLATION_CONTRACT_DRIFT/);
 });
+
+const legacyCreditRetirement=fs.readFileSync(path.join(root,'supabase/migrations/20261106040000_reservations_retire_unused_credit_writer.sql'),'utf8');
+test('canonical cancellation retires the unused credit wallet writer only when no credit data exists',()=>{
+  assert.match(legacyCreditRetirement,/LEGACY_CREDIT_RETIREMENT_HAS_DATA/);
+  assert.match(legacyCreditRetirement,/insert into reservations\.person_credit_accounts/);
+  assert.match(legacyCreditRetirement,/LEGACY_CREDIT_WRITER_BOUNDARY_DRIFT/);
+});
