@@ -57,3 +57,10 @@ test('refund review shows ledger even after pending amount reaches zero', () => 
   assert.match(detail, /setRefundSettlement\(settlement\);setRefundDialog\(!0\)/);
   assert.doesNotMatch(detail, /if\(Number\(settlement\.pending_refund_amount/);
 });
+
+test('financial report displays scoped dated refund disbursements', () => {
+  assert.match(source, /financialSummary\.refundDisbursements/);
+  assert.match(source, /سجل رد المبالغ حسب تاريخ الصرف الفعلي/);
+  assert.match(source, /d\.date/);
+  assert.match(source, /لا توجد عمليات رد مسجلة لهذه الفعالية/);
+});
