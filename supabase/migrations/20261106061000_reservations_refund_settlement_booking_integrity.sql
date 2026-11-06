@@ -1,0 +1,8 @@
+begin;
+alter table reservations.booking_cancellation_settlements
+ add constraint reservations_settlement_partition_booking_id_unique unique(scope_partition_id,booking_id,id);
+alter table reservations.refund_disbursements
+ add constraint refund_disbursements_settlement_booking_fk
+ foreign key(scope_partition_id,booking_id,settlement_id)
+ references reservations.booking_cancellation_settlements(scope_partition_id,booking_id,id) on delete restrict;
+commit;
