@@ -47,6 +47,10 @@ jobs:
           node-version: '22'
       - name: Check integration script syntax
         run: node --check tools/integrate-reservations-artifact.cjs
+      - name: Check reservations browser bundle syntax
+        run: node --check modules/reservations/reservations-module.js
+      - name: Reservations apology and refund payout regression
+        run: node --test tests/reservations-apology-two-options.test.js
       - name: Validate source boundary and cache references
         shell: bash
         run: |
