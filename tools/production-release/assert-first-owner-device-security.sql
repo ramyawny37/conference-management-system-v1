@@ -6,6 +6,9 @@ DECLARE
   required record;
   fn oid;
 BEGIN
+  IF private_table IS NULL THEN
+    RAISE EXCEPTION 'OWNER_DEVICE_SECURITY_MISSING_PRIVATE_TABLE';
+  END IF;
   -- Private schemas contain routines with PUBLIC EXECUTE ACLs. Schema USAGE is
   -- the necessary outer boundary and must never drift during clean bootstrap.
   IF EXISTS (
@@ -16,9 +19,6 @@ BEGIN
        OR has_schema_privilege('service_role',to_regnamespace(s.name),'USAGE')
   ) THEN
     RAISE EXCEPTION 'OWNER_DEVICE_SECURITY_PRIVATE_SCHEMA_EXPOSED';
-  END IF;
-  IF private_table IS NULL THEN
-    RAISE EXCEPTION 'OWNER_DEVICE_SECURITY_MISSING_PRIVATE_TABLE';
   END IF;
   IF has_table_privilege('anon',private_table,'SELECT,INSERT,UPDATE,DELETE')
      OR has_table_privilege('authenticated',private_table,'SELECT,INSERT,UPDATE,DELETE') THEN
