@@ -32,6 +32,8 @@ test('settlement allocation is exact, non-negative and distinguishes actual from
   assert.match(refundWriter,/non_refundable_amount=non_refundable_amount-greatest\(amount-pending_refund_amount,0\)/);
   assert.match(reporting,/refundableAvailable',s\.pending_refund_amount\+s\.non_refundable_amount/);
   assert.match(runtime,/المتاح لاتخاذ قرار الرد/);
+  assert.match(runtime,/لا يُرد حاليًا/);
+  assert.match(runtime,/محتفظ به حاليًا/);
   assert.match(runtime,/const due=Number\(a\.pending_refund_amount\?\?a\.pendingRefundAmount\?\?0\)\+Number\(a\.non_refundable_amount\?\?a\.nonRefundableAmount\?\?0\)/);
   assert.match(runtime,/Number\(amount\)<=due/);
   assert.match(refundWriter,/pending_refund_amount=greatest\(pending_refund_amount-amount,0\)/);
