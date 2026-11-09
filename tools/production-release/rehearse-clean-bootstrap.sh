@@ -16,6 +16,11 @@ dump="$1"
 grep -q '^-- PostgreSQL database dump' "$dump" || fail "Unrecognized schema-only dump"
 if grep -Eiq '^[[:space:]]*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)[[:space:]]' "$dump"; then fail "Dump contains data manipulation"; fi
 if grep -Eiq '^[[:space:]]*(CREATE|ALTER)[[:space:]]+(ROLE|USER|DATABASE|TABLESPACE)[[:space:]]' "$dump"; then fail "Dump contains privileged cluster DDL"; fi
+# Exporter strips ACLs; without an approved grants replay the artifact
+# cannot establish the secure canonical database, regardless of schema parity.
+if ! grep -Eiq '^[[:space:]]*(GRANT|REVOKE|ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES)[[:space:]]' "$dump"; then
+  fail "Schema-only dump has no ACL replay; reviewed grants/default privileges are required before full rehearsal"
+fi
 echo "Rehearsing schema in disposable local database (no hosted connections)"
 psql -X -v ON_ERROR_STOP=1 -1 -f "$dump" >/dev/null
 psql -X -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql >/dev/null
