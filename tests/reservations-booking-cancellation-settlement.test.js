@@ -26,6 +26,12 @@ test('settlement allocation is exact, non-negative and distinguishes actual from
   assert.match(migration,/actualRefunds/);
   assert.match(migration,/pendingRefunds/);
   assert.match(migration,/netCash/);
+  const refundWriter=fs.readFileSync(path.join(root,'supabase/migrations/20261106070000_reservations_disburse_refund_writer.sql'),'utf8');
+  const reporting=fs.readFileSync(path.join(root,'supabase/migrations/20261106120000_reservations_refund_disbursement_read_reporting.sql'),'utf8');
+  assert.match(refundWriter,/amount>\(settlement\.pending_refund_amount\+settlement\.non_refundable_amount\)/);
+  assert.match(refundWriter,/non_refundable_amount=non_refundable_amount-greatest\(amount-pending_refund_amount,0\)/);
+  assert.match(reporting,/refundableAvailable',s\.pending_refund_amount\+s\.non_refundable_amount/);
+  assert.match(runtime,/المتاح لاتخاذ قرار الرد/);
 });
 
 test('credit ledger is person-scoped, revision-safe and cannot be spent twice',()=>{
