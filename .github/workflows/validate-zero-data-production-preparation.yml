@@ -10,6 +10,8 @@ on:
       - 'tests/fixtures/production-release-catalog-contract.sql'
       - 'tools/production-release/canonical-system-catalog-seed.sql'
       - 'tools/production-release/canonical-system-catalog-fingerprint.sql'
+      - 'tools/production-release/assert-canonical-full-foundation.sql'
+      - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
 jobs:
   zero-data-guards:
@@ -69,6 +71,16 @@ jobs:
           ref: ${{ github.sha }}
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Assert incomplete foundation is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-full-foundation.sql > /tmp/foundation-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'FOUNDATION_OBJECT_COUNT_MISMATCH' /tmp/foundation-negative.log
       - name: Create disposable catalog contract and replay seed twice
         run: |
           set -euo pipefail
