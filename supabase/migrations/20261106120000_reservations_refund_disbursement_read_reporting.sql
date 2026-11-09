@@ -99,8 +99,8 @@ begin
     elsif p_operation='get_cancellation_financial_summary' then
       return (select jsonb_build_object(
         'grossCollected',coalesce(sum(p.amount) filter(where p.status='active'),0),
-        'actualRefunds',coalesce((select sum(s.refunded_amount) from reservations.booking_cancellation_settlements s join reservations.bookings b on b.id=s.booking_id join reservations.events e on e.id=b.event_id where s.scope_partition_id=v_partition and (v_event_id is null or e.id=v_event_id)),0),
-        'netCash',coalesce(sum(p.amount) filter(where p.status='active'),0)-coalesce((select sum(s.refunded_amount) from reservations.booking_cancellation_settlements s join reservations.bookings b on b.id=s.booking_id where s.scope_partition_id=v_partition and (v_event_id is null or b.event_id=v_event_id)),0),
+        'actualRefunds',coalesce((select sum(d.amount) from reservations.refund_disbursements d where d.scope_partition_id=v_partition and (v_event_id is null or d.event_id=v_event_id)),0),
+        'netCash',coalesce(sum(p.amount) filter(where p.status='active'),0)-coalesce((select sum(d.amount) from reservations.refund_disbursements d where d.scope_partition_id=v_partition and (v_event_id is null or d.event_id=v_event_id)),0),
         'activeCollection',coalesce(sum(p.amount) filter(where p.status='active' and b.lifecycle_status='active'),0),
         'nonRefundableApologyRevenue',coalesce((select sum(s.non_refundable_amount) from reservations.booking_cancellation_settlements s join reservations.bookings b2 on b2.id=s.booking_id where s.scope_partition_id=v_partition and (v_event_id is null or b2.event_id=v_event_id)),0),
         'outstandingCredits',coalesce((select sum(s.credit_amount-coalesce(redeemed.amount,0)) from reservations.booking_cancellation_settlements s join reservations.bookings credit_booking on credit_booking.id=s.booking_id left join lateral(select sum(entry.amount) amount from reservations.person_credit_entries entry where entry.settlement_id=s.id and entry.entry_kind='redeem') redeemed on true where s.scope_partition_id=v_partition and (v_event_id is null or credit_booking.event_id=v_event_id)),0),
