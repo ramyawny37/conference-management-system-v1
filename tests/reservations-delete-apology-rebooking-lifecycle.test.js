@@ -16,7 +16,7 @@ test('delete is an operational lifecycle state and retains financial history', (
 test('only an active booking blocks registering the same person in the event', () => {
   assert.match(migration, /existing_booking\.lifecycle_status='active'/);
   assert.match(moduleSource, /كان معتذرًا في نفس الفعالية/);
-  assert.match(moduleSource, /هل تريد إنشاء حجز جديد له؟/);
+  assert.match(moduleSource, /هل تريد إعادة حجزه في نفس الفعالية؟/);\n  assert.match(moduleSource, /existing\?\.booking\.lifecycleStatus===\"active\"/);
 });
 
 test('deleted bookings leave operations but remain available to financial reports', () => {
@@ -29,4 +29,10 @@ test('delete and apology are separate actions regardless of payments', () => {
   assert.match(moduleSource, /children:\[l\.jsx\(eo,\{\}\),"اعتذار"\]/);
   assert.match(moduleSource, /"حذف من الفعالية"/);
   assert.match(moduleSource, /function CN\(\)\{return\{allowed:!0\}\}/);
+});
+
+
+test('booking form does not route apologized history through the active duplicate modal', () => {
+  assert.doesNotMatch(moduleSource, /if\(existing\)\{k\(\{kind:\"duplicate\"/);
+  assert.match(moduleSource, /existing\?\.booking\.lifecycleStatus===\"apologized\"/);
 });
