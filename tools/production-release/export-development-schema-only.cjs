@@ -17,7 +17,7 @@ if (!connection) fail('DEVELOPMENT_DATABASE_URL is required; do not store it in 
 let parsed;
 try { parsed = new URL(connection); } catch { fail('Invalid Development database URL'); }
 if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) fail('PostgreSQL URL required');
-if (!parsed.hostname.includes(DEV_REF)) fail('Only the explicit Development project is allowed');
+if (!(parsed.hostname === 'db.' + DEV_REF + '.supabase.co' || parsed.hostname.endsWith('.' + DEV_REF + '.supabase.com'))) fail('Only the explicit Development project is allowed');
 if (parsed.hostname.includes(PROD_REF)) fail('Production database access is forbidden');
 const binary = process.env.PG_DUMP_BIN || 'pg_dump';
 const version = spawnSync(binary, ['--version'], { encoding: 'utf8', timeout: 10000 });
@@ -36,8 +36,8 @@ if (result.error || result.status !== 0) {
 }
 const sql = result.stdout;
 if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
-if (/^\\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\\b/im.test(sql)) fail('Data manipulation found in schema-only output');
-if (/^\\s*(CREATE|ALTER)\\s+(ROLE|USER)\\b/im.test(sql)) fail('Role creation in schema output is forbidden');
+if (/^\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\b/im.test(sql)) fail('Data manipulation found in schema-only output');
+if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(sql)) fail('Role creation in schema output is forbidden');
 if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
 const digest = crypto.createHash('sha256').update(sql).digest('hex');
 const outputDir = path.resolve(__dirname, '../../.release-local');
