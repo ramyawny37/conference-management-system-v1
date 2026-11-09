@@ -10,7 +10,7 @@ const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
   ? 'development-reservations-lifecycle-active-only-v4'
   : 'production-3-6-0-release-v6';
-// Reinstall the Development worker so the canonical accommodation parity assets refresh atomically.
+// Reinstall the Development worker so canonical accommodation and shared Reservations financial-cache assets refresh atomically.
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
 const CORE_ASSETS = [
   './',
