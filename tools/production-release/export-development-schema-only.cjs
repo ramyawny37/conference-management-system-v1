@@ -26,7 +26,7 @@ if (process.env.PG_DUMP_BIN && !path.isAbsolute(binary)) fail('PG_DUMP_BIN must 
 const version = spawnSync(binary, ['--version'], { encoding: 'utf8', timeout: 10000 });
 if (version.error || version.status !== 0) fail('pg_dump executable not available');
 const args = [
-  '--schema-only', '--no-owner', '--no-privileges',
+  '--schema-only', '--no-owner',
   '--format=plain', '--quote-all-identifiers', '--no-comments',
   ...SCHEMAS.map(s => '--schema=' + s),
 ];
@@ -41,6 +41,7 @@ const sql = result.stdout;
 if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
 if (!/^-- PostgreSQL database dump/m.test(sql)) fail('Output is not a recognizable PostgreSQL schema dump');
 if (!/CREATE SCHEMA|CREATE TABLE|CREATE FUNCTION|CREATE VIEW/i.test(sql)) fail('No application schema objects found');
+if (!/^\s*GRANT\s/im.test(sql) || !/^\s*ALTER\s+DEFAULT\s+PRIVILEGES\s/im.test(sql)) fail('ACL grants/default privileges missing from schema dump');
 if (/^\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\b/im.test(sql)) fail('Data manipulation found in schema-only output');
 if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(sql)) fail('Role creation in schema output is forbidden');
 if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
@@ -55,8 +56,9 @@ console.log(JSON.stringify({
   sourceProjectRef: DEV_REF,
   targetProjectRef: PROD_REF,
   dataIncluded: false,
+  aclIncluded: true,
   bytes: Buffer.byteLength(sql),
   sha256: digest,
   file: '.release-local/development-application-schema-only.sql',
-  next: 'Review managed-schema dependencies, seeds, grants, triggers and replay in disposable local database; DO NOT apply directly to Production.',
+  next: 'Review role dependencies, managed schemas and grants; verify all parity assertions in disposable local database. DO NOT apply directly to Production.',
 }, null, 2));
