@@ -115,7 +115,7 @@ test('cache references are atomically consistent for every changed runtime asset
     assert.ok(index.includes(asset+'?rev='+assetRevision),asset+' missing from index');
     assert.ok(worker.includes('./'+asset+'?rev='+assetRevision),asset+' missing from worker');
   }
-  assert.match(worker,/\? 'development-reservations-apology-operational-financial-v3'/);
+  assert.match(worker,/\? 'development-reservations-lifecycle-active-only-v4'/);
 });
 
 test('retired tenancy, direct database clients and local permission fallbacks remain absent',()=>{
