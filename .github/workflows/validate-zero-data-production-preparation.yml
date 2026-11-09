@@ -12,6 +12,7 @@ on:
       - 'tools/production-release/canonical-system-catalog-fingerprint.sql'
       - 'tools/production-release/assert-canonical-full-foundation.sql'
       - 'tools/production-release/assert-canonical-structural-parity.sql'
+      - 'tools/production-release/rehearse-clean-bootstrap.sh'
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
 jobs:
@@ -72,6 +73,16 @@ jobs:
           ref: ${{ github.sha }}
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Verify replay tool rejects hosted connections before SQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=db.mpezfbvcdfxpgflehuot.supabase.co PGDATABASE=release_rehearsal_test PGUSER=postgres PGPASSWORD=disposable bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/tests/fixtures/production-release-catalog-contract.sql" > /tmp/host-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'Only local PostgreSQL host is permitted' /tmp/host-negative.log
       - name: Assert incomplete foundation is rejected
         shell: bash
         run: |
