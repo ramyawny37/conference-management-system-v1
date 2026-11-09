@@ -12,7 +12,8 @@ test('booking detail voided payment immediately invalidates shared reservation d
   assert.match(source, /await Me\.voidPayment\(q\.id,_e\),invalidateReservations\(\),T\(await Me\.listPayments\(m\.id\)\)/);
 });
 
-\ntest('financial settlement summary participates in shared reservations cache invalidation', () => {
+
+test('financial settlement summary participates in shared reservations cache invalidation', () => {
   assert.ok(source.includes('financialResource=$l(`cancellation-financial-summary:${c}`,()=>Me.cancellationFinancialSummary(c),!!c)'));
   assert.ok(source.includes('financialLoading=!!c&&(financialResource.status==="idle"||financialResource.status==="loading")'));
   assert.ok(source.includes('onDone:async()=>{setReportRefund(null);setRefundActionError("");await financialResource.refresh()}'));
