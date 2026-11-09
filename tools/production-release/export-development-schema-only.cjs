@@ -8,6 +8,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const DEV_REF = 'gppwltrifgfxrkzvvxoe';
+const PROD_REF = 'mpezfbvcdfxpgflehuot';
 const SCHEMAS = ['public', 'platform', 'platform_private', 'reservations', 'reservations_private'];
 function fail(message) { console.error('BLOCKED: ' + message); process.exit(1); }
 if (process.argv.length !== 2) fail('No command-line arguments are supported');
@@ -19,7 +20,9 @@ if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) fail('PostgreSQL UR
 if (parsed.hostname !== 'db.' + DEV_REF + '.supabase.co') fail('Only the explicit Development project is allowed');
 if (!parsed.username || !parsed.pathname || parsed.pathname === '/') fail('Database username and name required');
 if (parsed.search || parsed.hash) fail('URL query parameters are not supported');
+if (!parsed.password) fail('Database password required');
 const binary = process.env.PG_DUMP_BIN || 'pg_dump';
+if (process.env.PG_DUMP_BIN && !path.isAbsolute(binary)) fail('PG_DUMP_BIN must be an absolute executable path');
 const version = spawnSync(binary, ['--version'], { encoding: 'utf8', timeout: 10000 });
 if (version.error || version.status !== 0) fail('pg_dump executable not available');
 const args = [
@@ -39,6 +42,7 @@ if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
 if (/^\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\b/im.test(sql)) fail('Data manipulation found in schema-only output');
 if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(sql)) fail('Role creation in schema output is forbidden');
 if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
+if (/^\\s*(CREATE|ALTER)\\s+(DATABASE|TABLESPACE)\\b/im.test(sql)) fail('Database-level DDL in application schema output');
 const digest = crypto.createHash('sha256').update(sql).digest('hex');
 const outputDir = path.resolve(__dirname, '../../.release-local');
 fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
