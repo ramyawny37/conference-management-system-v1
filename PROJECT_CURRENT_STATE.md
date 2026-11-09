@@ -5,7 +5,7 @@ Repository: `ramyawny37/conference-management-system-v1`
 
 ## Source control
 - Active development branch: `develop` only.
-- Verified current `develop` head at handoff: `2512f10aba70c0608231c84b0f79b4b91f9d9d11`.
+- Verified current `develop` head before this state-file refresh: `97ea87ac0118b87115e65a8fb4feecd339136dd3`.
 - `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`; compare confirms the additional changes are the dashboard fix, regression test, and three handoff documents.
 - `main` remains identical to the recorded production baseline `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf`. No write was made to `main`.
 - No merge to main, no auto-merge, no force push.
@@ -35,7 +35,7 @@ Repository: `ramyawny37/conference-management-system-v1`
 
 ## Immediate next actions
 1. User approves the Vercel team access link above.
-2. Inspect latest Development Preview for repository `ramyawny37/conference-management-system-v1`, branch `develop`, exact head `2512f10aba70c0608231c84b0f79b4b91f9d9d11`.
+2. Inspect latest Development Preview for repository `ramyawny37/conference-management-system-v1`, branch `develop`, exact head `97ea87ac0118b87115e65a8fb4feecd339136dd3`.
 3. If the latest deployment is not built from that exact head, investigate deployment trigger/build logs; do not call an older Preview current.
 4. Run the complete financial lifecycle acceptance: payment update reflected in dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and delete/rebook behavior.
 5. Verify the user's 100 simultaneous/parallel payment-posting test against one event's authoritative totals and check for lost updates/duplicate posting.
