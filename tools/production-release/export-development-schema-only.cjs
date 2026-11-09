@@ -32,7 +32,7 @@ const args = [
 ];
 const result = spawnSync(binary, args, {
   encoding: 'utf8', timeout: 120000, maxBuffer: 40 * 1024 * 1024,
-  env: (() => { const env = { ...process.env, PGHOST: parsed.hostname, PGPORT: parsed.port || '5432', PGUSER: decodeURIComponent(parsed.username), PGDATABASE: decodeURIComponent(parsed.pathname.slice(1)), PGPASSWORD: decodeURIComponent(parsed.password), PGSSLMODE: 'require', PGOPTIONS: '-c default_transaction_read_only=on' }; delete env.DEVELOPMENT_DATABASE_URL; return env; })(),
+  env: (() => { const env = { ...process.env, PGHOST: parsed.hostname, PGPORT: parsed.port || '5432', PGUSER: decodeURIComponent(parsed.username), PGDATABASE: decodeURIComponent(parsed.pathname.slice(1)), PGPASSWORD: decodeURIComponent(parsed.password), PGSSLMODE: 'require', PGOPTIONS: '-c default_transaction_read_only=on' }; delete env.DEVELOPMENT_DATABASE_URL; delete env.PGHOSTADDR; delete env.PGSERVICE; delete env.PGSERVICEFILE; delete env.PGOPTIONS; env.PGOPTIONS = '-c default_transaction_read_only=on'; return env; })(),
 });
 if (result.error || result.status !== 0) {
   fail('Schema-only dump failed; verify permissions, version, connectivity (details withheld to avoid leaking credentials)');
