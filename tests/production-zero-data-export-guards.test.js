@@ -52,15 +52,19 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
   fs.writeFileSync(executable, '#!/usr/bin/env node\n' +
     'const fs=require("node:fs");\n' +
     'if(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\n' +
-    'fs.writeFileSync(process.env.TEST_DUMP_MARKER, JSON.stringify({args:process.argv.slice(2),host:process.env.PGHOST,hasPassword:!!process.env.PGPASSWORD}));\n' +
+    'fs.writeFileSync(process.env.TEST_DUMP_MARKER, JSON.stringify({args:process.argv.slice(2),host:process.env.PGHOST,hostaddr:process.env.PGHOSTADDR||null,service:process.env.PGSERVICE||null,serviceFile:process.env.PGSERVICEFILE||null,options:process.env.PGOPTIONS,hasPassword:!!process.env.PGPASSWORD}));\n' +
     'process.stdout.write(' + JSON.stringify(sql) + ');\n',
     { mode: 0o700 });
   try {
-    const r = run(dev, { PG_DUMP_BIN: executable, TEST_DUMP_MARKER: marker });
+    const r = run(dev, { PG_DUMP_BIN: executable, TEST_DUMP_MARKER: marker, PGHOSTADDR: "203.0.113.8", PGSERVICE: "redirect", PGSERVICEFILE: "/tmp/untrusted-service", PGOPTIONS: "-c search_path=untrusted" });
     assert.equal(r.status, 0, r.stderr);
     const invocation = JSON.parse(fs.readFileSync(marker, 'utf8'));
     assert.equal(invocation.host, 'db.gppwltrifgfxrkzvvxoe.supabase.co');
     assert.equal(invocation.hasPassword, true);
+    assert.equal(invocation.hostaddr, null);
+    assert.equal(invocation.service, null);
+    assert.equal(invocation.serviceFile, null);
+    assert.equal(invocation.options, '-c default_transaction_read_only=on');
     assert.ok(invocation.args.includes('--schema-only'));
     assert.ok(invocation.args.includes('--no-privileges'));
     assert.ok(!invocation.args.some(arg => arg.includes('dummy-password')));
