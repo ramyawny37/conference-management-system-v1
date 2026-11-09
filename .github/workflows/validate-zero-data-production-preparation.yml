@@ -1,0 +1,39 @@
+name: Validate zero-data production preparation
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - 'tools/production-release/export-development-schema-only.cjs'
+      - 'tools/production-release/check-zero-data-replacement-readiness.cjs'
+      - 'tests/production-zero-data-export-guards.test.js'
+      - '.github/workflows/validate-zero-data-production-preparation.yml'
+jobs:
+  zero-data-guards:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check tools/production-release/export-development-schema-only.cjs
+          node --check tools/production-release/check-zero-data-replacement-readiness.cjs
+          node --check tests/production-zero-data-export-guards.test.js
+      - name: Run offline security guard tests
+        run: node --test tests/production-zero-data-export-guards.test.js
+      - name: Verify production replacement remains blocked without proven clean bootstrap
+        shell: bash
+        run: |
+          set +e
+          node tools/production-release/check-zero-data-replacement-readiness.cjs > readiness.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+          node -e 'const r=require("./readiness.json"); if(r.ready!==false || !r.checks.some(x=>x.name==="clean_bootstrap_evidence" && x.status==="BLOCKED")) process.exit(1)'
+          rm readiness.json
