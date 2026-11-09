@@ -20,7 +20,8 @@ test('financial settlement summary participates in shared reservations cache inv
   assert.doesNotMatch(source, /setFinancialSummary|setFinancialError|setFinancialLoading/);
 });
 
-\ntest('payments workspace invalidates every shared reservation resource after record and void', () => {
+
+test('payments workspace invalidates every shared reservation resource after record and void', () => {
   assert.match(source, /function oC\(\)\{const\{mode:t\}=vn\(\),\{invalidate:invalidateReservations\}=tr\(\),\{data:a,loading:i,error:s,ready:c\}=wo\("payments"\)/);
   assert.ok(source.includes('await Me.recordPayment(ee.booking.id,D),invalidateReservations(),T("تم تسجيل الدفعة وتحديث السجل")'));
   assert.ok(source.includes('await Me.voidPayment(A.id,D),invalidateReservations(),S(void 0),T("تم إلغاء الدفعة وتحديث السجل")'));
