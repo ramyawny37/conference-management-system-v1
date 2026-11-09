@@ -70,3 +70,10 @@ test('financial table and CSV never treat inactive booking balance as collectibl
   assert.match(moduleSource, /activeRow\?Ae\(i\.financial\.remainingBalance\):"—"/);
   assert.match(moduleSource, /activeRow\?.*:"تسوية مالية"/s);
 });
+
+
+test('actual refunds and net cash are derived from the refund disbursement ledger', () => {
+  assert.match(refundReadReportingMigration, /'actualRefunds',coalesce\(\(select sum\(d\.amount\) from reservations\.refund_disbursements d/);
+  assert.match(refundReadReportingMigration, /'netCash'.*select sum\(d\.amount\) from reservations\.refund_disbursements d/s);
+  assert.doesNotMatch(refundReadReportingMigration, /'actualRefunds'.*sum\(s\.refunded_amount\)/s);
+});
