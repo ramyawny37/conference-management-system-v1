@@ -22,10 +22,23 @@ on:
       - 'supabase/functions/**'
 jobs:
   development-schema-export:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_disposable_only
+          POSTGRES_DB: release_rehearsal_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d release_rehearsal_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,6 +71,18 @@ jobs:
           node tools/production-release/export-development-schema-only.cjs
           test -s .release-local/development-application-schema-only.sql
           echo 'EXTRACTED_NOT_VALIDATED: local ephemeral schema only; no artifact uploaded, no Production connection'
+      - name: Rehearse extracted Development foundation in disposable PostgreSQL 17
+        shell: bash
+        env:
+          RELEASE_DISPOSABLE_REHEARSAL: I_UNDERSTAND_DISPOSABLE_ONLY
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: release_rehearsal_ci
+          PGPASSWORD: ci_disposable_only
+        run: |
+          set -euo pipefail
+          bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/.release-local/development-application-schema-only.sql"
       - name: Remove extracted schema from runner
         if: always()
         shell: bash
