@@ -5,7 +5,8 @@ Repository: `ramyawny37/conference-management-system-v1`
 
 ## Source control
 - Active development branch: `develop` only.
-- Verified current `develop` head before this documentation correction: `9c935f8a46fe020bd9672731fb654738bd2185f9`.
+- Current verified `develop` head before this audit log update: `d15e1cdc0fcfd18415cd16b520b4a95d6eb8014e`.
+- Last validated application-code SHA: `1b91e21729fd600b65833e05be31a6480220b368`. Comparing it to current `develop` shows only the three handoff documentation files were added afterward; no application source changed.
 - `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`; compare confirms the additional changes are the dashboard fix, regression test, and three handoff documents.
 - `main` remains identical to the recorded production baseline `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf`. No write was made to `main`.
 - No merge to main, no auto-merge, no force push.
@@ -37,9 +38,9 @@ Repository: `ramyawny37/conference-management-system-v1`
 
 ## Immediate next actions
 1. Inspect GitHub Actions for the exact current `develop` SHA using the repository's normal GitHub workflow history; record actual run/job conclusions.
-2. Identify the actual Development Preview repository/hosting path already used by this project; verify the exact source SHA there. Do not introduce a new hosting provider.
-3. Run the complete financial lifecycle acceptance: payment update reflected in dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and delete/rebook behavior.
-4. Verify the user's 100 simultaneous/parallel payment-posting test against one event's authoritative totals and check for lost updates/duplicate posting.
+2. Complete the agreed event-scoped credit lifecycle only after defining its atomic destination-booking payment and cash-reporting semantics; preserve the existing fail-closed guards until the full writer/UI/report path is ready.
+3. Complete live UI acceptance for pending refund, later partial/full disbursement, delete history, and same-event rebooking without refresh.
+4. Continue to use the existing GitHub Pages Preview workflow; do not add Vercel or another hosting provider.
 5. Update this file and `WORK_LOG.md` with exact run IDs, Preview source SHA, test evidence, and blockers.
 
 ## Environment boundary
