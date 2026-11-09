@@ -4,13 +4,13 @@ const fs = require('node:fs');
 
 const source = fs.readFileSync('modules/reservations/reservations-module.js', 'utf8');
 
-test('operational procedures exclude apologized bookings', () => {
-  assert.match(source, /Ct=x\.useMemo\(\(\)=>Ao\(s\)\.filter\(X=>X\.booking\.lifecycleStatus!==["']apologized["']\),\[s\]\)/);
+test('operational procedures include active bookings only', () => {
+  assert.match(source, /Ct=x\.useMemo\(\(\)=>Ao\(s\)\.filter\(X=>X\.booking\.lifecycleStatus===["']active["']\),\[s\]\)/);
 });
 
 test('apologized participant preview is read-only', () => {
-  assert.match(source, /!S&&W\.booking\.lifecycleStatus!==["']apologized["']&&l\.jsx\(Se,\{variant:["']outline["'],size:["']sm["'],onClick:xe/);
-  assert.match(source, /W\.booking\.lifecycleStatus!==["']apologized["']&&l\.jsx\(["']div["'],\{className:["']reference-detail-actions["']/);
+  assert.match(source, /!S&&W\.booking\.lifecycleStatus===["']active["']&&l\.jsx\(Se,\{variant:["']outline["'],size:["']sm["'],onClick:xe/);
+  assert.match(source, /W\.booking\.lifecycleStatus===["']active["']&&l\.jsx\(["']div["'],\{className:["']reference-detail-actions["']/);
 });
 
 test('participant rows open preview without hijacking nested actions', () => {
