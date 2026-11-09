@@ -22,7 +22,7 @@ on:
       - 'supabase/functions/**'
 jobs:
   development-schema-export:
-    if: github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
