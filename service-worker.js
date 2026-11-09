@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'development-reservations-apology-operational-financial-v3'
+  ? 'development-reservations-lifecycle-active-only-v4'
   : 'production-3-6-0-release-v6';
 // Reinstall the Development worker so the canonical accommodation parity assets refresh atomically.
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
@@ -42,7 +42,7 @@ const CORE_ASSETS = [
   './js/supabase/canonical-conference-restaurant.js?rev=p6i-b3-v1',
   './js/supabase/canonical-template-library.js?rev=canonical-template-read-write-v2',
   './js/supabase/conference-canonical-bundle.js?rev=canonical-bundle-v1',
-  './modules/reservations/reservations-module.js?rev=reservations-apology-operational-financial-v3',
+  './modules/reservations/reservations-module.js?rev=reservations-lifecycle-active-only-v4',
   './js/supabase/system-access-service.js?rev=conference-create-authorization-v1',
   './js/sync/diagnostics-privacy-policy.js?rev=platform-capability-authority-v1',
   './js/sync/access-diagnostics-ui.js?rev=platform-first-login-coordinator-v1',
