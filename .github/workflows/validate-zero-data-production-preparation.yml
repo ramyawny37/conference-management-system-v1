@@ -37,3 +37,47 @@ jobs:
           test "$status" -eq 1
           node -e 'const r=require("./readiness.json"); if(r.ready!==false || !r.checks.some(x=>x.name==="clean_bootstrap_evidence" && x.status==="BLOCKED")) process.exit(1)'
           rm readiness.json
+  disposable-catalog-replay:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_disposable_only
+          POSTGRES_DB: release_contract
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d release_contract"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGDATABASE: release_contract
+      PGPASSWORD: ci_disposable_only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Create disposable catalog contract and replay seed twice
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f tests/fixtures/production-release-catalog-contract.sql
+          psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql
+          psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql
+      - name: Compare catalog fingerprints against Development read-only baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(psql -X -qAt -F '|' -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-fingerprint.sql)"
+          echo "$result" | grep -Fx 'permissions|84|2225bd16e2d1478d777fba4e3b12afc7'
+          echo "$result" | grep -Fx 'role_permissions|79|90e6d71f8203c6789bb6d956daff7cce'
+          echo "$result" | grep -Fx 'roles|8|cdd80e0770d5f40e3f70e3ecaf3e9272'
+          test "$(echo "$result" | wc -l)" -eq 3
