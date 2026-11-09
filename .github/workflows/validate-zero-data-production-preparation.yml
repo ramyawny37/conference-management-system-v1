@@ -82,6 +82,7 @@ jobs:
           status=$?
           set -e
           test "$status" -ne 0
+          grep -F "Canonical system catalog fingerprint mismatch" /tmp/seed-negative.log
           psql -v ON_ERROR_STOP=1 -c "TRUNCATE platform.role_permissions, platform.permissions, platform.roles RESTART IDENTITY CASCADE"
           psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql > /dev/null
       - name: Compare catalog fingerprints against Development read-only baseline
