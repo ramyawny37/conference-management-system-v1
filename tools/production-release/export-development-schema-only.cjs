@@ -8,7 +8,6 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const DEV_REF = 'gppwltrifgfxrkzvvxoe';
-const PROD_REF = 'mpezfbvcdfxpgflehuot';
 const SCHEMAS = ['public', 'platform', 'platform_private', 'reservations', 'reservations_private'];
 function fail(message) { console.error('BLOCKED: ' + message); process.exit(1); }
 if (process.argv.length !== 2) fail('No command-line arguments are supported');
@@ -17,19 +16,20 @@ if (!connection) fail('DEVELOPMENT_DATABASE_URL is required; do not store it in 
 let parsed;
 try { parsed = new URL(connection); } catch { fail('Invalid Development database URL'); }
 if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) fail('PostgreSQL URL required');
-if (!(parsed.hostname === 'db.' + DEV_REF + '.supabase.co' || parsed.hostname.endsWith('.' + DEV_REF + '.supabase.com'))) fail('Only the explicit Development project is allowed');
-if (parsed.hostname.includes(PROD_REF)) fail('Production database access is forbidden');
+if (parsed.hostname !== 'db.' + DEV_REF + '.supabase.co') fail('Only the explicit Development project is allowed');
+if (!parsed.username || !parsed.pathname || parsed.pathname === '/') fail('Database username and name required');
+if (parsed.search || parsed.hash) fail('URL query parameters are not supported');
 const binary = process.env.PG_DUMP_BIN || 'pg_dump';
 const version = spawnSync(binary, ['--version'], { encoding: 'utf8', timeout: 10000 });
 if (version.error || version.status !== 0) fail('pg_dump executable not available');
 const args = [
-  '--dbname=' + connection, '--schema-only', '--no-owner', '--no-privileges',
+  '--schema-only', '--no-owner', '--no-privileges',
   '--format=plain', '--quote-all-identifiers', '--no-comments',
   ...SCHEMAS.map(s => '--schema=' + s),
 ];
 const result = spawnSync(binary, args, {
   encoding: 'utf8', timeout: 120000, maxBuffer: 40 * 1024 * 1024,
-  env: { ...process.env, PGOPTIONS: '-c default_transaction_read_only=on' },
+  env: (() => { const env = { ...process.env, PGHOST: parsed.hostname, PGPORT: parsed.port || '5432', PGUSER: decodeURIComponent(parsed.username), PGDATABASE: decodeURIComponent(parsed.pathname.slice(1)), PGPASSWORD: decodeURIComponent(parsed.password), PGSSLMODE: 'require', PGOPTIONS: '-c default_transaction_read_only=on' }; delete env.DEVELOPMENT_DATABASE_URL; return env; })(),
 });
 if (result.error || result.status !== 0) {
   fail('Schema-only dump failed; verify permissions, version, connectivity (details withheld to avoid leaking credentials)');
