@@ -1,0 +1,56 @@
+'use strict';
+// Extracts application schema ONLY from a privileged, read-only Development connection.
+// This is an offline operator tool, never a browser/Edge Function dependency.
+// No connection string, passwords, Auth rows, or business data are written to disk.
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+const DEV_REF = 'gppwltrifgfxrkzvvxoe';
+const PROD_REF = 'mpezfbvcdfxpgflehuot';
+const SCHEMAS = ['public', 'platform', 'platform_private', 'reservations', 'reservations_private'];
+function fail(message) { console.error('BLOCKED: ' + message); process.exit(1); }
+if (process.argv.length !== 2) fail('No command-line arguments are supported');
+const connection = process.env.DEVELOPMENT_DATABASE_URL;
+if (!connection) fail('DEVELOPMENT_DATABASE_URL is required; do not store it in the repository');
+let parsed;
+try { parsed = new URL(connection); } catch { fail('Invalid Development database URL'); }
+if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) fail('PostgreSQL URL required');
+if (!parsed.hostname.includes(DEV_REF)) fail('Only the explicit Development project is allowed');
+if (parsed.hostname.includes(PROD_REF)) fail('Production database access is forbidden');
+const binary = process.env.PG_DUMP_BIN || 'pg_dump';
+const version = spawnSync(binary, ['--version'], { encoding: 'utf8', timeout: 10000 });
+if (version.error || version.status !== 0) fail('pg_dump executable not available');
+const args = [
+  '--dbname=' + connection, '--schema-only', '--no-owner', '--no-privileges',
+  '--format=plain', '--quote-all-identifiers', '--no-comments',
+  ...SCHEMAS.map(s => '--schema=' + s),
+];
+const result = spawnSync(binary, args, {
+  encoding: 'utf8', timeout: 120000, maxBuffer: 40 * 1024 * 1024,
+  env: { ...process.env, PGOPTIONS: '-c default_transaction_read_only=on' },
+});
+if (result.error || result.status !== 0) {
+  fail('Schema-only dump failed; verify permissions, version, connectivity (details withheld to avoid leaking credentials)');
+}
+const sql = result.stdout;
+if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
+if (/^\\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\\b/im.test(sql)) fail('Data manipulation found in schema-only output');
+if (/^\\s*(CREATE|ALTER)\\s+(ROLE|USER)\\b/im.test(sql)) fail('Role creation in schema output is forbidden');
+if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
+const digest = crypto.createHash('sha256').update(sql).digest('hex');
+const outputDir = path.resolve(__dirname, '../../.release-local');
+fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+const output = path.join(outputDir, 'development-application-schema-only.sql');
+fs.writeFileSync(output, sql, { mode: 0o600, flag: 'w' });
+console.log(JSON.stringify({
+  status: 'EXTRACTED_NOT_VALIDATED',
+  sourceProjectRef: DEV_REF,
+  targetProjectRef: PROD_REF,
+  dataIncluded: false,
+  bytes: Buffer.byteLength(sql),
+  sha256: digest,
+  file: '.release-local/development-application-schema-only.sql',
+  next: 'Review managed-schema dependencies, seeds, grants, triggers and replay in disposable local database; DO NOT apply directly to Production.',
+}, null, 2));
