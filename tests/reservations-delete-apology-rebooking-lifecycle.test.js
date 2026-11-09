@@ -77,3 +77,8 @@ test('actual refunds and net cash are derived from the refund disbursement ledge
   assert.match(refundReadReportingMigration, /'netCash'.*select sum\(d\.amount\) from reservations\.refund_disbursements d/s);
   assert.doesNotMatch(refundReadReportingMigration, /'actualRefunds'.*sum\(s\.refunded_amount\)/s);
 });
+
+
+test('shared report aggregation treats remaining balance as collectible only for active bookings', () => {
+  assert.match(moduleSource, /remaining:a\.remaining\+\(i\.booking\.lifecycleStatus==="active"\?i\.financial\.remainingBalance:0\)/);
+});
