@@ -15,6 +15,7 @@ on:
       - 'tools/production-release/assert-first-owner-device-security.sql'
       - 'tools/production-release/assert-canonical-access-parity.sql'
       - 'tools/production-release/assert-canonical-ambient-grants.sql'
+      - 'tools/production-release/assert-canonical-default-grants.sql'
       - 'tools/production-release/rehearse-clean-bootstrap.sh'
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
@@ -157,6 +158,16 @@ jobs:
           set -e
           test "$status" -ne 0
           grep -F 'FOUNDATION_AMBIENT_GRANTS_FAILED' /tmp/ambient-negative.log
+      - name: Assert missing default privileges are rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-default-grants.sql > /tmp/default-grants-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'FOUNDATION_DEFAULT_GRANTS_FAILED' /tmp/default-grants-negative.log
       - name: Create disposable catalog contract and replay seed twice
         run: |
           set -euo pipefail
