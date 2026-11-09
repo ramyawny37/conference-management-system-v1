@@ -63,15 +63,12 @@ test('active capacity and dashboard values exclude apologized bookings while his
   assert.doesNotMatch(migration,/list_bookings[^;]+lifecycle_status=''active''/);
 });
 
-test('outstanding credit report is source-allocated and event-scoped, not account-wide',()=>{
-  const corrected=creditCorrection.match(/'''outstandingCredits''',[^\n]+/g)||[];
-  assert.ok(corrected.length>=2,'migration must match and replace the old account-wide calculation');
-  const replacement=corrected[corrected.length-1];
-  assert.match(replacement,/s\.credit_amount-coalesce\(redeemed\.amount,0\)/);
-  assert.match(replacement,/entry\.settlement_id=s\.id/);
-  assert.match(replacement,/entry\.entry_kind=''redeem''/);
-  assert.match(replacement,/credit_booking\.event_id=v_event_id/);
-  assert.doesNotMatch(replacement,/sum\(a\.balance\)/);
+test('legacy credit writer is retired and cannot reopen an account-wide financial path',()=>{
+  const retirement=fs.readFileSync(path.join(root,'supabase/migrations/20261106040000_reservations_retire_unused_credit_writer.sql'),'utf8');
+  assert.match(retirement,/LEGACY_CREDIT_RETIREMENT_HAS_DATA/);
+  assert.match(retirement,/insert into reservations\.person_credit_accounts/);
+  assert.match(retirement,/execute left\(definition,start_at-1\)\|\|substr\(definition,end_at\)/);
+  assert.doesNotMatch(runtime,/outstandingCredits|person_credit_accounts|person_credit_entries/);
 });
 
 test.todo('unified runtime dialog awaits reconciliation of the canonical platform bundle with its source repository');
