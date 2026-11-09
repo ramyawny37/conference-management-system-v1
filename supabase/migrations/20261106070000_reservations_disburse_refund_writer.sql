@@ -14,13 +14,13 @@ begin
  if replay is not null then return replay; end if;
  select * into booking from reservations.bookings where id=(ctx->>'bookingId')::uuid
  and event_id=(ctx->>'eventId')::uuid and scope_partition_id=(ctx->>'scopePartitionId')::uuid for update;
- if not found or booking.lifecycle_status<>'apologized' then
+ if not found or booking.lifecycle_status not in ('apologized','deleted') then
  raise exception 'RESERVATIONS_REFUND_BOOKING_NOT_APOLOGIZED' using errcode='55000'; end if;
  select * into settlement from reservations.booking_cancellation_settlements
  where booking_id=booking.id and scope_partition_id=booking.scope_partition_id for update;
  if not found then raise exception 'RESERVATIONS_REFUND_SETTLEMENT_MISSING' using errcode='P0002'; end if;
  amount:=(p_args->>'p_amount')::numeric(18,2);
- if amount is null or amount<=0 or amount>settlement.pending_refund_amount then
+ if amount is null or amount<=0 or amount>(settlement.pending_refund_amount+settlement.non_refundable_amount) then
  raise exception 'RESERVATIONS_REFUND_AMOUNT_EXCEEDS_DUE' using errcode='23514'; end if;
  if (p_args->>'p_disbursed_on')::date is null
  or (p_args->>'p_disbursed_on')::date>current_date then
@@ -34,7 +34,9 @@ begin
  nullif(btrim(p_args->>'p_payment_method_other'),''),nullif(btrim(p_args->>'p_reference'),''),
  btrim(p_args->>'p_reason'),op_id,actor,p_device_id) returning id into refund_id;
  update reservations.booking_cancellation_settlements set
- refunded_amount=refunded_amount+amount,pending_refund_amount=pending_refund_amount-amount
+ refunded_amount=refunded_amount+amount,
+ pending_refund_amount=greatest(pending_refund_amount-amount,0),
+ non_refundable_amount=non_refundable_amount-greatest(amount-pending_refund_amount,0)
  where id=settlement.id;
  result:=jsonb_build_object('refundId',refund_id,'bookingId',booking.id,'eventId',booking.event_id,
  'amount',amount,'disbursedOn',(p_args->>'p_disbursed_on')::date);
