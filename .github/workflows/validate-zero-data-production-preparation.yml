@@ -93,6 +93,18 @@ jobs:
           set -e
           test "$status" -ne 0
           grep -F 'Only local PostgreSQL host is permitted' /tmp/host-negative.log
+      - name: Verify local rehearsal rejects libpq address and service redirects
+        shell: bash
+        run: |
+          set -euo pipefail
+          for override in PGHOSTADDR PGSERVICE PGSERVICEFILE; do
+            set +e
+            env RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=localhost PGDATABASE=release_rehearsal_test PGUSER=postgres PGPASSWORD=ci_disposable_only "$override=forbidden" bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/tests/fixtures/production-release-catalog-contract.sql" > /tmp/redirect-negative.log 2>&1
+            status=$?
+            set -e
+            test "$status" -ne 0
+            grep -Eq 'override forbidden|overrides forbidden' /tmp/redirect-negative.log
+          done
       - name: Assert incomplete foundation is rejected
         shell: bash
         run: |
