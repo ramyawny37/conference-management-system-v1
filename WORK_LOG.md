@@ -60,7 +60,7 @@ Append one dated section per completed work round. Record baseline SHA, final SH
 - Build passed the full 85-file Development Preview validation and fail-closed artifact checks, including Development Supabase project ref and Reservations JS/CSS checksums.
 - Deploy job `129155841314` succeeded.
 - Pages URL: https://ramyawny37.github.io/conference-management-system-development-preview/
-- Current `develop` head `d15e1cdc0fcfd18415cd16b520b4a95d6eb8014e` differs from validated app SHA only by the three handoff docs; compare reports no app-source file changes.
+- Current `develop` head at the time of this log correction: `bc98a0d8a273d1e2a50b6bf4764ce29832b31fe1`. Comparing the validated app SHA to the documentation-updated branch shows only the three handoff documentation files; no application source changed.
 - Vercel remains retired and was not used for this verification.
 
 ### Supabase Development read-only audit
@@ -85,3 +85,8 @@ Append one dated section per completed work round. Record baseline SHA, final SH
 1. Implement the agreed credit lifecycle only as one atomic event-scoped path, including source settlement allocation, destination booking payment, idempotency, audit, and cash-vs-credit reporting.
 2. Then verify pending refund -> later partial/full payout, deletion financial history, and same-event rebooking in the live Development Preview without manual refresh.
 3. Preserve `develop` only and Supabase Development only; `main` and Production remain untouched.
+
+
+### Handoff pointer correction
+- Latest verified `develop` head after the state/log documentation commits: `bc98a0d8a273d1e2a50b6bf4764ce29832b31fe1`.
+- The code/Preview source remains `1b91e21729fd600b65833e05be31a6480220b368`; only documentation changed after that SHA.
