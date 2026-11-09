@@ -10,8 +10,9 @@ test('apology UI offers only full non-refundable or full pending refund', () => 
   assert.ok(start >= 0 && end > start);
   const dialog = source.slice(start, end);
   assert.match(dialog, /mode==="none"\?\[total,0,0,0\]:\[0,0,0,total\]/);
-  assert.match(dialog, /\["none","بدون استرداد"/);
+  assert.match(dialog, /\["none","لا يُرد حاليًا","الاحتفاظ بالمبلغ المحصل مع إمكانية اتخاذ قرار رد لاحقًا"/);
   assert.match(dialog, /\["pending","مع استرداد"/);
+  assert.match(dialog, /محتفظ به حاليًا/);
   assert.doesNotMatch(dialog, /\["credit","رصيد للشخص"|\["custom","تسوية مخصصة"|\["refund","استرداد فعلي"/);
   assert.match(dialog, /refunded:allocation\[1\],credit:allocation\[2\],pending:allocation\[3\]/);
 });
