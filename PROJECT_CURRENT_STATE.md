@@ -5,33 +5,42 @@ Repository: `ramyawny37/conference-management-system-v1`
 
 ## Source control
 - Active development branch: `develop` only.
-- Verified branch head at handoff: `1b91e21729fd600b65833e05be31a6480220b368`.
-- Its parent fix commit: `ea72d0553b7f6e4410649ea7e2c83920b211f055`.
-- The compare API confirmed `develop` is exactly one commit ahead of `ea72d055`, and that commit is the dashboard payment-source regression test.
-- Production branch `main` must not be changed. Last recorded production SHA in project handoff context: `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf`. Re-verify before any release-related statement.
+- Verified current `develop` head at handoff: `2512f10aba70c0608231c84b0f79b4b91f9d9d11`.
+- `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`; compare confirms the additional changes are the dashboard fix, regression test, and three handoff documents.
+- `main` remains identical to the recorded production baseline `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf`. No write was made to `main`.
 - No merge to main, no auto-merge, no force push.
 
-## Latest code change
-- `ea72d055`: `fix(reservations): use payment-enriched bookings on dashboard`.
+## Latest functional changes
+- `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`: `chore(platform): reinstall development worker for shared financial cache refresh`.
+  - Changed `service-worker.js` comment to trigger a Development worker reinstall for canonical accommodation and shared Reservations financial-cache assets.
+  - This was the previously identified Preview target before the dashboard payment-source fix.
+- `ea72d0553b7f6e4410649ea7e2c83920b211f055`: `fix(reservations): use payment-enriched bookings on dashboard`.
   - Changed `modules/reservations/reservations-module.js`.
-  - Dashboard booking rows now use the payment-enriched rows for collected totals rather than the raw booking collection.
-- `1b91e217`: added `tests/reservations-dashboard-payment-source.test.js` to guard the regression.
-- The regression test commit is the current verified `develop` head.
+  - Dashboard booking rows use payment-enriched rows for collected totals rather than raw booking rows.
+- `1b91e21729fd600b65833e05be31a6480220b368`: `test(reservations): cover dashboard payment source regression`.
+  - Added `tests/reservations-dashboard-payment-source.test.js`.
+
+## Handoff documentation
+- `PROJECT_CURRENT_STATE.md`, `ARCHITECTURE_AND_POLICIES.md`, and `WORK_LOG.md` were added to `develop`.
+- These are handoff records, not application runtime changes.
 
 ## Verification state — do not overstate
-- GitHub commit metadata confirms both commits exist on the history leading to `develop`.
-- The connector's combined commit-status endpoint returned no status entries for these commits; this is NOT proof of a successful Actions run.
-- The workflow-runs lookup available during handoff only returns PR-triggered runs and returned none for `ea72d055`; therefore Actions result is currently **UNVERIFIED**.
-- Latest Preview deployment SHA and live runtime acceptance are **UNVERIFIED**.
-- The latest dashboard change is frontend mapping/test work; no new Supabase migration was part of these two commits.
-- Do not claim CI, Preview, or operational acceptance PASS until independently checked.
+- GitHub confirms the above commits exist on the history leading to current `develop`.
+- User confirmed the dashboard correction is now visible/working in their manual test.
+- Automated Actions result for the current exact `develop` head is **UNVERIFIED**; the available commit-status endpoint returned no entries and the available workflow lookup was limited to PR-triggered runs.
+- Development Preview for the final exact `develop` head is **BLOCKED pending Vercel team authorization**. The last preview target identified in the prior handoff was `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`; the final branch now also includes the dashboard fix and regression test.
+- Vercel team authorization link was generated and is awaiting user approval (expires in 10 minutes): https://vercel.com/sso/session-requests/2Oc3_JDVe7wHmrdntULdaPtQAmoQ_lXu
+- Browser acceptance beyond the user's dashboard confirmation remains **UNVERIFIED**.
+- No Supabase migration or Development database mutation was performed as part of the documentation commits.
 
 ## Immediate next actions
-1. Inspect GitHub Actions runs for current `develop` head `1b91e21729fd600b65833e05be31a6480220b368`, including all jobs and logs for failures.
-2. If Actions failed, identify the first causal failure, fix the root cause on `develop`, add/update a focused regression test, then rerun.
-3. Verify the Development Preview is built from the exact final `develop` SHA and test the dashboard collected amount against payment-enriched booking data.
-4. Confirm no refresh is needed for dashboard updates after relevant mutations.
-5. Update this file and `WORK_LOG.md` with exact SHAs, run IDs, results, Preview SHA, and remaining blockers.
+1. User approves the Vercel team access link above.
+2. Inspect latest Development Preview for repository `ramyawny37/conference-management-system-v1`, branch `develop`, exact head `2512f10aba70c0608231c84b0f79b4b91f9d9d11`.
+3. If the latest deployment is not built from that exact head, investigate deployment trigger/build logs; do not call an older Preview current.
+4. Run the complete financial lifecycle acceptance: payment update reflected in dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and delete/rebook behavior.
+5. Verify the user's 100 simultaneous/parallel payment-posting test against one event's authoritative totals and check for lost updates/duplicate posting.
+6. Inspect Actions for the exact final SHA using GitHub UI or an authorized Actions endpoint; record actual run/job conclusions.
+7. Update this file and `WORK_LOG.md` with exact run IDs, Preview deployment/source SHA, test evidence, and blockers.
 
 ## Environment boundary
 - Supabase Development project: `gppwltrifgfxrkzvvxoe`.
@@ -40,4 +49,4 @@ Repository: `ramyawny37/conference-management-system-v1`
 - The last prior handoff reported the unified cancellation/refund/credit financial contract applied on Development; re-check actual schema/state before relying on it.
 
 ## Product scope
-This is the Arabic, non-React Conference Management System SPA. Keep one canonical implementation and remove obsolete paths only after verifying full feature parity. Each event is standalone: people, bookings, accounts, payments, refunds/credits, and reports must not leak across events.
+Arabic, non-React Conference Management System SPA. Keep one canonical implementation. Each event is standalone: people, bookings, accounts, payments, refunds/credits, and reports must not leak across events.
