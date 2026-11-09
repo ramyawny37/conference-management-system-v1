@@ -61,3 +61,12 @@ test('financial settlement summary uses the canonical cash semantics only', () =
   assert.doesNotMatch(moduleSource, /\["إيراد اعتذارات غير مسترد","nonRefundableApologyRevenue"\]/);
   assert.doesNotMatch(moduleSource, /\["المرتجعات المعلقة","pendingRefunds"\]/);
 });
+
+
+test('financial table and CSV never treat inactive booking balance as collectible debt', () => {
+  assert.match(moduleSource, /"حالة الحجز"/);
+  assert.match(moduleSource, /"المتبقي المطلوب تحصيله"/);
+  assert.match(moduleSource, /active\?a\.financial\.remainingBalance:"—"/);
+  assert.match(moduleSource, /activeRow\?Ae\(i\.financial\.remainingBalance\):"—"/);
+  assert.match(moduleSource, /activeRow\?.*:"تسوية مالية"/s);
+});
