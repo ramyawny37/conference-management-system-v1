@@ -38,17 +38,23 @@
 - Refund writer supports dated partial/multiple disbursements, caps each payout at remaining pending plus retained non-refundable amount, records method/reference/reason/executor, and uses operation idempotency/audit. Reporting reads actual refunds from `refund_disbursements` and scopes by event.
 - Live UI acceptance for the remaining refund/rebooking journey was not performed in this audit.
 
-### Explicit blocker — credit lifecycle
+### Credit lifecycle — explicitly deferred
 - Current apology UI exposes only “لا يُرد حاليًا” and “مع استرداد”; there is no credit option.
 - Current `cancel_booking_scoped` rejects positive `credit_amount` with `RESERVATIONS_EVENT_CREDIT_ISOLATION_REQUIRED`.
 - Current `redeem_person_credit_scoped` deliberately raises `RESERVATIONS_CREDIT_DESTINATION_REQUIRED`; it cannot atomically apply credit to a destination booking/payment.
 - Event-scoped credit account/entry tables have zero rows. No credit balance has been issued or redeemed.
-- Do not remove these fail-closed guards or enable a credit UI until one atomic event-scoped path exists for source settlement allocation, destination booking payment, cash-vs-credit reporting, idempotency, audit, and regression tests.
+- User decision 2026-11-09: future credit is not wanted in the current scope. Events have defined start/end dates. Preserve fail-closed credit guards; do not implement credit or add a parallel path.
 
 ### Next
-1. Implement the agreed event-scoped credit lifecycle as one atomic source-settlement-to-destination-booking payment path with correct cash/credit reporting.
-2. Complete live UI acceptance for pending refund, later partial/full disbursement, deletion financial history, and same-event rebooking without manual refresh.
-3. Preserve `develop` only and Supabase Development only; `main` and Production remain untouched.
+1. Complete live UI acceptance for non-refund apology, pending refund, later partial/full disbursement (including after event end), deletion financial history, and same-event rebooking without manual refresh.
+2. Verify selected-event reports separate active collections, retained apology income, actual disbursement by date, and net collections.
+3. Leave future credit out of scope and fail-closed; preserve `develop` only and Supabase Development only; `main` and Production remain untouched.
 
 ## Logging rule
 Append one dated section per completed work round. Record baseline SHA, final SHA, files/migrations, tests, Actions run IDs and outcomes, Preview source SHA, Development database effects, and unresolved blockers. Keep facts separate from inherited historical notes.
+
+## 2026-11-09 — Event-bounded financial scope confirmation
+- User explicitly removed future credit/transfer from the current release; do not implement or activate it.
+- Each event has a start and end date. A financial refund disbursement may be recorded after event end, dated by the actual payout, without reopening the event for new bookings.
+- Rechecked Development aggregate totals: 12 active, 2 apologized, 1 deleted bookings; 3 settlements, 1 disbursement, 1 pending refund; zero allocation errors, over-refunds, and ledger mismatches.
+- This was a read-only database check. No operational user records or Production data were modified.
