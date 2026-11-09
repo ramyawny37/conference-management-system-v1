@@ -16,7 +16,7 @@ test('booking detail voided payment immediately invalidates shared reservation d
 test('financial settlement summary participates in shared reservations cache invalidation', () => {
   assert.ok(source.includes('financialResource=$l(`cancellation-financial-summary:${c}`,()=>Me.cancellationFinancialSummary(c),!!c)'));
   assert.ok(source.includes('financialLoading=!!c&&(financialResource.status==="idle"||financialResource.status==="loading")'));
-  assert.ok(source.includes('onDone:async()=>{setReportRefund(null);setRefundActionError("");await financialResource.refresh()}'));
+  assert.ok(source.includes('onDone:async()=>{setReportRefund(null);setRefundActionError("");invalidateReservations();await financialResource.refresh()}'));
   assert.doesNotMatch(source, /setFinancialSummary|setFinancialError|setFinancialLoading/);
 });
 
@@ -31,4 +31,12 @@ test('booking list payment and finish-procedures payment invalidate the shared r
   assert.ok(source.includes('function bb({defaultEventId:t="all"}){const{mode:a}=vn(),{invalidate:invalidateReservations}=tr()'));
   assert.ok(source.includes('await Me.recordPayment(W.booking.id,ae),invalidateReservations(),O("تم تسجيل الدفعة وتحديث بيانات الحجز")'));
   assert.ok(source.includes('if(await Me.recordPayment(N.booking.id,X),!S.current.owns(ue))return;i.invalidate();await Yr(N)'));
+});
+
+
+test('refund payout from financial reports invalidates all shared event data before refreshing the settlement summary', () => {
+  const report = source.slice(source.indexOf('function RC(){'), source.indexOf('const DC=', source.indexOf('function RC(){')));
+  assert.match(report, /function RC\(\)\{const\{invalidate:invalidateReservations\}=tr\(\)/);
+  assert.ok(report.includes('onDone:async()=>{setReportRefund(null);setRefundActionError("");invalidateReservations();await financialResource.refresh()}'));
+  assert.doesNotMatch(report, /onDone:async\(\)=>\{setReportRefund\(null\);setRefundActionError\(""\);await financialResource\.refresh\(\)\}/);
 });
