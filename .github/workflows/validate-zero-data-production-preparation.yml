@@ -72,6 +72,18 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f tests/fixtures/production-release-catalog-contract.sql
           psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql
           psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql
+      - name: Verify seed rejects incompatible pre-existing catalog atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -c "UPDATE platform.permissions SET allowed_scope_mode='intentionally_corrupt' WHERE code=(SELECT code FROM platform.permissions WHERE is_system ORDER BY code LIMIT 1)"
+          set +e
+          psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql > /tmp/seed-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          psql -v ON_ERROR_STOP=1 -c "TRUNCATE platform.role_permissions, platform.permissions, platform.roles RESTART IDENTITY CASCADE"
+          psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql > /dev/null
       - name: Compare catalog fingerprints against Development read-only baseline
         shell: bash
         run: |
