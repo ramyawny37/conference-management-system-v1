@@ -21,6 +21,40 @@ on:
       - '.github/workflows/validate-zero-data-production-preparation.yml'
       - 'supabase/functions/**'
 jobs:
+  development-schema-export:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PostgreSQL 17 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+      - name: Extract Development schema and ACL locally, without publishing dump
+        shell: bash
+        env:
+          DEVELOPMENT_DATABASE_URL: ${{ secrets.DEVELOPMENT_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${DEVELOPMENT_DATABASE_URL:-}" || { echo 'BLOCKED: Development database secret is not configured'; exit 1; }
+          node tools/production-release/export-development-schema-only.cjs
+          test -s .release-local/development-application-schema-only.sql
+          echo 'EXTRACTED_NOT_VALIDATED: local ephemeral schema only; no artifact uploaded, no Production connection'
+      - name: Remove extracted schema from runner
+        if: always()
+        shell: bash
+        run: rm -f .release-local/development-application-schema-only.sql
   zero-data-guards:
     runs-on: ubuntu-latest
     permissions:
