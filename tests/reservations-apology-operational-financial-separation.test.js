@@ -47,3 +47,7 @@ test("attendance, operations, payments, and booking actions require active lifec
   assert.match(moduleSource, /activeBookings=.*\.filter\(S=>S\.lifecycleStatus===["']active["']\)/);
   assert.doesNotMatch(moduleSource, /lifecycleStatus!==["']apologized["']/);
 });
+
+test("report visibility separates participant history, financial history, and active operations", () => {
+  assert.match(moduleSource, /i==="financial"\?allReportRows:i==="participants"\?allReportRows\.filter\(B=>B\.booking\.lifecycleStatus!==["']deleted["']\):allReportRows\.filter\(B=>B\.booking\.lifecycleStatus===["']active["']\)/);
+});
