@@ -174,4 +174,16 @@ INSERT INTO platform.role_permissions (role_id,permission_id) SELECT r.id,p.id F
 INSERT INTO platform.role_permissions (role_id,permission_id) SELECT r.id,p.id FROM platform.roles r JOIN platform.permissions p ON p.code='platform.users.manage' WHERE r.code='platform_owner' AND r.domain='platform' AND r.is_system AND p.is_system ON CONFLICT DO NOTHING;
 INSERT INTO platform.role_permissions (role_id,permission_id) SELECT r.id,p.id FROM platform.roles r JOIN platform.permissions p ON p.code='platform.users.view' WHERE r.code='platform_owner' AND r.domain='platform' AND r.is_system AND p.is_system ON CONFLICT DO NOTHING;
 DO $$ BEGIN IF (SELECT count(*) FROM platform.roles WHERE is_system) <> 8 OR (SELECT count(*) FROM platform.permissions WHERE is_system) <> 84 OR (SELECT count(*) FROM platform.role_permissions rp JOIN platform.roles r ON r.id=rp.role_id JOIN platform.permissions p ON p.id=rp.permission_id WHERE r.is_system AND p.is_system) <> 79 THEN RAISE EXCEPTION 'Canonical system catalog count mismatch'; END IF; END $$;
+DO $catalog_integrity$
+DECLARE role_digest text; permission_digest text; grant_digest text;
+BEGIN
+ SELECT md5(coalesce(string_agg(concat_ws('|',code,domain,name,scope_type,is_system::text,is_assignable::text), E'\\n' ORDER BY concat_ws('|',code,domain,name,scope_type,is_system::text,is_assignable::text)),'')) INTO role_digest FROM platform.roles WHERE is_system;
+ SELECT md5(coalesce(string_agg(concat_ws('|',code,domain,status,allowed_scope_mode,coalesce(allowed_resource_type,''),sensitive_mutation::text), E'\\n' ORDER BY concat_ws('|',code,domain,status,allowed_scope_mode,coalesce(allowed_resource_type,''),sensitive_mutation::text)),'')) INTO permission_digest FROM platform.permissions WHERE is_system;
+ SELECT md5(coalesce(string_agg(concat_ws('|',r.code,p.code), E'\\n' ORDER BY concat_ws('|',r.code,p.code)),'')) INTO grant_digest FROM platform.role_permissions rp JOIN platform.roles r ON r.id=rp.role_id JOIN platform.permissions p ON p.id=rp.permission_id WHERE r.is_system AND p.is_system;
+ IF role_digest <> 'cdd80e0770d5f40e3f70e3ecaf3e9272'
+    OR permission_digest <> '2225bd16e2d1478d777fba4e3b12afc7'
+    OR grant_digest <> '90e6d71f8203c6789bb6d956daff7cce'
+ THEN RAISE EXCEPTION 'Canonical system catalog fingerprint mismatch'; END IF;
+END
+$catalog_integrity$;
 COMMIT;
