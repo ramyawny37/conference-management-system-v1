@@ -1,40 +1,43 @@
 # Work Log
 
-## 2026-11-09 — Reservations dashboard payment source
+## 2026-11-09 — Reservations dashboard payment source and handoff continuity
 
-### Verified source history
+### Verified functional commits
+- `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`
+  - `chore(platform): reinstall development worker for shared financial cache refresh`
+  - Changed `service-worker.js` to reinstall the Development worker for accommodation and shared Reservations financial-cache assets.
+  - This was the previously identified Preview target before the dashboard correction.
 - `ea72d0553b7f6e4410649ea7e2c83920b211f055`
-  - Message: `fix(reservations): use payment-enriched bookings on dashboard`.
-  - File: `modules/reservations/reservations-module.js`.
-  - Purpose: use payment-enriched booking rows for dashboard collected totals.
+  - `fix(reservations): use payment-enriched bookings on dashboard`
+  - Changed `modules/reservations/reservations-module.js` so dashboard collected totals consume payment-enriched booking rows.
 - `1b91e21729fd600b65833e05be31a6480220b368`
-  - Message: `test(reservations): cover dashboard payment source regression`.
+  - `test(reservations): cover dashboard payment source regression`
   - Added `tests/reservations-dashboard-payment-source.test.js`.
-  - Test asserts dashboard mapper uses payment-enriched rows and maps `total_paid`.
-- GitHub compare verified current `develop` is one commit ahead of `ea72d055`, with `1b91e217` as that additional commit.
+  - The test asserts dashboard mapper uses payment-enriched rows and maps `total_paid`.
 
-### Verification
-- Commit objects: PASS (both commits fetched from GitHub).
-- Regression test source present: PASS.
-- Combined commit statuses: UNVERIFIED (endpoint returned no status entries).
-- GitHub Actions run and job outcomes: UNVERIFIED.
-- Development Preview exact SHA: UNVERIFIED.
-- Browser/operational dashboard acceptance: UNVERIFIED.
-- Production/main untouched by this work: no write was made to main; re-check branch SHA before any release operation.
+### Handoff documentation commits
+- `83a26c69997db6309deae9a6c331c9638d3a9845`: added `PROJECT_CURRENT_STATE.md`.
+- `007d052c5660322da2fde5d4aa757ba19613530e`: added `ARCHITECTURE_AND_POLICIES.md`.
+- `2512f10aba70c0608231c84b0f79b4b91f9d9d11`: added `WORK_LOG.md`.
+- Current verified `develop` head: `2512f10aba70c0608231c84b0f79b4b91f9d9d11`.
+- GitHub compare confirms current `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`, with no divergence.
 
-### Earlier same-day CI failure history (from prior handoff; re-verify run details)
-- A chain of rejected runs followed an earlier baseline at `6860466a...`.
-- Run `42591781531` was reported rejected due to an outdated Credit test and a SyntaxError.
-- Follow-up code/test commits were reported: `33e42d0a`, `a29fe924`, `e95c25ad`, `89544e66`.
-- A later successful test run was reported at `0a666d6`, with 644 tests across 85 files passing; its live Preview had not yet been verified at that point.
-- These historical notes are context, not proof of current Actions status.
+### Acceptance and deployment
+- User manually confirmed the dashboard correction.
+- User's requested next financial QA includes verifying the same payment across dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and deletion/rebooking lifecycle.
+- User also clarified they were viewing a 100-operation concurrent/parallel posting test, not asking to create 100 additional bookings.
+- GitHub commit-status endpoint returned no entries; Actions for the current exact SHA remain **UNVERIFIED**.
+- Vercel Preview lookup initially failed with 403 because team access was not authorized.
+- A single-use Vercel consent link was generated; user approval is pending: https://vercel.com/sso/session-requests/2Oc3_JDVe7wHmrdntULdaPtQAmoQ_lXu
+- Exact current-head Preview deployment and live browser acceptance remain **BLOCKED/UNVERIFIED** until authorization and verification.
+- No database migration or Development database mutation was made by these code/documentation commits.
+- `main` was checked against baseline `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf` and was identical; no write to `main`.
 
-### Next work — do not skip
-1. Inspect Actions for `develop` head `1b91e21729fd600b65833e05be31a6480220b368`.
-2. Identify any rejected run's first failing job/step and root cause; do not patch blindly.
-3. Verify final Preview SHA and browser behavior for dashboard collected totals.
-4. Record exact run IDs, job conclusions, Preview deployment/source SHA, and manual acceptance evidence here.
-5. Continue with the next agreed project milestone only after this checkpoint is closed.
+### Next work
+1. Approve Vercel team access; inspect Preview for exact current `develop` SHA.
+2. Inspect Actions for exact current SHA and first failing job/step if any.
+3. Complete financial lifecycle and concurrency acceptance on Development, with event isolation.
+4. Record exact evidence before moving to the next module.
 
 ## Logging rule
 Append one dated section per completed work round. Record baseline SHA, final SHA, files/migrations, tests, Actions run IDs and outcomes, Preview source SHA, Development database effects, and unresolved blockers. Keep facts separate from inherited historical notes.
