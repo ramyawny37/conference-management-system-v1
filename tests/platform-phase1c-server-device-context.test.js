@@ -55,10 +55,12 @@ test("handoff live definitions are generalized without weakening exact-device jo
   assert.doesNotMatch(migration,/f9306733-612d-433f-a38e-5d72855c2fe3/i);
 });
 
-test("runtime handoff sources are removed and native enrollment contains no device-specific UUID",()=>{
-  for(const file of ["server/platform-gateway.cjs","supabase/functions/platform-device-ownership-handoff/index.ts","js/platform-device-ownership-handoff.js"])
+test("retired runtime handoff paths remain absent while the canonical Edge handoff is versioned",()=>{
+  for(const file of ["server/platform-gateway.cjs","js/platform-device-ownership-handoff.js"])
     assert.equal(fs.existsSync(file),false,file);
-  for(const file of ["supabase/functions/platform-device-enrollment/index.ts","js/supabase/device-enrollment.js"])
+  const handoff="supabase/functions/platform-device-ownership-handoff/index.ts";
+  assert.equal(fs.existsSync(handoff),true,"canonical deployed Edge source must remain in version control");
+  for(const file of [handoff,"supabase/functions/platform-device-enrollment/index.ts","js/supabase/device-enrollment.js"])
     assert.doesNotMatch(fs.readFileSync(file,"utf8"),/f9306733-612d-433f-a38e-5d72855c2fe3/i,file);
 });
 
