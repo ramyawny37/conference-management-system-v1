@@ -11,6 +11,7 @@ on:
       - 'tools/production-release/canonical-system-catalog-seed.sql'
       - 'tools/production-release/canonical-system-catalog-fingerprint.sql'
       - 'tools/production-release/assert-canonical-full-foundation.sql'
+      - 'tools/production-release/assert-canonical-structural-parity.sql'
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
 jobs:
@@ -81,6 +82,16 @@ jobs:
           set -e
           test "$status" -ne 0
           grep -F 'FOUNDATION_OBJECT_COUNT_MISMATCH' /tmp/foundation-negative.log
+      - name: Assert exact structural parity rejects incomplete schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-structural-parity.sql > /tmp/parity-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'FOUNDATION_STRUCTURAL_PARITY_FAILED' /tmp/parity-negative.log
       - name: Create disposable catalog contract and replay seed twice
         run: |
           set -euo pipefail
