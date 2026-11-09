@@ -120,7 +120,7 @@ jobs:
           set -e
           rm -f "$dump"
           test "$status" -ne 0
-          grep -F 'Schema-only dump has no ACL replay' /tmp/missing-acl-negative.log
+          grep -F 'Schema-only dump lacks GRANT or ALTER DEFAULT PRIVILEGES replay' /tmp/missing-acl-negative.log
       - name: Assert incomplete foundation is rejected
         shell: bash
         run: |
