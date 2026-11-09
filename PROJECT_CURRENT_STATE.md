@@ -5,7 +5,7 @@ Repository: `ramyawny37/conference-management-system-v1`
 
 ## Source control
 - Active development branch: `develop` only.
-- Verified current `develop` head before this state-file refresh: `97ea87ac0118b87115e65a8fb4feecd339136dd3`.
+- Verified current `develop` head before this documentation correction: `9c935f8a46fe020bd9672731fb654738bd2185f9`.
 - `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`; compare confirms the additional changes are the dashboard fix, regression test, and three handoff documents.
 - `main` remains identical to the recorded production baseline `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf`. No write was made to `main`.
 - No merge to main, no auto-merge, no force push.
@@ -28,19 +28,19 @@ Repository: `ramyawny37/conference-management-system-v1`
 - GitHub confirms the above commits exist on the history leading to current `develop`.
 - User confirmed the dashboard correction is now visible/working in their manual test.
 - Automated Actions result for the current exact `develop` head is **UNVERIFIED**; the available commit-status endpoint returned no entries and the available workflow lookup was limited to PR-triggered runs.
-- Development Preview for the final exact `develop` head is **BLOCKED pending Vercel team authorization**. The last preview target identified in the prior handoff was `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`; the final branch now also includes the dashboard fix and regression test.
-- Vercel team authorization link was generated and is awaiting user approval (expires in 10 minutes): https://vercel.com/sso/session-requests/2Oc3_JDVe7wHmrdntULdaPtQAmoQ_lXu
+- Vercel is not part of the active application/deployment architecture and must not be used as a project dependency or release gate.
+- The active static runtime has an explicit regression test asserting no Gateway/Vercel dependency and absence of retired `vercel.json`/gateway artifacts. The package script `npm run check:development-preview` is a local Node validation script, not a Vercel deployment check.
+- The Vercel authorization prompt in the prior conversation was an unnecessary external tooling detour; do not approve or rely on it. It did not create an application dependency or modify the repository's hosting configuration.
+- The exact current Preview hosting/deployment evidence is **UNVERIFIED** and must be checked through the project's actual GitHub-based Development Preview workflow/repository, not Vercel.
 - Browser acceptance beyond the user's dashboard confirmation remains **UNVERIFIED**.
 - No Supabase migration or Development database mutation was performed as part of the documentation commits.
 
 ## Immediate next actions
-1. User approves the Vercel team access link above.
-2. Inspect latest Development Preview for repository `ramyawny37/conference-management-system-v1`, branch `develop`, exact head `97ea87ac0118b87115e65a8fb4feecd339136dd3`.
-3. If the latest deployment is not built from that exact head, investigate deployment trigger/build logs; do not call an older Preview current.
-4. Run the complete financial lifecycle acceptance: payment update reflected in dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and delete/rebook behavior.
-5. Verify the user's 100 simultaneous/parallel payment-posting test against one event's authoritative totals and check for lost updates/duplicate posting.
-6. Inspect Actions for the exact final SHA using GitHub UI or an authorized Actions endpoint; record actual run/job conclusions.
-7. Update this file and `WORK_LOG.md` with exact run IDs, Preview deployment/source SHA, test evidence, and blockers.
+1. Inspect GitHub Actions for the exact current `develop` SHA using the repository's normal GitHub workflow history; record actual run/job conclusions.
+2. Identify the actual Development Preview repository/hosting path already used by this project; verify the exact source SHA there. Do not introduce a new hosting provider.
+3. Run the complete financial lifecycle acceptance: payment update reflected in dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and delete/rebook behavior.
+4. Verify the user's 100 simultaneous/parallel payment-posting test against one event's authoritative totals and check for lost updates/duplicate posting.
+5. Update this file and `WORK_LOG.md` with exact run IDs, Preview source SHA, test evidence, and blockers.
 
 ## Environment boundary
 - Supabase Development project: `gppwltrifgfxrkzvvxoe`.
