@@ -4,6 +4,7 @@ const fs = require('node:fs');
 
 const moduleSource = fs.readFileSync('modules/reservations/reservations-module.js','utf8');
 const migration = fs.readFileSync('supabase/migrations/20261109064130_reservations_unified_delete_apology_rebooking_lifecycle.sql','utf8');
+const refundReadReportingMigration = fs.readFileSync('supabase/migrations/20261106120000_reservations_refund_disbursement_read_reporting.sql','utf8');
 
 test('delete is an operational lifecycle state and retains financial history', () => {
   assert.match(migration, /lifecycle_status in \('active','apologized','deleted'\)/);
