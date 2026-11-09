@@ -6,6 +6,17 @@ DECLARE
   required record;
   fn oid;
 BEGIN
+  -- Private schemas contain routines with PUBLIC EXECUTE ACLs. Schema USAGE is
+  -- the necessary outer boundary and must never drift during clean bootstrap.
+  IF EXISTS (
+    SELECT 1 FROM (VALUES ('platform_private'),('reservations_private')) AS s(name)
+    WHERE to_regnamespace(s.name) IS NULL
+       OR has_schema_privilege('anon',to_regnamespace(s.name),'USAGE')
+       OR has_schema_privilege('authenticated',to_regnamespace(s.name),'USAGE')
+       OR has_schema_privilege('service_role',to_regnamespace(s.name),'USAGE')
+  ) THEN
+    RAISE EXCEPTION 'OWNER_DEVICE_SECURITY_PRIVATE_SCHEMA_EXPOSED';
+  END IF;
   IF private_table IS NULL THEN
     RAISE EXCEPTION 'OWNER_DEVICE_SECURITY_MISSING_PRIVATE_TABLE';
   END IF;
