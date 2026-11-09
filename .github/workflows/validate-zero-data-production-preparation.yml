@@ -38,8 +38,9 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-17
+          sudo apt-get install -y -qq postgresql-client
           pg_dump --version
+          test "$(pg_dump --version | sed -E 's/.* ([0-9]+)\..*/\1/')" -ge 17 || { echo 'BLOCKED: PostgreSQL client version older than Development'; exit 1; }
       - name: Extract Development schema and ACL locally, without publishing dump
         shell: bash
         env:
