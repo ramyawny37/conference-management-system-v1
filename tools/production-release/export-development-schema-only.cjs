@@ -1,5 +1,5 @@
 'use strict';
-// Extracts application schema ONLY from a privileged, read-only Development connection.
+// Extracts application schema ONLY from a privileged, read-only Development connection; CI replays it only into disposable local PostgreSQL.
 // This is an offline operator tool, never a browser/Edge Function dependency.
 // No connection string, passwords, Auth rows, or business data are written to disk.
 const { spawnSync } = require('node:child_process');
