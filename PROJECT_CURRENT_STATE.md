@@ -37,18 +37,18 @@ Repository: `ramyawny37/conference-management-system-v1`
 - Canonical payment record/void lock the booking row; cancellation locks booking and active payment rows; refund payout locks booking and settlement rows.
 - Refund writer supports dated partial/multiple payouts, caps each payout at remaining pending plus retained non-refundable amount, records payment method/reference/reason/executor, and uses operation idempotency/audit. Reporting reads actual refunds from the disbursement ledger and scopes by event.
 
-## Explicit blocker — credit lifecycle
+## Deferred by product decision — credit lifecycle
 - The current apology UI offers only “لا يُرد حاليًا” and “مع استرداد”; it does not offer credit.
 - `cancel_booking_scoped` rejects positive `credit_amount` with `RESERVATIONS_EVENT_CREDIT_ISOLATION_REQUIRED`.
 - `redeem_person_credit_scoped` is fail-closed with `RESERVATIONS_CREDIT_DESTINATION_REQUIRED`; there is no atomic destination-booking payment path.
 - Event-scoped credit account/entry tables are empty. No credit balance has been issued or redeemed.
-- Do not remove these guards or enable a credit UI until one complete event-scoped path exists for source settlement allocation, destination booking payment, cash-vs-credit reporting, idempotency, audit, and regression tests.
+- Product decision on 2026-11-09: future credit/transfer to another booking is OUT OF SCOPE for the current release. Events have defined start and end dates. Keep the existing fail-closed protections; do not implement or activate credit now.
 
 ## Next actions
-1. Implement the agreed event-scoped credit lifecycle as one atomic source-settlement-to-destination-booking payment path, with correct cash/credit reporting.
-2. Complete live UI acceptance for pending refund, later partial/full disbursement, deletion financial history, and same-event rebooking without manual refresh.
+1. Complete live UI acceptance for apology with no refund, pending refund, later partial/full payout (including after the event end date), deletion financial history, and same-event rebooking without manual refresh.
+2. Confirm financial reports separate active booking collections, retained apology income, actual refund payouts by disbursement date, and net collections for the selected event.
 3. Keep using the existing GitHub Pages Development Preview workflow. No new hosting provider or parallel path.
-4. Record exact run IDs, Preview source SHA, test evidence, and blockers in this file and `WORK_LOG.md`.
+4. Leave credit inactive and out of scope. Record exact run IDs, Preview source SHA, test evidence, and blockers in this file and `WORK_LOG.md`.
 
 ## Product and architecture rules
 - Arabic, non-React SPA; one canonical implementation only.
