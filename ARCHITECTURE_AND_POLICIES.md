@@ -7,6 +7,7 @@ These are binding product and engineering constraints for the Conference Managem
 - Use Supabase Development project `gppwltrifgfxrkzvvxoe` only.
 - Never modify `main`, Production, or production data.
 - No auto-merge, no force push, and no claiming deployment/acceptance without direct evidence.
+- Vercel is retired and is not part of the application, hosting, Preview, or release path. Do not add Vercel/Gateway dependencies or require Vercel authorization. Use only the repository's existing GitHub-based Development Preview/Production delivery path.
 - Use the existing Arabic SPA architecture (vanilla JavaScript/CSS/HTML); do not introduce React.
 - One canonical path per capability. No parallel/legacy implementation, fallback path, temporary workaround, or accumulating duplicate code.
 - Fix root causes, preserve existing supported behavior, test the complete connected lifecycle, then retire obsolete code.
