@@ -24,4 +24,5 @@ psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-structur
 psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-first-owner-device-security.sql
 psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-access-parity.sql
 psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-ambient-grants.sql
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-default-grants.sql
 echo "PASS: disposable structural rehearsal (owner/device and Edge Functions remain separate gates)"
