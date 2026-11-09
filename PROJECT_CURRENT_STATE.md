@@ -32,8 +32,11 @@ Repository: `ramyawny37/conference-management-system-v1`
 - Vercel is not part of the active application/deployment architecture and must not be used as a project dependency or release gate.
 - The active static runtime has an explicit regression test asserting no Gateway/Vercel dependency and absence of retired `vercel.json`/gateway artifacts. The package script `npm run check:development-preview` is a local Node validation script, not a Vercel deployment check.
 - The Vercel authorization prompt in the prior conversation was an unnecessary external tooling detour; do not approve or rely on it. It did not create an application dependency or modify the repository's hosting configuration.
-- The exact current Preview hosting/deployment evidence is **UNVERIFIED** and must be checked through the project's actual GitHub-based Development Preview workflow/repository, not Vercel.
-- Browser acceptance beyond the user's dashboard confirmation remains **UNVERIFIED**.
+- GitHub Pages Development Preview deployment run `42615914678`: **SUCCESS**. Build logs prove exact Platform source SHA `1b91e21729fd600b65833e05be31a6480220b368`; the 85-file Development Preview validation and deploy job passed. URL: https://ramyawny37.github.io/conference-management-system-development-preview/ . Later `develop` commits were documentation-only.
+- Live UI acceptance for remaining refund/rebooking interactions remains **UNVERIFIED**; the deployment action succeeded, but no direct browser session was performed during this audit.
+- Supabase Development read-only audit: 0 settlement allocation mismatches and 0 refund-ledger mismatches; inspected event scopes are isolated one event per partition. Required tables and scoped writers exist; audited financial tables have RLS enabled and no direct SELECT/INSERT grants to anon, authenticated, or service_role.
+- Development aggregate state observed: 12 active bookings, 2 apologized, 1 deleted, 3 settlement rows, 1 refund disbursement, and 1 settlement with pending refund. No data was mutated during this audit.
+- Canonical payment record/void lock the booking; cancellation locks booking and active payments; refund payout locks booking and settlement.
 - No Supabase migration or Development database mutation was performed as part of the documentation commits.
 
 ## Immediate next actions
