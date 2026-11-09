@@ -52,3 +52,12 @@ test('financial report separates booking value from cash and exposes one settlem
   assert.match(moduleSource, /children:"تنفيذ رد"/);
   assert.match(moduleSource, /Me\.disburseRefund/);
 });
+
+
+test('financial settlement summary uses the canonical cash semantics only', () => {
+  assert.match(moduleSource, /label:"المرتجعات المنفذة فعليًا"/);
+  assert.match(moduleSource, /label:"صافي النقد"/);
+  assert.match(moduleSource, /label:"المتاح لاتخاذ قرار رده"/);
+  assert.doesNotMatch(moduleSource, /\["إيراد اعتذارات غير مسترد","nonRefundableApologyRevenue"\]/);
+  assert.doesNotMatch(moduleSource, /\["المرتجعات المعلقة","pendingRefunds"\]/);
+});
