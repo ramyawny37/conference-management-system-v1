@@ -24,7 +24,7 @@ test('only an active booking blocks registering the same person in the event', (
 test('deleted bookings leave operations but remain available to financial reports', () => {
   assert.match(moduleSource, /map\(cg\)\.filter\(s=>s\.booking\.lifecycleStatus!=="deleted"\)/);
   assert.match(moduleSource, /i==="financial"\?allReportRows:allReportRows\.filter\(B=>B\.booking\.lifecycleStatus!=="deleted"\)/);
-  assert.match(moduleSource, /label:"المحذوفون"/);
+  assert.match(moduleSource, /deletedReportRows=allReportRows\.filter\(B=>B\.booking\.lifecycleStatus==="deleted"\)/);\n  assert.match(moduleSource, /label:"المتحصل من المحذوفين"/);
 });
 
 test('delete and apology are separate actions regardless of payments', () => {
