@@ -15,6 +15,7 @@ on:
       - 'tools/production-release/rehearse-clean-bootstrap.sh'
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
+      - 'supabase/functions/**'
 jobs:
   zero-data-guards:
     runs-on: ubuntu-latest
@@ -32,6 +33,14 @@ jobs:
           node --check tools/production-release/export-development-schema-only.cjs
           node --check tools/production-release/check-zero-data-replacement-readiness.cjs
           node --check tests/production-zero-data-export-guards.test.js
+      - name: Verify canonical Edge Function sources are complete
+        shell: bash
+        run: |
+          set -euo pipefail
+          for slug in platform-device-authorization platform-device-ownership-handoff platform-device-session conference-device-operation platform-device-enrollment platform-device-operation; do
+            test -s "supabase/functions/$slug/index.ts"
+            test -s "supabase/functions/$slug/deno.json"
+          done
       - name: Run offline security guard tests
         run: node --test tests/production-zero-data-export-guards.test.js
       - name: Verify production replacement remains blocked without proven clean bootstrap
