@@ -13,6 +13,7 @@ on:
       - 'tools/production-release/assert-canonical-full-foundation.sql'
       - 'tools/production-release/assert-canonical-structural-parity.sql'
       - 'tools/production-release/assert-first-owner-device-security.sql'
+      - 'tools/production-release/assert-canonical-access-parity.sql'
       - 'tools/production-release/rehearse-clean-bootstrap.sh'
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
@@ -135,6 +136,16 @@ jobs:
           set -e
           test "$status" -ne 0
           grep -F 'OWNER_DEVICE_SECURITY_MISSING_PRIVATE_TABLE' /tmp/owner-device-negative.log
+      - name: Assert access parity rejects missing grants
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-access-parity.sql > /tmp/access-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'FOUNDATION_ACCESS_PARITY_FAILED' /tmp/access-negative.log
       - name: Create disposable catalog contract and replay seed twice
         run: |
           set -euo pipefail
