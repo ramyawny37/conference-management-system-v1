@@ -21,6 +21,47 @@ on:
       - '.github/workflows/validate-zero-data-production-preparation.yml'
       - 'supabase/functions/**'
 jobs:
+  development-schema-export:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PostgreSQL 17 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl ca-certificates
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+          test "$(/usr/lib/postgresql/17/bin/pg_dump --version | sed -E 's/.* ([0-9]+)\\..*/\\1/')" -eq 17 || { echo 'BLOCKED: PostgreSQL 17 client is unavailable'; exit 1; }
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Extract Development schema and ACL locally, without publishing dump
+        shell: bash
+        env:
+          DEVELOPMENT_DATABASE_URL: ${{ secrets.DEVELOPMENT_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${DEVELOPMENT_DATABASE_URL:-}" || { echo 'BLOCKED: Development database secret is not configured'; exit 1; }
+          node tools/production-release/export-development-schema-only.cjs
+          test -s .release-local/development-application-schema-only.sql
+          echo 'EXTRACTED_NOT_VALIDATED: local ephemeral schema only; no artifact uploaded, no Production connection'
+      - name: Remove extracted schema from runner
+        if: always()
+        shell: bash
+        run: rm -f .release-local/development-application-schema-only.sql
   zero-data-guards:
     runs-on: ubuntu-latest
     permissions:
@@ -84,42 +125,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-      - name: Install PostgreSQL 17 client
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq curl ca-certificates
-          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-17
-          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
-          /usr/lib/postgresql/17/bin/pg_dump --version
-      - name: Extract Development schema and ACL locally
-        shell: bash
-        env:
-          DEVELOPMENT_DATABASE_URL: ${{ secrets.DEVELOPMENT_DATABASE_URL }}
-          PG_DUMP_BIN: /usr/lib/postgresql/17/bin/pg_dump
-        run: |
-          set -euo pipefail
-          test -n "$DEVELOPMENT_DATABASE_URL" || { echo 'BLOCKED: DEVELOPMENT_DATABASE_URL secret is not configured'; exit 1; }
-          umask 077
-          node tools/production-release/export-development-schema-only.cjs
-          test -s .release-local/development-application-schema-only.sql
-      - name: Rehearse extracted Development foundation in disposable PostgreSQL 17
-        shell: bash
-        env:
-          RELEASE_DISPOSABLE_REHEARSAL: I_UNDERSTAND_DISPOSABLE_ONLY
-          PGHOST: localhost
-          PGPORT: '5432'
-          PGUSER: postgres
-          PGDATABASE: release_rehearsal_ci
-          PGPASSWORD: ci_disposable_only
-        run: |
-          set -euo pipefail
-          bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/.release-local/development-application-schema-only.sql"
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
       - name: Verify replay tool rejects hosted connections before SQL
         shell: bash
         run: |
@@ -258,8 +265,3 @@ jobs:
           echo "$result" | grep -Fx 'role_permissions|79|90e6d71f8203c6789bb6d956daff7cce'
           echo "$result" | grep -Fx 'roles|8|cdd80e0770d5f40e3f70e3ecaf3e9272'
           test "$(echo "$result" | wc -l)" -eq 3
-
-      - name: Remove extracted schema from runner
-        if: always()
-        shell: bash
-        run: rm -rf .release-local
