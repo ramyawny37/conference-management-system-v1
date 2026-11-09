@@ -7,6 +7,8 @@ fail() { echo "BLOCKED: $*" >&2; exit 1; }
 [[ "${RELEASE_DISPOSABLE_REHEARSAL:-}" == "I_UNDERSTAND_DISPOSABLE_ONLY" ]] || fail "Explicit disposable rehearsal acknowledgement required"
 [[ "${PGHOST:-}" == "localhost" || "${PGHOST:-}" == "127.0.0.1" ]] || fail "Only local PostgreSQL host is permitted"
 [[ "${PGDATABASE:-}" == release_rehearsal_* ]] || fail "Database name must start with release_rehearsal_"
+[[ -z "${PGHOSTADDR:-}" ]] || fail "PGHOSTADDR override forbidden"
+[[ -z "${PGSERVICE:-}" && -z "${PGSERVICEFILE:-}" ]] || fail "PostgreSQL service overrides forbidden"
 [[ "${PGUSER:-}" != "" && "${PGPASSWORD:-}" != "" ]] || fail "Explicit disposable database credentials required"
 [[ "${PGSSLMODE:-}" != "require" ]] || fail "Hosted TLS connections forbidden"
 command -v psql >/dev/null || fail "psql unavailable"
