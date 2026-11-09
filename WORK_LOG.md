@@ -19,24 +19,23 @@
 - `83a26c69997db6309deae9a6c331c9638d3a9845`: added `PROJECT_CURRENT_STATE.md`.
 - `007d052c5660322da2fde5d4aa757ba19613530e`: added `ARCHITECTURE_AND_POLICIES.md`.
 - `2512f10aba70c0608231c84b0f79b4b91f9d9d11`: added `WORK_LOG.md`.
-- Verified `develop` head before the final state-file refresh: `97ea87ac0118b87115e65a8fb4feecd339136dd3`.
-- Final state-file refresh commit: `ec83cfd39a4e061c30820b997112b659f309ddf6`.
-- GitHub compare confirms current `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`, with no divergence.
+- Verified `develop` head before the Vercel-reference correction: `9c935f8a46fe020bd9672731fb654738bd2185f9`.
 
 ### Acceptance and deployment
 - User manually confirmed the dashboard correction.
 - User's requested next financial QA includes verifying the same payment across dashboard, booking record, participant statement, and financial report without refresh; then apology/refund and deletion/rebooking lifecycle.
 - User also clarified they were viewing a 100-operation concurrent/parallel posting test, not asking to create 100 additional bookings.
 - GitHub commit-status endpoint returned no entries; Actions for the current exact SHA remain **UNVERIFIED**.
-- Vercel Preview lookup initially failed with 403 because team access was not authorized.
-- A single-use Vercel consent link was generated; user approval is pending: https://vercel.com/sso/session-requests/2Oc3_JDVe7wHmrdntULdaPtQAmoQ_lXu
-- Exact current-head Preview deployment and live browser acceptance remain **BLOCKED/UNVERIFIED** until authorization and verification.
+- Assistant incorrectly attempted to use Vercel to inspect Preview, despite it not being part of the project's active architecture. The generated one-time consent URL is an external tooling request only; it did not alter the repository or grant access. Do not approve or reuse it.
+- Repository evidence: `tests/platform-unified-warehouse.test.js` explicitly asserts zero Gateway/Vercel dependency and absence of `vercel.json` and retired gateway artifacts. `npm run check:development-preview` runs `tools/validation/check-development-preview.cjs`, a local Node syntax/runtime/test validation script, not a Vercel deployment.
+- User clarified Vercel has been retired for a long time. No Vercel integration should be reintroduced or treated as a deployment prerequisite.
+- Actual GitHub-based Development Preview deployment/source SHA and live browser acceptance remain **UNVERIFIED**.
 - No database migration or Development database mutation was made by these code/documentation commits.
 - `main` was checked against baseline `0751b53d622a35a980f50ccb5b8c9ed9ce8afcbf` and was identical; no write to `main`.
 
 ### Next work
-1. Approve Vercel team access; inspect Preview for exact current `develop` SHA.
-2. Inspect Actions for exact current SHA and first failing job/step if any.
+1. Inspect Actions for exact current `develop` SHA and first failing job/step if any.
+2. Identify and verify the existing GitHub-based Development Preview path; do not use Vercel.
 3. Complete financial lifecycle and concurrency acceptance on Development, with event isolation.
 4. Record exact evidence before moving to the next module.
 
