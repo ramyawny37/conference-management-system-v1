@@ -7,6 +7,9 @@ on:
       - 'tools/production-release/export-development-schema-only.cjs'
       - 'tools/production-release/check-zero-data-replacement-readiness.cjs'
       - 'tests/production-zero-data-export-guards.test.js'
+      - 'tests/fixtures/production-release-catalog-contract.sql'
+      - 'tools/production-release/canonical-system-catalog-seed.sql'
+      - 'tools/production-release/canonical-system-catalog-fingerprint.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
 jobs:
   zero-data-guards:
