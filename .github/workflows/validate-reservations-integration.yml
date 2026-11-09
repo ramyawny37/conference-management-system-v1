@@ -52,7 +52,12 @@ jobs:
       - name: Check reservations browser bundle syntax
         run: node --check modules/reservations/reservations-module.js
       - name: Reservations apology and refund payout regression
-        run: node --test tests/reservations-apology-two-options.test.js
+        run: |
+          node --test \
+            tests/reservations-apology-two-options.test.js \
+            tests/reservations-booking-cancellation-settlement.test.js \
+            tests/reservations-delete-apology-rebooking-lifecycle.test.js \
+            tests/reservations-refund-delete-financial-postgres.test.js
       - name: Validate source boundary and cache references
         shell: bash
         run: |
