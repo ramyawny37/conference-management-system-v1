@@ -36,3 +36,9 @@ test('booking form does not route apologized history through the active duplicat
   assert.doesNotMatch(moduleSource, /if\(existing\)\{k\(\{kind:\"duplicate\"/);
   assert.match(moduleSource, /existing\?\.booking\.lifecycleStatus===\"apologized\"/);
 });
+
+
+test('successful booking outcome returns to participants list, not booking detail', () => {
+  assert.match(moduleSource, /U=\(\)=>\{k\(null\),Du\("\\\/participants"\)\}/);
+  assert.doesNotMatch(moduleSource, /U=\(\)=>\{if\(!o\?\.bookingId\)return;k\(null\),Du\(\x60\\\/participants\/\$\{o\.bookingId\}\x60\)\}/);
+});
