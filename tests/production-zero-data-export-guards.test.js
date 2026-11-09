@@ -45,15 +45,15 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-schema-'));
   const executable = path.join(dir, 'pg_dump');
   const marker = path.join(dir, 'invocation.json');
-  const sql = '-- PostgreSQL database dump\\n' +
-    'CREATE SCHEMA "platform";\\n' +
-    'CREATE TABLE "platform"."example" ("id" integer);\\n' +
-    '-- schema only\\n'.repeat(100);
-  fs.writeFileSync(executable, '#!/usr/bin/env node\\n' +
-    'const fs=require("node:fs");\\n' +
-    'if(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\\n' +
-    'fs.writeFileSync(process.env.TEST_DUMP_MARKER, JSON.stringify({args:process.argv.slice(2),host:process.env.PGHOST,hasPassword:!!process.env.PGPASSWORD}));\\n' +
-    'process.stdout.write(' + JSON.stringify(sql) + ');\\n',
+  const sql = '-- PostgreSQL database dump\n' +
+    'CREATE SCHEMA "platform";\n' +
+    'CREATE TABLE "platform"."example" ("id" integer);\n' +
+    '-- schema only\n'.repeat(100);
+  fs.writeFileSync(executable, '#!/usr/bin/env node\n' +
+    'const fs=require("node:fs");\n' +
+    'if(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\n' +
+    'fs.writeFileSync(process.env.TEST_DUMP_MARKER, JSON.stringify({args:process.argv.slice(2),host:process.env.PGHOST,hasPassword:!!process.env.PGPASSWORD}));\n' +
+    'process.stdout.write(' + JSON.stringify(sql) + ');\n',
     { mode: 0o700 });
   try {
     const r = run(dev, { PG_DUMP_BIN: executable, TEST_DUMP_MARKER: marker });
