@@ -5,6 +5,7 @@ Source: develop, pinned SHA 088d8a18332711a18c604691c503d3a9de171269 (refresh an
 Target repository: ramyawny37/conference-management-system-v1, main.
 Target Supabase: mpezfbvcdfxpgflehuot. Development: gppwltrifgfxrkzvvxoe.
 Owner: a newly created Production Auth user; no legacy owner identity, devices, or data need be retained.
+Data decision (2026-11-09): NO application records are to be migrated from either Development or old Production. Both are schema/reference sources only; Development must NOT be cleared or reset. Production is initialized with empty business data, with only required system catalogs and new owner/device records created through approved bootstrap.
 
 ## Decision
 Replace the legacy Production application and application database with the canonical Development architecture. Do not merge legacy business logic, copy Development test records, or deploy the new frontend over the old database. Keep Development and Production isolated. No React or parallel runtime.
@@ -18,6 +19,9 @@ Replace the legacy Production application and application database with the cano
 - Active migrations begin at 20260826110330 and presuppose an established pre-6.17 schema. The canonical historical lineage lives in supabase/migrations/DEVELOPMENT_PLATFORM_FOUNDATION_LINEAGE.json; old source artifacts in supabase/migration-archive/development-pre-canonical-reconciliation-20261104.
 - tools/production-release/controlled-production-manifest.json is an old incremental/historical promotion contract (release SHA 9e35e7a5...) and must not be treated as an approved full replacement package.
 - tools/issue-development-initial-platform-bootstrap.cjs is hard-coded to Development project, user, device, and origin. It MUST NOT be run for Production.
+
+## Additional read-only security observation (2026-11-09)
+Development application inventory: platform 13/13 RLS, platform_private 11/11 RLS, public 46/46 RLS, reservations 15/15 RLS, reservations_private 0/1 RLS. The reservations_private table is private and requires a grant/exposure review; do not assume an issue solely from RLS status. Security advisor reports 97 informational RLS-without-policy findings; this may be intentional deny-by-default for RPC-only tables, so audit actual grants, execution paths, and exposure before changing any policies. No permissions were changed.
 
 ## Gate A: build a reproducible canonical baseline (BLOCKED)
 1. Inventory schemas, tables, constraints, indexes, triggers, policies, grants, extensions, views, functions, sequences, and data-dependent configuration in Development.
@@ -50,7 +54,7 @@ Acceptance: code/DB/Edge SHA alignment, owner access, no Development requests fr
 5. Bootstrap new owner; validate first device BEFORE opening to real users.
 6. Promote approved source to main via controlled branch replacement; publish GitHub Pages; verify service worker and public config.
 7. Smoke test new event, identity/booking, payment, apology/refund, accommodation/transport, finance/report isolation and permissions. No synthetic financial transactions in real operations unless safely removed and audited.
-8. Keep verified rollback snapshots until acceptance and agreed retention period.
+8. Keep verified rollback snapshots until acceptance and agreed retention period. The snapshots are for disaster recovery only, NOT data migration. The user's explicit no-data requirement does not waive safe rollback of destructive infrastructure changes.
 
 ## Explicit non-goals
 - Do not redesign all screens before first live operation; fix launch-blocking UI defects only.
