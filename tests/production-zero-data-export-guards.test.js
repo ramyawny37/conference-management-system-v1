@@ -48,7 +48,7 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
   const sql = '-- PostgreSQL database dump\\n' +
     'CREATE SCHEMA "platform";\\n' +
     'CREATE TABLE "platform"."example" ("id" integer);\\n' +
-    '-- schema only\\n'.repeat(45);
+    '-- schema only\\n'.repeat(100);
   fs.writeFileSync(executable, '#!/usr/bin/env node\\n' +
     'const fs=require("node:fs");\\n' +
     'if(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\\n' +
