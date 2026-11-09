@@ -19,7 +19,8 @@
 - `83a26c69997db6309deae9a6c331c9638d3a9845`: added `PROJECT_CURRENT_STATE.md`.
 - `007d052c5660322da2fde5d4aa757ba19613530e`: added `ARCHITECTURE_AND_POLICIES.md`.
 - `2512f10aba70c0608231c84b0f79b4b91f9d9d11`: added `WORK_LOG.md`.
-- Current verified `develop` head: `2512f10aba70c0608231c84b0f79b4b91f9d9d11`.
+- Verified `develop` head before the final state-file refresh: `97ea87ac0118b87115e65a8fb4feecd339136dd3`.
+- Final state-file refresh commit: `ec83cfd39a4e061c30820b997112b659f309ddf6`.
 - GitHub compare confirms current `develop` is five commits ahead of `ee0b207c881cae5bee61e20dda198aa0dad0a8ee`, with no divergence.
 
 ### Acceptance and deployment
