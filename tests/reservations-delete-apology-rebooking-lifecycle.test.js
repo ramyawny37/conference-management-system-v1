@@ -41,9 +41,9 @@ test('booking form does not route apologized history through the active duplicat
 });
 
 
-test('successful booking outcome returns to participants list, not booking detail', () => {
-  assert.match(moduleSource, /U=\(\)=>\{k\(null\),Du\("\\\/participants"\)\}/);
-  assert.doesNotMatch(moduleSource, /U=\(\)=>\{if\(!o\?\.bookingId\)return;k\(null\),Du\(\x60\\\/participants\/\$\{o\.bookingId\}\x60\)\}/);
+test('multi-booking outcome keeps new-entry and booking-detail actions distinct', () => {
+  assert.match(moduleSource, /onNew:\(\)=>\{R\(null\),\$\(P=>\[\.\.\.P,Ko\(\x60participant-\$\{Date\.now\(\)\}\x60\)\]\)\}/);
+  assert.match(moduleSource, /onView:\(\)=>\{if\(!G\?\.bookingId\)return;R\(null\),Du\(\x60\\/participants\/\$\{G\.bookingId\}\x60\)\}/);
 });
 
 
