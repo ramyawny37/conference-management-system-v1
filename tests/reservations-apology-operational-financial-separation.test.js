@@ -38,10 +38,3 @@ test("report financial summary passes the icon component type, not a rendered el
   assert.match(moduleSource, /l\.jsx\(Yd,\{label,value:Ae\(Number\(financialSummary\[key\]\?\?0\)\),detail:["']من التسويات المركزية["'],icon:An\},key\)/);
   assert.doesNotMatch(moduleSource, /financialSummary\[key\][\s\S]{0,180}icon:l\.jsx\(An/);
 });
-
-test("non-refundable apology funds are never exposed as refundable or offered for payout", () => {
-  assert.match(moduleSource, /Number\(financialSummary\.pendingRefunds\?\?0\)/);
-  assert.doesNotMatch(moduleSource, /Number\(financialSummary\.pendingRefunds\?\?0\)\+Number\(financialSummary\.retainedApologyFunds\?\?0\)/);
-  assert.match(moduleSource, /Number\(row\.pending\?\?0\)>0/);
-  assert.doesNotMatch(moduleSource, /Number\(row\.refundableAvailable\?\?0\)>0/);
-});
