@@ -19,14 +19,15 @@ test("dashboard derives operational KPIs and recent bookings from active booking
 
 test("reports preserve historical totals while separating active and apologized finance", () => {
   for (const label of [
-    "إجمالي الاشتراكات التاريخية",
-    "الحجوزات الفعالة",
-    "المحصل من الفعالين",
-    "المتبقي المطلوب تحصيله",
-    "المعتذرون",
-    "المحصل من المعتذرين",
-    "حجوزات فعالة عليها رصيد",
+    "قيمة الحجوزات الفعالة",
+    "المتحصل من الحجوزات الفعالة",
+    "المتبقي على الحجوزات الفعالة",
+    "المتحصل من المعتذرين",
+    "المتحصل من المحذوفين",
+    "إجمالي المتحصل",
+    "إجمالي قيمة الحجوزات التاريخية",
     "التسويات المالية والاعتذارات",
+    "التسويات المتاحة للرد",
     "سجل رد المبالغ حسب تاريخ الصرف الفعلي"
   ]) assert.ok(moduleSource.includes(label), label);
   assert.match(moduleSource, /apologyReportRows=.*lifecycleStatus===["']apologized["']/);
@@ -34,11 +35,11 @@ test("reports preserve historical totals while separating active and apologized 
 });
 
 
-test("report financial summary passes the icon component type, not a rendered element", () => {
-  assert.match(moduleSource, /l\.jsx\(Yd,\{label,value:Ae\(Number\(financialSummary\[key\]\?\?0\)\),detail:["']من التسويات المركزية["'],icon:An\},key\)/);
+test("financial settlement summary uses component references directly", () => {
+  assert.match(moduleSource, /label:"إجمالي المتحصل",value:Ae\(Number\(financialSummary\.grossCollected\?\?0\)\),detail:"كل الدفعات الفعلية قبل الرد",icon:An/);
+  assert.match(moduleSource, /label:"المرتجعات المنفذة فعليًا",value:Ae\(Number\(financialSummary\.actualRefunds\?\?0\)\),detail:"حسب تاريخ الصرف الفعلي",icon:An/);
   assert.doesNotMatch(moduleSource, /financialSummary\[key\][\s\S]{0,180}icon:l\.jsx\(An/);
 });
-
 
 test("attendance, operations, payments, and booking actions require active lifecycle", () => {
   assert.match(moduleSource, /Ao\(a\)\.filter\(N=>N\.booking\.lifecycleStatus===["']active["']\)/);

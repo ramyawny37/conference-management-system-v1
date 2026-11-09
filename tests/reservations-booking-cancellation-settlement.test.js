@@ -110,9 +110,9 @@ test('credit redemption is source allocated, but is not yet booked as a payment 
 
 test('apologized booking details cannot offer edits or new payments',()=>{
   assert.match(runtime,/onClick:qe,disabled:xe\|\|m\.lifecycleStatus==="apologized"/);
-  assert.match(runtime,/m\.lifecycleStatus!=="apologized"&&l\.jsxs\(Se,\{onClick:\(\)=>\$\(!0\)/);
-  assert.match(runtime,/action:m\.lifecycleStatus!=="apologized"\?/);
-  assert.match(runtime,/V&&m\.lifecycleStatus!=="apologized"&&l\.jsx\(Jo/);
+  assert.match(runtime,/m\.lifecycleStatus==="active"&&l\.jsxs\(Se,\{onClick:\(\)=>\$\(!0\)/);
+  assert.match(runtime,/action:m\.lifecycleStatus==="active"\?/);
+  assert.match(runtime,/V&&m\.lifecycleStatus==="active"&&l\.jsx\(Jo/);
 });
 
 const voidGuardCutover=fs.readFileSync(path.join(root,'supabase/migrations/20261105213000_reservations_apologized_payment_void_guard.sql'),'utf8');
@@ -121,7 +121,7 @@ test('post-apology payment history cannot be voided through the canonical SQL wr
   assert.match(voidGuardCutover,/guard_booking\.lifecycle_status<>''active''/);
   assert.match(voidGuardCutover,/RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE/);
   assert.match(runtime,/disabled:m\.lifecycleStatus==="apologized",children:\[l\.jsx\(Gj/);
-  assert.match(runtime,/q&&m\.lifecycleStatus!=="apologized"&&l\.jsx\(mb/);
+  assert.match(runtime,/q&&m\.lifecycleStatus==="active"&&l\.jsx\(mb/);
 });
 
 const recordPaymentGuardCutover=fs.readFileSync(path.join(root,'supabase/migrations/20261105214000_reservations_payment_record_scope_guard.sql'),'utf8');
