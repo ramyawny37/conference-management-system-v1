@@ -39,10 +39,12 @@ if (result.error || result.status !== 0) {
 }
 const sql = result.stdout;
 if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
+if (!/^-- PostgreSQL database dump/m.test(sql)) fail('Output is not a recognizable PostgreSQL schema dump');
+if (!/CREATE SCHEMA|CREATE TABLE|CREATE FUNCTION|CREATE VIEW/i.test(sql)) fail('No application schema objects found');
 if (/^\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\b/im.test(sql)) fail('Data manipulation found in schema-only output');
 if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(sql)) fail('Role creation in schema output is forbidden');
 if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
-if (/^\\s*(CREATE|ALTER)\\s+(DATABASE|TABLESPACE)\\b/im.test(sql)) fail('Database-level DDL in application schema output');
+if (/^\s*(CREATE|ALTER)\s+(DATABASE|TABLESPACE)\b/im.test(sql)) fail('Database-level DDL in application schema output');
 const digest = crypto.createHash('sha256').update(sql).digest('hex');
 const outputDir = path.resolve(__dirname, '../../.release-local');
 fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
