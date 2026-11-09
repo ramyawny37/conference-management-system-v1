@@ -108,6 +108,19 @@ jobs:
             test "$status" -ne 0
             grep -Eq 'override forbidden|overrides forbidden' /tmp/redirect-negative.log
           done
+      - name: Reject schema-only dump with stripped ACLs before connecting
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump="$(mktemp /tmp/release-schema-only-XXXXXX.sql)"
+          printf '%s\n' '-- PostgreSQL database dump' 'CREATE TABLE public.fixture (id integer);' > "$dump"
+          set +e
+          env RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=localhost PGDATABASE=release_rehearsal_ci PGUSER=postgres PGPASSWORD=ci_disposable_only bash tools/production-release/rehearse-clean-bootstrap.sh "$dump" > /tmp/missing-acl-negative.log 2>&1
+          status=$?
+          set -e
+          rm -f "$dump"
+          test "$status" -ne 0
+          grep -F 'Schema-only dump has no ACL replay' /tmp/missing-acl-negative.log
       - name: Assert incomplete foundation is rejected
         shell: bash
         run: |
