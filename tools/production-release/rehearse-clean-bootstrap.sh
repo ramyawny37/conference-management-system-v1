@@ -18,8 +18,9 @@ if grep -Eiq '^[[:space:]]*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)[[:space:]]' "$du
 if grep -Eiq '^[[:space:]]*(CREATE|ALTER)[[:space:]]+(ROLE|USER|DATABASE|TABLESPACE)[[:space:]]' "$dump"; then fail "Dump contains privileged cluster DDL"; fi
 # Exporter strips ACLs; without an approved grants replay the artifact
 # cannot establish the secure canonical database, regardless of schema parity.
-if ! grep -Eiq '^[[:space:]]*(GRANT|REVOKE|ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES)[[:space:]]' "$dump"; then
-  fail "Schema-only dump has no ACL replay; reviewed grants/default privileges are required before full rehearsal"
+if ! grep -Eiq '^[[:space:]]*GRANT[[:space:]]' "$dump" ||
+   ! grep -Eiq '^[[:space:]]*ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES[[:space:]]' "$dump"; then
+  fail "Schema-only dump lacks GRANT or ALTER DEFAULT PRIVILEGES replay; reviewed ACL restoration is required"
 fi
 echo "Rehearsing schema in disposable local database (no hosted connections)"
 psql -X -v ON_ERROR_STOP=1 -1 -f "$dump" >/dev/null
