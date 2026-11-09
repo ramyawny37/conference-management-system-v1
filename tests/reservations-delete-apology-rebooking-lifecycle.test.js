@@ -42,3 +42,13 @@ test('successful booking outcome returns to participants list, not booking detai
   assert.match(moduleSource, /U=\(\)=>\{k\(null\),Du\("\\\/participants"\)\}/);
   assert.doesNotMatch(moduleSource, /U=\(\)=>\{if\(!o\?\.bookingId\)return;k\(null\),Du\(\x60\\\/participants\/\$\{o\.bookingId\}\x60\)\}/);
 });
+
+
+test('financial report separates booking value from cash and exposes one settlement refund path', () => {
+  assert.match(moduleSource, /label:"قيمة الحجوزات الفعالة"/);
+  assert.match(moduleSource, /label:"المتحصل من الحجوزات الفعالة"/);
+  assert.match(moduleSource, /label:"إجمالي المتحصل"/);
+  assert.match(moduleSource, /children:"التسويات المتاحة للرد"/);
+  assert.match(moduleSource, /children:"تنفيذ رد"/);
+  assert.match(moduleSource, /Me\.disburseRefund/);
+});
