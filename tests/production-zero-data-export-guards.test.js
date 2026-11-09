@@ -48,6 +48,8 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
   const sql = '-- PostgreSQL database dump\n' +
     'CREATE SCHEMA "platform";\n' +
     'CREATE TABLE "platform"."example" ("id" integer);\n' +
+    'GRANT USAGE ON SCHEMA "platform" TO "authenticated";\n' +
+    'ALTER DEFAULT PRIVILEGES IN SCHEMA "platform" GRANT EXECUTE ON FUNCTIONS TO "authenticated";\n' +
     '-- schema only\n'.repeat(100);
   fs.writeFileSync(executable, '#!/usr/bin/env node\n' +
     'const fs=require("node:fs");\n' +
@@ -66,7 +68,8 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
     assert.equal(invocation.serviceFile, null);
     assert.equal(invocation.options, '-c default_transaction_read_only=on');
     assert.ok(invocation.args.includes('--schema-only'));
-    assert.ok(invocation.args.includes('--no-privileges'));
+    assert.ok(!invocation.args.includes('--no-privileges'));
+    assert.equal(JSON.parse(r.stdout).aclIncluded, true);
     assert.ok(!invocation.args.some(arg => arg.includes('dummy-password')));
     assert.equal(JSON.parse(r.stdout).dataIncluded, false);
     const artifact = path.resolve(__dirname, '../.release-local/development-application-schema-only.sql');
