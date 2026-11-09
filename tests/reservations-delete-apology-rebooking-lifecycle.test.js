@@ -17,7 +17,8 @@ test('delete is an operational lifecycle state and retains financial history', (
 test('only an active booking blocks registering the same person in the event', () => {
   assert.match(migration, /existing_booking\.lifecycle_status='active'/);
   assert.match(moduleSource, /كان معتذرًا في نفس الفعالية/);
-  assert.match(moduleSource, /هل تريد إعادة حجزه في نفس الفعالية؟/);\n  assert.match(moduleSource, /existing\?\.booking\.lifecycleStatus===\"active\"/);
+  assert.match(moduleSource, /هل تريد إعادة حجزه في نفس الفعالية؟/);
+  assert.match(moduleSource, /existing\?\.booking\.lifecycleStatus===\"active\"/);
 });
 
 test('deleted bookings leave operations but remain available to financial reports', () => {
