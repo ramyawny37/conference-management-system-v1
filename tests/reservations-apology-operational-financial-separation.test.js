@@ -30,7 +30,7 @@ test("reports preserve historical totals while separating active and apologized 
     "سجل رد المبالغ حسب تاريخ الصرف الفعلي"
   ]) assert.ok(moduleSource.includes(label), label);
   assert.match(moduleSource, /apologyReportRows=.*lifecycleStatus===["']apologized["']/);
-  assert.match(moduleSource, /activeReportRows=.*lifecycleStatus!==["']apologized["']/);
+  assert.match(moduleSource, /activeReportRows=.*lifecycleStatus===["']active["']/);
 });
 
 
@@ -39,7 +39,8 @@ test("report financial summary passes the icon component type, not a rendered el
   assert.doesNotMatch(moduleSource, /financialSummary\[key\][\s\S]{0,180}icon:l\.jsx\(An/);
 });
 
-\ntest("attendance, operations, payments, and booking actions require active lifecycle", () => {
+
+test("attendance, operations, payments, and booking actions require active lifecycle", () => {
   assert.match(moduleSource, /Ao\(a\)\.filter\(N=>N\.booking\.lifecycleStatus===["']active["']\)/);
   assert.match(moduleSource, /Ao\(s\)\.filter\(X=>X\.booking\.lifecycleStatus===["']active["']\)/);
   assert.match(moduleSource, /Ao\(a\)\.filter\(D=>D\.booking\.lifecycleStatus===["']active["']\)/);
