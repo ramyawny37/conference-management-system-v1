@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync('js/platform-integration.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
-const reservationsRevision='reservations-apology-operational-financial-v3';
+const reservationsRevision='reservations-lifecycle-active-only-v4';
 
 function runtime(initialRoute='/'){
   let route=initialRoute;
@@ -112,7 +112,7 @@ test('Reservations global navigation and static bundle stay inside the unified P
     assert.ok(index.includes(reference),`index missing ${reference}`);
     assert.ok(worker.includes(`./${reference}`),`service worker missing ${reference}`);
   }
-  assert.match(worker,/\? 'development-reservations-apology-operational-financial-v3'/);
+  assert.match(worker,/\? 'development-reservations-lifecycle-active-only-v4'/);
   assert.doesNotMatch(worker,/reservations-root-boundary-v1|participant-quick-actions-v1|conference-owner-preflight-correction-v1/);
   assert.ok(fs.existsSync('modules/reservations/reservations-module.js'));
   assert.ok(fs.existsSync('modules/reservations/reservations-module.css'));
