@@ -7,3 +7,12 @@
 [data-ui="booking-type-dialog-footer"]>div:last-child{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;min-width:0}
 [data-ui="booking-type-dialog-footer"] button{flex:0 0 auto;min-width:88px;min-height:40px;white-space:nowrap}
 @media(min-width:640px){[data-ui="booking-type-dialog-footer"]{align-items:center}}
+
+/* Canonical reservations financial settlement layout. Scoped to this report only. */
+[data-ui="cancellation-financial-summary"] .platform-stat-card{min-height:0;justify-content:flex-start;gap:.75rem}
+[data-ui="cancellation-financial-summary"] .platform-stat-card__footer{margin-top:0;white-space:normal}
+[data-ui="cancellation-financial-summary"] .platform-stat-card__footer p{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.5}
+[data-ui="cancellation-financial-summary"] .reservation-refund-settlement-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:.75rem;min-width:0;direction:rtl}
+[data-ui="cancellation-financial-summary"] .reservation-refund-settlement-row>div{min-width:0;overflow-wrap:anywhere}
+[data-ui="cancellation-financial-summary"] .reservation-refund-settlement-action{display:inline-flex;width:100%;min-width:max-content;justify-content:center;white-space:nowrap;align-items:center}
+@media(min-width:640px){[data-ui="cancellation-financial-summary"] .reservation-refund-settlement-row{grid-template-columns:minmax(0,1fr) max-content}[data-ui="cancellation-financial-summary"] .reservation-refund-settlement-action{width:auto}}
