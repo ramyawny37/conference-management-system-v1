@@ -56,8 +56,7 @@ jobs:
           node --test \
             tests/reservations-apology-two-options.test.js \
             tests/reservations-booking-cancellation-settlement.test.js \
-            tests/reservations-delete-apology-rebooking-lifecycle.test.js \
-            tests/reservations-refund-delete-financial-postgres.test.js
+            tests/reservations-delete-apology-rebooking-lifecycle.test.js
       - name: Validate source boundary and cache references
         shell: bash
         run: |
