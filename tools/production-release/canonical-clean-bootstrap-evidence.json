@@ -1,0 +1,12 @@
+{
+  "sourceProjectRef": "gppwltrifgfxrkzvvxoe",
+  "targetProjectRef": "mpezfbvcdfxpgflehuot",
+  "dataMigration": false,
+  "localBootstrap": "PASS",
+  "ownerDeviceLifecycle": "PASS",
+  "securityAudit": "PASS",
+  "reviewed": true,
+  "sourceCommit": "031fc49c44bec9559d568b5e8b170c5b0f282a0c",
+  "workflowRunId": "42788280940",
+  "bootstrapSha256": "4483e29e28a13ea68a3a9353b58a4d30fd8248f8bf91d0fa6e6ff0d218451abf"
+}
