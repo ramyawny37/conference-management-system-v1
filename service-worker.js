@@ -49,9 +49,9 @@ const CORE_ASSETS = [
   './js/supabase/device-identity.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-enrollment.js?rev=account-scoped-device-key-selection-v1',
 
-  './js/supabase/device-authorization-administration-service.js?rev=canonical-owner-session-list-v1',
+  './js/supabase/device-authorization-administration-service.js?rev=canonical-owner-passkey-gate-v2',
 
-  './js/sync/device-authorization-administration-ui.js?rev=canonical-owner-session-list-v1',
+  './js/sync/device-authorization-administration-ui.js?rev=canonical-owner-passkey-gate-v2',
   './js/sync/startup-conference-discovery.js?rev=shared-template-library-v1',
   './js/sync/conference-locks.js?rev=conference-lock-release-diagnostics-v1',
   './js/sync/conference-edit-lock-manager.js?rev=canonical-conference-id-v1',
