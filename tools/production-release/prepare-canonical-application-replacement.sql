@@ -88,6 +88,10 @@ $dependencies$;
 DO $managed_defaults$
 DECLARE n bigint; digest text;
 BEGIN
+  IF to_regclass('auth.users') IS NULL
+     OR NOT has_table_privilege(current_user,'auth.users','REFERENCES') THEN
+    RAISE EXCEPTION 'SUPABASE_MANAGED_AUTH_USERS_REFERENCES_MISSING';
+  END IF;
   WITH entries AS (
     SELECT 'default:'||ns.nspname||':'||owner.rolname||':'||coalesce(grantee.rolname,'PUBLIC')||':'||
            d.defaclobjtype::text||':'||x.privilege_type item

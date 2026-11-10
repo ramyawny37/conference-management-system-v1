@@ -142,6 +142,7 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   assert.doesNotMatch(seed, /^\s*(?:BEGIN|COMMIT|ROLLBACK)\s*;/im);
   assert.match(preparation, /CUTOVER_OPERATIONAL_DATA_PRESENT/);
   assert.match(preparation, /CUTOVER_MANAGED_DEPENDENCY_BLOCKED/);
+  assert.match(preparation, /SUPABASE_MANAGED_AUTH_USERS_REFERENCES_MISSING/);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im);
   assert.match(workflow, /workflow_dispatch:/);
   assert.doesNotMatch(workflow, /^\s*push\s*:/m);
