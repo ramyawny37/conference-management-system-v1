@@ -42,6 +42,7 @@ psql -X -v ON_ERROR_STOP=1 -1 -f tests/fixtures/supabase-managed-foundation.sql 
 psql -X -v ON_ERROR_STOP=1 -1 >/dev/null <<'SQL'
 SET ROLE postgres;
 CREATE SCHEMA platform;
+CREATE SCHEMA platform_private;
 CREATE TABLE platform.audit_events (id bigint PRIMARY KEY, payload jsonb NOT NULL);
 CREATE TABLE platform.roles (id bigint PRIMARY KEY, code text NOT NULL);
 CREATE TABLE platform.permissions (id bigint PRIMARY KEY, code text NOT NULL);
