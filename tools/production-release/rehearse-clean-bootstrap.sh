@@ -20,62 +20,37 @@ dump="$1"
 grep -q '^-- PostgreSQL database dump' "$dump" || fail "Unrecognized schema-only dump"
 if grep -Fq -- '-- Data for Name:' "$dump" || grep -Eiq '^COPY[[:space:]].*FROM[[:space:]]+stdin;[[:space:]]*$' "$dump"; then fail "Dump contains table data"; fi
 if grep -Eiq '^[[:space:]]*(CREATE|ALTER)[[:space:]]+(ROLE|USER|DATABASE|TABLESPACE)[[:space:]]' "$dump"; then fail "Dump contains privileged cluster DDL"; fi
-# Exporter strips ACLs; without an approved grants replay the artifact
-# cannot establish the secure canonical database, regardless of schema parity.
+# The application artifact retains application ACLs but must exclude the
+# Supabase-owned public namespace and supabase_admin default ACL replay.
 if ! grep -Eiq '^[[:space:]]*GRANT[[:space:]]' "$dump" ||
    ! grep -Eiq '^[[:space:]]*ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES[[:space:]]' "$dump"; then
   fail "Schema-only dump lacks GRANT or ALTER DEFAULT PRIVILEGES replay; reviewed ACL restoration is required"
 fi
+if grep -Eiq '^[[:space:]]*CREATE[[:space:]]+SCHEMA[[:space:]]+"?public"?[[:space:]]*;' "$dump"; then
+  fail "Application bootstrap must preserve the Supabase-managed public namespace"
+fi
+if grep -Eiq 'ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES[[:space:]]+FOR[[:space:]]+ROLE[[:space:]]+"?supabase_admin"?' "$dump"; then
+  fail "Application bootstrap must not replay Supabase-managed default privileges"
+fi
+[[ "${RELEASE_APPLICATION_ROLE:-postgres}" == "postgres" ]] || fail "Application executor role must be postgres"
 echo "Rehearsing schema in disposable local database (no hosted connections)"
-# Minimal Supabase-managed foundation required by the application dump. These objects
-# are intentionally outside the replacement boundary and already exist on hosted Supabase.
-psql -X -v ON_ERROR_STOP=1 -1 <<'SQL' >/dev/null
-DO $roles$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN CREATE ROLE supabase_admin NOLOGIN; END IF;
-END
-$roles$;
-CREATE SCHEMA IF NOT EXISTS "extensions";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "btree_gist" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "supabase_vault";
-CREATE SCHEMA IF NOT EXISTS "auth";
-CREATE TABLE IF NOT EXISTS "auth"."users" (
-  "id" uuid PRIMARY KEY,
-  "email" text,
-  "raw_user_meta_data" jsonb,
-  "created_at" timestamptz DEFAULT now()
-);
-CREATE OR REPLACE FUNCTION "auth"."uid"() RETURNS uuid
-LANGUAGE sql STABLE SET search_path = ''
-AS $auth$ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.sub', true), '')::uuid $auth$;
-CREATE OR REPLACE FUNCTION "auth"."role"() RETURNS text
-LANGUAGE sql STABLE SET search_path = ''
-AS $auth$ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.role', true), '') $auth$;
-CREATE OR REPLACE FUNCTION "auth"."jwt"() RETURNS jsonb
-LANGUAGE sql STABLE SET search_path = ''
-AS $auth$ SELECT COALESCE(NULLIF(pg_catalog.current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb) $auth$;
-SQL
-# Rehearse the same zero-data replacement boundary intended for hosted release:
-# only the five application schemas are cleared; PostgreSQL/Supabase-managed schemas are out of scope.
-psql -X -v ON_ERROR_STOP=1 -1 <<'SQL' >/dev/null
-DROP SCHEMA IF EXISTS "reservations_private" CASCADE;
-DROP SCHEMA IF EXISTS "reservations" CASCADE;
-DROP SCHEMA IF EXISTS "platform_private" CASCADE;
-DROP SCHEMA IF EXISTS "platform" CASCADE;
-DROP SCHEMA IF EXISTS "public" CASCADE;
-SQL
-psql -X -v ON_ERROR_STOP=1 -1 -f "$dump" >/dev/null
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql >/dev/null
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-full-foundation.sql
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-structural-parity.sql
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-first-owner-device-security.sql
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-access-parity.sql
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-ambient-grants.sql
-psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-default-grants.sql
+# The managed foundation is established separately by the fixture administrator.
+psql -X -v ON_ERROR_STOP=1 -1 -f tests/fixtures/supabase-managed-foundation.sql >/dev/null
+cutover="$(mktemp /tmp/canonical-application-cutover-XXXXXX.sql)"
+trap 'rm -f "$cutover"' EXIT
+{
+  echo 'BEGIN;'
+  if [[ "${PGUSER}" != "postgres" ]]; then echo 'SET LOCAL ROLE "postgres";'; fi
+  cat tools/production-release/prepare-canonical-application-replacement.sql
+  cat "$dump"
+  cat tools/production-release/canonical-system-catalog-seed.sql
+  cat tools/production-release/assert-canonical-full-foundation.sql
+  cat tools/production-release/assert-canonical-structural-parity.sql
+  cat tools/production-release/assert-first-owner-device-security.sql
+  cat tools/production-release/assert-canonical-access-parity.sql
+  cat tools/production-release/assert-canonical-ambient-grants.sql
+  cat tools/production-release/assert-canonical-default-grants.sql
+  echo 'COMMIT;'
+} > "$cutover"
+psql -X -v ON_ERROR_STOP=1 -f "$cutover"
 echo "PASS: disposable structural rehearsal (owner/device and Edge Functions remain separate gates)"

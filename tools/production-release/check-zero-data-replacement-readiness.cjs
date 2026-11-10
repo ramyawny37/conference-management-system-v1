@@ -28,6 +28,25 @@ const audit = read('tools/production-release/canonical-clean-bootstrap-readonly-
 check('read_only_audit_available', audit.includes('platform_owner') && audit.includes('relrowsecurity'), 'Structural/owner audit is available');
 const bootstrap = path.join(root, 'tools/production-release/canonical-clean-bootstrap.sql');
 check('clean_bootstrap_artifact', fs.existsSync(bootstrap), 'A verified complete foundation script is required');
+if (fs.existsSync(bootstrap)) {
+  const applicationBootstrap = fs.readFileSync(bootstrap, 'utf8');
+  check('managed_foundation_separated',
+    !/^CREATE\s+SCHEMA\s+"?public"?\s*;/im.test(applicationBootstrap) &&
+    !/ALTER\s+DEFAULT\s+PRIVILEGES\s+FOR\s+ROLE\s+"?supabase_admin"?/i.test(applicationBootstrap),
+    'Application bootstrap preserves public and never rewrites supabase_admin defaults');
+}
+const preparation = read('tools/production-release/prepare-canonical-application-replacement.sql');
+check('fail_closed_cutover_guards',
+  preparation.includes('CUTOVER_OPERATIONAL_DATA_PRESENT') &&
+  preparation.includes('CUTOVER_MANAGED_DEPENDENCY_BLOCKED') &&
+  !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im.test(preparation),
+  'Zero-data and managed-dependency guards run while the managed public namespace is preserved');
+const seed = read('tools/production-release/canonical-system-catalog-seed.sql');
+check('seed_joins_outer_transaction', !/^\s*(BEGIN|COMMIT|ROLLBACK)\s*;/im.test(seed),
+  'Catalog seed contains no nested transaction boundary');
+const productionWorkflow = read('.github/workflows/execute-zero-data-production-clean-cutover.yml');
+check('production_workflow_manual_only', productionWorkflow.includes('workflow_dispatch:') &&
+  !/^\s*push\s*:/m.test(productionWorkflow), 'Production cutover is manual-only');
 const evidence = path.join(root, 'tools/production-release/canonical-clean-bootstrap-evidence.json');
 let approved = false;
 if (fs.existsSync(evidence)) {

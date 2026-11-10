@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { buildApplicationBootstrap } = require('../tools/production-release/application-bootstrap-contract.cjs');
 
 const script = path.resolve(__dirname, '../tools/production-release/export-development-schema-only.cjs');
 const dev = 'postgresql://postgres:dummy-password@db.gppwltrifgfxrkzvvxoe.supabase.co:5432/postgres';
@@ -13,6 +14,18 @@ const run = (url, overrides={}) => spawnSync(process.execPath, [script], {
   encoding: 'utf8',
   env: { ...process.env, DEVELOPMENT_DATABASE_URL: url, ...overrides },
 });
+const dumpSection = (name, type, schema, body) =>
+  `--\n-- Name: ${name}; Type: ${type}; Schema: ${schema}; Owner: -\n--\n\n${body}\n\n`;
+const mockDump = (extra='') => '-- PostgreSQL database dump\n' +
+  dumpSection('platform', 'SCHEMA', '-', 'CREATE SCHEMA "platform";') +
+  dumpSection('public', 'SCHEMA', '-', 'CREATE SCHEMA "public";') +
+  dumpSection('example', 'TABLE', 'platform', 'CREATE TABLE "platform"."example" ("id" integer);') +
+  dumpSection('SCHEMA "platform"', 'ACL', '-', 'GRANT USAGE ON SCHEMA "platform" TO "authenticated";') +
+  dumpSection('DEFAULT PRIVILEGES FOR FUNCTIONS', 'DEFAULT ACL', 'public',
+    'ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";') +
+  dumpSection('DEFAULT PRIVILEGES FOR FUNCTIONS', 'DEFAULT ACL', 'public',
+    'ALTER DEFAULT PRIVILEGES FOR ROLE "supabase_admin" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";') +
+  extra + '--\n-- PostgreSQL database dump complete\n--\n\n\\unrestrict mock-token\n' + '-- padding\n'.repeat(100);
 test('rejects Production connection before launching pg_dump', () => {
   const r = run(prod);
   assert.equal(r.status, 1);
@@ -55,15 +68,14 @@ test('does not log secret on malformed database URL', () => {
 test('schema-only guard allows DML inside function bodies but rejects dumped table data', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-schema-dml-'));
   const executable = path.join(dir, 'pg_dump');
-  const base = '-- PostgreSQL database dump\nCREATE SCHEMA "platform";\nCREATE TABLE "platform"."example" ("id" integer);\nGRANT USAGE ON SCHEMA "platform" TO "authenticated";\nALTER DEFAULT PRIVILEGES IN SCHEMA "platform" GRANT EXECUTE ON FUNCTIONS TO "authenticated";\n';
-  const functionSql = base + 'CREATE FUNCTION "platform"."writer"() RETURNS void LANGUAGE plpgsql AS $fn$\nBEGIN\n  UPDATE "platform"."example" SET "id" = 1;\nEND;\n$fn$;\n' + '-- schema only\n'.repeat(100);
+  const functionSql = mockDump(dumpSection('writer()', 'FUNCTION', 'platform', 'CREATE FUNCTION "platform"."writer"() RETURNS void LANGUAGE plpgsql AS $fn$\nBEGIN\n  UPDATE "platform"."example" SET "id" = 1;\nEND;\n$fn$;'));
   fs.writeFileSync(executable, '#!/usr/bin/env node\nif(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\nprocess.stdout.write(' + JSON.stringify(functionSql) + ');\n', { mode: 0o700 });
   try {
     const ok = run(dev, { PG_DUMP_BIN: executable });
     assert.equal(ok.status, 0, ok.stderr);
     const artifact = path.resolve(__dirname, '../.release-local/development-application-schema-only.sql');
     if (fs.existsSync(artifact)) fs.unlinkSync(artifact);
-    const dataSql = base + '-- Data for Name: example; Type: TABLE DATA; Schema: platform; Owner: postgres\nCOPY "platform"."example" ("id") FROM stdin;\n1\n\\.\n' + '-- padding\n'.repeat(100);
+    const dataSql = mockDump('-- Data for Name: example; Type: TABLE DATA; Schema: platform; Owner: postgres\nCOPY "platform"."example" ("id") FROM stdin;\n1\n\\.\n');
     fs.writeFileSync(executable, '#!/usr/bin/env node\nif(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\nprocess.stdout.write(' + JSON.stringify(dataSql) + ');\n', { mode: 0o700 });
     const blocked = run(dev, { PG_DUMP_BIN: executable });
     assert.equal(blocked.status, 1);
@@ -77,12 +89,7 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-schema-'));
   const executable = path.join(dir, 'pg_dump');
   const marker = path.join(dir, 'invocation.json');
-  const sql = '-- PostgreSQL database dump\n' +
-    'CREATE SCHEMA "platform";\n' +
-    'CREATE TABLE "platform"."example" ("id" integer);\n' +
-    'GRANT USAGE ON SCHEMA "platform" TO "authenticated";\n' +
-    'ALTER DEFAULT PRIVILEGES IN SCHEMA "platform" GRANT EXECUTE ON FUNCTIONS TO "authenticated";\n' +
-    '-- schema only\n'.repeat(100);
+  const sql = mockDump();
   fs.writeFileSync(executable, '#!/usr/bin/env node\n' +
     'const fs=require("node:fs");\n' +
     'if(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\n' +
@@ -102,12 +109,42 @@ test('mock pg_dump writes schema-only artifact without leaking credentials to ar
     assert.ok(invocation.args.includes('--schema-only'));
     assert.ok(!invocation.args.includes('--no-privileges'));
     assert.equal(JSON.parse(r.stdout).aclIncluded, true);
+    assert.equal(JSON.parse(r.stdout).managedFoundationIncluded, false);
     assert.ok(!invocation.args.some(arg => arg.includes('dummy-password')));
     assert.equal(JSON.parse(r.stdout).dataIncluded, false);
     const artifact = path.resolve(__dirname, '../.release-local/development-application-schema-only.sql');
-    assert.equal(fs.readFileSync(artifact, 'utf8'), sql);
+    const written = fs.readFileSync(artifact, 'utf8');
+    assert.equal(written, buildApplicationBootstrap(sql));
+    assert.doesNotMatch(written, /CREATE SCHEMA "public"/);
+    assert.doesNotMatch(written, /FOR ROLE "supabase_admin"/);
+    assert.match(written, /FOR ROLE "postgres"/);
     fs.unlinkSync(artifact);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('application bootstrap preserves application ACLs and excludes managed foundation sections', () => {
+  const artifact = buildApplicationBootstrap(mockDump());
+  assert.match(artifact, /CREATE SCHEMA "platform"/);
+  assert.match(artifact, /GRANT USAGE ON SCHEMA "platform"/);
+  assert.match(artifact, /FOR ROLE "postgres"/);
+  assert.doesNotMatch(artifact, /CREATE SCHEMA "public"/);
+  assert.doesNotMatch(artifact, /FOR ROLE "supabase_admin"/);
+  assert.match(artifact, /^\\unrestrict mock-token/m);
+});
+
+test('cutover contract is one outer transaction with fail-closed guards', () => {
+  const root = path.resolve(__dirname, '..');
+  const seed = fs.readFileSync(path.join(root, 'tools/production-release/canonical-system-catalog-seed.sql'), 'utf8');
+  const preparation = fs.readFileSync(path.join(root, 'tools/production-release/prepare-canonical-application-replacement.sql'), 'utf8');
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/execute-zero-data-production-clean-cutover.yml'), 'utf8');
+  assert.doesNotMatch(seed, /^\s*(?:BEGIN|COMMIT|ROLLBACK)\s*;/im);
+  assert.match(preparation, /CUTOVER_OPERATIONAL_DATA_PRESENT/);
+  assert.match(preparation, /CUTOVER_MANAGED_DEPENDENCY_BLOCKED/);
+  assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /^\s*push\s*:/m);
+  assert.match(workflow, /echo 'BEGIN;'/);
+  assert.match(workflow, /echo 'COMMIT;'/);
 });

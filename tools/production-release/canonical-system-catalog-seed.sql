@@ -1,7 +1,6 @@
 -- Canonical system catalog seed. Extracted 2026-11-09 from Development read-only.
 -- System roles, system permissions and role mappings ONLY. No personal/event data.
 -- REQUIRES complete validated schema foundation; not a standalone bootstrap.
-BEGIN;
 INSERT INTO platform.roles (code,domain,name,description,scope_type,is_system,is_assignable) VALUES ('accommodation_manager','conference','Accommodation Manager','Manages accommodation and reads the people required for room assignment.','conference',TRUE,TRUE) ON CONFLICT (domain,code) DO NOTHING;
 INSERT INTO platform.roles (code,domain,name,description,scope_type,is_system,is_assignable) VALUES ('conference_manager','conference','Conference Manager','Manages authorized operational areas and delegates responsibilities inside one Conference.','conference',TRUE,TRUE) ON CONFLICT (domain,code) DO NOTHING;
 INSERT INTO platform.roles (code,domain,name,description,scope_type,is_system,is_assignable) VALUES ('conference_viewer','conference','Conference Viewer','Reads non-financial Conference operational sections without mutation authority.','conference',TRUE,TRUE) ON CONFLICT (domain,code) DO NOTHING;
@@ -186,4 +185,3 @@ BEGIN
  THEN RAISE EXCEPTION 'Canonical system catalog fingerprint mismatch'; END IF;
 END
 $catalog_integrity$;
-COMMIT;

@@ -5,6 +5,8 @@ on:
     branches: [develop]
     paths:
       - 'tools/production-release/export-development-schema-only.cjs'
+      - 'tools/production-release/application-bootstrap-contract.cjs'
+      - 'tools/production-release/prepare-canonical-application-replacement.sql'
       - 'tools/production-release/check-zero-data-replacement-readiness.cjs'
       - 'tests/production-zero-data-export-guards.test.js'
       - 'tests/fixtures/production-release-catalog-contract.sql'
@@ -17,6 +19,7 @@ on:
       - 'tools/production-release/assert-canonical-ambient-grants.sql'
       - 'tools/production-release/assert-canonical-default-grants.sql'
       - 'tools/production-release/rehearse-clean-bootstrap.sh'
+      - 'tests/fixtures/supabase-managed-foundation.sql'
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
       - 'supabase/functions/**'
@@ -141,6 +144,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check tools/production-release/export-development-schema-only.cjs
+          node --check tools/production-release/application-bootstrap-contract.cjs
           node --check tools/production-release/check-zero-data-replacement-readiness.cjs
           node --check tests/production-zero-data-export-guards.test.js
       - name: Verify canonical Edge Function sources are complete
@@ -312,7 +316,8 @@ jobs:
           set -euo pipefail
           psql -v ON_ERROR_STOP=1 -c "UPDATE platform.permissions SET allowed_scope_mode='intentionally_corrupt' WHERE code=(SELECT code FROM platform.permissions WHERE is_system ORDER BY code LIMIT 1)"
           set +e
-          psql -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql > /tmp/seed-negative.log 2>&1
+          { echo 'BEGIN;'; cat tools/production-release/canonical-system-catalog-seed.sql; echo 'COMMIT;'; } > /tmp/seed-transaction.sql
+          psql -v ON_ERROR_STOP=1 -f /tmp/seed-transaction.sql > /tmp/seed-negative.log 2>&1
           status=$?
           set -e
           test "$status" -ne 0

@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { buildApplicationBootstrap } = require('./application-bootstrap-contract.cjs');
 
 const DEV_REF = 'gppwltrifgfxrkzvvxoe';
 const PROD_REF = 'mpezfbvcdfxpgflehuot';
@@ -44,15 +45,18 @@ const result = spawnSync(binary, args, {
 if (result.error || result.status !== 0) {
   fail('Schema-only dump failed; verify permissions, version, connectivity (details withheld to avoid leaking credentials)');
 }
-const sql = result.stdout;
-if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
-if (!/^-- PostgreSQL database dump/m.test(sql)) fail('Output is not a recognizable PostgreSQL schema dump');
-if (!/CREATE SCHEMA|CREATE TABLE|CREATE FUNCTION|CREATE VIEW/i.test(sql)) fail('No application schema objects found');
-if (!/^\s*GRANT\s/im.test(sql) || !/^\s*ALTER\s+DEFAULT\s+PRIVILEGES\s/im.test(sql)) fail('ACL grants/default privileges missing from schema dump');
-if (/^-- Data for Name:/m.test(sql) || /^COPY\s+.+\s+FROM\s+stdin;\s*$/im.test(sql)) fail('Table data found in schema-only output');
-if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(sql)) fail('Role creation in schema output is forbidden');
-if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
-if (/^\s*(CREATE|ALTER)\s+(DATABASE|TABLESPACE)\b/im.test(sql)) fail('Database-level DDL in application schema output');
+const rawSql = result.stdout;
+if (!rawSql || rawSql.length < 1000) fail('Unexpectedly small schema dump');
+if (!/^-- PostgreSQL database dump/m.test(rawSql)) fail('Output is not a recognizable PostgreSQL schema dump');
+if (!/CREATE SCHEMA|CREATE TABLE|CREATE FUNCTION|CREATE VIEW/i.test(rawSql)) fail('No application schema objects found');
+if (!/^\s*GRANT\s/im.test(rawSql) || !/^\s*ALTER\s+DEFAULT\s+PRIVILEGES\s/im.test(rawSql)) fail('ACL grants/default privileges missing from schema dump');
+if (/^-- Data for Name:/m.test(rawSql) || /^COPY\s+.+\s+FROM\s+stdin;\s*$/im.test(rawSql)) fail('Table data found in schema-only output');
+if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(rawSql)) fail('Role creation in schema output is forbidden');
+if (rawSql.includes(connection) || (parsed.password && rawSql.includes(parsed.password))) fail('Credentials detected in dump');
+if (/^\s*(CREATE|ALTER)\s+(DATABASE|TABLESPACE)\b/im.test(rawSql)) fail('Database-level DDL in application schema output');
+let sql;
+try { sql = buildApplicationBootstrap(rawSql); }
+catch { fail('Schema ownership separation failed; pg_dump structure or managed foundation contract drifted'); }
 const digest = crypto.createHash('sha256').update(sql).digest('hex');
 const outputDir = path.resolve(__dirname, '../../.release-local');
 fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
@@ -64,6 +68,7 @@ console.log(JSON.stringify({
   targetProjectRef: PROD_REF,
   dataIncluded: false,
   aclIncluded: true,
+  managedFoundationIncluded: false,
   bytes: Buffer.byteLength(sql),
   sha256: digest,
   file: '.release-local/development-application-schema-only.sql',
