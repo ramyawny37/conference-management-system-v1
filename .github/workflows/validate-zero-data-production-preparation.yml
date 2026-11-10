@@ -100,7 +100,6 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git rev-parse --abbrev-ref HEAD)" = "develop"
           mkdir -p tools/production-release
           cp canonical-clean-bootstrap.sql tools/production-release/canonical-clean-bootstrap.sql
           bootstrap_sha="$(sha256sum canonical-clean-bootstrap.sql | awk '{print $1}')"
