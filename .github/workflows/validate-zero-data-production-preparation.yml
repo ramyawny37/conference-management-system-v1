@@ -64,7 +64,7 @@ jobs:
           PGPASSWORD: ci_disposable_only
         run: |
           set -euo pipefail
-          docker run -d --rm --name release-rehearsal-pg -e POSTGRES_PASSWORD=ci_disposable_only -e POSTGRES_DB=release_rehearsal_ci -p 55432:5432 postgres:17
+          docker run -d --rm --name release-rehearsal-pg -e POSTGRES_PASSWORD=ci_disposable_only -e POSTGRES_DB=release_rehearsal_ci -p 55432:5432 supabase/postgres:17.6.1.136
           trap 'docker rm -f release-rehearsal-pg >/dev/null 2>&1 || true' EXIT
           for i in {1..30}; do
             if /usr/lib/postgresql/17/bin/pg_isready -h 127.0.0.1 -p 55432 -U postgres -d release_rehearsal_ci >/dev/null 2>&1; then break; fi
