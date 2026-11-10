@@ -97,3 +97,20 @@ test('Edge FunctionsHttpError preserves the safe application code for pending-de
   assert.equal(result.error.code,'PLATFORM_DEVICE_MUTATION_CHALLENGE_INVALID');
   assert.equal(invokes,3);
 });
+
+
+test('enrollment-required preflight never probes an operation result or prompts WebAuthn',async()=>{
+  const targetUserId='11111111-1111-4111-8111-111111111111',targetDeviceId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';let actions=[],prompts=0;
+  const client={rpc:()=>Promise.resolve({data:null,error:null}),functions:{invoke(name,{body}){actions.push(body.action);
+    if(body.action==='get-administration-state')return Promise.resolve({data:{ok:true,status:'enrollment_required',data:null},error:null});
+    throw new Error('UNEXPECTED_ACTION:'+body.action);
+  }}};
+  const sandbox={window:null,Promise,Object,Array,String,JSON,Uint8Array,ArrayBuffer,console,atob,btoa,
+    navigator:{credentials:{get:()=>{prompts++;return Promise.reject(new Error('SHOULD_NOT_PROMPT'));}}},crypto:{randomUUID:()=> '44444444-4444-4444-8444-444444444444'},
+    SupabaseClientLayer:{getClient:()=>client},SupabaseAuth:{getSession:()=>({user:{id:targetUserId}})},
+    SupabaseDeviceIdentity:{getOrCreate:()=>({id:'22222222-2222-4222-8222-222222222222'})},PlatformDeviceSession:{}};
+  sandbox.window=sandbox;vm.runInNewContext(serviceSource,sandbox);
+  const result=await sandbox.DeviceAuthorizationAdministrationService.approveSystemOwnerPendingDevice({targetUserId,deviceId:targetDeviceId});
+  assert.equal(result.ok,false);assert.equal(result.status,'enrollment_required');assert.equal(result.error.code,'enrollment_required');
+  assert.deepEqual(actions,['get-administration-state']);assert.equal(prompts,0);
+});
