@@ -59,6 +59,11 @@ BEGIN
         GROUP BY n.nspname
       ) d
     );
+    RAISE NOTICE 'FUNCTION_PROBES: %', (
+      SELECT string_agg(format('%s.%s=%s/%s', n.nspname,p.proname,length(p.prosrc),md5(p.prosrc)), ', ' ORDER BY n.nspname,p.proname)
+      FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE (n.nspname,p.proname) IN (('reservations','mutate'),('platform','has_permission'),('public','complete_first_system_bootstrap'),('platform_private','canonical_device_count'),('reservations_private','read_scoped'))
+    );
     RAISE EXCEPTION 'FOUNDATION_STRUCTURAL_PARITY_FAILED: %',mismatches;
   END IF;
   RAISE NOTICE 'FOUNDATION_STRUCTURAL_PARITY_PASS';
