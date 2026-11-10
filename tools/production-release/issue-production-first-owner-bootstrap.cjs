@@ -6,7 +6,7 @@ const { spawnSync } = require('node:child_process');
 
 const EXPECTED_EMAIL = 'ramyawny37@gmail.com';
 const EXPECTED_RELATION_COUNT = 88;
-const EXPECTED_RELATION_FINGERPRINT = '97a500834dce377bdf487f4d6b8428ce';
+const EXPECTED_RELATION_FINGERPRINT = '2fe1342deeaabe2e9663c931e6632f36';
 
 function fail(message) { throw new Error(message); }
 
