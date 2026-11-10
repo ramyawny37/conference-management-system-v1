@@ -49,6 +49,16 @@ BEGIN
         GROUP BY n.nspname
       ) d
     );
+    RAISE NOTICE 'FUNCTION_SOURCE_DIGESTS: %', (
+      SELECT string_agg(format('%s=%s/%s', schema_name, objects, digest), ', ' ORDER BY schema_name)
+      FROM (
+        SELECT n.nspname schema_name, count(*) objects,
+               md5(string_agg((n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')')||':'||md5(p.prosrc), E'\\n' ORDER BY (n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')')||':'||md5(p.prosrc))) digest
+        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+        WHERE n.nspname IN ('public','platform','platform_private','reservations','reservations_private')
+        GROUP BY n.nspname
+      ) d
+    );
     RAISE EXCEPTION 'FOUNDATION_STRUCTURAL_PARITY_FAILED: %',mismatches;
   END IF;
   RAISE NOTICE 'FOUNDATION_STRUCTURAL_PARITY_PASS';
