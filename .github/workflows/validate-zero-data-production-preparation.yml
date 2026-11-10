@@ -171,7 +171,7 @@ jobs:
           dump="$(mktemp /tmp/release-schema-only-XXXXXX.sql)"
           printf '%s\n' '-- PostgreSQL database dump' 'CREATE TABLE public.fixture (id integer);' > "$dump"
           set +e
-          env RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=localhost PGDATABASE=postgres PGUSER=postgres PGPASSWORD=ci_disposable_only bash tools/production-release/rehearse-clean-bootstrap.sh "$dump" > /tmp/missing-acl-negative.log 2>&1
+          env RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=localhost PGDATABASE=release_contract PGUSER=postgres PGPASSWORD=ci_disposable_only bash tools/production-release/rehearse-clean-bootstrap.sh "$dump" > /tmp/missing-acl-negative.log 2>&1
           status=$?
           set -e
           rm -f "$dump"
@@ -185,7 +185,7 @@ jobs:
           printf '%s\n' '-- PostgreSQL database dump' 'GRANT USAGE ON SCHEMA public TO authenticated;' 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO authenticated;' > "$dump"
           for override in PGOPTIONS=-csearch_path=public PGPORT=not_a_port; do
             set +e
-            env RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=localhost PGDATABASE=postgres PGUSER=postgres PGPASSWORD=ci_disposable_only "$override" bash tools/production-release/rehearse-clean-bootstrap.sh "$dump" > /tmp/libpq-negative.log 2>&1
+            env RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY PGHOST=localhost PGDATABASE=release_contract PGUSER=postgres PGPASSWORD=ci_disposable_only "$override" bash tools/production-release/rehearse-clean-bootstrap.sh "$dump" > /tmp/libpq-negative.log 2>&1
             status=$?
             set -e
             test "$status" -ne 0
