@@ -24,7 +24,7 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
   assert.notStrictEqual(revisions[1],'conference-owner-preflight-correction-v1');
   assert.strictEqual(revisions[2],'production-3-6-0-release-v6');
-  assert.match(developmentValidator,/device-authorization-administration-service\.js\?rev=canonical-owner-session-list-v1/);
+  assert.match(developmentValidator,/device-authorization-administration-service\.js\?rev=canonical-owner-passkey-gate-v2/);
 
   assert.match(publicConfig,/mpezfbvcdfxpgflehuot/);
   assert.match(publicConfig,/gppwltrifgfxrkzvvxoe/);
