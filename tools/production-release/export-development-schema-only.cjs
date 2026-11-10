@@ -49,7 +49,7 @@ if (!sql || sql.length < 1000) fail('Unexpectedly small schema dump');
 if (!/^-- PostgreSQL database dump/m.test(sql)) fail('Output is not a recognizable PostgreSQL schema dump');
 if (!/CREATE SCHEMA|CREATE TABLE|CREATE FUNCTION|CREATE VIEW/i.test(sql)) fail('No application schema objects found');
 if (!/^\s*GRANT\s/im.test(sql) || !/^\s*ALTER\s+DEFAULT\s+PRIVILEGES\s/im.test(sql)) fail('ACL grants/default privileges missing from schema dump');
-if (/^\s*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)\b/im.test(sql)) fail('Data manipulation found in schema-only output');
+if (/^-- Data for Name:/m.test(sql) || /^COPY\s+.+\s+FROM\s+stdin;\s*$/im.test(sql)) fail('Table data found in schema-only output');
 if (/^\s*(CREATE|ALTER)\s+(ROLE|USER)\b/im.test(sql)) fail('Role creation in schema output is forbidden');
 if (sql.includes(connection) || (parsed.password && sql.includes(parsed.password))) fail('Credentials detected in dump');
 if (/^\s*(CREATE|ALTER)\s+(DATABASE|TABLESPACE)\b/im.test(sql)) fail('Database-level DDL in application schema output');
