@@ -67,11 +67,12 @@ jobs:
           docker run -d --rm --name release-rehearsal-pg -e POSTGRES_USER=supabase_admin -e POSTGRES_PASSWORD=ci_disposable_only -p 55432:5432 supabase/postgres:17.6.1.136
           trap 'docker rm -f release-rehearsal-pg >/dev/null 2>&1 || true' EXIT
           for i in {1..30}; do
-            if /usr/lib/postgresql/17/bin/pg_isready -h 127.0.0.1 -p 55432 -U postgres -d postgres >/dev/null 2>&1; then break; fi
+            if /usr/lib/postgresql/17/bin/pg_isready -h 127.0.0.1 -p 55432 -U supabase_admin -d postgres >/dev/null 2>&1; then break; fi
             sleep 1
           done
+          /usr/lib/postgresql/17/bin/createdb -h 127.0.0.1 -p 55432 -U supabase_admin -O supabase_admin release_rehearsal_ci
           RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY \
-          PGHOST=127.0.0.1 PGPORT=55432 PGUSER=postgres PGDATABASE=postgres \
+          PGHOST=127.0.0.1 PGPORT=55432 PGUSER=supabase_admin PGDATABASE=release_rehearsal_ci \
           bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/.release-local/development-application-schema-only.sql"
       - name: Remove extracted schema from runner
         if: always()
