@@ -27,6 +27,15 @@ if ! grep -Eiq '^[[:space:]]*GRANT[[:space:]]' "$dump" ||
   fail "Schema-only dump lacks GRANT or ALTER DEFAULT PRIVILEGES replay; reviewed ACL restoration is required"
 fi
 echo "Rehearsing schema in disposable local database (no hosted connections)"
+# Minimal Supabase-managed foundation required by the application dump. These objects
+# are intentionally outside the replacement boundary and already exist on hosted Supabase.
+psql -X -v ON_ERROR_STOP=1 -1 <<'SQL' >/dev/null
+CREATE SCHEMA IF NOT EXISTS "extensions";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+CREATE EXTENSION IF NOT EXISTS "btree_gist" WITH SCHEMA "extensions";
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+SQL
 # Rehearse the same zero-data replacement boundary intended for hosted release:
 # only the five application schemas are cleared; PostgreSQL/Supabase-managed schemas are out of scope.
 psql -X -v ON_ERROR_STOP=1 -1 <<'SQL' >/dev/null
