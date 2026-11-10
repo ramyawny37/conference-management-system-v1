@@ -34,7 +34,7 @@ const version = spawnSync(binary, ['--version'], { encoding: 'utf8', timeout: 10
 if (version.error || version.status !== 0) fail('pg_dump executable not available');
 const args = [
   '--schema-only', '--no-owner',
-  '--format=plain', '--no-comments',
+  '--format=plain', '--quote-all-identifiers', '--no-comments',
   ...SCHEMAS.map(s => '--schema=' + s),
 ];
 const result = spawnSync(binary, args, {
