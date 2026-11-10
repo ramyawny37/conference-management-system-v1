@@ -36,6 +36,27 @@ fi
 echo "Rehearsing schema in disposable local database (no hosted connections)"
 # The managed foundation is established separately by the fixture administrator.
 psql -X -v ON_ERROR_STOP=1 -1 -f tests/fixtures/supabase-managed-foundation.sql >/dev/null
+# Model an already-running application, including replaceable platform state and
+# unexpected business rows. The reviewed ALL_APPLICATION_DATA contract must
+# remove all of it atomically; none of these rows may reach the canonical seed.
+psql -X -v ON_ERROR_STOP=1 -1 >/dev/null <<'SQL'
+SET ROLE postgres;
+CREATE SCHEMA platform;
+CREATE TABLE platform.audit_events (id bigint PRIMARY KEY, payload jsonb NOT NULL);
+CREATE TABLE platform.roles (id bigint PRIMARY KEY, code text NOT NULL);
+CREATE TABLE platform.permissions (id bigint PRIMARY KEY, code text NOT NULL);
+CREATE TABLE platform.role_permissions (role_id bigint NOT NULL, permission_id bigint NOT NULL);
+INSERT INTO platform.audit_events VALUES (1,'{"legacy":true}');
+INSERT INTO platform.roles VALUES (1,'legacy-role');
+INSERT INTO platform.permissions VALUES (1,'legacy.permission');
+INSERT INTO platform.role_permissions VALUES (1,1);
+CREATE TABLE public.legacy_conference_operational_data (id bigint PRIMARY KEY);
+INSERT INTO public.legacy_conference_operational_data VALUES (1);
+CREATE SCHEMA reservations;
+CREATE TABLE reservations.legacy_bookings (id bigint PRIMARY KEY);
+INSERT INTO reservations.legacy_bookings VALUES (1);
+RESET ROLE;
+SQL
 cutover="$(mktemp /tmp/canonical-application-cutover-XXXXXX.sql)"
 trap 'rm -f "$cutover"' EXIT
 {

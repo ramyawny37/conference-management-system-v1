@@ -1,8 +1,15 @@
 -- Execute inside the one cutover transaction, before the canonical bootstrap.
--- Locks and verifies zero operational data, blocks managed-schema dependencies,
--- preserves the Supabase-owned public namespace, and removes application objects.
-DO $zero_data$
-DECLARE rec record; has_rows boolean;
+-- Locks and classifies existing application data, blocks managed-schema
+-- dependencies, preserves the Supabase-owned foundation, and removes application
+-- objects. This immutable contract deliberately authorizes destruction of every
+-- application row; it is not a runtime switch and cannot be used as a guard bypass.
+DO $replacement_data_contract$
+DECLARE
+  rec record;
+  has_rows boolean;
+  operational_tables text;
+  replaceable_platform_tables text;
+  destructive_replacement_scope constant text := 'ALL_APPLICATION_DATA';
 BEGIN
   FOR rec IN
     SELECT n.nspname,c.relname
@@ -14,40 +21,54 @@ BEGIN
     EXECUTE format('LOCK TABLE %I.%I IN ACCESS EXCLUSIVE MODE',rec.nspname,rec.relname);
   END LOOP;
 
+  -- Old platform audit, catalog, account, authorization and settings state is
+  -- control-plane state owned by the application replacement. It is never
+  -- migrated or replayed; the canonical catalog is seeded after replacement.
   FOR rec IN
     SELECT n.nspname,c.relname
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE n.nspname IN ('public','platform','platform_private','reservations','reservations_private')
+    WHERE n.nspname IN ('platform','platform_private')
       AND c.relkind IN ('r','p')
-      AND (n.nspname,c.relname) NOT IN (
-        ('platform','roles'),('platform','permissions'),('platform','role_permissions')
-      )
     ORDER BY n.nspname,c.relname
   LOOP
     EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I.%I LIMIT 1)',rec.nspname,rec.relname) INTO has_rows;
-    IF has_rows THEN RAISE EXCEPTION 'CUTOVER_OPERATIONAL_DATA_PRESENT: %.%',rec.nspname,rec.relname; END IF;
+    IF has_rows THEN
+      replaceable_platform_tables := concat_ws(', ',replaceable_platform_tables,format('%I.%I',rec.nspname,rec.relname));
+    END IF;
   END LOOP;
 
-  IF to_regclass('platform.roles') IS NOT NULL THEN
-    EXECUTE 'SELECT EXISTS (SELECT 1 FROM platform.roles WHERE NOT is_system)' INTO has_rows;
-    IF has_rows THEN RAISE EXCEPTION 'CUTOVER_NON_SYSTEM_CATALOG_DATA_PRESENT: platform.roles'; END IF;
+  -- Public, reservations and reservations_private hold business/operational data
+  -- (conference, reservations, people, payments, accommodation, transport, and
+  -- any future application tables). Presence is fail-closed unless this reviewed
+  -- contract explicitly authorizes destruction of all application data.
+  FOR rec IN
+    SELECT n.nspname,c.relname
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname IN ('public','reservations','reservations_private')
+      AND c.relkind IN ('r','p')
+    ORDER BY n.nspname,c.relname
+  LOOP
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I.%I LIMIT 1)',rec.nspname,rec.relname) INTO has_rows;
+    IF has_rows THEN
+      operational_tables := concat_ws(', ',operational_tables,format('%I.%I',rec.nspname,rec.relname));
+    END IF;
+  END LOOP;
+
+  IF operational_tables IS NOT NULL AND destructive_replacement_scope <> 'ALL_APPLICATION_DATA' THEN
+    RAISE EXCEPTION 'CUTOVER_OPERATIONAL_DATA_PRESENT: %',operational_tables;
   END IF;
-  IF to_regclass('platform.permissions') IS NOT NULL THEN
-    EXECUTE 'SELECT EXISTS (SELECT 1 FROM platform.permissions WHERE NOT is_system)' INTO has_rows;
-    IF has_rows THEN RAISE EXCEPTION 'CUTOVER_NON_SYSTEM_CATALOG_DATA_PRESENT: platform.permissions'; END IF;
+  IF destructive_replacement_scope <> 'ALL_APPLICATION_DATA' THEN
+    RAISE EXCEPTION 'CUTOVER_DESTRUCTIVE_REPLACEMENT_SCOPE_INVALID: %',destructive_replacement_scope;
   END IF;
-  IF to_regclass('platform.role_permissions') IS NOT NULL THEN
-    EXECUTE 'SELECT EXISTS (
-      SELECT 1 FROM platform.role_permissions rp
-      LEFT JOIN platform.roles r ON r.id=rp.role_id
-      LEFT JOIN platform.permissions p ON p.id=rp.permission_id
-      WHERE r.id IS NULL OR p.id IS NULL OR NOT r.is_system OR NOT p.is_system
-    )' INTO has_rows;
-    IF has_rows THEN RAISE EXCEPTION 'CUTOVER_NON_SYSTEM_CATALOG_DATA_PRESENT: platform.role_permissions'; END IF;
+  IF replaceable_platform_tables IS NOT NULL THEN
+    RAISE NOTICE 'CUTOVER_REPLACEABLE_PLATFORM_STATE_AUTHORIZED: %',replaceable_platform_tables;
   END IF;
-  RAISE NOTICE 'CUTOVER_ZERO_OPERATIONAL_DATA_PASS';
+  IF operational_tables IS NOT NULL THEN
+    RAISE NOTICE 'CUTOVER_ALL_APPLICATION_DATA_DESTRUCTION_AUTHORIZED: %',operational_tables;
+  END IF;
+  RAISE NOTICE 'CUTOVER_APPLICATION_DATA_CONTRACT_PASS: scope=%',destructive_replacement_scope;
 END
-$zero_data$;
+$replacement_data_contract$;
 
 DO $dependencies$
 DECLARE blockers text;

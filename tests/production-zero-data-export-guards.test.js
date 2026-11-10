@@ -141,11 +141,29 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/execute-zero-data-production-clean-cutover.yml'), 'utf8');
   assert.doesNotMatch(seed, /^\s*(?:BEGIN|COMMIT|ROLLBACK)\s*;/im);
   assert.match(preparation, /CUTOVER_OPERATIONAL_DATA_PRESENT/);
+  assert.match(preparation, /destructive_replacement_scope constant text := 'ALL_APPLICATION_DATA'/);
+  assert.match(preparation, /n\.nspname IN \('platform','platform_private'\)/);
+  assert.match(preparation, /n\.nspname IN \('public','reservations','reservations_private'\)/);
+  assert.match(preparation, /CUTOVER_REPLACEABLE_PLATFORM_STATE_AUTHORIZED/);
+  assert.match(preparation, /CUTOVER_ALL_APPLICATION_DATA_DESTRUCTION_AUTHORIZED/);
   assert.match(preparation, /CUTOVER_MANAGED_DEPENDENCY_BLOCKED/);
   assert.match(preparation, /SUPABASE_MANAGED_AUTH_USERS_REFERENCES_MISSING/);
+  assert.doesNotMatch(preparation, /^\s*(?:DELETE\s+FROM|TRUNCATE)\b/im);
+  assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im);
   assert.match(workflow, /workflow_dispatch:/);
   assert.doesNotMatch(workflow, /^\s*push\s*:/m);
   assert.match(workflow, /echo 'BEGIN;'/);
   assert.match(workflow, /echo 'COMMIT;'/);
+});
+
+test('disposable rehearsal covers old platform state and operational business data', () => {
+  const rehearsal = fs.readFileSync(path.resolve(__dirname, '../tools/production-release/rehearse-clean-bootstrap.sh'), 'utf8');
+  assert.match(rehearsal, /CREATE TABLE platform\.audit_events/);
+  assert.match(rehearsal, /CREATE TABLE platform\.roles/);
+  assert.match(rehearsal, /CREATE TABLE platform\.permissions/);
+  assert.match(rehearsal, /CREATE TABLE platform\.role_permissions/);
+  assert.match(rehearsal, /CREATE TABLE public\.legacy_conference_operational_data/);
+  assert.match(rehearsal, /CREATE TABLE reservations\.legacy_bookings/);
+  assert.ok(rehearsal.indexOf('legacy_conference_operational_data') < rehearsal.indexOf('prepare-canonical-application-replacement.sql'));
 });

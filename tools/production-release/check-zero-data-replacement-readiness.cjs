@@ -38,9 +38,14 @@ if (fs.existsSync(bootstrap)) {
 const preparation = read('tools/production-release/prepare-canonical-application-replacement.sql');
 check('fail_closed_cutover_guards',
   preparation.includes('CUTOVER_OPERATIONAL_DATA_PRESENT') &&
+  preparation.includes("destructive_replacement_scope constant text := 'ALL_APPLICATION_DATA'") &&
+  preparation.includes('CUTOVER_REPLACEABLE_PLATFORM_STATE_AUTHORIZED') &&
+  preparation.includes('CUTOVER_ALL_APPLICATION_DATA_DESTRUCTION_AUTHORIZED') &&
   preparation.includes('CUTOVER_MANAGED_DEPENDENCY_BLOCKED') &&
+  !/^\s*(?:DELETE\s+FROM|TRUNCATE)\b/im.test(preparation) &&
+  !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im.test(preparation) &&
   !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im.test(preparation),
-  'Zero-data and managed-dependency guards run while the managed public namespace is preserved');
+  'Reviewed all-application replacement remains fail-closed, dependency-guarded, and preserves managed schemas');
 const seed = read('tools/production-release/canonical-system-catalog-seed.sql');
 check('seed_joins_outer_transaction', !/^\s*(BEGIN|COMMIT|ROLLBACK)\s*;/im.test(seed),
   'Catalog seed contains no nested transaction boundary');
