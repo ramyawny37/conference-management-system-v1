@@ -22,7 +22,7 @@ on:
       - 'supabase/functions/**'
 jobs:
   development-schema-export:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,6 +58,21 @@ jobs:
           node tools/production-release/export-development-schema-only.cjs
           test -s .release-local/development-application-schema-only.sql
           echo 'EXTRACTED_NOT_VALIDATED: local ephemeral schema only; no artifact uploaded, no Production connection'
+      - name: Rehearse extracted schema on disposable PostgreSQL 17
+        shell: bash
+        env:
+          PGPASSWORD: ci_disposable_only
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name release-rehearsal-pg -e POSTGRES_PASSWORD=ci_disposable_only -e POSTGRES_DB=release_rehearsal_ci -p 55432:5432 postgres:17
+          trap 'docker rm -f release-rehearsal-pg >/dev/null 2>&1 || true' EXIT
+          for i in {1..30}; do
+            if /usr/lib/postgresql/17/bin/pg_isready -h 127.0.0.1 -p 55432 -U postgres -d release_rehearsal_ci >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY \
+          PGHOST=127.0.0.1 PGPORT=55432 PGUSER=postgres PGDATABASE=release_rehearsal_ci \
+          bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/.release-local/development-application-schema-only.sql"
       - name: Remove extracted schema from runner
         if: always()
         shell: bash
