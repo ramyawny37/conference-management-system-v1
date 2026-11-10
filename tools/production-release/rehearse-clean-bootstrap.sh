@@ -41,6 +41,9 @@ psql -X -v ON_ERROR_STOP=1 -1 -f tests/fixtures/supabase-managed-foundation.sql 
 # remove all of it atomically; none of these rows may reach the canonical seed.
 psql -X -v ON_ERROR_STOP=1 -1 >/dev/null <<'SQL'
 SET ROLE postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres,anon,authenticated,service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO postgres,anon,authenticated,service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres,anon,authenticated,service_role;
 CREATE SCHEMA platform;
 CREATE SCHEMA platform_private;
 CREATE TABLE platform.audit_events (id bigint PRIMARY KEY, payload jsonb NOT NULL);

@@ -206,6 +206,18 @@ BEGIN
 END
 $managed_defaults$;
 
+-- Production already has postgres-owned public defaults. If left active while
+-- replaying CREATE statements, they add ambient grants before the artifact's
+-- object ACLs are restored. Clear only the application executor's defaults now;
+-- the canonical bootstrap recreates their exact Development fingerprint later
+-- in this same transaction. Supabase-owned defaults are never changed.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL ON FUNCTIONS FROM postgres,anon,authenticated,service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL ON TABLES FROM postgres,anon,authenticated,service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL ON SEQUENCES FROM postgres,anon,authenticated,service_role;
+
 DROP SCHEMA IF EXISTS "reservations_private" CASCADE;
 DROP SCHEMA IF EXISTS "reservations" CASCADE;
 DROP SCHEMA IF EXISTS "platform_private" CASCADE;

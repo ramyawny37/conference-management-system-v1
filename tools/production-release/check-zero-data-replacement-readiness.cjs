@@ -43,6 +43,8 @@ check('fail_closed_cutover_guards',
   preparation.includes('CUTOVER_REPLACEABLE_PLATFORM_STATE_AUTHORIZED') &&
   preparation.includes('CUTOVER_ALL_APPLICATION_DATA_DESTRUCTION_AUTHORIZED') &&
   preparation.includes('CUTOVER_MANAGED_DEPENDENCY_BLOCKED') &&
+  preparation.includes('REVOKE ALL ON FUNCTIONS FROM postgres,anon,authenticated,service_role') &&
+  !preparation.includes('ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin') &&
   !/^\s*(?:DELETE\s+FROM|TRUNCATE)\b/im.test(preparation) &&
   !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im.test(preparation) &&
   !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im.test(preparation),

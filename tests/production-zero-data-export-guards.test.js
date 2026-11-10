@@ -159,6 +159,8 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   assert.match(preparation, /has_table_privilege\(current_user,'auth\.users','TRIGGER'\)/);
   assert.doesNotMatch(preparation, /^\s*(?:DELETE\s+FROM|TRUNCATE)\b/im);
   assert.match(preparation, /DROP %s IF EXISTS %I\.%I CASCADE/);
+  assert.match(preparation, /ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public[\s\S]*REVOKE ALL ON FUNCTIONS FROM postgres,anon,authenticated,service_role/);
+  assert.doesNotMatch(preparation, /ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin/);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im);
   assert.match(workflow, /workflow_dispatch:/);
@@ -176,6 +178,7 @@ test('disposable rehearsal covers old platform state and operational business da
   assert.match(rehearsal, /CREATE TABLE platform\.role_permissions/);
   assert.match(rehearsal, /CREATE TABLE public\.legacy_conference_operational_data/);
   assert.match(rehearsal, /legacy_conference_operational_data \(id bigint GENERATED ALWAYS AS IDENTITY/);
+  assert.match(rehearsal, /ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS/);
   assert.match(rehearsal, /CREATE TABLE reservations\.legacy_bookings/);
   assert.match(rehearsal, /CREATE TRIGGER auth_users_create_profile AFTER INSERT ON auth\.users/);
   assert.match(rehearsal, /CREATE TRIGGER platform_auth_user_provisioned AFTER INSERT ON auth\.users/);
