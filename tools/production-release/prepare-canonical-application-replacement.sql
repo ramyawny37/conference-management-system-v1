@@ -70,6 +70,44 @@ BEGIN
 END
 $replacement_data_contract$;
 
+-- auth.users is Supabase-managed, while these two reviewed AFTER INSERT hooks
+-- intentionally call application-owned functions. Verify their complete
+-- attachment contract before detaching them. The outer transaction guarantees
+-- that any later failure restores both original triggers automatically.
+DO $detach_canonical_auth_integration$
+DECLARE blockers text;
+BEGIN
+  IF to_regclass('auth.users') IS NULL THEN
+    RAISE EXCEPTION 'CUTOVER_CANONICAL_AUTH_INTEGRATION_BLOCKED: auth.users missing';
+  END IF;
+  WITH expected(trigger_name,function_name) AS (
+    VALUES
+      ('auth_users_create_profile','public.handle_new_user_profile()'),
+      ('platform_auth_user_provisioned','platform_private.provision_auth_user()')
+  ), invalid AS (
+    SELECT expected.trigger_name
+    FROM expected
+    LEFT JOIN pg_trigger trigger_definition
+      ON trigger_definition.tgrelid='auth.users'::regclass
+     AND trigger_definition.tgname=expected.trigger_name
+     AND NOT trigger_definition.tgisinternal
+    WHERE trigger_definition.oid IS NULL
+       OR trigger_definition.tgfoid<>to_regprocedure(expected.function_name)
+       OR trigger_definition.tgtype<>5 -- AFTER INSERT FOR EACH ROW
+       OR trigger_definition.tgenabled<>'O'
+       OR trigger_definition.tgnargs<>0
+  )
+  SELECT string_agg(trigger_name,', ' ORDER BY trigger_name) INTO blockers FROM invalid;
+  IF blockers IS NOT NULL THEN
+    RAISE EXCEPTION 'CUTOVER_CANONICAL_AUTH_INTEGRATION_BLOCKED: %',blockers;
+  END IF;
+
+  DROP TRIGGER auth_users_create_profile ON auth.users;
+  DROP TRIGGER platform_auth_user_provisioned ON auth.users;
+  RAISE NOTICE 'CUTOVER_CANONICAL_AUTH_INTEGRATION_DETACHED';
+END
+$detach_canonical_auth_integration$;
+
 DO $dependencies$
 DECLARE blockers text;
 BEGIN
@@ -97,6 +135,41 @@ BEGIN
     JOIN pg_namespace sn ON sn.oid=source.relnamespace
     WHERE v.relkind IN ('v','m') AND vn.nspname NOT IN (SELECT name FROM app_schemas)
       AND sn.nspname IN (SELECT name FROM app_schemas)
+    UNION ALL
+    SELECT DISTINCT format('policy:%I.%I',rn.nspname,policy.polname)
+    FROM pg_policy policy
+    JOIN pg_class relation ON relation.oid=policy.polrelid
+    JOIN pg_namespace rn ON rn.oid=relation.relnamespace
+    JOIN pg_depend dependency ON dependency.classid='pg_policy'::regclass AND dependency.objid=policy.oid
+    JOIN pg_proc function_definition
+      ON dependency.refclassid='pg_proc'::regclass AND function_definition.oid=dependency.refobjid
+    JOIN pg_namespace fn ON fn.oid=function_definition.pronamespace
+    WHERE rn.nspname NOT IN (SELECT name FROM app_schemas)
+      AND fn.nspname IN (SELECT name FROM app_schemas)
+    UNION ALL
+    SELECT DISTINCT format('routine-signature:%I.%I',rn.nspname,routine.proname)
+    FROM pg_proc routine
+    JOIN pg_namespace rn ON rn.oid=routine.pronamespace
+    JOIN pg_depend dependency ON dependency.classid='pg_proc'::regclass AND dependency.objid=routine.oid
+    JOIN pg_type referenced_type
+      ON dependency.refclassid='pg_type'::regclass AND referenced_type.oid=dependency.refobjid
+    JOIN pg_namespace tn ON tn.oid=referenced_type.typnamespace
+    WHERE rn.nspname NOT IN (SELECT name FROM app_schemas)
+      AND tn.nspname IN (SELECT name FROM app_schemas)
+    UNION ALL
+    SELECT DISTINCT format('column-default:%I.%I.%I',rn.nspname,relation.relname,attribute.attname)
+    FROM pg_attrdef default_definition
+    JOIN pg_class relation ON relation.oid=default_definition.adrelid
+    JOIN pg_namespace rn ON rn.oid=relation.relnamespace
+    JOIN pg_attribute attribute
+      ON attribute.attrelid=default_definition.adrelid AND attribute.attnum=default_definition.adnum
+    JOIN pg_depend dependency
+      ON dependency.classid='pg_attrdef'::regclass AND dependency.objid=default_definition.oid
+    JOIN pg_proc function_definition
+      ON dependency.refclassid='pg_proc'::regclass AND function_definition.oid=dependency.refobjid
+    JOIN pg_namespace fn ON fn.oid=function_definition.pronamespace
+    WHERE rn.nspname NOT IN (SELECT name FROM app_schemas)
+      AND fn.nspname IN (SELECT name FROM app_schemas)
   )
   SELECT string_agg(item,', ' ORDER BY item) INTO blockers FROM blocked;
   IF blockers IS NOT NULL THEN RAISE EXCEPTION 'CUTOVER_MANAGED_DEPENDENCY_BLOCKED: %',blockers; END IF;

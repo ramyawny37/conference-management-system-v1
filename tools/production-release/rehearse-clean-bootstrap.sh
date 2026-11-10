@@ -55,6 +55,14 @@ INSERT INTO public.legacy_conference_operational_data VALUES (1);
 CREATE SCHEMA reservations;
 CREATE TABLE reservations.legacy_bookings (id bigint PRIMARY KEY);
 INSERT INTO reservations.legacy_bookings VALUES (1);
+CREATE OR REPLACE FUNCTION public.handle_new_user_profile() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RETURN NEW; END$$;
+CREATE OR REPLACE FUNCTION platform_private.provision_auth_user() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RETURN NEW; END$$;
+CREATE TRIGGER auth_users_create_profile AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_profile();
+CREATE TRIGGER platform_auth_user_provisioned AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION platform_private.provision_auth_user();
 RESET ROLE;
 SQL
 cutover="$(mktemp /tmp/canonical-application-cutover-XXXXXX.sql)"
@@ -64,6 +72,7 @@ trap 'rm -f "$cutover"' EXIT
   if [[ "${PGUSER}" != "postgres" ]]; then echo 'SET LOCAL ROLE "postgres";'; fi
   cat tools/production-release/prepare-canonical-application-replacement.sql
   cat "$dump"
+  cat tools/production-release/restore-canonical-managed-auth-integration.sql
   echo 'SET LOCAL client_min_messages = notice;'
   cat tools/production-release/canonical-system-catalog-seed.sql
   cat tools/production-release/assert-canonical-full-foundation.sql

@@ -7,6 +7,7 @@ on:
       - 'tools/production-release/export-development-schema-only.cjs'
       - 'tools/production-release/application-bootstrap-contract.cjs'
       - 'tools/production-release/prepare-canonical-application-replacement.sql'
+      - 'tools/production-release/restore-canonical-managed-auth-integration.sql'
       - 'tools/production-release/check-zero-data-replacement-readiness.cjs'
       - 'tests/production-zero-data-export-guards.test.js'
       - 'tests/fixtures/production-release-catalog-contract.sql'

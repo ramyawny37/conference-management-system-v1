@@ -36,6 +36,7 @@ if (fs.existsSync(bootstrap)) {
     'Application bootstrap preserves public and never rewrites supabase_admin defaults');
 }
 const preparation = read('tools/production-release/prepare-canonical-application-replacement.sql');
+const authIntegration = read('tools/production-release/restore-canonical-managed-auth-integration.sql');
 check('fail_closed_cutover_guards',
   preparation.includes('CUTOVER_OPERATIONAL_DATA_PRESENT') &&
   preparation.includes("destructive_replacement_scope constant text := 'ALL_APPLICATION_DATA'") &&
@@ -46,6 +47,13 @@ check('fail_closed_cutover_guards',
   !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im.test(preparation) &&
   !/^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im.test(preparation),
   'Reviewed all-application replacement remains fail-closed, dependency-guarded, and preserves managed schemas');
+check('canonical_managed_auth_integration',
+  preparation.includes('CUTOVER_CANONICAL_AUTH_INTEGRATION_BLOCKED') &&
+  preparation.includes('DROP TRIGGER auth_users_create_profile ON auth.users') &&
+  preparation.includes('DROP TRIGGER platform_auth_user_provisioned ON auth.users') &&
+  authIntegration.includes('CANONICAL_AUTH_INTEGRATION_PASS') &&
+  authIntegration.includes('CANONICAL_AUTH_INTEGRATION_UNEXPECTED_TRIGGER'),
+  'Two exact canonical auth hooks are detached and restored inside the replacement transaction');
 const seed = read('tools/production-release/canonical-system-catalog-seed.sql');
 check('seed_joins_outer_transaction', !/^\s*(BEGIN|COMMIT|ROLLBACK)\s*;/im.test(seed),
   'Catalog seed contains no nested transaction boundary');

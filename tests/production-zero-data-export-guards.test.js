@@ -138,6 +138,7 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   const root = path.resolve(__dirname, '..');
   const seed = fs.readFileSync(path.join(root, 'tools/production-release/canonical-system-catalog-seed.sql'), 'utf8');
   const preparation = fs.readFileSync(path.join(root, 'tools/production-release/prepare-canonical-application-replacement.sql'), 'utf8');
+  const authIntegration = fs.readFileSync(path.join(root, 'tools/production-release/restore-canonical-managed-auth-integration.sql'), 'utf8');
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/execute-zero-data-production-clean-cutover.yml'), 'utf8');
   assert.doesNotMatch(seed, /^\s*(?:BEGIN|COMMIT|ROLLBACK)\s*;/im);
   assert.match(preparation, /CUTOVER_OPERATIONAL_DATA_PRESENT/);
@@ -147,6 +148,13 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   assert.match(preparation, /CUTOVER_REPLACEABLE_PLATFORM_STATE_AUTHORIZED/);
   assert.match(preparation, /CUTOVER_ALL_APPLICATION_DATA_DESTRUCTION_AUTHORIZED/);
   assert.match(preparation, /CUTOVER_MANAGED_DEPENDENCY_BLOCKED/);
+  assert.match(preparation, /CUTOVER_CANONICAL_AUTH_INTEGRATION_BLOCKED/);
+  assert.match(preparation, /trigger_definition\.tgtype<>5/);
+  assert.ok(preparation.indexOf('CUTOVER_CANONICAL_AUTH_INTEGRATION_DETACHED') < preparation.indexOf('CUTOVER_MANAGED_DEPENDENCY_BLOCKED'));
+  assert.match(authIntegration, /CREATE TRIGGER auth_users_create_profile/);
+  assert.match(authIntegration, /CREATE TRIGGER platform_auth_user_provisioned/);
+  assert.match(authIntegration, /CANONICAL_AUTH_INTEGRATION_PASS/);
+  assert.match(authIntegration, /CANONICAL_AUTH_INTEGRATION_UNEXPECTED_TRIGGER/);
   assert.match(preparation, /SUPABASE_MANAGED_AUTH_USERS_REFERENCES_MISSING/);
   assert.doesNotMatch(preparation, /^\s*(?:DELETE\s+FROM|TRUNCATE)\b/im);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im);
@@ -155,6 +163,7 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   assert.doesNotMatch(workflow, /^\s*push\s*:/m);
   assert.match(workflow, /echo 'BEGIN;'/);
   assert.match(workflow, /echo 'COMMIT;'/);
+  assert.ok(workflow.indexOf('restore-canonical-managed-auth-integration.sql') < workflow.indexOf('canonical-system-catalog-seed.sql'));
 });
 
 test('disposable rehearsal covers old platform state and operational business data', () => {
@@ -165,5 +174,7 @@ test('disposable rehearsal covers old platform state and operational business da
   assert.match(rehearsal, /CREATE TABLE platform\.role_permissions/);
   assert.match(rehearsal, /CREATE TABLE public\.legacy_conference_operational_data/);
   assert.match(rehearsal, /CREATE TABLE reservations\.legacy_bookings/);
+  assert.match(rehearsal, /CREATE TRIGGER auth_users_create_profile AFTER INSERT ON auth\.users/);
+  assert.match(rehearsal, /CREATE TRIGGER platform_auth_user_provisioned AFTER INSERT ON auth\.users/);
   assert.ok(rehearsal.indexOf('legacy_conference_operational_data') < rehearsal.indexOf('prepare-canonical-application-replacement.sql'));
 });

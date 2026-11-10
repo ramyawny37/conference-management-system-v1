@@ -47,7 +47,7 @@ jobs:
           if grep -Fq -- '-- Data for Name:' tools/production-release/canonical-clean-bootstrap.sql || grep -Eiq '^COPY[[:space:]].*FROM[[:space:]]+stdin;' tools/production-release/canonical-clean-bootstrap.sql; then echo 'BLOCKED: bootstrap contains data'; exit 1; fi
           if grep -Eiq '^CREATE[[:space:]]+SCHEMA[[:space:]]+"?public"?[[:space:]]*;' tools/production-release/canonical-clean-bootstrap.sql; then echo 'BLOCKED: bootstrap attempts to replace managed public namespace'; exit 1; fi
           if grep -Eiq 'ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES[[:space:]]+FOR[[:space:]]+ROLE[[:space:]]+"?supabase_admin"?' tools/production-release/canonical-clean-bootstrap.sql; then echo 'BLOCKED: bootstrap attempts to rewrite managed default privileges'; exit 1; fi
-          for file in tools/production-release/prepare-canonical-application-replacement.sql tools/production-release/canonical-clean-bootstrap.sql tools/production-release/canonical-system-catalog-seed.sql tools/production-release/assert-canonical-*.sql tools/production-release/assert-first-owner-device-security.sql; do
+          for file in tools/production-release/prepare-canonical-application-replacement.sql tools/production-release/canonical-clean-bootstrap.sql tools/production-release/restore-canonical-managed-auth-integration.sql tools/production-release/canonical-system-catalog-seed.sql tools/production-release/assert-canonical-*.sql tools/production-release/assert-first-owner-device-security.sql; do
             if grep -Eiq '^[[:space:]]*(BEGIN|COMMIT|ROLLBACK)[[:space:]]*;' "$file"; then echo "BLOCKED: nested transaction marker in $file"; exit 1; fi
             if grep -Eiq '^[[:space:]]*\\(i|ir)[[:space:]]' "$file"; then echo "BLOCKED: relative psql include in $file"; exit 1; fi
           done
@@ -64,6 +64,7 @@ jobs:
             echo 'BEGIN;'
             cat tools/production-release/prepare-canonical-application-replacement.sql
             cat tools/production-release/canonical-clean-bootstrap.sql
+            cat tools/production-release/restore-canonical-managed-auth-integration.sql
             echo 'SET LOCAL client_min_messages = notice;'
             cat tools/production-release/canonical-system-catalog-seed.sql
             cat tools/production-release/assert-canonical-full-foundation.sql
