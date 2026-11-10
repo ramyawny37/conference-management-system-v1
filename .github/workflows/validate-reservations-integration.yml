@@ -14,6 +14,7 @@ on:
       - 'tests/**'
       - 'supabase/migrations/**'
   workflow_dispatch:
+# Manual validation marker: permits an exact-SHA validation run when path-filtered pushes do not start CI.
 permissions:
   contents: read
 jobs:
