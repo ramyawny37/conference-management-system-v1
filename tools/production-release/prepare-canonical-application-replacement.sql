@@ -222,7 +222,10 @@ BEGIN
     WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f')
     ORDER BY CASE WHEN c.relkind IN ('r','p','f') THEN 0 ELSE 1 END,c.relname
   LOOP
-    EXECUTE format('DROP %s %I.%I CASCADE',CASE rec.relkind
+    -- Earlier drops may cascade to later snapshot entries (notably owned
+    -- sequences and dependent views), so every catalog-snapshot drop is
+    -- explicitly existence-safe while remaining inside the same transaction.
+    EXECUTE format('DROP %s IF EXISTS %I.%I CASCADE',CASE rec.relkind
       WHEN 'v' THEN 'VIEW' WHEN 'm' THEN 'MATERIALIZED VIEW' WHEN 'S' THEN 'SEQUENCE'
       WHEN 'f' THEN 'FOREIGN TABLE' ELSE 'TABLE' END,rec.nspname,rec.relname);
   END LOOP;
