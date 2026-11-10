@@ -16,8 +16,19 @@ const run = (url, overrides={}) => spawnSync(process.execPath, [script], {
 test('rejects Production connection before launching pg_dump', () => {
   const r = run(prod);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /Only the explicit Development project is allowed/);
+  assert.match(r.stderr, /Only the explicit Development project direct connection or its session pooler is allowed/);
   assert.doesNotMatch(r.stderr, /dummy-password/);
+});
+test('rejects pooler identities not bound to Development and transaction pooler mode', () => {
+  for (const url of [
+    'postgresql://postgres.mpezfbvcdfxpgflehuot:dummy-password@aws-0-eu-central-1.pooler.supabase.com:5432/postgres',
+    'postgresql://postgres.gppwltrifgfxrkzvvxoe:dummy-password@aws-0-eu-central-1.pooler.supabase.com:6543/postgres',
+  ]) {
+    const r = run(url);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /Only the explicit Development project direct connection or its session pooler is allowed/);
+    assert.doesNotMatch(r.stderr, /dummy-password/);
+  }
 });
 test('rejects absent database credentials before launching pg_dump', () => {
   const r = run('postgresql://postgres@db.gppwltrifgfxrkzvvxoe.supabase.co/postgres');
