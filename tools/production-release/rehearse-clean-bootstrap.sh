@@ -35,6 +35,22 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "btree_gist" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+CREATE SCHEMA IF NOT EXISTS "auth";
+CREATE TABLE IF NOT EXISTS "auth"."users" (
+  "id" uuid PRIMARY KEY,
+  "email" text,
+  "raw_user_meta_data" jsonb,
+  "created_at" timestamptz DEFAULT now()
+);
+CREATE OR REPLACE FUNCTION "auth"."uid"() RETURNS uuid
+LANGUAGE sql STABLE SET search_path = ''
+AS $ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.sub', true), '')::uuid $;
+CREATE OR REPLACE FUNCTION "auth"."role"() RETURNS text
+LANGUAGE sql STABLE SET search_path = ''
+AS $ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.role', true), '') $;
+CREATE OR REPLACE FUNCTION "auth"."jwt"() RETURNS jsonb
+LANGUAGE sql STABLE SET search_path = ''
+AS $ SELECT COALESCE(NULLIF(pg_catalog.current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb) $;
 SQL
 # Rehearse the same zero-data replacement boundary intended for hosted release:
 # only the five application schemas are cleared; PostgreSQL/Supabase-managed schemas are out of scope.
