@@ -74,10 +74,27 @@ jobs:
           RELEASE_DISPOSABLE_REHEARSAL=I_UNDERSTAND_DISPOSABLE_ONLY \
           PGHOST=127.0.0.1 PGPORT=55432 PGUSER=supabase_admin PGDATABASE=release_rehearsal_ci \
           bash tools/production-release/rehearse-clean-bootstrap.sh "$PWD/.release-local/development-application-schema-only.sql"
+      - name: Stage proven clean bootstrap artifact
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .release-local/development-application-schema-only.sql canonical-clean-bootstrap.sql
+          sha256sum canonical-clean-bootstrap.sql > canonical-clean-bootstrap.sha256
+      - name: Upload proven clean bootstrap artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-clean-bootstrap-${{ github.sha }}
+          path: |
+            canonical-clean-bootstrap.sql
+            canonical-clean-bootstrap.sha256
+          if-no-files-found: error
+          retention-days: 7
       - name: Remove extracted schema from runner
         if: always()
         shell: bash
-        run: rm -f .release-local/development-application-schema-only.sql
+        run: rm -f .release-local/development-application-schema-only.sql canonical-clean-bootstrap.sql canonical-clean-bootstrap.sha256
   zero-data-guards:
     runs-on: ubuntu-latest
     permissions:
