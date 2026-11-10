@@ -72,7 +72,7 @@ jobs:
           \ir tools/production-release/assert-canonical-default-grants.sql
           COMMIT;
           SQL
-          psql "$PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f /tmp/cutover.sql
+          psql "$PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -v repo="$GITHUB_WORKSPACE" -f /tmp/cutover.sql
           rm -f /tmp/cutover.sql
       - name: Post-cutover read-only security audit
         shell: bash
