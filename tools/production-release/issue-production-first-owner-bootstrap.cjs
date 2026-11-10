@@ -26,7 +26,7 @@ function psql(databaseUrl, sql, capture = true) {
     input: sql, encoding: 'utf8', stdio: ['pipe', capture ? 'pipe' : 'ignore', 'pipe'],
     env: { ...process.env, PGOPTIONS: '-c statement_timeout=15000 -c lock_timeout=5000' },
   });
-  if (result.status !== 0) fail('Production bootstrap database operation failed');
+  if (result.status !== 0) {\n    const safeError = String(result.stderr || 'unknown psql failure')\n      .replace(/postgres(?:ql)?:\\/\\/[^\\s]+/gi, '[REDACTED_DATABASE_URL]')\n      .replace(/password=[^\\s]+/gi, 'password=[REDACTED]')\n      .replace(/PGPASSWORD=[^\\s]+/gi, 'PGPASSWORD=[REDACTED]')\n      .trim();\n    fail(`Production bootstrap database operation failed: ${safeError.slice(0, 1200)}`);\n  }
   return capture ? String(result.stdout || '').trim() : '';
 }
 function main() {
