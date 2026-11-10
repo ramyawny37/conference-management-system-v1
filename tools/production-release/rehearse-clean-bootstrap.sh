@@ -44,13 +44,13 @@ CREATE TABLE IF NOT EXISTS "auth"."users" (
 );
 CREATE OR REPLACE FUNCTION "auth"."uid"() RETURNS uuid
 LANGUAGE sql STABLE SET search_path = ''
-AS $ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.sub', true), '')::uuid $;
+AS $auth$ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.sub', true), '')::uuid $auth$;
 CREATE OR REPLACE FUNCTION "auth"."role"() RETURNS text
 LANGUAGE sql STABLE SET search_path = ''
-AS $ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.role', true), '') $;
+AS $auth$ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.role', true), '') $auth$;
 CREATE OR REPLACE FUNCTION "auth"."jwt"() RETURNS jsonb
 LANGUAGE sql STABLE SET search_path = ''
-AS $ SELECT COALESCE(NULLIF(pg_catalog.current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb) $;
+AS $auth$ SELECT COALESCE(NULLIF(pg_catalog.current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb) $auth$;
 SQL
 # Rehearse the same zero-data replacement boundary intended for hosted release:
 # only the five application schemas are cleared; PostgreSQL/Supabase-managed schemas are out of scope.
