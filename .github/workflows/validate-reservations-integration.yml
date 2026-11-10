@@ -2,30 +2,8 @@ name: Validate Reservations integration on develop
 on:
   push:
     branches: [develop]
-    paths:
-      - 'tools/integrate-reservations-artifact.cjs'
-      - '.github/workflows/validate-reservations-integration.yml'
-      - 'modules/reservations/reservations-module.js'
-      - 'modules/reservations/reservations-module.css'
-      - 'index.html'
-      - 'service-worker.js'
-      - 'js/supabase/device-enrollment.js'
-      - 'js/supabase/device-session.js'
-      - 'tests/**'
-      - 'supabase/migrations/**'
   pull_request:
     branches: [main]
-    paths:
-      - 'tools/integrate-reservations-artifact.cjs'
-      - '.github/workflows/validate-reservations-integration.yml'
-      - 'modules/reservations/reservations-module.js'
-      - 'modules/reservations/reservations-module.css'
-      - 'index.html'
-      - 'service-worker.js'
-      - 'js/supabase/device-enrollment.js'
-      - 'js/supabase/device-session.js'
-      - 'tests/**'
-      - 'supabase/migrations/**'
   workflow_dispatch:
 # Manual validation marker: permits an exact-SHA validation run when path-filtered pushes do not start CI. Exact-SHA refresh 2026-11-10.
 permissions:
