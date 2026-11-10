@@ -1,8 +1,13 @@
 name: Execute zero-data Production clean cutover
 on:
   workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/execute-zero-data-production-clean-cutover.yml'
 jobs:
   production-clean-cutover:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.actor != 'github-actions[bot]' && startsWith(github.event.head_commit.message, 'release: trigger guarded Production clean cutover'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
