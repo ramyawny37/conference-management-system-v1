@@ -1,0 +1,79 @@
+name: Execute zero-data Production clean cutover
+on:
+  workflow_dispatch:
+jobs:
+  production-clean-cutover:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PostgreSQL 17 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl ca-certificates
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Fail-closed Production identity and canonical artifact checks
+        shell: bash
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          test -n "${PRODUCTION_DATABASE_URL:-}" || { echo 'BLOCKED: PRODUCTION_DATABASE_URL secret is not configured'; exit 1; }
+          node tools/production-release/check-zero-data-replacement-readiness.cjs >/tmp/readiness.json
+          node -e 'const r=require("/tmp/readiness.json"); if(r.ready!==true||r.targetProjectRef!=="mpezfbvcdfxpgflehuot") process.exit(1)'
+          node - <<'NODE'
+          const u=new URL(process.env.PRODUCTION_DATABASE_URL);
+          const identity=u.hostname+" "+decodeURIComponent(u.username);
+          if(!identity.includes("mpezfbvcdfxpgflehuot")) throw new Error("WRONG_PRODUCTION_DATABASE");
+          if(identity.includes("gppwltrifgfxrkzvvxoe")) throw new Error("DEVELOPMENT_DATABASE_FORBIDDEN");
+          NODE
+          expected="$(node -p 'require("./tools/production-release/canonical-clean-bootstrap-evidence.json").bootstrapSha256')"
+          actual="$(sha256sum tools/production-release/canonical-clean-bootstrap.sql | awk '{print $1}')"
+          test "$actual" = "$expected" || { echo 'BLOCKED: canonical bootstrap hash mismatch'; exit 1; }
+          if grep -Fq -- '-- Data for Name:' tools/production-release/canonical-clean-bootstrap.sql || grep -Eiq '^COPY[[:space:]].*FROM[[:space:]]+stdin;' tools/production-release/canonical-clean-bootstrap.sql; then echo 'BLOCKED: bootstrap contains data'; exit 1; fi
+      - name: Replace only application schemas atomically and seed canonical catalog
+        shell: bash
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          export PGCONNECT_TIMEOUT=15
+          cat > /tmp/cutover.sql <<'SQL'
+          BEGIN;
+          DROP SCHEMA IF EXISTS "reservations_private" CASCADE;
+          DROP SCHEMA IF EXISTS "reservations" CASCADE;
+          DROP SCHEMA IF EXISTS "platform_private" CASCADE;
+          DROP SCHEMA IF EXISTS "platform" CASCADE;
+          DROP SCHEMA IF EXISTS "public" CASCADE;
+          \ir tools/production-release/canonical-clean-bootstrap.sql
+          \ir tools/production-release/canonical-system-catalog-seed.sql
+          \ir tools/production-release/assert-canonical-full-foundation.sql
+          \ir tools/production-release/assert-canonical-structural-parity.sql
+          \ir tools/production-release/assert-first-owner-device-security.sql
+          \ir tools/production-release/assert-canonical-access-parity.sql
+          \ir tools/production-release/assert-canonical-ambient-grants.sql
+          \ir tools/production-release/assert-canonical-default-grants.sql
+          COMMIT;
+          SQL
+          psql "$PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f /tmp/cutover.sql
+          rm -f /tmp/cutover.sql
+      - name: Post-cutover read-only security audit
+        shell: bash
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          psql "$PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tools/production-release/canonical-clean-bootstrap-readonly-audit.sql
