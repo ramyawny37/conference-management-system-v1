@@ -18,7 +18,25 @@ fail() { echo "BLOCKED: $*" >&2; exit 1; }
 command -v psql >/dev/null || fail "psql unavailable"
 dump="$1"
 grep -q '^-- PostgreSQL database dump' "$dump" || fail "Unrecognized schema-only dump"
-if grep -Eiq '^[[:space:]]*(COPY|INSERT|UPDATE|DELETE|TRUNCATE)[[:space:]]' "$dump"; then fail "Dump contains data manipulation"; fi
+if grep -Eq '^-- Data for Name:' "$dump" || grep -Eiq '^COPY[[:space:]].*[[:space:]]FROM[[:space:]]+stdin;[[:space:]]*
+if grep -Eiq '^[[:space:]]*(CREATE|ALTER)[[:space:]]+(ROLE|USER|DATABASE|TABLESPACE)[[:space:]]' "$dump"; then fail "Dump contains privileged cluster DDL"; fi
+# Exporter strips ACLs; without an approved grants replay the artifact
+# cannot establish the secure canonical database, regardless of schema parity.
+if ! grep -Eiq '^[[:space:]]*GRANT[[:space:]]' "$dump" ||
+   ! grep -Eiq '^[[:space:]]*ALTER[[:space:]]+DEFAULT[[:space:]]+PRIVILEGES[[:space:]]' "$dump"; then
+  fail "Schema-only dump lacks GRANT or ALTER DEFAULT PRIVILEGES replay; reviewed ACL restoration is required"
+fi
+echo "Rehearsing schema in disposable local database (no hosted connections)"
+psql -X -v ON_ERROR_STOP=1 -1 -f "$dump" >/dev/null
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql >/dev/null
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-full-foundation.sql
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-structural-parity.sql
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-first-owner-device-security.sql
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-access-parity.sql
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-ambient-grants.sql
+psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-default-grants.sql
+echo "PASS: disposable structural rehearsal (owner/device and Edge Functions remain separate gates)"
+ "$dump"; then fail "Dump contains table data"; fi
 if grep -Eiq '^[[:space:]]*(CREATE|ALTER)[[:space:]]+(ROLE|USER|DATABASE|TABLESPACE)[[:space:]]' "$dump"; then fail "Dump contains privileged cluster DDL"; fi
 # Exporter strips ACLs; without an approved grants replay the artifact
 # cannot establish the secure canonical database, regardless of schema parity.
