@@ -4,8 +4,9 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 
-const PRODUCTION_REF = 'mpezfbvcdfxpgflehuot';
 const EXPECTED_EMAIL = 'ramyawny37@gmail.com';
+const EXPECTED_RELATION_COUNT = 88;
+const EXPECTED_RELATION_FINGERPRINT = '97a500834dce377bdf487f4d6b8428ce';
 
 function fail(message) { throw new Error(message); }
 function required(name) {
@@ -32,31 +33,50 @@ function main() {
   if (process.argv.length !== 2) fail('Command-line arguments are forbidden');
   if (process.env.PRODUCTION_FIRST_OWNER_BOOTSTRAP_ENABLED !== 'true') fail('PRODUCTION_FIRST_OWNER_BOOTSTRAP_ENABLED must equal true');
   const databaseUrl = required('PRODUCTION_DATABASE_URL');
-  if (!databaseUrl.includes(PRODUCTION_REF) || databaseUrl.includes('gppwltrifgfxrkzvvxoe')) fail('Production database identity check failed');
   const terminal = secureTerminal();
+
+  const identity = JSON.parse(psql(databaseUrl, `
+with app_relations as (
+  select n.nspname||'.'||c.relname as relation_name, c.relkind::text as relation_kind
+  from pg_class c join pg_namespace n on n.oid=c.relnamespace
+  where n.nspname in ('public','platform','platform_private','reservations','reservations_private')
+    and c.relkind in ('r','p','v','m','f')
+)
+select json_build_object(
+  'relationCount',(select count(*) from app_relations),
+  'relationFingerprint',(select md5(coalesce(string_agg(relation_name||':'||relation_kind,E'\\n' order by relation_name,relation_kind),'')) from app_relations),
+  'expectedUserCount',(select count(*) from auth.users where lower(email)=lower(${sqlLiteral(EXPECTED_EMAIL)}) and email_confirmed_at is not null and deleted_at is null),
+  'owners',(select count(*) from platform.user_roles ur join platform.roles r on r.id=ur.role_id where r.domain='platform' and r.code='platform_owner' and ur.revoked_at is null),
+  'completed',(select count(*) from public.system_bootstrap_state where singleton_id=1 and completed_at is not null),
+  'secrets',(select count(*) from public.system_bootstrap_secret)
+)::text;
+`));
+  if (Number(identity.relationCount)!==EXPECTED_RELATION_COUNT || identity.relationFingerprint!==EXPECTED_RELATION_FINGERPRINT)
+    fail('Production canonical database fingerprint check failed');
+  if (Number(identity.expectedUserCount)!==1) fail('Expected confirmed Production owner identity was not found uniquely');
+  if (Number(identity.owners)!==0 || Number(identity.completed)!==0 || Number(identity.secrets)!==0)
+    fail('Production first-owner bootstrap is not in pristine issuable state');
 
   const userId = psql(databaseUrl, `
 select id::text from auth.users
 where lower(email)=lower(${sqlLiteral(EXPECTED_EMAIL)})
   and email_confirmed_at is not null and deleted_at is null;
 `);
-  if (!/^[0-9a-f-]{36}$/i.test(userId)) fail('Expected confirmed Production owner identity was not found uniquely');
-
-  const state = psql(databaseUrl, `
-select json_build_object(
- 'owners',(select count(*) from platform.user_roles ur join platform.roles r on r.id=ur.role_id where r.domain='platform' and r.code='platform_owner' and ur.revoked_at is null),
- 'completed',(select count(*) from public.system_bootstrap_state where singleton_id=1 and completed_at is not null),
- 'secrets',(select count(*) from public.system_bootstrap_secret)
-)::text;
-`);
-  const parsed = JSON.parse(state);
-  if (Number(parsed.owners)!==0 || Number(parsed.completed)!==0 || Number(parsed.secrets)!==0) fail('Production first-owner bootstrap is not in pristine issuable state');
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) fail('Production owner identity resolution failed');
 
   const tokenBytes = crypto.randomBytes(32);
   const token = tokenBytes.toString('base64url');
   psql(databaseUrl, `
 begin;
 select pg_advisory_xact_lock(hashtextextended('first-system-bootstrap',0));
+do $bootstrap$
+begin
+  if exists(select 1 from platform.user_roles ur join platform.roles r on r.id=ur.role_id where r.domain='platform' and r.code='platform_owner' and ur.revoked_at is null)
+     or exists(select 1 from public.system_bootstrap_state where singleton_id=1 and completed_at is not null)
+     or exists(select 1 from public.system_bootstrap_secret) then
+    raise exception 'BOOTSTRAP_STATE_CHANGED';
+  end if;
+end $bootstrap$;
 insert into public.system_bootstrap_secret(singleton_id,secret_hash,intended_user_id)
 values(1,extensions.crypt(${sqlLiteral(token)},extensions.gen_salt('bf',12)),${sqlLiteral(userId)}::uuid);
 commit;
