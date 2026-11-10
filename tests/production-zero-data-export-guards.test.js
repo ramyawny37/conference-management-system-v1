@@ -52,6 +52,27 @@ test('does not log secret on malformed database URL', () => {
   assert.doesNotMatch(r.stderr, /secret/);
 });
 
+test('schema-only guard allows DML inside function bodies but rejects dumped table data', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-schema-dml-'));
+  const executable = path.join(dir, 'pg_dump');
+  const base = '-- PostgreSQL database dump\nCREATE SCHEMA "platform";\nCREATE TABLE "platform"."example" ("id" integer);\nGRANT USAGE ON SCHEMA "platform" TO "authenticated";\nALTER DEFAULT PRIVILEGES IN SCHEMA "platform" GRANT EXECUTE ON FUNCTIONS TO "authenticated";\n';
+  const functionSql = base + 'CREATE FUNCTION "platform"."writer"() RETURNS void LANGUAGE plpgsql AS $fn$\nBEGIN\n  UPDATE "platform"."example" SET "id" = 1;\nEND;\n$fn$;\n' + '-- schema only\n'.repeat(100);
+  fs.writeFileSync(executable, '#!/usr/bin/env node\nif(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\nprocess.stdout.write(' + JSON.stringify(functionSql) + ');\n', { mode: 0o700 });
+  try {
+    const ok = run(dev, { PG_DUMP_BIN: executable });
+    assert.equal(ok.status, 0, ok.stderr);
+    const artifact = path.resolve(__dirname, '../.release-local/development-application-schema-only.sql');
+    if (fs.existsSync(artifact)) fs.unlinkSync(artifact);
+    const dataSql = base + '-- Data for Name: example; Type: TABLE DATA; Schema: platform; Owner: postgres\nCOPY "platform"."example" ("id") FROM stdin;\n1\n\\.\n' + '-- padding\n'.repeat(100);
+    fs.writeFileSync(executable, '#!/usr/bin/env node\nif(process.argv.includes("--version")) { console.log("pg_dump (PostgreSQL) 17"); process.exit(0); }\nprocess.stdout.write(' + JSON.stringify(dataSql) + ');\n', { mode: 0o700 });
+    const blocked = run(dev, { PG_DUMP_BIN: executable });
+    assert.equal(blocked.status, 1);
+    assert.match(blocked.stderr, /Table data found in schema-only output/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('mock pg_dump writes schema-only artifact without leaking credentials to argv', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-schema-'));
   const executable = path.join(dir, 'pg_dump');
