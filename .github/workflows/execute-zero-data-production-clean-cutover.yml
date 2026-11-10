@@ -55,24 +55,26 @@ jobs:
         run: |
           set -euo pipefail
           export PGCONNECT_TIMEOUT=15
-          cat > /tmp/cutover.sql <<'SQL'
-          BEGIN;
+          {
+            echo 'BEGIN;'
+            cat <<'SQL'
           DROP SCHEMA IF EXISTS "reservations_private" CASCADE;
           DROP SCHEMA IF EXISTS "reservations" CASCADE;
           DROP SCHEMA IF EXISTS "platform_private" CASCADE;
           DROP SCHEMA IF EXISTS "platform" CASCADE;
           DROP SCHEMA IF EXISTS "public" CASCADE;
-          \ir tools/production-release/canonical-clean-bootstrap.sql
-          \ir tools/production-release/canonical-system-catalog-seed.sql
-          \ir tools/production-release/assert-canonical-full-foundation.sql
-          \ir tools/production-release/assert-canonical-structural-parity.sql
-          \ir tools/production-release/assert-first-owner-device-security.sql
-          \ir tools/production-release/assert-canonical-access-parity.sql
-          \ir tools/production-release/assert-canonical-ambient-grants.sql
-          \ir tools/production-release/assert-canonical-default-grants.sql
-          COMMIT;
           SQL
-          psql "$PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -v repo="$GITHUB_WORKSPACE" -f /tmp/cutover.sql
+            cat tools/production-release/canonical-clean-bootstrap.sql
+            cat tools/production-release/canonical-system-catalog-seed.sql
+            cat tools/production-release/assert-canonical-full-foundation.sql
+            cat tools/production-release/assert-canonical-structural-parity.sql
+            cat tools/production-release/assert-first-owner-device-security.sql
+            cat tools/production-release/assert-canonical-access-parity.sql
+            cat tools/production-release/assert-canonical-ambient-grants.sql
+            cat tools/production-release/assert-canonical-default-grants.sql
+            echo 'COMMIT;'
+          } > /tmp/cutover.sql
+          psql "$PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f /tmp/cutover.sql
           rm -f /tmp/cutover.sql
       - name: Post-cutover read-only security audit
         shell: bash
