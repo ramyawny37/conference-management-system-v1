@@ -29,8 +29,6 @@ begin
 end;
 $$;
 
-revoke all on function warehouse_private.require_read_session(uuid) from public, anon, authenticated, service_role;
-grant execute on function warehouse_private.require_read_session(uuid) to service_role;
 
 do $$
 declare
