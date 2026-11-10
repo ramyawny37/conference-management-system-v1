@@ -1,5 +1,8 @@
 -- Bounded read-only diagnostic for schemas whose semantic fingerprint can be
 -- affected by the disposable managed-foundation contract.
+\pset format unaligned
+\pset fieldsep '|'
+\pset tuples_only on
 SELECT n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' signature,
        md5(concat_ws('|',p.prosrc,l.lanname,p.provolatile,p.prosecdef::text,p.proleakproof::text,
          p.proisstrict::text,p.proretset::text,p.proparallel,p.prokind,p.procost::text,p.prorows::text,
