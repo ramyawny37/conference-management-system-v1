@@ -155,7 +155,8 @@ test('cutover contract is one outer transaction with fail-closed guards', () => 
   assert.match(authIntegration, /CREATE TRIGGER platform_auth_user_provisioned/);
   assert.match(authIntegration, /CANONICAL_AUTH_INTEGRATION_PASS/);
   assert.match(authIntegration, /CANONICAL_AUTH_INTEGRATION_UNEXPECTED_TRIGGER/);
-  assert.match(preparation, /SUPABASE_MANAGED_AUTH_USERS_REFERENCES_MISSING/);
+  assert.match(preparation, /SUPABASE_MANAGED_AUTH_USERS_INTEGRATION_PRIVILEGES_MISSING/);
+  assert.match(preparation, /has_table_privilege\(current_user,'auth\.users','TRIGGER'\)/);
   assert.doesNotMatch(preparation, /^\s*(?:DELETE\s+FROM|TRUNCATE)\b/im);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?(?:auth|storage|realtime|extensions)"?/im);
   assert.doesNotMatch(preparation, /^\s*DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?"?public"?/im);

@@ -80,6 +80,9 @@ BEGIN
   IF to_regclass('auth.users') IS NULL THEN
     RAISE EXCEPTION 'CUTOVER_CANONICAL_AUTH_INTEGRATION_BLOCKED: auth.users missing';
   END IF;
+  IF NOT has_table_privilege(current_user,'auth.users','TRIGGER') THEN
+    RAISE EXCEPTION 'CUTOVER_CANONICAL_AUTH_INTEGRATION_BLOCKED: auth.users TRIGGER privilege missing';
+  END IF;
   WITH expected(trigger_name,function_name) AS (
     VALUES
       ('auth_users_create_profile','public.handle_new_user_profile()'),
@@ -183,8 +186,9 @@ DO $managed_defaults$
 DECLARE n bigint; digest text;
 BEGIN
   IF to_regclass('auth.users') IS NULL
-     OR NOT has_table_privilege(current_user,'auth.users','REFERENCES') THEN
-    RAISE EXCEPTION 'SUPABASE_MANAGED_AUTH_USERS_REFERENCES_MISSING';
+     OR NOT has_table_privilege(current_user,'auth.users','REFERENCES')
+     OR NOT has_table_privilege(current_user,'auth.users','TRIGGER') THEN
+    RAISE EXCEPTION 'SUPABASE_MANAGED_AUTH_USERS_INTEGRATION_PRIVILEGES_MISSING';
   END IF;
   WITH entries AS (
     SELECT 'default:'||ns.nspname||':'||owner.rolname||':'||coalesce(grantee.rolname,'PUBLIC')||':'||

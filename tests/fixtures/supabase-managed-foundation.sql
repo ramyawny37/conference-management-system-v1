@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS "auth"."users" (
   "raw_user_meta_data" jsonb,
   "created_at" timestamptz DEFAULT now()
 );
-GRANT REFERENCES ON TABLE "auth"."users" TO "postgres";
+GRANT REFERENCES, TRIGGER ON TABLE "auth"."users" TO "postgres";
 CREATE OR REPLACE FUNCTION "auth"."uid"() RETURNS uuid
 LANGUAGE sql STABLE SET search_path = ''
 AS $auth$ SELECT NULLIF(pg_catalog.current_setting('request.jwt.claim.sub', true), '')::uuid $auth$;
