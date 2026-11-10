@@ -18,7 +18,7 @@ fail() { echo "BLOCKED: $*" >&2; exit 1; }
 command -v psql >/dev/null || fail "psql unavailable"
 dump="$1"
 grep -q '^-- PostgreSQL database dump' "$dump" || fail "Unrecognized schema-only dump"
-if grep -Eq '^-- Data for Name:' "$dump" || grep -Eiq '^COPY[[:space:]].*[[:space:]]FROM[[:space:]]+stdin;[[:space:]]*
+if grep -Fq -- '-- Data for Name:' "$dump" || grep -Eiq '^COPY[[:space:]].*FROM[[:space:]]+stdin;[[:space:]]*$' "$dump"; then fail "Dump contains table data"; fi
 if grep -Eiq '^[[:space:]]*(CREATE|ALTER)[[:space:]]+(ROLE|USER|DATABASE|TABLESPACE)[[:space:]]' "$dump"; then fail "Dump contains privileged cluster DDL"; fi
 # Exporter strips ACLs; without an approved grants replay the artifact
 # cannot establish the secure canonical database, regardless of schema parity.
