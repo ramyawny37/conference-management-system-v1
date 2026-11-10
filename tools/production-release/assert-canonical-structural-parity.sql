@@ -40,7 +40,26 @@ BEGIN
   INTO mismatches
   FROM expected e LEFT JOIN actual a USING(kind)
   WHERE a.kind IS NULL OR e.objects<>a.objects OR e.digest<>a.digest;
-  IF mismatches IS NOT NULL THEN RAISE EXCEPTION 'FOUNDATION_STRUCTURAL_PARITY_FAILED: %',mismatches; END IF;
+  IF mismatches IS NOT NULL THEN
+    RAISE NOTICE 'FUNCTION_SEMANTIC_SCHEMA_DIGESTS: %',(
+      SELECT string_agg(format('%s=%s/%s',schema_name,objects,digest),', ' ORDER BY schema_name)
+      FROM (
+        SELECT n.nspname schema_name,count(*) objects,
+          md5(string_agg((n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')')||':'||
+            md5(concat_ws('|',p.prosrc,l.lanname,p.provolatile,p.prosecdef::text,p.proleakproof::text,
+              p.proisstrict::text,p.proretset::text,p.proparallel,p.prokind,p.procost::text,p.prorows::text,
+              coalesce(array_to_string(p.proconfig,E'\\x1f'),''),pg_get_function_result(p.oid))),E'\n'
+            ORDER BY (n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')')||':'||
+            md5(concat_ws('|',p.prosrc,l.lanname,p.provolatile,p.prosecdef::text,p.proleakproof::text,
+              p.proisstrict::text,p.proretset::text,p.proparallel,p.prokind,p.procost::text,p.prorows::text,
+              coalesce(array_to_string(p.proconfig,E'\\x1f'),''),pg_get_function_result(p.oid))))) digest
+        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_language l ON l.oid=p.prolang
+        WHERE n.nspname IN ('public','platform','platform_private','reservations','reservations_private')
+        GROUP BY n.nspname
+      ) diagnostics
+    );
+    RAISE EXCEPTION 'FOUNDATION_STRUCTURAL_PARITY_FAILED: %',mismatches;
+  END IF;
   RAISE NOTICE 'FOUNDATION_STRUCTURAL_PARITY_PASS';
 END
 $parity$;
