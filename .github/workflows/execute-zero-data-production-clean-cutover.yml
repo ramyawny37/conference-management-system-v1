@@ -64,6 +64,7 @@ jobs:
             echo 'BEGIN;'
             cat tools/production-release/prepare-canonical-application-replacement.sql
             cat tools/production-release/canonical-clean-bootstrap.sql
+            echo 'SET LOCAL client_min_messages = notice;'
             cat tools/production-release/canonical-system-catalog-seed.sql
             cat tools/production-release/assert-canonical-full-foundation.sql
             cat tools/production-release/assert-canonical-structural-parity.sql

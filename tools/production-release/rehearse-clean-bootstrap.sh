@@ -43,6 +43,7 @@ trap 'rm -f "$cutover"' EXIT
   if [[ "${PGUSER}" != "postgres" ]]; then echo 'SET LOCAL ROLE "postgres";'; fi
   cat tools/production-release/prepare-canonical-application-replacement.sql
   cat "$dump"
+  echo 'SET LOCAL client_min_messages = notice;'
   cat tools/production-release/canonical-system-catalog-seed.sql
   cat tools/production-release/assert-canonical-full-foundation.sql
   cat tools/production-release/assert-canonical-structural-parity.sql
