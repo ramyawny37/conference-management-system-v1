@@ -43,6 +43,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "btree_gist" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+CREATE EXTENSION IF NOT EXISTS "supabase_vault";
 CREATE SCHEMA IF NOT EXISTS "auth";
 CREATE TABLE IF NOT EXISTS "auth"."users" (
   "id" uuid PRIMARY KEY,
