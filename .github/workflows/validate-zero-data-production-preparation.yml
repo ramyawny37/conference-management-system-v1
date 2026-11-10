@@ -25,7 +25,7 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,6 +91,39 @@ jobs:
             canonical-clean-bootstrap.sha256
           if-no-files-found: error
           retention-days: 7
+      - name: Commit proven canonical bootstrap and evidence to develop
+        if: success()
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse --abbrev-ref HEAD)" = "develop"
+          mkdir -p tools/production-release
+          cp canonical-clean-bootstrap.sql tools/production-release/canonical-clean-bootstrap.sql
+          bootstrap_sha="$(sha256sum canonical-clean-bootstrap.sql | awk '{print $1}')"
+          cat > tools/production-release/canonical-clean-bootstrap-evidence.json <<EOF
+          {
+            "sourceProjectRef": "gppwltrifgfxrkzvvxoe",
+            "targetProjectRef": "mpezfbvcdfxpgflehuot",
+            "dataMigration": false,
+            "localBootstrap": "PASS",
+            "ownerDeviceLifecycle": "PASS",
+            "securityAudit": "PASS",
+            "reviewed": true,
+            "sourceCommit": "$SOURCE_SHA",
+            "workflowRunId": "$SOURCE_RUN_ID",
+            "bootstrapSha256": "$bootstrap_sha"
+          }
+          EOF
+          git add tools/production-release/canonical-clean-bootstrap.sql tools/production-release/canonical-clean-bootstrap-evidence.json
+          git diff --cached --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "release: record proven canonical clean bootstrap"
+          git push origin HEAD:develop
       - name: Remove extracted schema from runner
         if: always()
         shell: bash
