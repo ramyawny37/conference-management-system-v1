@@ -4,6 +4,9 @@
 DO $parity$
 DECLARE mismatches text;
 BEGIN
+  -- pg_get_function_result/identity_arguments render names through the session
+  -- search_path. Pin it so the digest is independent from pg_dump session SETs.
+  PERFORM pg_catalog.set_config('search_path','public, pg_catalog',true);
   WITH rels AS (
     SELECT concat_ws(':',n.nspname||'.'||c.relname,c.relkind::text,c.relrowsecurity::text) item
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace

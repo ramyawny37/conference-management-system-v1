@@ -1,4 +1,5 @@
 -- Read-only metadata fingerprint. Reads no function results or application rows.
+SET search_path = public, pg_catalog;
 WITH items AS (
   SELECT n.nspname schema_name,
     (n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')') signature,
