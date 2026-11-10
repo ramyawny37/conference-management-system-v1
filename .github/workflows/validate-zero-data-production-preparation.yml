@@ -153,15 +153,13 @@ jobs:
           done
       - name: Run offline security guard tests
         run: node --test tests/production-zero-data-export-guards.test.js
-      - name: Verify production replacement remains blocked without proven clean bootstrap
+      - name: Verify zero-data Production replacement readiness
         shell: bash
         run: |
-          set +e
+          set -euo pipefail
           node tools/production-release/check-zero-data-replacement-readiness.cjs > readiness.json
-          status=$?
-          set -e
-          test "$status" -eq 1
-          node -e 'const r=require("./readiness.json"); if(r.ready!==false || !r.checks.some(x=>x.name==="clean_bootstrap_evidence" && x.status==="BLOCKED")) process.exit(1)'
+          node -e 'const r=require("./readiness.json"); if(r.ready!==true || r.checks.some(x=>x.status!=="PASS")) process.exit(1)'
+          cat readiness.json
           rm readiness.json
   disposable-catalog-replay:
     runs-on: ubuntu-latest
