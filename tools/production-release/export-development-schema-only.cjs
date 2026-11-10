@@ -17,7 +17,10 @@ if (!connection) fail('DEVELOPMENT_DATABASE_URL is required; do not store it in 
 let parsed;
 try { parsed = new URL(connection); } catch { fail('Invalid Development database URL'); }
 if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) fail('PostgreSQL URL required');
-if (parsed.hostname !== 'db.' + DEV_REF + '.supabase.co') fail('Only the explicit Development project is allowed');
+const decodedUser = decodeURIComponent(parsed.username || '');
+const directHost = parsed.hostname === 'db.' + DEV_REF + '.supabase.co';
+const sharedSessionPooler = parsed.hostname.endsWith('.pooler.supabase.com') && (parsed.port || '5432') === '5432' && decodedUser === 'postgres.' + DEV_REF;
+if (!directHost && !sharedSessionPooler) fail('Only the explicit Development project direct connection or its session pooler is allowed');
 if (!parsed.username || !parsed.pathname || parsed.pathname === '/') fail('Database username and name required');
 if (parsed.search || parsed.hash) fail('URL query parameters are not supported');
 if (!parsed.password) fail('Database password required');
