@@ -20,7 +20,11 @@ if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) fail('PostgreSQL UR
 const decodedUser = decodeURIComponent(parsed.username || '');
 const directHost = parsed.hostname === 'db.' + DEV_REF + '.supabase.co';
 const sharedSessionPooler = parsed.hostname.endsWith('.pooler.supabase.com') && (parsed.port || '5432') === '5432' && decodedUser === 'postgres.' + DEV_REF;
-if (!directHost && !sharedSessionPooler) fail('Only the explicit Development project direct connection or its session pooler is allowed');
+if (!directHost && !sharedSessionPooler) {
+  const safeUser = decodedUser.startsWith('postgres.') ? 'postgres.<project-ref>' : (decodedUser || '<empty>');
+  console.error(JSON.stringify({ diagnostic: 'DEVELOPMENT_DATABASE_ENDPOINT_REJECTED', host: parsed.hostname, port: parsed.port || '<default>', userShape: safeUser, database: parsed.pathname.replace(/^\\//, '') || '<empty>' }));
+  fail('Only the explicit Development project direct connection or its session pooler is allowed');
+}
 if (!parsed.username || !parsed.pathname || parsed.pathname === '/') fail('Database username and name required');
 if (parsed.search || parsed.hash) fail('URL query parameters are not supported');
 if (!parsed.password) fail('Database password required');
