@@ -45,6 +45,7 @@ trap 'rm -f "$cutover"' EXIT
   cat "$dump"
   echo 'SET LOCAL client_min_messages = notice;'
   cat tools/production-release/canonical-system-catalog-seed.sql
+  cat tools/production-release/canonical-function-semantic-detail.sql
   cat tools/production-release/assert-canonical-full-foundation.sql
   cat tools/production-release/assert-canonical-structural-parity.sql
   cat tools/production-release/assert-first-owner-device-security.sql

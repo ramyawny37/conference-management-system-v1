@@ -15,6 +15,7 @@ on:
       - 'tools/production-release/assert-canonical-full-foundation.sql'
       - 'tools/production-release/assert-canonical-structural-parity.sql'
       - 'tools/production-release/canonical-function-semantic-fingerprint.sql'
+      - 'tools/production-release/canonical-function-semantic-detail.sql'
       - 'tools/production-release/assert-first-owner-device-security.sql'
       - 'tools/production-release/assert-canonical-access-parity.sql'
       - 'tools/production-release/assert-canonical-ambient-grants.sql'
@@ -63,6 +64,8 @@ jobs:
           test -s .release-local/development-application-schema-only.sql
           echo 'Development function semantic fingerprints (metadata only):'
           psql "$DEVELOPMENT_DATABASE_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 -f tools/production-release/canonical-function-semantic-fingerprint.sql
+          echo 'Development bounded function semantic detail (metadata only):'
+          psql "$DEVELOPMENT_DATABASE_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 -f tools/production-release/canonical-function-semantic-detail.sql
           echo 'EXTRACTED_NOT_VALIDATED: local ephemeral schema only; no artifact uploaded, no Production connection'
       - name: Rehearse extracted schema on disposable PostgreSQL 17
         shell: bash
