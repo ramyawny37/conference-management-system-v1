@@ -75,3 +75,25 @@ test('pending-device list rejection displays an error without leaking a rejected
   assert.match(h.element.innerHTML,/تعذر تحميل طلبات اعتماد الأجهزة/);
   assert.match(h.element.innerHTML,/DEVICE_SESSION_INVALID/);
 });
+
+
+test('Edge FunctionsHttpError preserves the safe application code for pending-device mutations',async()=>{
+  const targetUserId='11111111-1111-4111-8111-111111111111',targetDeviceId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const httpError={message:'Edge Function returned a non-2xx status code',context:{clone(){return this;},json(){return Promise.resolve({ok:false,status:'denied',error:{code:'PLATFORM_DEVICE_MUTATION_CHALLENGE_INVALID'}});}}};
+  let invokes=0;
+  const client={rpc:()=>Promise.resolve({data:null,error:null}),functions:{invoke(name,{body}){invokes++;
+    if(body.action==='get-administration-state')return Promise.resolve({data:{ok:true,status:'ready',data:{credentialId:'33333333-3333-4333-8333-333333333333'}},error:null});
+    if(body.action==='begin-pending-device-approval')return Promise.resolve({data:null,error:httpError});
+    if(body.action==='get-operation-result')return Promise.resolve({data:null,error:httpError});
+    throw new Error('UNEXPECTED_ACTION:'+body.action);
+  }}};
+  const sandbox={window:null,Promise,Object,Array,String,JSON,Uint8Array,ArrayBuffer,console,atob,btoa,
+    navigator:{credentials:{get:()=>Promise.reject(new Error('SHOULD_NOT_PROMPT'))}},crypto:{randomUUID:()=> '44444444-4444-4444-8444-444444444444'},
+    SupabaseClientLayer:{getClient:()=>client},SupabaseAuth:{getSession:()=>({user:{id:targetUserId}})},
+    SupabaseDeviceIdentity:{getOrCreate:()=>({id:'22222222-2222-4222-8222-222222222222'})},PlatformDeviceSession:{}};
+  sandbox.window=sandbox;vm.runInNewContext(serviceSource,sandbox);
+  const result=await sandbox.DeviceAuthorizationAdministrationService.approveSystemOwnerPendingDevice({targetUserId,deviceId:targetDeviceId});
+  assert.equal(result.ok,false);assert.equal(result.status,'unknown');
+  assert.equal(result.error.code,'PLATFORM_DEVICE_MUTATION_CHALLENGE_INVALID');
+  assert.equal(invokes,3);
+});
