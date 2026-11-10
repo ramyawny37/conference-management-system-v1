@@ -27,6 +27,15 @@ if ! grep -Eiq '^[[:space:]]*GRANT[[:space:]]' "$dump" ||
   fail "Schema-only dump lacks GRANT or ALTER DEFAULT PRIVILEGES replay; reviewed ACL restoration is required"
 fi
 echo "Rehearsing schema in disposable local database (no hosted connections)"
+# Rehearse the same zero-data replacement boundary intended for hosted release:
+# only the five application schemas are cleared; PostgreSQL/Supabase-managed schemas are out of scope.
+psql -X -v ON_ERROR_STOP=1 -1 <<'SQL' >/dev/null
+DROP SCHEMA IF EXISTS "reservations_private" CASCADE;
+DROP SCHEMA IF EXISTS "reservations" CASCADE;
+DROP SCHEMA IF EXISTS "platform_private" CASCADE;
+DROP SCHEMA IF EXISTS "platform" CASCADE;
+DROP SCHEMA IF EXISTS "public" CASCADE;
+SQL
 psql -X -v ON_ERROR_STOP=1 -1 -f "$dump" >/dev/null
 psql -X -v ON_ERROR_STOP=1 -f tools/production-release/canonical-system-catalog-seed.sql >/dev/null
 psql -X -v ON_ERROR_STOP=1 -f tools/production-release/assert-canonical-full-foundation.sql
