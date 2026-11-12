@@ -34,10 +34,10 @@ test("central client confirms server writes and refreshes without local fallback
 });
 
 test("house permission catalog is canonical and owner authorization is not bypassed",()=>{
- const catalog=sql.match(/insert into platform\\.permissions\\([\\s\\S]*?on conflict\\(code\\) do update[\\s\\S]*?sensitive_mutation=excluded\\.sensitive_mutation;/i)?.[0]||"";
- assert.match(catalog,/\\('conference\\.houses\\.view','conference','[^']+',false,'active','module',null,false\\)/);
- assert.match(catalog,/\\('conference\\.houses\\.manage','conference','[^']+',false,'active','module',null,true\\)/);
- assert.match(sql,/require_effective_module_permission\\(p_device,'conference',p_permission,null,null\\)/);
- assert.match(sql,/validated_phase1c_device_authorization\\(actor,p_device\\)/);
- assert.doesNotMatch(sql,/grant\\s+all\\s+on\\s+platform\\.permissions\\s+to\\s+(?:anon|authenticated)/i);
+ const catalog=sql.match(/insert into platform\.permissions\([\s\S]*?on conflict\(code\) do update[\s\S]*?sensitive_mutation=excluded\.sensitive_mutation;/i)?.[0]||"";
+ assert.match(catalog,/\('conference\.houses\.view','conference','[^']+',false,'active','module',null,false\)/);
+ assert.match(catalog,/\('conference\.houses\.manage','conference','[^']+',false,'active','module',null,true\)/);
+ assert.match(sql,/require_effective_module_permission\(p_device,'conference',p_permission,null,null\)/);
+ assert.match(sql,/validated_phase1c_device_authorization\(actor,p_device\)/);
+ assert.doesNotMatch(sql,/grant\s+all\s+on\s+platform\.permissions\s+to\s+(?:anon|authenticated)/i);
 });
