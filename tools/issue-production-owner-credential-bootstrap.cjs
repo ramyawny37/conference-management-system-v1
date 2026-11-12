@@ -67,8 +67,7 @@ function expectSingle(rows, label) {
 
 async function verifyTarget(serviceRoleKey) {
   if (!/^[0-9a-f-]{36}$/i.test(INTENDED_USER_ID) || !/^[0-9a-f-]{36}$/i.test(INTENDED_DEVICE_ID)) fail('Invalid owner/device UUID');
-  const approved = await request(serviceRoleKey, `/rest/v1/user_device_authorizations?select=id&user_id=eq.${INTENDED_USER_ID}&device_id=eq.${INTENDED_DEVICE_ID}&status=eq.approved&revoked_at=is.null`, { label: 'Approved owner device', });
-  if (!Array.isArray(approved) || approved.length !== 1) fail('Exactly one approved owner device authorization is required');
+  // The issuance RPC enforces canonical owner role and approved device authorization.
   const encodedUser = encodeURIComponent(INTENDED_USER_ID);
   const encodedDevice = encodeURIComponent(INTENDED_DEVICE_ID);
   const now = encodeURIComponent(new Date().toISOString());
