@@ -8,8 +8,6 @@ const PROJECT_URL = `https://${PROJECT_REF}.supabase.co`;
 const ENVIRONMENT = 'production';
 const EXPECTED_ORIGIN = 'https://ramyawny37.github.io';
 const RP_ID = 'ramyawny37.github.io';
-const INTENDED_USER_ID = requiredEnvironment('OWNER_USER_ID');
-const INTENDED_DEVICE_ID = requiredEnvironment('APPROVED_OWNER_DEVICE_ID');
 
 function fail(message) {
   throw new Error(message);
@@ -27,7 +25,9 @@ function assertExecutionGate() {
     fail('PRODUCTION_CREDENTIAL_BOOTSTRAP_ENABLED must equal true');
   }
   const serviceRoleKey = requiredEnvironment('SUPABASE_SERVICE_ROLE_KEY');
-  return { serviceRoleKey };
+  const intendedUserId = requiredEnvironment('OWNER_USER_ID');
+  const intendedDeviceId = requiredEnvironment('APPROVED_OWNER_DEVICE_ID');
+  return { serviceRoleKey, intendedUserId, intendedDeviceId };
 }
 
 function openSecureTerminal() {
@@ -60,16 +60,11 @@ async function request(serviceRoleKey, pathname, options = {}) {
   return payload;
 }
 
-function expectSingle(rows, label) {
-  if (!Array.isArray(rows) || rows.length !== 1) fail(`${label} verification failed`);
-  return rows[0];
-}
-
-async function verifyTarget(serviceRoleKey) {
-  if (!/^[0-9a-f-]{36}$/i.test(INTENDED_USER_ID) || !/^[0-9a-f-]{36}$/i.test(INTENDED_DEVICE_ID)) fail('Invalid owner/device UUID');
+async function verifyTarget(serviceRoleKey, intendedUserId, intendedDeviceId) {
+  if (!/^[0-9a-f-]{36}$/i.test(intendedUserId) || !/^[0-9a-f-]{36}$/i.test(intendedDeviceId)) fail('Invalid owner/device UUID');
   // The issuance RPC enforces canonical owner role and approved device authorization.
-  const encodedUser = encodeURIComponent(INTENDED_USER_ID);
-  const encodedDevice = encodeURIComponent(INTENDED_DEVICE_ID);
+  const encodedUser = encodeURIComponent(intendedUserId);
+  const encodedDevice = encodeURIComponent(intendedDeviceId);
   const now = encodeURIComponent(new Date().toISOString());
   const [credentialRows, bootstrapRows] = await Promise.all([
     request(serviceRoleKey, `/rest/v1/device_security_credentials?select=id&user_id=eq.${encodedUser}&device_id=eq.${encodedDevice}&credential_kind=eq.platform_primary&lifecycle_status=eq.active&revoked_at=is.null`, { label: 'Active credential' }),
@@ -80,7 +75,7 @@ async function verifyTarget(serviceRoleKey) {
   if (!Array.isArray(bootstrapRows) || bootstrapRows.length !== 0) fail('Live bootstrap authorization already exists');
 }
 
-async function issue(serviceRoleKey, state) {
+async function issue(serviceRoleKey, state, intendedUserId, intendedDeviceId) {
   const tokenBytes = crypto.randomBytes(32);
   const plaintextToken = tokenBytes.toString('base64url');
   const authorizationHash = crypto.createHash('sha256').update(plaintextToken, 'utf8').digest('hex');
@@ -92,10 +87,10 @@ async function issue(serviceRoleKey, state) {
     method: 'POST',
     label: 'Bootstrap issuance RPC',
     body: {
-      p_operator_user_id: INTENDED_USER_ID,
-      p_operator_device_id: INTENDED_DEVICE_ID,
-      p_intended_user_id: INTENDED_USER_ID,
-      p_intended_device_id: INTENDED_DEVICE_ID,
+      p_operator_user_id: intendedUserId,
+      p_operator_device_id: intendedDeviceId,
+      p_intended_user_id: intendedUserId,
+      p_intended_device_id: intendedDeviceId,
       p_environment: ENVIRONMENT,
       p_authorization_hash: `\\x${authorizationHash}`,
       p_origin: EXPECTED_ORIGIN,
@@ -115,8 +110,8 @@ async function main() {
   try {
     const gate = assertExecutionGate();
     terminal = openSecureTerminal();
-    await verifyTarget(gate.serviceRoleKey);
-    const issuance = await issue(gate.serviceRoleKey, state);
+    await verifyTarget(gate.serviceRoleKey, gate.intendedUserId, gate.intendedDeviceId);
+    const issuance = await issue(gate.serviceRoleKey, state, gate.intendedUserId, gate.intendedDeviceId);
     fs.writeSync(terminal, [
       '',
       'ONE-TIME PRODUCTION PLATFORM CREDENTIAL BOOTSTRAP TOKEN',
@@ -129,8 +124,8 @@ async function main() {
       authorizationId: issuance.result.authorizationId,
       auditId: issuance.result.auditId,
       expiresInSeconds: issuance.result.expiresInSeconds,
-      intendedUserId: INTENDED_USER_ID,
-      intendedDeviceId: INTENDED_DEVICE_ID,
+      intendedUserId: gate.intendedUserId,
+      intendedDeviceId: gate.intendedDeviceId,
       environment: ENVIRONMENT,
       origin: EXPECTED_ORIGIN,
       rpId: RP_ID,
