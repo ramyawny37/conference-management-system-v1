@@ -1,5 +1,5 @@
 -- Canonical system catalog seed. Extracted 2026-11-09 from Development read-only.
--- System roles, system permissions and role mappings ONLY. No personal/event data.
+-- Canonical module registration, system roles, permissions and role mappings ONLY. No personal/event data.
 -- REQUIRES complete validated schema foundation; not a standalone bootstrap.
 -- Canonical module registration is reference data, not user/event data.
 -- Idempotent, fail-closed: never reactivate a deliberately disabled module.
