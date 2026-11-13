@@ -1,6 +1,23 @@
 -- Canonical system catalog seed. Extracted 2026-11-09 from Development read-only.
 -- System roles, system permissions and role mappings ONLY. No personal/event data.
 -- REQUIRES complete validated schema foundation; not a standalone bootstrap.
+-- Canonical module registration is reference data, not user/event data.
+-- Idempotent, fail-closed: never reactivate a deliberately disabled module.
+INSERT INTO public.platform_modules (module_key,display_name,status) VALUES
+ ('conference','Conference Management','active'),
+ ('warehouse','Warehouse Management','active'),
+ ('reservations','Reservations','active'),
+ ('custody','Custody & Advances','active')
+ON CONFLICT (module_key) DO NOTHING;
+DO $canonical_modules$
+BEGIN
+ IF EXISTS (SELECT 1 FROM (VALUES ('conference'),('warehouse'),('reservations'),('custody')) AS expected(module_key)
+ LEFT JOIN public.platform_modules m USING (module_key)
+ WHERE m.module_key IS NULL OR m.status <> 'active')
+ THEN RAISE EXCEPTION 'Canonical module catalog incomplete or inactive'; END IF;
+END
+$canonical_modules$;
+
 INSERT INTO platform.roles (code,domain,name,description,scope_type,is_system,is_assignable) VALUES ('accommodation_manager','conference','Accommodation Manager','Manages accommodation and reads the people required for room assignment.','conference',TRUE,TRUE) ON CONFLICT (domain,code) DO NOTHING;
 INSERT INTO platform.roles (code,domain,name,description,scope_type,is_system,is_assignable) VALUES ('conference_manager','conference','Conference Manager','Manages authorized operational areas and delegates responsibilities inside one Conference.','conference',TRUE,TRUE) ON CONFLICT (domain,code) DO NOTHING;
 INSERT INTO platform.roles (code,domain,name,description,scope_type,is_system,is_assignable) VALUES ('conference_viewer','conference','Conference Viewer','Reads non-financial Conference operational sections without mutation authority.','conference',TRUE,TRUE) ON CONFLICT (domain,code) DO NOTHING;
