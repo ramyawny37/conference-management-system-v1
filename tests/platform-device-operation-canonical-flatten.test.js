@@ -22,6 +22,7 @@ const dispatcherPatches=read('supabase/migration-archive/development-pre-canonic
 const ownerPendingReadPatch=read('supabase/migrations/20261018173157_canonical_owner_pending_device_session_read.sql');
 const canonicalTemplateReadPatch=read('supabase/migrations/20261021194949_canonical_library_template_read.sql');
 const canonicalBundlePatch=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261021203000_conference_canonical_bundle_export_restore.sql');
+const canonicalFamilyAccommodationPatch=read('supabase/migrations/20261028080942_canonical_family_accommodation_lifecycle_cutover.sql');
 const canonicalAccommodationOperationsPatch=[
   'supabase/migrations/20261023103201_canonical_accommodation_arrivals_and_room_keys.sql',
   'supabase/migrations/20261025202253_atomic_accommodation_room_draft_save.sql',
@@ -58,7 +59,7 @@ test('every current Edge operation remains represented by its canonical module r
   assert.match(dispatcher,/'apply_library_template_content_operation'/);
   assert.match(dispatcher,/p_module='conference'[\s\S]*platform\.execute_conference_device_operation\(/);
   for(const operation of edgeOperations('conference')){
-    const route=operation==='check_module_access'?dispatcher:conferenceRouter+conferenceCore+conferencePeoplePatches+conferenceHousePatch+canonicalBundlePatch+canonicalAccommodationOperationsPatch;
+    const route=operation==='check_module_access'?dispatcher:conferenceRouter+conferenceCore+conferencePeoplePatches+conferenceHousePatch+canonicalBundlePatch+canonicalAccommodationOperationsPatch+canonicalFamilyAccommodationPatch;
     assert.match(route,new RegExp(operation),`conference:${operation}`);
   }
 });
