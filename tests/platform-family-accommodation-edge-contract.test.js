@@ -6,9 +6,12 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/platform-device-operation/index.ts'), 'utf8');
+const integration = fs.readFileSync(path.join(root, 'js/platform-integration.js'), 'utf8');
 const operation = 'save_conference_family_accommodation_draft';
 
 test('canonical family accommodation save crosses the single conference device gateway', () => {
+  assert.match(integration, /invokeProtected\('conference','save_conference_family_accommodation_draft'/);
+  assert.match(integration, /p_payload:\{roomDraft:/);
   const registration = "conference.add('" + operation + "');";
   assert.equal(edge.split(registration).length - 1, 1, 'exactly one canonical gateway registration');
   assert.match(edge, /const allowed=module==='platform'\?platform:module==='conference'\?conference/);
