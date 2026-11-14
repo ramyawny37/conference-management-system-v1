@@ -1,6 +1,12 @@
 -- Disposable CI-only contract fixture. NOT the application foundation or production migration.
 -- Deliberately models the live Development catalog columns and uniqueness constraints.
 CREATE SCHEMA platform;
+-- Minimal public module registry required by the canonical catalog seed.
+CREATE TABLE public.platform_modules (
+ module_key text PRIMARY KEY,
+ display_name text NOT NULL,
+ status text NOT NULL DEFAULT 'active'
+);
 CREATE TABLE platform.roles (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
  code text NOT NULL,
