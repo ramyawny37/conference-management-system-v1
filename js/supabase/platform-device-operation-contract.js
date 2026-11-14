@@ -24,6 +24,7 @@
     ['move_conference_accommodation','public.move_conference_accommodation(uuid,uuid,uuid,bigint,uuid,integer,integer,text,text)'],
     ['remove_conference_accommodation','public.remove_conference_accommodation(uuid,uuid,uuid,bigint)'],
     ['save_conference_accommodation_room_draft','public.save_conference_accommodation_room_draft(uuid,uuid,uuid,uuid,bigint,bigint,jsonb,jsonb)'],
+    ['save_conference_family_accommodation_draft','public.save_conference_family_accommodation_draft(uuid,uuid,uuid,jsonb)'],
     ['get_conference_transport','public.get_conference_transport(uuid,uuid)'],
     ['mutate_conference_transport_vehicle','public.mutate_conference_transport_vehicle(uuid,uuid,text,uuid,uuid,bigint,text,text,integer,integer,boolean)'],
     ['set_conference_transport_assignment','public.set_conference_transport_assignment(uuid,uuid,uuid,uuid,uuid,text,text,integer,bigint)'],
