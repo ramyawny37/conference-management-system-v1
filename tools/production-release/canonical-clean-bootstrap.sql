@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict b7mYGmH3spqh6OFaRCtLpxn15j2rGBkUthdRWVZYOw7DWLlJytjB3Z0wEcADlC5
+\restrict 2cbDPQuXvchRUcR6uOLzB4ikUhWrnwseehy4Ubkzwmsm2saRQ8yv8ldf7PCK7BZ
 
 -- Dumped from database version 17.6
--- Dumped by pg_dump version 17.11 (Ubuntu 17.11-1.pgdg24.04+2)
+-- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -4450,37 +4450,63 @@ CREATE FUNCTION "public"."complete_first_system_bootstrap"("p_setup_token" "text
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-declare actor_id uuid:=auth.uid(); state_row public.system_bootstrap_state%rowtype; secret_row public.system_bootstrap_secret%rowtype; intent text; result jsonb; role_id uuid; display_name text;
+declare
+ actor_id uuid:=auth.uid();
+ state_row public.system_bootstrap_state%rowtype;
+ secret_row public.system_bootstrap_secret%rowtype;
+ intent text;
+ result jsonb;
+ role_id uuid;
+ display_name text;
 begin
  if actor_id is null then raise exception 'AUTH_REQUIRED' using errcode='42501'; end if;
  if p_operation_id is null then raise exception 'INVALID_BOOTSTRAP_REQUEST' using errcode='22023'; end if;
  intent:=pg_catalog.encode(extensions.digest(actor_id::text,'sha256'),'hex');
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('first-system-bootstrap',0));
- select * into state_row from public.system_bootstrap_state where singleton_id=1 for update;
+
+ insert into public.system_bootstrap_state(singleton_id) values(1) on conflict(singleton_id) do nothing;
+ select * into strict state_row from public.system_bootstrap_state where singleton_id=1 for update;
+
  if state_row.completed_at is not null then
   if state_row.completed_by=actor_id and state_row.operation_id=p_operation_id and state_row.intent_hash=intent then return state_row.stored_result; end if;
   raise exception 'BOOTSTRAP_ALREADY_COMPLETED' using errcode='42501';
  end if;
  if exists(select 1 from platform.user_roles a join platform.roles r on r.id=a.role_id where r.domain='platform' and r.code='platform_owner' and a.revoked_at is null) then raise exception 'SYSTEM_OWNER_ALREADY_EXISTS' using errcode='42501'; end if;
+
  select * into secret_row from public.system_bootstrap_secret where singleton_id=1 for update;
  if not found or secret_row.intended_user_id<>actor_id then raise exception 'BOOTSTRAP_IDENTITY_INVALID' using errcode='42501'; end if;
  if extensions.crypt(coalesce(p_setup_token,''),secret_row.secret_hash)<>secret_row.secret_hash then raise exception 'BOOTSTRAP_CREDENTIAL_INVALID' using errcode='42501'; end if;
- select nullif(pg_catalog.btrim(coalesce(raw_user_meta_data->>'display_name',raw_user_meta_data->>'name','')),'') into display_name from auth.users where id=actor_id;
+
+ select nullif(pg_catalog.btrim(coalesce(raw_user_meta_data->>'display_name',raw_user_meta_data->>'name','')),'')
+ into display_name from auth.users where id=actor_id;
  if not found then raise exception 'AUTH_USER_NOT_FOUND' using errcode='P0002'; end if;
+
  insert into platform.profiles(user_id,display_name,account_status,status_changed_at,status_changed_by,approved_at,approved_by)
  values(actor_id,display_name,'approved',pg_catalog.now(),actor_id,pg_catalog.now(),actor_id)
- on conflict(user_id) do update set display_name=coalesce(platform.profiles.display_name,excluded.display_name),account_status='approved',status_reason='first platform owner bootstrap',status_changed_at=pg_catalog.now(),status_changed_by=actor_id,approved_at=pg_catalog.now(),approved_by=actor_id,blocked_at=null,blocked_by=null;
+ on conflict(user_id) do update set
+  display_name=coalesce(platform.profiles.display_name,excluded.display_name),
+  account_status='approved',status_reason='first platform owner bootstrap',
+  status_changed_at=pg_catalog.now(),status_changed_by=actor_id,
+  approved_at=pg_catalog.now(),approved_by=actor_id,blocked_at=null,blocked_by=null;
+
  select id into role_id from platform.roles where domain='platform' and code='platform_owner';
  if role_id is null then raise exception 'REFERENCE_DATA_NOT_SEEDED' using errcode='55000'; end if;
  insert into platform.user_roles(user_id,role_id,scope_type,scope_id,granted_by,metadata)
  values(actor_id,role_id,'platform',null,actor_id,pg_catalog.jsonb_build_object('bootstrap',true))
  on conflict do nothing;
+
  result:=pg_catalog.jsonb_build_object('status','completed','operationId',p_operation_id);
- update public.system_bootstrap_state set completed_at=pg_catalog.now(),completed_by=actor_id,device_id=null,operation_id=p_operation_id,intent_hash=intent,stored_result=result where singleton_id=1;
+ update public.system_bootstrap_state
+ set completed_at=pg_catalog.now(),completed_by=actor_id,device_id=null,
+     operation_id=p_operation_id,intent_hash=intent,stored_result=result
+ where singleton_id=1;
+ if not found then raise exception 'BOOTSTRAP_STATE_WRITE_FAILED' using errcode='55000'; end if;
+
  delete from public.system_bootstrap_secret where singleton_id=1;
  perform platform_private.write_audit_event(actor_id,actor_id,'platform','bootstrap','platform.bootstrap_completed','profile',actor_id,'platform',null,pg_catalog.jsonb_build_object('accountStatus','approved','role','platform_owner'),pg_catalog.jsonb_build_object('bootstrap',true,'deviceEnrollment','p256_followup'),null,null,'bootstrap');
  return result;
-end $$;
+end
+$$;
 
 
 --
@@ -11853,7 +11879,7 @@ CREATE TABLE "public"."system_bootstrap_state" (
     "operation_id" "uuid",
     "intent_hash" "text",
     "stored_result" "jsonb",
-    CONSTRAINT "system_bootstrap_state_check" CHECK (((("completed_at" IS NULL) AND ("completed_by" IS NULL) AND ("device_id" IS NULL) AND ("operation_id" IS NULL) AND ("intent_hash" IS NULL) AND ("stored_result" IS NULL)) OR (("completed_at" IS NOT NULL) AND ("completed_by" IS NOT NULL) AND ("device_id" IS NOT NULL) AND ("operation_id" IS NOT NULL) AND ("intent_hash" IS NOT NULL) AND ("stored_result" IS NOT NULL)))),
+    CONSTRAINT "system_bootstrap_state_check" CHECK (((("completed_at" IS NULL) AND ("completed_by" IS NULL) AND ("device_id" IS NULL) AND ("operation_id" IS NULL) AND ("intent_hash" IS NULL) AND ("stored_result" IS NULL)) OR (("completed_at" IS NOT NULL) AND ("completed_by" IS NOT NULL) AND ("operation_id" IS NOT NULL) AND ("intent_hash" IS NOT NULL) AND ("stored_result" IS NOT NULL)))),
     CONSTRAINT "system_bootstrap_state_singleton_id_check" CHECK (("singleton_id" = 1)),
     CONSTRAINT "system_bootstrap_state_stored_result_check" CHECK ((("stored_result" IS NULL) OR ("jsonb_typeof"("stored_result") = 'object'::"text")))
 );
@@ -19910,4 +19936,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict b7mYGmH3spqh6OFaRCtLpxn15j2rGBkUthdRWVZYOw7DWLlJytjB3Z0wEcADlC5
+\unrestrict 2cbDPQuXvchRUcR6uOLzB4ikUhWrnwseehy4Ubkzwmsm2saRQ8yv8ldf7PCK7BZ
