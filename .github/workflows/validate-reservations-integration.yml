@@ -66,8 +66,10 @@ jobs:
           for (const name of ['reservations-module.js', 'reservations-module.css']) {
             if (!tool.includes(name)) throw Error('Integrator missing ' + name);
             if (!index.includes('modules/reservations/' + name)) throw Error('HTML missing ' + name);
-            if (!sw.includes('modules/reservations/' + name)) throw Error('SW missing ' + name);
+            if (!sw.includes('./modules/reservations/' + name)) throw Error('SW missing root-relative ' + name);
+            if (!tool.includes("const swOldRef = './' + oldRef")) throw Error('Integrator does not handle SW root-relative asset path for ' + name);
           }
+          if (!sw.includes("development-reservations-lifecycle-active-only-v4")) throw Error('Unexpected Development cache baseline');
           if (!tool.includes("branch !== 'develop'")) throw Error('Missing develop guard');
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
           const staleRevision = 'reservations-cancellation-settlement-v1';
