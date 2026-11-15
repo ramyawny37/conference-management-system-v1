@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const migration = fs.readFileSync(path.join(__dirname, "..", "supabase", "migrations", "20261115190000_reservations_operational_review_active_booking_guard.sql"), "utf8");
+const migration = fs.readFileSync(path.join(__dirname, "..", "supabase", "migrations", "20261115001255_reservations_operational_review_active_booking_guard.sql"), "utf8");
 
 test("canonical operational review writer locks booking and rejects non-active lifecycle before mutation", () => {
   const start = migration.indexOf("if p_operation='update_operational_review' then");
