@@ -51,7 +51,7 @@ try {
     index = replaceOnce(index, oldRef, newRef, 'index.html ' + name);
     sw = replaceOnce(sw, oldRef, newRef, 'service-worker.js ' + name);
   }
-  sw = replaceOnce(sw, "'reservations-lifecycle-active-only-v4'", "'" + rev + "'", 'Development cache revision');
+  sw = replaceOnce(sw, "'development-reservations-lifecycle-active-only-v4'", "'development-" + rev + "'", 'Development cache revision');
   // Validate all references and checksums before modifying any tracked file.
   for (const [name, bytes] of Object.entries(payloads)) {
     fs.writeFileSync(path.join(root, 'modules', 'reservations', name), bytes);
