@@ -52,7 +52,8 @@ jobs:
             tests/reservations-detail-payment-cache-invalidation.test.js \
             tests/reservations-apology-operational-financial-separation.test.js \
             tests/reservations-apology-readonly-operational-actions.test.js \
-            tests/reservations-operational-review-lifecycle-guard.test.js
+            tests/reservations-operational-review-lifecycle-guard.test.js \
+            tests/reservations-independent-review-payment-actions.test.js
       - name: Validate source boundary and cache references
         shell: bash
         run: |
