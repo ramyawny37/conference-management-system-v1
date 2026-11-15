@@ -18,7 +18,9 @@ jobs:
         with:
           node-version: '22'
       - name: Verify integration utility
-        run: node --check tools/integrate-reservations-artifact.cjs
+        run: |
+          node --check tools/integrate-reservations-artifact.cjs
+          node --test tests/reservations-artifact-policy.test.js
       - name: Verify artifact access configuration
         env:
           HAS_SOURCE_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN != '' }}

@@ -40,7 +40,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Check integration script syntax
-        run: node --check tools/integrate-reservations-artifact.cjs
+        run: |
+          node --check tools/integrate-reservations-artifact.cjs
+          node --test tests/reservations-artifact-policy.test.js
       - name: Check reservations browser bundle syntax
         run: node --check modules/reservations/reservations-module.js
       - name: Reservations apology and refund payout regression
@@ -61,6 +63,7 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const tool = fs.readFileSync('tools/integrate-reservations-artifact.cjs', 'utf8');
+          const policy = JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json', 'utf8'));
           const index = fs.readFileSync('index.html', 'utf8');
           const sw = fs.readFileSync('service-worker.js', 'utf8');
           for (const name of ['reservations-module.js', 'reservations-module.css']) {
@@ -72,6 +75,8 @@ jobs:
           if (!sw.includes("development-reservations-lifecycle-active-only-v4")) throw Error('Unexpected Development cache baseline');
           if (!tool.includes("branch !== 'develop'")) throw Error('Missing develop guard');
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
+          if (policy.approvedIntegrations.length !== 0) throw Error('Reservations artifact approval requires completed design and functional evidence');
+          if (!policy.rejectedArtifacts.some(entry => entry.sourceCommit === 'c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9')) throw Error('Reverted Reservations artifact is not rejected');
           const staleRevision = 'reservations-cancellation-settlement-v1';
           const testFiles = require('child_process').execFileSync('find', ['tests', '-maxdepth', '1', '-name', '*.test.js', '-print'], { encoding: 'utf8' }).trim().split(/\n+/).filter(Boolean);
           for (const file of testFiles) {

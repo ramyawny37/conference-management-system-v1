@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "currentRuntime": {
+    "platformCommit": "14102f906a3646487903c8d2459788b56f209497",
+    "revision": "reservations-lifecycle-active-only-v4",
+    "files": {
+      "reservations-module.js": "a4dcee66e7fe4d3d76ec686537c901ca844b0416318b26186ad02b74df6f7739",
+      "reservations-module.css": "a191be2233f3fe4cad475d261c5dc4216b17ac4f451a79b50c04ffb31d7fdbbb"
+    }
+  },
+  "approvedIntegrations": [],
+  "rejectedArtifacts": [
+    {
+      "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
+      "reason": "Reverted because the generated module changed the approved Development Preview design",
+      "files": {
+        "reservations-module.js": "4be3dc01c762f6f9b67f5f3fae74ca1d7f684d7777e2787bec8376b915f37ffe",
+        "reservations-module.css": "72925581c479521cb6dcf15b99b851c5bcd1dcc8e89da21d7c35a3eab6ee060d"
+      }
+    }
+  ]
+}
