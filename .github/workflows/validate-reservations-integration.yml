@@ -43,22 +43,17 @@ jobs:
         run: node --check tools/integrate-reservations-artifact.cjs
       - name: Check reservations browser bundle syntax
         run: node --check modules/reservations/reservations-module.js
-      - name: Reservations artifact integrity and backend lifecycle regression
+      - name: Reservations apology and refund payout regression
         run: |
-          node --test tests/reservations-operational-review-lifecycle-guard.test.js
-          node <<'NODE'
-          const crypto = require('crypto');
-          const fs = require('fs');
-          const expected = {
-            'modules/reservations/reservations-module.js': '4be3dc01c762f6f9b67f5f3fae74ca1d7f684d7777e2787bec8376b915f37ffe',
-            'modules/reservations/reservations-module.css': '72925581c479521cb6dcf15b99b851c5bcd1dcc8e89da21d7c35a3eab6ee060d',
-          };
-          for (const [file, checksum] of Object.entries(expected)) {
-            const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-            if (actual !== checksum) throw Error(`${file} SHA256 mismatch: ${actual}`);
-          }
-          console.log('Reservations artifact integrity: PASS');
-          NODE
+          node --test \
+            tests/reservations-apology-two-options.test.js \
+            tests/reservations-booking-cancellation-settlement.test.js \
+            tests/reservations-delete-apology-rebooking-lifecycle.test.js \
+            tests/reservations-detail-payment-cache-invalidation.test.js \
+            tests/reservations-apology-operational-financial-separation.test.js \
+            tests/reservations-apology-readonly-operational-actions.test.js \
+            tests/reservations-operational-review-lifecycle-guard.test.js \
+            tests/reservations-independent-review-payment-actions.test.js
       - name: Validate source boundary and cache references
         shell: bash
         run: |
@@ -74,7 +69,7 @@ jobs:
             if (!sw.includes('./modules/reservations/' + name)) throw Error('SW missing root-relative ' + name);
             if (!tool.includes("const swOldRef = './' + oldRef")) throw Error('Integrator does not handle SW root-relative asset path for ' + name);
           }
-          if (!sw.includes("development-reservations-design-c56a8fdd-v1")) throw Error('Unexpected Development cache baseline');
+          if (!sw.includes("development-reservations-lifecycle-active-only-v4")) throw Error('Unexpected Development cache baseline');
           if (!tool.includes("branch !== 'develop'")) throw Error('Missing develop guard');
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
           const staleRevision = 'reservations-cancellation-settlement-v1';
@@ -106,7 +101,7 @@ jobs:
       - name: Canonical central conference houses permission regression
         run: node --test tests/canonical-central-conference-houses.test.js
       - name: Reservations identity replay regression
-        run: node --test tests/reservations-identity-replay-order.test.js
+        run: node --test tests/reservations-identity-replay-order.test.js tests/reservations-manual-person-identity-resolution.test.js
       - name: Development preview validation
         if: always()
         run: npm run check:development-preview

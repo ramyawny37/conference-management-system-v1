@@ -25,15 +25,17 @@ test('booking creation and edit contracts preserve canonical choice and historic
   assert.match(migration,/insert into platform\.people\(full_name,phone,church,gender,date_of_birth,governorate,city_or_village,service_sector,service_sector_other/);
   assert.match(migration,/p_gender''\s*,''p_date_of_birth''\s*,''p_person_update_revision/);
   assert.match(migration,/if p_args \? ''p_person_update_revision''/);
-  assert.match(runtime,/p_age:[A-Za-z_$][\w$]*\.age/);
-  assert.match(runtime,/p_person_update_revision:[A-Za-z_$][\w$]*\.revision/);
-  assert.match(runtime,/"save-local"/);
-  assert.match(runtime,/"update-canonical"/);
+  assert.match(runtime,/p_date_of_birth:t\.dateOfBirth/);
+  assert.match(runtime,/p_person_update_revision:t\.personUpdateRevision/);
+  assert.match(runtime,/onClick:\(\)=>a\("save-local"\)/);
+  assert.match(runtime,/onClick:\(\)=>a\("update-canonical"\)/);
+  assert.match(runtime,/تحديد نطاق حفظ بيانات الشخص/);
+  assert.doesNotMatch(runtime,/window\.prompt/);
 });
 
 test('canonical readback exposes revision while age zero remains valid',()=>{
   assert.match(migration,/person\.revision person_revision/);
-  assert.match(runtime,/revision:nt\([A-Za-z_$][\w$]*,"revision"\)/);
-  assert.match(runtime,/p_age:[A-Za-z_$][\w$]*\.age/);
-  assert.match(runtime,/\.age<1/);
+  assert.match(runtime,/personRevision:t\.person_revision/);
+  assert.match(runtime,/min:"0"/);
+  assert.doesNotMatch(runtime,/\.age<1/);
 });
