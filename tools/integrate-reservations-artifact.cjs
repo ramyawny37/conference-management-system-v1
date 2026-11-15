@@ -12,9 +12,9 @@ const archive = process.argv[2];
 if (!archive) throw new Error('Pass the verified Reservations integration ZIP path');
 const expected = {
   'reservations-module.js': '4be3dc01c762f6f9b67f5f3fae74ca1d7f684d7777e2787bec8376b915f37ffe',
-  'reservations-module.css': '049a9fe2e16dd54ae9bb477910732cb610d16a50bce12feb594d0e747e66f632',
+  'reservations-module.css': '72925581c479521cb6dcf15b99b851c5bcd1dcc8e89da21d7c35a3eab6ee060d',
 };
-const rev = 'reservations-design-b8f93367-v1';
+const rev = 'reservations-design-c56a8fdd-v1';
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'cms-reservations-'));
 function replaceOnce(source, before, after, label) {
   if (source.split(before).length !== 2) throw new Error(label + ': expected exactly one original reference');
@@ -63,7 +63,7 @@ try {
   fs.writeFileSync(swPath, sw);
   execFileSync('git', ['diff', '--check'], {cwd: root, stdio:'inherit'});
   console.log('Integrated verified Reservations artifact into Conference develop working tree.');
-  console.log('Source Reservations commit: d438f051a8e62607e1a081045fe05d104a63266a');
+  console.log('Source Reservations commit: c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9');
   console.log('Review git diff, run checks, then commit/push develop only.');
 } finally {
   fs.rmSync(temp, {recursive:true, force:true});
