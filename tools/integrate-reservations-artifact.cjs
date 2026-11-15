@@ -61,7 +61,9 @@ try {
   }
   fs.writeFileSync(indexPath, index);
   fs.writeFileSync(swPath, sw);
-  execFileSync('git', ['diff', '--check'], {cwd: root, stdio:'inherit'});
+  // The immutable, checksum-verified bundle may contain generated whitespace.
+  // Restrict whitespace validation to the hand-maintained references changed here.
+  execFileSync('git', ['diff', '--check', '--', 'index.html', 'service-worker.js'], {cwd: root, stdio:'inherit'});
   console.log('Integrated verified Reservations artifact into Conference develop working tree.');
   console.log('Source Reservations commit: c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9');
   console.log('Review git diff, run checks, then commit/push develop only.');
