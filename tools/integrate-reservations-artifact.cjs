@@ -49,7 +49,10 @@ try {
     const oldRef = 'modules/reservations/' + name + '?rev=' + oldRev;
     const newRef = 'modules/reservations/' + name + '?rev=' + rev;
     index = replaceOnce(index, oldRef, newRef, 'index.html ' + name);
-    sw = replaceOnce(sw, oldRef, newRef, 'service-worker.js ' + name);
+    // Service-worker asset URLs are root-relative and include a leading "./".
+    const swOldRef = './' + oldRef;
+    const swNewRef = './' + newRef;
+    sw = replaceOnce(sw, swOldRef, swNewRef, 'service-worker.js ' + name);
   }
   sw = replaceOnce(sw, "'development-reservations-lifecycle-active-only-v4'", "'development-" + rev + "'", 'Development cache revision');
   // Validate all references and checksums before modifying any tracked file.
