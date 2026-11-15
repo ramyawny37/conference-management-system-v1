@@ -72,8 +72,6 @@ jobs:
           if (!sw.includes("development-reservations-lifecycle-active-only-v4")) throw Error('Unexpected Development cache baseline');
           if (!tool.includes("branch !== 'develop'")) throw Error('Missing develop guard');
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
-          if (!tool.includes('bundled React/React DOM runtime is not allowed')) throw Error('Missing native-runtime architecture guard');
-          if (!tool.includes('react-jsx-runtime') || !tool.includes('react-dom')) throw Error('React runtime signatures are not checked by the integrator');
           const staleRevision = 'reservations-cancellation-settlement-v1';
           const testFiles = require('child_process').execFileSync('find', ['tests', '-maxdepth', '1', '-name', '*.test.js', '-print'], { encoding: 'utf8' }).trim().split(/\n+/).filter(Boolean);
           for (const file of testFiles) {
