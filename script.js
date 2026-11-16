@@ -9467,6 +9467,7 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
   overlay.addEventListener('click',function(event){if(event.target===overlay&&!saveButton.disabled)close();});
   panel.addEventListener('submit',function(event){
     event.preventDefault();
+    if(saveButton.disabled)return;
     var values={};
     Object.keys(controls).forEach(function(key){values[key]=controls[key].value.trim();});
     if(kind==='room'){
