@@ -8879,8 +8879,8 @@ function renderPeopleDatabaseSection(){
   var canManage=!linked||currentConferenceSectionCapability('peopleManage');
   var canonicalState=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceParticipationState==='function'?window.PlatformIntegration.getConferenceParticipationState(current.id):null;
   var people=linked?(canView&&canonicalState?canonicalState.items:[]):getPeopleList();
-  var standalonePeople=settingsTab==='people';
-  var h = '<section class="settings-section settings-branding-section settings-ui-accordion"><button type="button" class="settings-branding-toggle" aria-expanded="'+(standalonePeople?'true':'false')+'" onclick="var content=this.nextElementSibling;var isOpen=content.classList.toggle(\'settings-branding-content-open\');content.setAttribute(\'aria-hidden\',isOpen?\'false\':\'true\');this.setAttribute(\'aria-expanded\',isOpen?\'true\':\'false\');this.querySelector(\'.settings-branding-toggle-arrow\').textContent=isOpen?\'▲\':\'▼\'"><span class="settings-accordion-heading">قاعدة بيانات الأشخاص <b class="settings-count-badge">'+people.length+'</b></span><span class="settings-branding-toggle-arrow" aria-hidden="true">▼</span></button><div class="settings-branding-content settings-ui-accordion-content'+(standalonePeople?' settings-branding-content-open':'')+'" aria-hidden="'+(standalonePeople?'false':'true')+'">';
+  var h = '<section class="settings-section settings-branding-section settings-people-standalone">';
+  h += '<div class="settings-people-heading"><h3>قاعدة بيانات الأشخاص</h3><span class="settings-count-badge">'+people.length+'</span></div>';
   h += '<div class="settings-people-toolbar">';
   if(!linked)h += '<button class="btn btn-blue" onclick="openPeopleExcelImport()">📥 استيراد ملف إكسل</button>';
   if(canManage)h += '<button class="btn btn-purple" onclick="openPersonDialog()" '+(linked&&!canonicalState?'disabled':'')+'>➕ إضافة شخص جديد</button>';
@@ -8907,7 +8907,7 @@ function renderPeopleDatabaseSection(){
     });
     h += '</div>';
   }
-  h += '</div></section>';
+  h += '</section>';
   return h;
 }
 
