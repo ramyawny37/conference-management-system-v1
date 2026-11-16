@@ -28,8 +28,8 @@ test('shared visual values remain equivalent to the approved Conference presenta
 });
 
 test('accommodation consumes shared tokens without adding a competing stylesheet', () => {
-  assert.ok(conference.includes('.accommodation-search{background:var(--platform-surface)'));
-  assert.ok(conference.includes('#tab0 .accommodation-room-card{border:1px solid #dce6ef;border-top:3px solid var(--room-status-color);background:var(--platform-surface)'));
+  assert.ok(conference.includes('.accommodation-search{background:var(--platform-reservations-surface);border:1px solid var(--platform-reservations-border)'));
+  assert.ok(conference.includes('#tab0 .accommodation-room-card{border:1px solid var(--platform-reservations-border);border-top:3px solid var(--room-status-color);background:var(--platform-reservations-surface)'));
   assert.ok(conference.includes('.accommodation-quick-filters button{flex:0 0 auto;border:1px solid #dbe6f0;border-radius:var(--platform-radius-control)'));
   assert.ok(conference.includes('.accommodation-room-key{display:flex;align-items:center;gap:7px;margin-top:var(--platform-space-3)'));
   assert.ok(conference.includes('.accommodation-floor-header{display:flex;width:100%;justify-content:space-between;align-items:center;gap:var(--platform-space-2)'));
