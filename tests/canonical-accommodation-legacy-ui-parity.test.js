@@ -351,62 +351,21 @@ test('move confirmation refuses a second submit while first mutation is pending'
   assert.match(body,/if\(button\)button\.disabled=true/);
 });
 
-test('central house directory room editor accepts numeric base and extra bed capacities',()=>{
-  const start=ui.indexOf('function canonicalHouseRoomDraft(');
-  const end=ui.indexOf('\nfunction addCanonicalHouseRoom(',start);
-  const body=ui.slice(start,end);
+test('central house directory edits route through one in-app form and central writer',()=>{
+  const start=ui.indexOf('function canonicalHouseDirectoryDialog(');
+  const end=ui.indexOf('function createHouseTemplate(',start);
+  const editor=ui.slice(start,end);
   assert.ok(start>=0&&end>start);
-  const expressions=[...body.matchAll(/!\/(\^.*?\$)\/\.test\((?:baseText|extraText)\)/g)];
-  assert.equal(expressions.length,2);
-  for(const match of expressions){
-    const valid=new RegExp(match[1]);
-    assert.equal(valid.test('0'),true);
-    assert.equal(valid.test('12'),true);
-    assert.equal(valid.test('12a'),false);
-    assert.equal(valid.test('-1'),false);
-  }
-});
-
-test('central house directory room editor rejects zero or unsafe total bed capacity',()=>{
-  const start=ui.indexOf('function canonicalHouseRoomDraft(');
-  const end=ui.indexOf('\nfunction addCanonicalHouseRoom(',start);
-  const body=ui.slice(start,end);
-  assert.ok(start>=0&&end>start);
-  assert.match(body,/base\+extra<1/);
-  assert.match(body,/!Number\.isSafeInteger\(base\+extra\)/);
-  assert.match(body,/يجب أن تحتوي الغرفة على سرير واحد على الأقل/);
-});
-
-test('central house room draft behavior accepts valid beds and rejects zero capacity before mutation',()=>{
-  const start=ui.indexOf('function canonicalHouseRoomDraft(');
-  const end=ui.indexOf('\nfunction addCanonicalHouseRoom(',start);
-  const source=ui.slice(start,end)+';this.draft=canonicalHouseRoomDraft;';
-  function execute(values){
-    const queue=values.slice(),toasts=[],sandbox={prompt:()=>queue.shift(),showToast:message=>toasts.push(message),String,Number};
-    vm.runInNewContext(source,sandbox);
-    return {value:sandbox.draft(null),toasts};
-  }
-  assert.deepEqual(JSON.parse(JSON.stringify(execute(['101','2','1']).value)),{roomNumber:'101',baseCapacity:2,extraBedCapacity:1,notes:'',position:0});
-  const rejected=execute(['101','0','0']);
-  assert.equal(rejected.value,null);
-  assert.equal(rejected.toasts.length,1);
-});
-
-test('central house directory editors reject blank names without sending mutations',()=>{
-  for(const [name,next] of [
-    ['createHouseTemplate','editCanonicalHouseDirectory'],
-    ['editCanonicalHouseDirectory','deactivateCanonicalHouse'],
-    ['addCanonicalHouseFloor','canonicalHouseRoomDraft'],
-    ['editCanonicalHouseFloor','deleteCanonicalHouseFloor']
-  ]){
-    const start=ui.indexOf('function '+name+'(');
-    const end=ui.indexOf('\nfunction '+next+'(',start);
-    const body=ui.slice(start,end);
-    assert.ok(start>=0&&end>start,name);
-    assert.match(body,/name===null/,name);
-    assert.match(body,/name=String\(name\)\.trim\(\)/,name);
-    assert.match(body,/if\(!name\)\{showToast\(/,name);
-    assert.ok(body.indexOf('if(!name){showToast(')<body.indexOf('CanonicalConferenceHouses.mutate('),name);
+  assert.match(editor,/CanonicalConferenceHouses\.mutate\(operation,payload\)/);
+  assert.match(editor,/Number\.isSafeInteger\(Number\(base\)\+Number\(extra\)\)/);
+  assert.match(editor,/kind!=='room'&&!values\.name/);
+  assert.match(editor,/cancelButton\.onclick=close/);
+  assert.doesNotMatch(editor,/prompt\s*\(/);
+  for(const fn of ['createHouseTemplate','addCanonicalHouseFloor','addCanonicalHouseRoom','editCanonicalHouseFloor','editCanonicalHouseRoom']){
+    const pos=ui.indexOf('function '+fn+'(');
+    const next=ui.indexOf('\nfunction ',pos+10);
+    assert.ok(pos>=0&&next>pos,fn);
+    assert.match(ui.slice(pos,next),/canonicalHouseDirectoryDialog\(/,fn);
   }
 });
 
