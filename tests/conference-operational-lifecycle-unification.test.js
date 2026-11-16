@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const sql=fs.readFileSync('supabase/migrations/20261031190103_conference_operational_lifecycle_unification.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20261101213650_canonical_family_lifecycle_final_cutover.sql','utf8');
 
 test('accommodation removal atomically cleans transport and returns removed assignment ids',()=>{
   assert.match(sql,/create or replace function public\.remove_conference_accommodation/);
@@ -10,25 +10,28 @@ test('accommodation removal atomically cleans transport and returns removed assi
   assert.match(sql,/'removedTransportAssignmentIds',removed_transport_ids/);
 });
 
-test('apology cleans guardian transport and only children that lost accommodation eligibility',()=>{
-  const body=sql.slice(sql.indexOf('create or replace function public.set_conference_participation_status'),sql.indexOf('create or replace function public.delete_conference_participation'));
+test('guardian apology applies to the whole linked family and clears each member accommodation and transport',()=>{
+  const body=sql.slice(sql.indexOf('set_conference_participation_status('),sql.indexOf('create or replace function public.delete_conference_participation'));
+  assert.match(body,/guardian_participation_id=current\.id/);
+  assert.match(body,/conference_id=current\.conference_id/);
+  assert.match(body,/for member in select \* from public\.conference_participations where id=any\(family_ids\)/);
   assert.match(body,/cleanup_conference_accommodation_for_participation/);
-  assert.match(body,/not exists\(select 1 from public\.conference_accommodation_occupancies stay where stay\.participation_id=v_child\.id\)/);
-  assert.match(body,/cleanup_conference_transport_for_participation\(v_child\.id/);
+  assert.match(body,/cleanup_conference_transport_for_participation/);
+  assert.match(body,/'changedParticipationIds',changed_ids/);
 });
 
-test('guardian participation deletion preserves and explicitly unlinks every child participation',()=>{
+test('guardian deletion removes linked children rather than unlinking them',()=>{
   const body=sql.slice(sql.indexOf('create or replace function public.delete_conference_participation'));
-  assert.match(body,/update public\.conference_participations set guardian_participation_id=null/);
-  assert.match(body,/'unlinkedChildParticipationIds',v_unlinked_child_ids/);
-  assert.doesNotMatch(body,/delete from public\.conference_participations where guardian_participation_id/);
-  assert.match(body,/'deletedParticipationIds',jsonb_build_array\(p_participation_id\)/);
+  assert.match(body,/guardian_participation_id=current\.id/);
+  assert.match(body,/delete from public\.conference_participations where id=any\(family_ids\) and id<>current\.id/);
+  assert.match(body,/'deletedParticipationIds',to_jsonb\(family_ids\)/);
+  assert.doesNotMatch(body,/update public\.conference_participations set guardian_participation_id=null/);
 });
 
-test('independent child accommodation and transport survive guardian deletion',()=>{
-  const body=sql.slice(sql.indexOf('create or replace function public.delete_conference_participation'));
-  assert.match(body,/if not exists\(select 1 from public\.conference_accommodation_occupancies stay where stay\.participation_id=v_child\.id\) then/);
-  assert.match(body,/cleanup_conference_transport_for_participation\(v_child\.id[\s\S]*?guardian_participation_deleted/);
+test('linked children cannot reactivate while their guardian is apologized',()=>{
+  const body=sql.slice(sql.indexOf('set_conference_participation_status('),sql.indexOf('create or replace function public.delete_conference_participation'));
+  assert.match(body,/p_status='active' and current\.guardian_participation_id is not null/);
+  assert.match(body,/ACTIVE_CHILD_GUARDIAN_REQUIRED/);
 });
 
 test('people and financial ledgers are outside lifecycle deletion targets',()=>{
