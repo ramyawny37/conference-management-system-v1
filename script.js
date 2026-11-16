@@ -1028,7 +1028,7 @@ function saveToFile(){
 }
 
 function switchSettingsTab(tab) {
-  var view=tab==='houses'?'houses':'general';
+  var view=tab==='houses'||tab==='people'?tab:'general';
   var routing=window.ApplicationRouting;
   var pathname=routing&&routing.resolveConferenceSettingsRoute
     ?routing.resolveConferenceSettingsRoute(view):null;
@@ -1272,7 +1272,7 @@ function restoreLastApplicationTab(options){
   var restoredTab=requestedTab===null?0:requestedTab;
   var settingsTabId=getApplicationTabIdByName('settings');
   if(restoredTab===settingsTabId){
-    settingsTab=conferenceRoute&&conferenceRoute.settingsView==='houses'?'houses':'general';
+    settingsTab=conferenceRoute&&['houses','people'].includes(conferenceRoute.settingsView)?conferenceRoute.settingsView:'general';
   }
   var restored=switchTab(restoredTab,{preserveRoute:
     !!(conferenceRoute&&conferenceRoute.kind==='application')});
@@ -1546,9 +1546,9 @@ function reconcileConferenceRoute(){
   var current=getCurrentConference();
   // The permanent house directory belongs to the platform, not an active event.
   // Its read/write permissions remain enforced by CanonicalConferenceHouses.
-  if(route.kind==='application'&&route.tabName==='settings'&&route.settingsView==='houses'){
+  if(route.kind==='application'&&route.tabName==='settings'&&(route.settingsView==='houses'||route.settingsView==='people')){
     setApplicationMode('application');
-    settingsTab='houses';
+    settingsTab=route.settingsView;
     return switchTab(route.tabId,{preserveRoute:true});
   }
   var authorization=window.ConferenceActivationAuthorization;
@@ -1561,7 +1561,7 @@ function reconcileConferenceRoute(){
     return false;
   }
   setApplicationMode('application');
-  if(route.tabName==='settings')settingsTab=route.settingsView==='houses'?'houses':'general';
+  if(route.tabName==='settings')settingsTab=route.settingsView==='houses'||route.settingsView==='people'?route.settingsView:'general';
   return switchTab(route.tabId,{preserveRoute:true});
 }
 
@@ -8750,15 +8750,20 @@ function renderSettings(){
   hydrateCanonicalTemplatesForSettings().catch(function(){});
   var current = getCurrentConference();
   var activeSettingsTab = settingsTab || 'general';
-  if(activeSettingsTab!=='general'&&activeSettingsTab!=='houses'){
+  if(activeSettingsTab!=='general'&&activeSettingsTab!=='houses'&&activeSettingsTab!=='people'){
     activeSettingsTab='general';
     settingsTab='general';
   }
   var h='<div class="settings-dashboard" dir="rtl">';
   h+='<div class="settings-nav">';
   h+='<button class="btn '+(activeSettingsTab==='general'?'btn-purple':'btn-gray')+' btn-sm" onclick="switchSettingsTab(\'general\')">⚙️ إعدادات الحدث</button>';
-  h+='<button class="btn '+(activeSettingsTab==='houses'?'btn-purple':'btn-gray')+' btn-sm" onclick="switchSettingsTab(\'houses\')">🏠 بيوت المؤتمرات</button>';
+
   h+='</div>';
+  if (activeSettingsTab === 'people') {
+    h += renderPeopleDatabaseSection() + '</div>';
+    ge('tab6').innerHTML = h;
+    return;
+  }
   if (activeSettingsTab === 'houses') {
     h += '<section class="settings-section settings-library-section">' + renderHouseTemplatesSettings() + '</section></div>';
     ge('tab6').innerHTML = h;
@@ -8815,7 +8820,6 @@ function renderSettings(){
   h+='<button class="btn btn-red" onclick="deleteCurrentConference()">🗑 حذف المؤتمر</button>';
   h+='<button class="btn btn-gray" onclick="returnToStartupScreen()">العودة إلى شاشة البداية</button>';
   h+='</div></div></div></section>';
-  h += renderPeopleDatabaseSection();
   h+='<section class="settings-section settings-branding-section settings-ui-accordion"><button type="button" class="settings-branding-toggle" aria-expanded="false" onclick="var content=this.nextElementSibling;var isOpen=content.classList.toggle(\'settings-branding-content-open\');content.setAttribute(\'aria-hidden\',isOpen?\'false\':\'true\');this.setAttribute(\'aria-expanded\',isOpen?\'true\':\'false\');this.querySelector(\'.settings-branding-toggle-arrow\').textContent=isOpen?\'▲\':\'▼\'"><span>القوالب</span><span class="settings-branding-toggle-arrow" aria-hidden="true">▼</span></button><div class="settings-branding-content settings-ui-accordion-content" aria-hidden="true">';
   if(appData.templates.length){
     h+='<div class="settings-list">';
@@ -9344,12 +9348,12 @@ function renderHouseTemplatesSettings() {
   if(!state){
     if(service)service.hydrate().then(function(){
       var route=getCanonicalConferenceRoute();
-      if(route&&route.kind==='application'&&route.tabName==='settings'&&route.settingsView==='houses'&&currentTab===6){
+      if(route&&route.kind==='application'&&route.tabName==='settings'&&(route.settingsView==='houses'||route.settingsView==='people')&&currentTab===6){
         renderSettings();
       }
     },function(){
       var route=getCanonicalConferenceRoute();
-      if(route&&route.kind==='application'&&route.tabName==='settings'&&route.settingsView==='houses'&&currentTab===6){
+      if(route&&route.kind==='application'&&route.tabName==='settings'&&(route.settingsView==='houses'||route.settingsView==='people')&&currentTab===6){
         showToast('تعذر تحميل بيوت المؤتمرات.','#E74C3C');
       }
     });
