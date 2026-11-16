@@ -54,7 +54,7 @@
       :route||'/');
     if(route.length>1)route=route.replace(/\/+$/,'');
     if(route==='/conference')return Object.freeze({kind:'home',tabId:null,tabName:null});
-    var match=/^\/conference\/app\/([a-z-]+)(?:\/(houses))?$/.exec(route);
+    var match=/^\/conference\/app\/([a-z-]+)(?:\/(houses|people))?$/.exec(route);
     if(!match)return route.indexOf('/conference')===0
       ?Object.freeze({kind:'invalid',tabId:null,tabName:null}):null;
     var tabId=conferenceTabNames.indexOf(match[1]);
@@ -69,7 +69,7 @@
   }
 
   function resolveConferenceSettingsRoute(view){
-    return view==='houses'?'/conference/app/settings/houses':'/conference/app/settings';
+    return view==='houses'||view==='people'?'/conference/app/settings/'+view:'/conference/app/settings';
   }
 
   global.ApplicationRouting=Object.freeze({
