@@ -9381,7 +9381,7 @@ function renderHouseTemplatesSettings() {
       var active = selected && selected.houseId === ht.houseId;
       var templateRooms=[];(ht.floors||[]).forEach(function(floor){templateRooms=templateRooms.concat(floor.rooms||[]);});
       h += '<button type="button" class="house-template-list-card'+(active?' selected':'')+'" aria-pressed="'+(active?'true':'false')+'" onclick="selectCanonicalHouse(\'' + ht.houseId + '\')">';
-      h += '<strong>' + esc(ht.name || 'بيت غير مسمى') + '</strong>';
+      h += '<strong>' + esc(ht.name || 'بيت غير مسمى') + (ht.isActive?'':' <span class="house-inactive-label">(موقوف)</span>') + '</strong>';
       h += '<span>إجمالي الغرف: '+templateRooms.length+'</span>';
       h += '</button>';
     });
@@ -9391,7 +9391,7 @@ function renderHouseTemplatesSettings() {
   h += '</div></aside>';
   h += '<main class="house-template-details">';
   if(selected){
-    h+='<div class="house-template-details-header"><div class="house-template-details-title"><h3 class="house-template-name">'+esc(selected.name)+'</h3></div>';
+    h+='<div class="house-template-details-header"><div class="house-template-details-title"><h3 class="house-template-name">'+esc(selected.name)+(selected.isActive?'':' <span class="house-inactive-label">(موقوف)</span>')+'</h3></div>';
     h+='<div class="house-template-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseDirectory(\''+selected.houseId+'\')">✏️ تعديل البيت</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseFloor(\''+selected.houseId+'\')">➕ إضافة دور</button>'+(selected.isActive?'<button class="btn btn-gray btn-sm" onclick="deactivateCanonicalHouse(\''+selected.houseId+'\')">إيقاف البيت</button>':'<button class="btn btn-green btn-sm" onclick="reactivateCanonicalHouse(\''+selected.houseId+'\')">إعادة تفعيل البيت</button>')+'<button class="btn btn-red btn-sm" onclick="deleteCanonicalHouse(\''+selected.houseId+'\')">🗑️ حذف البيت</button></div></div>';
     h+='<div class="house-template-floors">';
     if(!(selected.floors||[]).length)h+='<div class="ui-state ui-state--empty">لا توجد أدوار بعد. استخدم «إضافة دور» للبدء.</div>';
