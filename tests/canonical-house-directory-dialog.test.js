@@ -195,3 +195,17 @@ test('active editor retains one canonical writer and no native prompt draft',()=
   assert.doesNotMatch(ui,/function canonicalHouseRoomDraft\(/);
   assert.equal((editor.match(/CanonicalConferenceHouses\.mutate\(/g)||[]).length,1);
 });
+
+test('closing the house editor restores focus to its original trigger',()=>{
+ const h=harness();
+ const trigger=h.dom.window.document.createElement('button');
+ trigger.textContent='Open house';
+ h.dom.window.document.body.appendChild(trigger);
+ trigger.focus();
+ assert.equal(h.dom.window.document.activeElement,trigger);
+ h.open('house');
+ assert.notEqual(h.dom.window.document.activeElement,trigger);
+ h.overlay().querySelector('button[type="button"]').click();
+ assert.equal(h.dom.window.document.activeElement,trigger);
+ h.dom.window.close();
+});
