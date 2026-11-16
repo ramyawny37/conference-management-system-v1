@@ -8741,19 +8741,19 @@ function hydrateCanonicalTemplatesForSettings(){
   if(canonicalTemplateHydrationFlight)return canonicalTemplateHydrationFlight;
   canonicalTemplateHydrationFlight=library.hydrate().then(function(value){
     canonicalTemplateHydrationFlight=null;
-    if(currentTab===6)renderSettings();
+    if(currentTab===6&&settingsTab!=='people')renderSettings();
     return value;
   },function(error){canonicalTemplateHydrationFlight=null;throw error;});
   return canonicalTemplateHydrationFlight;
 }
 function renderSettings(){
-  hydrateCanonicalTemplatesForSettings().catch(function(){});
   var current = getCurrentConference();
   var activeSettingsTab = settingsTab || 'general';
   if(activeSettingsTab!=='general'&&activeSettingsTab!=='houses'&&activeSettingsTab!=='people'){
     activeSettingsTab='general';
     settingsTab='general';
   }
+  if(activeSettingsTab!=='people')hydrateCanonicalTemplatesForSettings().catch(function(){});
   var h='<div class="settings-dashboard" dir="rtl">';
   if(activeSettingsTab==='general'){
     h+='<div class="settings-nav"><span class="settings-nav-title">إعدادات الحدث</span></div>';
