@@ -33,6 +33,8 @@ test('accommodation consumes shared tokens without adding a competing stylesheet
   assert.ok(conference.includes('.accommodation-quick-filters button{flex:0 0 auto;border:1px solid #dbe6f0;border-radius:var(--platform-radius-control)'));
   assert.ok(conference.includes('.accommodation-room-key{display:flex;align-items:center;gap:7px;margin-top:var(--platform-space-3)'));
   assert.ok(conference.includes('.accommodation-floor-header{display:flex;width:100%;justify-content:space-between;align-items:center;gap:var(--platform-space-2)'));
+  assert.ok(conference.includes('.accommodation-house-summary{margin:10px;background:var(--platform-reservations-surface);border:1px solid var(--platform-reservations-border)'));
+  assert.ok(conference.includes('.accommodation-quick-filters button{flex:0 0 auto;border:1px solid var(--platform-reservations-border)'));
 });
 
 test('shell and reservations retain their existing separate CSS ownership', () => {
