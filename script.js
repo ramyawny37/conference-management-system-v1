@@ -8893,7 +8893,7 @@ function renderPeopleDatabaseSection(){
     h += '<div class="settings-empty-state">لا توجد بيانات أشخاص بعد.</div>';
   } else {
     h += '<div class="settings-list settings-people-list">';
-    people.slice().reverse().slice(0, 30).forEach(function(p){
+    people.slice().reverse().forEach(function(p){
       var person=linked?p.person:p;
       h += '<div class="settings-list-item">';
       h += '<div><div style="font-weight:700">' + esc(person.fullName) + '</div><div style="font-size:10px;color:#5a7a9a">' + esc(linked?canonicalParticipantMetaText(p):personMetaText(person) || '-') + '</div></div>';
@@ -9410,7 +9410,7 @@ function renderHouseTemplatesSettings() {
   return h;
 }
 
-function refreshCanonicalHouseDirectory(message){return window.CanonicalConferenceHouses.hydrate().then(function(){renderSettings();if(message)showToast(message);return true;},function(){showToast('تعذر حفظ بيت المؤتمر.','#E74C3C');return false;});}
+function refreshCanonicalHouseDirectory(message){return window.CanonicalConferenceHouses.hydrate().then(function(){renderSettings();if(message)showToast(message);return true;},function(){showToast('تم الحفظ، لكن تعذر تحديث عرض بيوت المؤتمرات. حاول إعادة تحميل القائمة.','#E67E22');return false;});}
 if(window.addEventListener)window.addEventListener('conference-house-directory-change',function(){if(settingsTab==='houses')renderSettings();});
 function selectCanonicalHouse(id){selectedHouseTemplateId=id;renderSettings();}
 
