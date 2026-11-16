@@ -8912,12 +8912,14 @@ function renderPeopleDatabaseSection(){
 
 function canonicalParticipantMetaText(participation){
   var person=participation&&participation.person||{};
+  var genderLabels={male:'ذكر',female:'أنثى',child:'طفل'};
+  var statusLabels={active:'نشط',apologized:'معتذر'};
   var parts=[];
   if(person.church)parts.push(person.church);
   if(person.phone)parts.push(person.phone);
-  if(person.gender)parts.push(person.gender);
+  if(person.gender)parts.push(genderLabels[person.gender]||person.gender);
   if(person.dateOfBirth)parts.push(person.dateOfBirth);
-  if(participation&&participation.status)parts.push(participation.status);
+  if(participation&&participation.status)parts.push(statusLabels[participation.status]||participation.status);
   return parts.join(' • ')||'-';
 }
 
