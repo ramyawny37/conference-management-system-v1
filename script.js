@@ -9425,9 +9425,13 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
   var panel=document.createElement('form');
   panel.className='card';
   panel.dir='rtl';
-  panel.style.cssText='width:min(100%,520px);max-height:90vh;overflow:auto;padding:24px;display:grid;gap:14px;background:var(--app-surface,#fff)';
+  panel.setAttribute('role','dialog');
+  panel.setAttribute('aria-modal','true');
+  panel.style.cssText='width:min(100%,520px);max-height:90vh;overflow:auto;padding:var(--app-space-6,24px);display:grid;gap:var(--app-space-4,16px);border:1px solid var(--app-border,#dce5ee);border-radius:var(--app-radius-card,14px);background:var(--app-surface,#fff);box-shadow:var(--app-shadow-modal,0 16px 48px rgba(18,35,55,.18))';
   var heading=document.createElement('h3');
   heading.textContent=(entity?'تعديل ':'إضافة ')+label;
+  heading.id='canonicalHouseDirectoryDialogTitle';
+  panel.setAttribute('aria-labelledby',heading.id);
   panel.appendChild(heading);
   var fields=kind==='room'
     ?[['roomNumber','رقم الغرفة','text',entity&&entity.roomNumber||''],['baseCapacity','الأسرة الأساسية','number',entity?entity.baseCapacity:1],['extraBedCapacity','الأسرة الإضافية','number',entity?entity.extraBedCapacity:0],['notes','ملاحظات','text',entity&&entity.notes||'']]
@@ -9461,6 +9465,7 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
   cancelButton.type='button';cancelButton.className='btn btn-gray';cancelButton.textContent='إلغاء';
   function close(){overlay.remove();}
   cancelButton.onclick=close;
+  panel.addEventListener('keydown',function(event){if(event.key==='Escape'&&!saveButton.disabled){event.preventDefault();close();}});
   actions.appendChild(saveButton);actions.appendChild(cancelButton);panel.appendChild(actions);
   overlay.appendChild(panel);document.body.appendChild(overlay);
   overlay.addEventListener('click',function(event){if(event.target===overlay&&!saveButton.disabled)close();});
