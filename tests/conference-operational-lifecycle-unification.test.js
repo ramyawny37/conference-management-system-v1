@@ -3,11 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const sql=fs.readFileSync('supabase/migrations/20261101213650_canonical_family_lifecycle_final_cutover.sql','utf8');
+const operationalSql=fs.readFileSync('supabase/migrations/20261031190103_conference_operational_lifecycle_unification.sql','utf8');
 
 test('accommodation removal atomically cleans transport and returns removed assignment ids',()=>{
-  assert.match(sql,/create or replace function public\.remove_conference_accommodation/);
-  assert.match(sql,/cleanup_conference_transport_for_participation\([\s\S]*?'accommodation_removed'/);
-  assert.match(sql,/'removedTransportAssignmentIds',removed_transport_ids/);
+  assert.match(operationalSql,/create or replace function public\.remove_conference_accommodation/);
+  assert.match(operationalSql,/cleanup_conference_transport_for_participation\([\s\S]*?'accommodation_removed'/);
+  assert.match(operationalSql,/'removedTransportAssignmentIds',removed_transport_ids/);
 });
 
 test('guardian apology applies to the whole linked family and clears each member accommodation and transport',()=>{
