@@ -9411,8 +9411,8 @@ function renderHouseTemplatesSettings() {
   return h;
 }
 
-function refreshCanonicalHouseDirectory(message){return window.CanonicalConferenceHouses.hydrate().then(function(){renderSettings();if(message)showToast(message);return true;},function(){showToast('تم الحفظ، لكن تعذر تحديث عرض بيوت المؤتمرات. حاول إعادة تحميل القائمة.','#E67E22');return false;});}
-if(window.addEventListener)window.addEventListener('conference-house-directory-change',function(){if(settingsTab==='houses')renderSettings();});
+function refreshCanonicalHouseDirectory(message){return window.CanonicalConferenceHouses.hydrate().then(function(){if(currentTab===6&&settingsTab==='houses')renderSettings();if(message)showToast(message);return true;},function(){showToast('تم الحفظ، لكن تعذر تحديث عرض بيوت المؤتمرات. حاول إعادة تحميل القائمة.','#E67E22');return false;});}
+if(window.addEventListener)window.addEventListener('conference-house-directory-change',function(){if(currentTab===6&&settingsTab==='houses')renderSettings();});
 function selectCanonicalHouse(id){selectedHouseTemplateId=id;renderSettings();}
 
 function canonicalHouseDirectoryDialog(kind,entity,parentId){
