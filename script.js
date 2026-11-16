@@ -9366,11 +9366,11 @@ function renderHouseTemplatesSettings() {
   selectedHouseTemplateId=selected?selected.houseId:null;
   var h = '<div class="card">';
   if (selected) {
-    h += '<div class="house-templates-heading"><div class="card-title">🏠 '+esc(selected.name || 'بيت غير مسمى')+'</div>';
+    h += '<div class="house-templates-heading"><div class="card-title">🏠 بيوت المؤتمرات</div>';
     h += renderRoomTypeStatCards(getHouseTemplateRooms(selected),true);
     h += '</div>';
   } else {
-    h += '<div class="house-templates-heading"><div class="card-title">اختر بيتًا من القائمة</div></div>';
+    h += '<div class="house-templates-heading"><div class="card-title">🏠 بيوت المؤتمرات</div></div>';
   }
   h += '<div class="house-templates-layout">';
   h += '<aside class="house-templates-sidebar">';
@@ -9380,13 +9380,13 @@ function renderHouseTemplatesSettings() {
     templates.forEach(function(ht) {
       var active = selected && selected.houseId === ht.houseId;
       var templateRooms=[];(ht.floors||[]).forEach(function(floor){templateRooms=templateRooms.concat(floor.rooms||[]);});
-      h += '<button type="button" class="house-template-list-card'+(active?' selected':'')+'" onclick="selectCanonicalHouse(\'' + ht.houseId + '\')">';
+      h += '<button type="button" class="house-template-list-card'+(active?' selected':'')+'" aria-pressed="'+(active?'true':'false')+'" onclick="selectCanonicalHouse(\'' + ht.houseId + '\')">';
       h += '<strong>' + esc(ht.name || 'بيت غير مسمى') + '</strong>';
       h += '<span>إجمالي الغرف: '+templateRooms.length+'</span>';
       h += '</button>';
     });
   } else {
-    h += '<div style="color:#AAB5C0;padding:12px;font-size:11px">لا توجد بيوت محفوظة بعد</div>';
+    h += '<div class="ui-state ui-state--empty">أنشئ بيتًا جديدًا للبدء</div>';
   }
   h += '</div></aside>';
   h += '<main class="house-template-details">';
@@ -9394,10 +9394,12 @@ function renderHouseTemplatesSettings() {
     h+='<div class="house-template-details-header"><div class="house-template-details-title"><h3 class="house-template-name">'+esc(selected.name)+'</h3></div>';
     h+='<div class="house-template-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseDirectory(\''+selected.houseId+'\')">✏️ تعديل البيت</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseFloor(\''+selected.houseId+'\')">➕ إضافة دور</button><button class="btn btn-gray btn-sm" onclick="deactivateCanonicalHouse(\''+selected.houseId+'\')">إيقاف البيت</button></div></div>';
     h+='<div class="house-template-floors">';
+    if(!(selected.floors||[]).length)h+='<div class="ui-state ui-state--empty">لا توجد أدوار بعد. استخدم «إضافة دور» للبدء.</div>';
     (selected.floors||[]).forEach(function(floor){
       h+='<section class="house-floor-accordion"><div class="house-floor-header"><strong class="house-floor-toggle">'+esc(floor.name)+'</strong>';
       h+='<div class="house-floor-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseFloor(\''+floor.floorId+'\')">✏️ تعديل الدور</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseRoom(\''+floor.floorId+'\')">➕ إضافة غرفة</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouseFloor(\''+floor.floorId+'\')">🗑️ حذف الدور</button></div></div>';
       h+='<div class="house-floor-content settings-branding-content-open"><div class="house-rooms-grid">';
+      if(!(floor.rooms||[]).length)h+='<div class="ui-state ui-state--empty">لا توجد غرف في هذا الدور. استخدم «إضافة غرفة».</div>';
       (floor.rooms||[]).forEach(function(room){
         h+='<article class="house-room-card"><div class="house-room-info"><strong class="house-room-number">غرفة '+esc(room.roomNumber)+'</strong><div class="house-room-beds">أساسية: '+Number(room.baseCapacity||0)+' · إضافية: '+Number(room.extraBedCapacity||0)+'</div></div>';
         h+='<div class="house-room-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseRoom(\''+room.roomId+'\')">✏️ تعديل</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouseRoom(\''+room.roomId+'\')">🗑️ حذف</button></div></article>';
