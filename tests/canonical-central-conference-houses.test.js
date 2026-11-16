@@ -48,3 +48,16 @@ test("house refresh reuses mutation hydration and redraws only the visible house
  assert.doesNotMatch(ui,/function refreshCanonicalHouseDirectory\(message\)\{return window\.CanonicalConferenceHouses\.hydrate\(/);
  assert.match(ui,/addEventListener\('conference-house-directory-change',[\s\S]*?if\(currentTab===6&&settingsTab==='houses'\)renderSettings\(\)/);
 });
+
+test('house deletion uses only the canonical writer and requires empty house and revision',()=>{
+ const ui=fs.readFileSync('script.js','utf8');
+ const migration=fs.readFileSync('supabase/migrations/20261117010000_canonical_central_house_safe_deletion.sql','utf8');
+ assert.match(ui,/function deleteCanonicalHouse\(id\)/);
+ assert.match(ui,/CanonicalConferenceHouses\.mutate\('delete_house',\{houseId:id,expectedRevision:house\.revision\}\)/);
+ assert.match(ui,/if\(\(house\.floors\|\|\[\]\)\.length\)/);
+ assert.match(migration,/p_operation='delete_house'/);
+ assert.match(migration,/HOUSE_HAS_ASSIGNMENTS/);
+ assert.match(migration,/HOUSE_NOT_EMPTY/);
+ assert.match(migration,/HOUSE_REVISION_CONFLICT/);
+ assert.match(migration,/delete from public\.conference_accommodation_houses where id=entity_id/);
+});
