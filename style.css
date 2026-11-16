@@ -1392,6 +1392,10 @@ tr:nth-child(even) td{background:#F7FBFF}
  #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields{flex-basis:250px}
 }
 @media(max-width:600px){
+ #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child){grid-template-columns:64px minmax(0,1fr)}
+ #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields{grid-column:1/-1;grid-row:auto}
+ #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-status-fields{grid-column:1/-1;grid-row:auto}
+ #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-guest-actions{grid-column:1/-1;grid-row:auto}
  #roomModal.canonical-room-readonly .room-editor-modal{width:100%;max-height:100dvh}
  #roomModal.canonical-room-readonly .mbody{padding:9px}
  #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.guest-slot-label{flex-basis:64px}
