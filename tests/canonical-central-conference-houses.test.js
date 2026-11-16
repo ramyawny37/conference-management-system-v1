@@ -42,7 +42,9 @@ test("house permission catalog is canonical and owner authorization is not bypas
  assert.doesNotMatch(sql,/grant\s+all\s+on\s+platform\.permissions\s+to\s+(?:anon|authenticated)/i);
 });
 
-test("house refresh and events redraw only the visible houses view",()=>{
- assert.match(ui,/function refreshCanonicalHouseDirectory\(message\)\{[\s\S]*?if\(currentTab===6&&settingsTab==='houses'\)renderSettings\(\)/);
+test("house refresh reuses mutation hydration and redraws only the visible houses view",()=>{
+ assert.match(ui,/function refreshCanonicalHouseDirectory\(message\)\{if\(currentTab===6&&settingsTab==='houses'\)renderSettings\(\)/);
+ assert.match(fs.readFileSync('js/platform-integration.js','utf8'),/function mutateConferenceHouseDirectory\(operation,payload\)\{[\s\S]*?return hydrateConferenceHouseDirectory\(\)/);
+ assert.doesNotMatch(ui,/function refreshCanonicalHouseDirectory\(message\)\{return window\.CanonicalConferenceHouses\.hydrate\(/);
  assert.match(ui,/addEventListener\('conference-house-directory-change',[\s\S]*?if\(currentTab===6&&settingsTab==='houses'\)renderSettings\(\)/);
 });
