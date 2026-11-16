@@ -9389,7 +9389,22 @@ function renderHouseTemplatesSettings() {
   }
   h += '</div></aside>';
   h += '<main class="house-template-details">';
-  if(selected){h+='<div class="house-template-detail-heading"><h3>'+esc(selected.name)+'</h3><div class="row"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseDirectory(\''+selected.houseId+'\')">✏️ تعديل</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseFloor(\''+selected.houseId+'\')">➕ دور</button><button class="btn btn-gray btn-sm" onclick="deactivateCanonicalHouse(\''+selected.houseId+'\')">إيقاف</button></div></div>';(selected.floors||[]).forEach(function(floor){h+='<section class="floor-section"><div class="floor-title"><strong>'+esc(floor.name)+'</strong><div class="row"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseFloor(\''+floor.floorId+'\')">✏️</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseRoom(\''+floor.floorId+'\')">➕ غرفة</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouseFloor(\''+floor.floorId+'\')">🗑️</button></div></div><div class="rooms-grid">';(floor.rooms||[]).forEach(function(room){h+='<article class="room-card"><strong>غرفة '+esc(room.roomNumber)+'</strong><span>'+Number(room.baseCapacity||0)+' + '+Number(room.extraBedCapacity||0)+'</span><div class="row"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseRoom(\''+room.roomId+'\')">✏️</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouseRoom(\''+room.roomId+'\')">🗑️</button></div></article>';});h+='</div></section>';});}else h+='<div class="ui-state ui-state--empty">لا توجد بيوت محفوظة بعد</div>';
+  if(selected){
+    h+='<div class="house-template-details-header"><div class="house-template-details-title"><h3 class="house-template-name">'+esc(selected.name)+'</h3></div>';
+    h+='<div class="house-template-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseDirectory(\''+selected.houseId+'\')">✏️ تعديل البيت</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseFloor(\''+selected.houseId+'\')">➕ إضافة دور</button><button class="btn btn-gray btn-sm" onclick="deactivateCanonicalHouse(\''+selected.houseId+'\')">إيقاف البيت</button></div></div>';
+    h+='<div class="house-template-floors">';
+    (selected.floors||[]).forEach(function(floor){
+      h+='<section class="house-floor-accordion"><div class="house-floor-header"><strong class="house-floor-toggle">'+esc(floor.name)+'</strong>';
+      h+='<div class="house-floor-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseFloor(\''+floor.floorId+'\')">✏️ تعديل الدور</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseRoom(\''+floor.floorId+'\')">➕ إضافة غرفة</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouseFloor(\''+floor.floorId+'\')">🗑️ حذف الدور</button></div></div>';
+      h+='<div class="house-floor-content settings-branding-content-open"><div class="house-rooms-grid">';
+      (floor.rooms||[]).forEach(function(room){
+        h+='<article class="house-room-card"><div class="house-room-info"><strong class="house-room-number">غرفة '+esc(room.roomNumber)+'</strong><div class="house-room-beds">أساسية: '+Number(room.baseCapacity||0)+' · إضافية: '+Number(room.extraBedCapacity||0)+'</div></div>';
+        h+='<div class="house-room-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseRoom(\''+room.roomId+'\')">✏️ تعديل</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouseRoom(\''+room.roomId+'\')">🗑️ حذف</button></div></article>';
+      });
+      h+='</div></div></section>';
+    });
+    h+='</div>';
+  }else h+='<div class="ui-state ui-state--empty">لا توجد بيوت محفوظة بعد</div>';
   h += '</main></div>';
   h += '</div>';
   return h;
