@@ -9471,7 +9471,7 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
     Object.keys(controls).forEach(function(key){values[key]=controls[key].value.trim();});
     if(kind==='room'){
       var base=values.baseCapacity,extra=values.extraBedCapacity;
-      if(!/^\\d+$/.test(base)||!/^\\d+$/.test(extra)||!Number.isSafeInteger(Number(base))||!Number.isSafeInteger(Number(extra))||Number(base)+Number(extra)<1||!Number.isSafeInteger(Number(base)+Number(extra))){
+      if(!/^\d+$/.test(base)||!/^\d+$/.test(extra)||!Number.isSafeInteger(Number(base))||!Number.isSafeInteger(Number(extra))||Number(base)+Number(extra)<1||!Number.isSafeInteger(Number(base)+Number(extra))){
         message.textContent='أدخل سعة صحيحة: أعداد صحيحة غير سالبة ومجموع الأسرة لا يقل عن واحد.';return;
       }
       values.baseCapacity=Number(base);values.extraBedCapacity=Number(extra);
