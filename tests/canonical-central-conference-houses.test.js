@@ -61,3 +61,11 @@ test('house deletion uses only the canonical writer and requires empty house and
  assert.match(migration,/HOUSE_REVISION_CONFLICT/);
  assert.match(migration,/delete from public\.conference_accommodation_houses where id=entity_id/);
 });
+
+test('inactive houses offer canonical reactivation rather than repeated deactivation',()=>{
+ const ui=fs.readFileSync('script.js','utf8');
+ assert.match(ui,/selected\.isActive\?'<button[^\n]*deactivateCanonicalHouse/);
+ assert.match(ui,/function reactivateCanonicalHouse\(id\)/);
+ assert.match(ui,/CanonicalConferenceHouses\.mutate\('update_house',\{/);
+ assert.match(ui,/isActive:true/);
+});
