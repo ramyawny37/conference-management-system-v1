@@ -9420,6 +9420,7 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
   if(!label)return false;
   var old=document.getElementById('canonicalHouseDirectoryDialog');
   if(old)old.remove();
+  var previousFocus=document.activeElement;
   var overlay=document.createElement('div');
   overlay.id='canonicalHouseDirectoryDialog';
   overlay.className='modal-overlay';
@@ -9465,7 +9466,7 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
   saveButton.type='submit';saveButton.className='btn btn-purple';saveButton.textContent='حفظ '+label;
   var cancelButton=document.createElement('button');
   cancelButton.type='button';cancelButton.className='btn btn-gray';cancelButton.textContent='إلغاء';
-  function close(){overlay.remove();}
+  function close(){overlay.remove();if(previousFocus&&previousFocus.isConnected&&typeof previousFocus.focus==='function')previousFocus.focus();}
   cancelButton.onclick=close;
   panel.addEventListener('keydown',function(event){if(event.key==='Escape'&&!saveButton.disabled){event.preventDefault();close();}});
   actions.appendChild(saveButton);actions.appendChild(cancelButton);panel.appendChild(actions);
