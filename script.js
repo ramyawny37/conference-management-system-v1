@@ -9392,7 +9392,7 @@ function renderHouseTemplatesSettings() {
   h += '<main class="house-template-details">';
   if(selected){
     h+='<div class="house-template-details-header"><div class="house-template-details-title"><h3 class="house-template-name">'+esc(selected.name)+'</h3></div>';
-    h+='<div class="house-template-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseDirectory(\''+selected.houseId+'\')">✏️ تعديل البيت</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseFloor(\''+selected.houseId+'\')">➕ إضافة دور</button><button class="btn btn-gray btn-sm" onclick="deactivateCanonicalHouse(\''+selected.houseId+'\')">إيقاف البيت</button><button class="btn btn-red btn-sm" onclick="deleteCanonicalHouse(\''+selected.houseId+'\')">🗑️ حذف البيت</button></div></div>';
+    h+='<div class="house-template-actions"><button class="btn btn-blue btn-sm" onclick="editCanonicalHouseDirectory(\''+selected.houseId+'\')">✏️ تعديل البيت</button><button class="btn btn-green btn-sm" onclick="addCanonicalHouseFloor(\''+selected.houseId+'\')">➕ إضافة دور</button>'+(selected.isActive?'<button class="btn btn-gray btn-sm" onclick="deactivateCanonicalHouse(\''+selected.houseId+'\')">إيقاف البيت</button>':'<button class="btn btn-green btn-sm" onclick="reactivateCanonicalHouse(\''+selected.houseId+'\')">إعادة تفعيل البيت</button>')+'<button class="btn btn-red btn-sm" onclick="deleteCanonicalHouse(\''+selected.houseId+'\')">🗑️ حذف البيت</button></div></div>';
     h+='<div class="house-template-floors">';
     if(!(selected.floors||[]).length)h+='<div class="ui-state ui-state--empty">لا توجد أدوار بعد. استخدم «إضافة دور» للبدء.</div>';
     (selected.floors||[]).forEach(function(floor){
@@ -9520,6 +9520,16 @@ function createHouseTemplate(){return canonicalHouseDirectoryDialog('house',null
 function editCanonicalHouseDirectory(id){var entity=findCanonicalHouseDirectoryEntity('house',id);return entity?canonicalHouseDirectoryDialog('house',entity,null):false;}
 function reportCanonicalHouseDirectoryMutationFailure(action,error){showToast('تعذر '+action+'. تحقق من الصلاحيات أو ارتباط العنصر بحجوزات قائمة، ثم حاول مرة أخرى.','#E74C3C');if(window.console&&console.error)console.error('CANONICAL_HOUSE_DIRECTORY_MUTATION_FAILED',error);return false;}
 function deactivateCanonicalHouse(id){var state=window.CanonicalConferenceHouses.getState(),house=(state&&state.houses||[]).filter(function(item){return item.houseId===id;})[0];if(!house||!confirm('إيقاف البيت عن الاستخدام الجديد؟'))return false;return window.CanonicalConferenceHouses.mutate('deactivate_house',{houseId:id,expectedRevision:house.revision}).then(function(){return refreshCanonicalHouseDirectory('✅ تم إيقاف البيت');}).catch(function(error){return reportCanonicalHouseDirectoryMutationFailure('إيقاف البيت',error);});}
+function reactivateCanonicalHouse(id){
+  var house=findCanonicalHouseDirectoryEntity('house',id);
+  if(!house||house.isActive)return false;
+  if(!confirm('إعادة تفعيل البيت «'+house.name+'» للاستخدام الجديد؟'))return false;
+  return window.CanonicalConferenceHouses.mutate('update_house',{
+    houseId:id,expectedRevision:house.revision,name:house.name,
+    description:house.description||'',position:house.position,isActive:true
+  }).then(function(){return refreshCanonicalHouseDirectory('✅ تم إعادة تفعيل البيت');})
+    .catch(function(error){return reportCanonicalHouseDirectoryMutationFailure('إعادة تفعيل البيت',error);});
+}
 function deleteCanonicalHouse(id){
   var state=window.CanonicalConferenceHouses.getState();
   var house=(state&&state.houses||[]).filter(function(item){return item.houseId===id;})[0];
