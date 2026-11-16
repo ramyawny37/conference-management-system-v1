@@ -8755,10 +8755,9 @@ function renderSettings(){
     settingsTab='general';
   }
   var h='<div class="settings-dashboard" dir="rtl">';
-  h+='<div class="settings-nav">';
-  h+='<button class="btn '+(activeSettingsTab==='general'?'btn-purple':'btn-gray')+' btn-sm" onclick="switchSettingsTab(\'general\')">⚙️ إعدادات الحدث</button>';
-
-  h+='</div>';
+  if(activeSettingsTab==='general'){
+    h+='<div class="settings-nav"><span class="settings-nav-title">إعدادات الحدث</span></div>';
+  }
   if (activeSettingsTab === 'people') {
     h += renderPeopleDatabaseSection() + '</div>';
     ge('tab6').innerHTML = h;
