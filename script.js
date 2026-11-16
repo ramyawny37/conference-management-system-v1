@@ -1546,7 +1546,7 @@ function reconcileConferenceRoute(){
   var current=getCurrentConference();
   // The permanent house directory belongs to the platform, not an active event.
   // Its read/write permissions remain enforced by CanonicalConferenceHouses.
-  if(route.kind==='application'&&route.tabName==='settings'&&(route.settingsView==='houses'||route.settingsView==='people')){
+  if(route.kind==='application'&&route.tabName==='settings'&&route.settingsView==='houses'){
     setApplicationMode('application');
     settingsTab=route.settingsView;
     return switchTab(route.tabId,{preserveRoute:true});
