@@ -441,13 +441,13 @@ tr:nth-child(even) td{background:#F7FBFF}
 .house-floor-actions{flex:0 0 auto}
 .house-floor-content{padding-right:10px;padding-left:10px}
 .house-floor-content.settings-branding-content-open{padding-top:10px;padding-bottom:10px}
-.house-rooms-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.house-rooms-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px}
 .house-room-card{display:flex;min-width:0;min-height:92px;flex-direction:column;justify-content:space-between;gap:8px;padding:10px;border:1px solid #e0e9f0;border-radius:10px;background:#fff;box-shadow:0 2px 7px rgba(25,67,104,.05)}
 .house-room-info{min-width:0}
 .house-room-number{overflow:hidden;color:#173b5b;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
 .house-room-beds{margin-top:4px;color:#667b8d;font-size:9px}
 .house-room-actions .btn{min-width:0;flex:1 1 0}
-@media(max-width:1000px){.house-rooms-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 @media(max-width:700px){.house-templates-layout{grid-template-columns:1fr}.house-template-details-header{align-items:flex-start;flex-direction:column}.house-template-actions{justify-content:flex-start}}
 @media(max-width:520px){.house-templates-heading-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:350px){.house-templates-heading-stats{grid-template-columns:1fr}}
