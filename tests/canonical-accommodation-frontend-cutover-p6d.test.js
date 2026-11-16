@@ -264,14 +264,15 @@ test('canonical accommodation filters extra beds children and accompanied guests
   }
 });
 
-test('central house directory room capacity draft stops on cancel and rejects empty values',()=>{
-  const start=scriptSource.indexOf('function canonicalHouseRoomDraft(room){');
-  const end=scriptSource.indexOf('function addCanonicalHouseRoom(',start);
-  const draft=scriptSource.slice(start,end);
-  assert.ok(draft.includes('if(baseText===null)return null;'));
-  assert.ok(draft.includes('if(extraText===null)return null;'));
-  assert.ok(draft.includes('Number.isSafeInteger(base)'));
-  assert.ok(draft.includes('Number.isSafeInteger(extra)'));
+test('central house directory room editor validates capacity before the canonical mutation',()=>{
+  const start=scriptSource.indexOf('function canonicalHouseDirectoryDialog(');
+  const end=scriptSource.indexOf('function createHouseTemplate(',start);
+  const editor=scriptSource.slice(start,end);
+  assert.ok(start>=0&&end>start);
+  assert.match(editor,/cancelButton\.onclick=close/);
+  assert.match(editor,/Number\.isSafeInteger\(Number\(base\)\)/);
+  assert.match(editor,/Number\.isSafeInteger\(Number\(extra\)\)/);
+  assert.match(editor,/Number\(base\)\+Number\(extra\)<1/);
 });
 
 test('canonical extra bed occupancy explicitly distinguishes child and adult',()=>{
@@ -354,12 +355,14 @@ test('assignment scope validation reuses one state snapshot and normalizes entit
   assert.match(confirmBody,/String\(current\.id\)!==draft\.conferenceId\|\|!currentConferenceSectionCapability\('accommodationManage'\)/);
 });
 
-test('central house directory floor names reject whitespace-only input',()=>{
-  const start=scriptSource.indexOf('function addCanonicalHouseFloor(id){');
-  const end=scriptSource.indexOf('function deleteCanonicalHouseFloor(',start);
-  const section=scriptSource.slice(start,end);
-  assert.ok(section.includes("name=String(name).trim()"));
-  assert.ok(section.includes("if(!name){showToast('أدخل اسم الدور."));
+test('central house directory floor names reject whitespace-only input before mutation',()=>{
+  const start=scriptSource.indexOf('function canonicalHouseDirectoryDialog(');
+  const end=scriptSource.indexOf('function createHouseTemplate(',start);
+  const editor=scriptSource.slice(start,end);
+  assert.ok(start>=0&&end>start);
+  assert.match(editor,/controls\[key\]\.value\.trim\(\)/);
+  assert.match(editor,/kind!=='room'&&!values\.name/);
+  assert.ok(editor.indexOf("kind!=='room'&&!values.name")<editor.indexOf('window.CanonicalConferenceHouses.mutate('));
 });
 
 test('room mutation fast path acquires a fresh server lease without redundant read and keeps lock fallback',()=>{
