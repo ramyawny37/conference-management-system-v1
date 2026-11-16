@@ -1336,7 +1336,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 #roomModal.canonical-room-readonly .room-information-grid>.room-modal-field:nth-child(3),
 #roomModal.canonical-room-readonly .room-information-grid>.room-notes-field{grid-column:1/-1}
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child){
- display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;gap:7px;
+ display:grid;grid-template-columns:72px minmax(0,1fr) minmax(220px,1.3fr);align-items:center;gap:7px;
  padding:8px 10px;min-width:0;min-height:58px
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>*{
@@ -1346,10 +1346,10 @@ tr:nth-child(even) td{background:#F7FBFF}
  flex:0 0 72px;align-self:center;font-size:11px
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.guest-slot-person{
- flex:1 1 135px;max-width:none;overflow-wrap:anywhere
+ grid-column:2;max-width:none;overflow-wrap:anywhere
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields{
- display:flex;flex:2 1 280px;align-items:end;flex-wrap:nowrap;gap:5px;min-width:0
+ display:flex;grid-column:3;align-items:end;flex-wrap:nowrap;gap:5px;min-width:0
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields>label{
  display:flex;flex:1 1 0;flex-direction:column;gap:3px;min-width:0;max-width:none;
@@ -1363,10 +1363,10 @@ tr:nth-child(even) td{background:#F7FBFF}
  box-sizing:border-box;width:100%;min-width:0;min-height:32px;padding:4px 5px;font-size:11px
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-status-fields{
- display:flex;flex:0 1 auto;align-items:center;gap:4px;flex-wrap:wrap;min-width:0
+ display:flex;grid-column:2;grid-row:2;align-items:center;gap:4px;flex-wrap:wrap;min-width:0
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-guest-actions{
- display:flex;flex:0 0 auto;align-items:center;flex-wrap:nowrap;gap:4px;
+ display:flex;grid-column:3;grid-row:2;align-items:center;flex-wrap:nowrap;gap:4px;
  padding:0;margin:0;border:0;justify-content:flex-start
 }
 #roomModal.canonical-room-readonly .canonical-room-guest-actions .btn{min-height:30px;padding:4px 7px}
