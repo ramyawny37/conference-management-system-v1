@@ -9,7 +9,10 @@ const css=fs.readFileSync('style.css','utf8');
 const migration=fs.readFileSync('supabase/migrations/20261026094149_canonical_guardian_child_accommodation_lifecycle.sql','utf8');
 const moveMigration=fs.readFileSync('supabase/migrations/20261026094312_reject_direct_linked_child_stay_moves.sql','utf8');
 const rendererSource=script.slice(script.indexOf('function isCanonicalAccommodationChild('),script.indexOf('\nfunction setCanonicalAccommodationRoomClosed('));
-const context={esc:value=>String(value)};
+const context={
+  esc:value=>String(value),
+  document:{addEventListener:()=>{}}
+};
 vm.runInNewContext(rendererSource,context);
 
 test('linked child row is the compact unified-editor path with bed editing and removal only',()=>{
