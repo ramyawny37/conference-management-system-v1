@@ -209,3 +209,49 @@ test('closing the house editor restores focus to its original trigger',()=>{
  assert.equal(h.dom.window.document.activeElement,trigger);
  h.dom.window.close();
 });
+
+test('deleting an empty house calls the central writer once and resets selection',async()=>{
+  const start=ui.indexOf('function deleteCanonicalHouse(id)');
+  const end=ui.indexOf('\nfunction addCanonicalHouseFloor(',start);
+  assert.ok(start>=0&&end>start);
+  const calls=[],refreshes=[],toasts=[];
+  const house={houseId:'house-1',name:'بيت',revision:4,floors:[]};
+  const context={
+    window:{CanonicalConferenceHouses:{
+      getState:()=>({houses:[house]}),
+      mutate:(operation,payload)=>{calls.push({operation,payload});return Promise.resolve();}
+    }},
+    confirm:()=>true,
+    showToast:(...args)=>toasts.push(args),
+    refreshCanonicalHouseDirectory:message=>{refreshes.push(message);return Promise.resolve(true);},
+    reportCanonicalHouseDirectoryMutationFailure:()=>false,
+    selectedHouseTemplateId:'house-1'
+  };
+  vm.runInNewContext(ui.slice(start,end)+'\nthis.deleteHouse=deleteCanonicalHouse;',context);
+  await context.deleteHouse('house-1');
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].operation,'delete_house');
+  assert.equal(calls[0].payload.houseId,'house-1');
+  assert.equal(calls[0].payload.expectedRevision,4);
+  assert.equal(context.selectedHouseTemplateId,null);
+  assert.equal(refreshes.length,1);
+});
+
+test('deleting a nonempty house is blocked before any mutation',()=>{
+  const start=ui.indexOf('function deleteCanonicalHouse(id)');
+  const end=ui.indexOf('\nfunction addCanonicalHouseFloor(',start);
+  const calls=[],toasts=[];
+  const context={
+    window:{CanonicalConferenceHouses:{
+      getState:()=>({houses:[{houseId:'house-1',name:'بيت',revision:4,floors:[{floorId:'floor-1'}]}]}),
+      mutate:(...args)=>calls.push(args)
+    }},
+    confirm:()=>{throw Error('should not confirm nonempty house');},
+    showToast:(...args)=>toasts.push(args),
+    selectedHouseTemplateId:'house-1'
+  };
+  vm.runInNewContext(ui.slice(start,end)+'\nthis.deleteHouse=deleteCanonicalHouse;',context);
+  assert.equal(context.deleteHouse('house-1'),false);
+  assert.equal(calls.length,0);
+  assert.equal(toasts.length,1);
+});
