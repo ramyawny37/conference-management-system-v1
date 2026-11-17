@@ -685,11 +685,15 @@
         appVersionLabel.style.display = 'none';
       }
     }
-    var storageReady = window.applicationStorageReadyPromise || Promise.resolve();
-    storageReady.catch(function() {}).then(function() {
-      setTimeout(function() { document.getElementById('splash-screen').style.opacity = '0'; }, 250);
-      setTimeout(function() { document.getElementById('splash-screen').style.display = 'none'; }, 500);
-    });
+    // The access gate owns readiness and error states. The splash is only a boot visual;
+    // do not hide access-gate progress behind a pending storage operation.
+    var splash = document.getElementById('splash-screen');
+    if (splash) {
+      requestAnimationFrame(function() {
+        splash.style.opacity = '0';
+        splash.addEventListener('transitionend', function() { splash.style.display = 'none'; }, { once: true });
+      });
+    }
   });
 </script>
 <script>
