@@ -144,3 +144,8 @@ test('person dialog cannot save after switching to another conference',()=>{
  assert.match(ui,/canonicalPersonDialogConferenceId=null/);
  assert.match(ui,/تم تغيير المؤتمر أثناء فتح بيانات الشخص/);
 });
+
+test('stale person lookup responses are discarded after conference changes',()=>{
+ assert.match(ui,/String\(getCurrentConference\(\)\.id\)!==canonicalPersonDialogConferenceId/);
+ assert.match(ui,/String\(activeConference\.id\)!==canonicalPersonDialogConferenceId/);
+});
