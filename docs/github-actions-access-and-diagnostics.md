@@ -25,7 +25,11 @@ Call `mcp__GitHub__compare_commits({repo_full_name:"ramyawny37/conference-manage
 
 ## Finding a current run ID
 
+VERIFIED DIRECT CONNECTOR ROUTE (2026-11-17): `mcp__GitHub__fetch({url:"https://api.github.com/repos/ramyawny37/conference-management-system-v1/actions/runs?branch=develop&per_page=20"})`. Parse `result.content` as JSON; read `workflow_runs[]` fields `id`, `head_sha`, `name`, `status`, `conclusion`, `html_url`. This successfully retrieved the actual latest Development run `44108256520` (success, commit `842d5ab5aaea743d41ab6f38b5d9568a7abe3a78`). Use the numeric ID with `fetch_workflow_run_jobs`, then job ID with `fetch_workflow_job_steps` or `fetch_workflow_job_logs`. This connector `fetch` route avoids external browser/DNS restrictions. Do not use untrusted or non-GitHub URLs.
+
 Preferred: obtain the numeric ID from the repository's Actions run listing, or use an authenticated `gh run list --repo ramyawny37/conference-management-system-v1 --branch develop --limit 20 --json databaseId,headSha,status,conclusion,workflowName` where CLI connectivity is available. The GitHub REST equivalent is `GET /repos/ramyawny37/conference-management-system-v1/actions/runs?branch=develop&per_page=20`. Do not fabricate run IDs or assume the historical IDs are current.
+
+The preview repository can be inspected through the same connector `fetch`, e.g. `https://api.github.com/repos/ramyawny37/conference-management-system-development-preview/commits?per_page=3`. Its latest commit was `fb51ee6bdb52753c554bd816f03cec2f7891b5a0` (2026-11-10) at the time of inspection. A successful source validation workflow is **not** proof of a new Preview deployment. Check the actual deployment pipeline and published manifest separately.
 
 If list access fails, retain the working connector route above for any known run/job ID. Report current CI as unverified until an actual current run is retrieved.
 
