@@ -259,7 +259,7 @@ test('canonical accommodation filters extra beds children and accompanied guests
   const quickStart=scriptSource.indexOf('function renderAccommodationQuickFilters(');
   const quickEnd=scriptSource.indexOf('function ',quickStart+10);
   const quickFilters=scriptSource.slice(quickStart,quickEnd);
-  for(const filter of ["['extra-beds','bed','بها أسرة إضافية مستخدمة']","['children','users','بها أطفال']","['accompanied','users','بها مرافقون']"]){
+  for(const filter of ["['extra-beds','bed','أسرة إضافية']","['children','users','أطفال']","['accompanied','users','مرافقون']"]){
     assert.ok(quickFilters.includes(filter),'missing canonical sidebar filter '+filter);
   }
 });
