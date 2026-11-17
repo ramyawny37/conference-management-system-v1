@@ -8881,6 +8881,7 @@ function renderPeopleDatabaseSection(){
   var h = '<section class="settings-section settings-branding-section settings-people-standalone">';
   h += '<div class="settings-people-heading"><h3>أشخاص المؤتمر</h3><span class="settings-count-badge">'+people.length+'</span></div>';
   h += '<div class="settings-people-toolbar">';
+  if(canView)h += '<input type="search" class="settings-people-search" aria-label="بحث في أشخاص المؤتمر" placeholder="بحث بالاسم أو الهاتف أو الكنيسة" oninput="filterConferencePeopleList(this.value)">';
   if(!linked)h += '<button class="btn btn-blue" onclick="openPeopleExcelImport()">📥 استيراد ملف إكسل</button>';
   if(canManage)h += '<button class="btn btn-purple" onclick="openPersonDialog()" '+(linked&&!canonicalState?'disabled':'')+'>➕ إضافة شخص جديد</button>';
   h += '</div>';
@@ -8908,6 +8909,16 @@ function renderPeopleDatabaseSection(){
   }
   h += '</section>';
   return h;
+}
+
+function filterConferencePeopleList(query){
+  var list=document.querySelector('#tab6 .settings-people-list');
+  if(!list)return;
+  var normalized=String(query||'').trim().toLocaleLowerCase();
+  Array.prototype.forEach.call(list.querySelectorAll('.settings-list-item'),function(row){
+    var details=row.firstElementChild;
+    row.hidden=!!(normalized&&(!details||!details.textContent.toLocaleLowerCase().includes(normalized)));
+  });
 }
 
 function canonicalParticipantMetaText(participation){
