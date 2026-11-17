@@ -157,3 +157,8 @@ test('conference people search filters only rendered event participants',()=>{
  assert.match(ui,/oninput="filterConferencePeopleList\(this\.value\)"/);
  assert.match(ui,/getConferenceParticipationState\(current\.id\)/);
 });
+
+test('stale canonical people search failures do not notify another conference',()=>{
+ assert.match(ui,/generation===canonicalPersonSearchGeneration&&active&&String\(active\.id\)===canonicalPersonDialogConferenceId/);
+ assert.match(ui,/ge\('personModal'\)\.style\.display!=='none'/);
+});
