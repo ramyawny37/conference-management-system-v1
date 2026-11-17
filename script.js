@@ -8879,7 +8879,7 @@ function renderPeopleDatabaseSection(){
   var canonicalState=linked&&window.PlatformIntegration&&typeof window.PlatformIntegration.getConferenceParticipationState==='function'?window.PlatformIntegration.getConferenceParticipationState(current.id):null;
   var people=linked?(canView&&canonicalState?canonicalState.items:[]):getPeopleList();
   var h = '<section class="settings-section settings-branding-section settings-people-standalone">';
-  h += '<div class="settings-people-heading"><h3>قاعدة بيانات الأشخاص</h3><span class="settings-count-badge">'+people.length+'</span></div>';
+  h += '<div class="settings-people-heading"><h3>أشخاص المؤتمر</h3><span class="settings-count-badge">'+people.length+'</span></div>';
   h += '<div class="settings-people-toolbar">';
   if(!linked)h += '<button class="btn btn-blue" onclick="openPeopleExcelImport()">📥 استيراد ملف إكسل</button>';
   if(canManage)h += '<button class="btn btn-purple" onclick="openPersonDialog()" '+(linked&&!canonicalState?'disabled':'')+'>➕ إضافة شخص جديد</button>';
