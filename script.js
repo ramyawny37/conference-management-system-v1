@@ -9189,9 +9189,11 @@ function refreshCanonicalPeopleAfterDuplicate(localId,personId){
     var exists=!!(current&&String(current.id)===String(localId)&&state&&Array.isArray(state.items)&&state.items.some(function(item){
       return String(item.personId||item.person&&item.person.id||'')===String(personId)&&item.status==='active';
     }));
-    if(!accommodationAssignment)renderSettings();
     if(!exists){showToast('تعذر تأكيد مشاركة الشخص في المؤتمر الحالي. أعد تحميل القائمة والتحقق من البيانات.','#E74C3C');return false;}
-    closePersonDialog();if(accommodationAssignment)resumeCanonicalAccommodationAssignmentForPerson(personId);else if(accommodationRoomSlotKey)resumeCanonicalAccommodationRoomSlotForPerson(personId,accommodationRoomSlotKey);else renderSettings();showToast('الشخص موجود بالفعل في المؤتمر وتم تحديث القائمة.');return true;
+    closePersonDialog();
+    if(accommodationAssignment)return Promise.resolve(resumeCanonicalAccommodationAssignmentForPerson(personId)).then(function(){showToast('الشخص موجود بالفعل في المؤتمر وتم تحديث القائمة.');return true;});
+    if(accommodationRoomSlotKey)return Promise.resolve(resumeCanonicalAccommodationRoomSlotForPerson(personId,accommodationRoomSlotKey)).then(function(resumed){if(resumed)showToast('الشخص موجود بالفعل في المؤتمر وتم ربطه بمسودة الغرفة.');return !!resumed;});
+    renderSettings();showToast('الشخص موجود بالفعل في المؤتمر وتم تحديث القائمة.');return true;
   }).catch(function(){showToast('تعذر التحقق من مشاركة الشخص في المؤتمر الحالي.','#E74C3C');return false;});
 }
 function isCanonicalParticipationDuplicate(error){
