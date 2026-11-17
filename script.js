@@ -8981,6 +8981,7 @@ function importLocalOnlyPeopleExcelFile(e){
 
 var personDialogContext = { guestRowId: null, childRowId: null, targetField: '', accommodationAssignment: false };
 
+var canonicalPersonDialogConferenceId=null;
 var canonicalPersonSearchGeneration=0;
 var canonicalPersonSelectedId=null;
 var canonicalPersonSelectedName='';
@@ -9028,6 +9029,7 @@ function openPersonDialog(personId){
   canonicalPersonSearchGeneration++;canonicalPersonSelectedId=null;canonicalPersonSelectedName='';canonicalPersonSelectedSnapshot=null;
   ge('personCanonicalSuggestions').style.display='none';ge('personCanonicalSuggestions').textContent='';
   var current=getCurrentConference();
+  canonicalPersonDialogConferenceId=current?String(current.id):null;
   var linked=!!(current&&getCanonicalConferenceCoreLink(current.id));
   if(linked&&!currentConferenceSectionCapability('peopleManage')){showToast('ليس لديك صلاحية إدارة الأشخاص.','#E74C3C');return false;}
   if(linked&&personId){
@@ -9079,6 +9081,7 @@ function closePersonDialog(){
   canonicalPersonSearchGeneration++;canonicalPersonSelectedId=null;canonicalPersonSelectedName='';canonicalPersonSelectedSnapshot=null;
   ge('personCanonicalSuggestions').style.display='none';ge('personCanonicalSuggestions').textContent='';
   ge('personModal').style.display = 'none';
+  canonicalPersonDialogConferenceId=null;
   personDialogContext = { guestRowId: null, childRowId: null, targetField: '', accommodationAssignment: false };
 }
 
@@ -9155,6 +9158,10 @@ function deleteLocalOnlyPersonFromDatabase(personId){
 function savePersonDialog(){
   var personId = ge('personDialogId').value;
   var linkedCurrent=getCurrentConference();
+  if(!linkedCurrent||String(linkedCurrent.id)!==canonicalPersonDialogConferenceId){
+    showToast('تم تغيير المؤتمر أثناء فتح بيانات الشخص. أغلق النافذة وأعد فتحها من المؤتمر الحالي.','#E74C3C');
+    return false;
+  }
   if(linkedCurrent&&getCanonicalConferenceCoreLink(linkedCurrent.id)){
     return saveCanonicalConferenceParticipant(linkedCurrent,personId);
   }
