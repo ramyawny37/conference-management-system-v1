@@ -154,6 +154,6 @@ test('conference people search filters only rendered event participants',()=>{
  assert.match(ui,/function filterConferencePeopleList\(query\)/);
  assert.match(ui,/querySelector\('#tab6 \.settings-people-list'\)/);
  assert.match(ui,/details\.textContent\.toLocaleLowerCase\(\)\.includes\(normalized\)/);
- assert.match(ui,/oninput=\\"filterConferencePeopleList\(this\.value\)\\"/);
+ assert.match(ui,/oninput="filterConferencePeopleList\(this\.value\)"/);
  assert.match(ui,/getConferenceParticipationState\(current\.id\)/);
 });
