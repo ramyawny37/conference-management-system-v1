@@ -3,6 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<script>
+/* Reload starts at the top of the platform; in-app route changes retain their own scroll behavior. */
+(function(){
+  if(!('scrollRestoration' in history))return;
+  history.scrollRestoration='manual';
+  var navigation=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
+  if(!navigation||navigation.type!=='reload')return;
+  function resetReloadScroll(){window.scrollTo(0,0);}
+  resetReloadScroll();
+  window.addEventListener('pageshow',function(){
+    resetReloadScroll();
+    requestAnimationFrame(resetReloadScroll);
+  },{once:true});
+})();
+</script>
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#123E7A">
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32-v3.png">
