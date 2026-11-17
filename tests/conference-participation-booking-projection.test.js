@@ -40,20 +40,51 @@ test('projection is canonical-person keyed, conference scoped, snapshot preservi
   assert.doesNotMatch(sql,/conference_snapshots|peopleDb|grant execute/i);
 });
 
-test('accommodation selection exposes combined category, booking type, period and search filters without changing mutation eligibility',()=>{
-  for(const id of ['canonicalAccommodationCategoryFilter','canonicalAccommodationBookingTypeFilter','canonicalAccommodationPeriodFilter','canonicalAccommodationAssignmentResultCount']){
+test('accommodation selection exposes independent gender, child, booking type, period and search filters without changing mutation eligibility',()=>{
+  for(const id of ['canonicalAccommodationCategoryFilter','canonicalAccommodationChildFilter','canonicalAccommodationBookingTypeFilter','canonicalAccommodationPeriodFilter','canonicalAccommodationResetFilters','canonicalAccommodationAssignmentResultCount']){
     assert.match(index,new RegExp(`id="${id}"`));
   }
   const list=functionSource(script,'renderCanonicalAccommodationAssignmentCandidateList');
+  const matcher=functionSource(script,'canonicalAccommodationParticipationMatchesFilters');
+  const periodKinds=functionSource(script,'canonicalAccommodationBookingPeriodKinds');
   assert.match(list,/normalizePersonKey/);
-  assert.match(list,/guardianParticipationId/);
-  assert.match(list,/bookingTypeId===bookingType/);
-  assert.match(list,/attendanceSegmentsSnapshot\.indexOf\(period\)/);
+  assert.match(list,/canonicalAccommodationChildFilter/);
+  assert.match(list,/canonicalAccommodationParticipationMatchesFilters/);
+  assert.match(matcher,/guardianParticipationId/);
+  assert.match(matcher,/normalizedGender!==filters\.gender/);
+  assert.match(matcher,/filters\.child==='children'/);
+  assert.match(matcher,/bookingTypeId/);
+  assert.match(matcher,/canonicalAccommodationBookingPeriodKinds/);
+  assert.match(periodKinds,/attendancePeriods/);
+  assert.match(periodKinds,/attendanceSegmentsSnapshot/);
   assert.match(list,/النتائج المطابقة/);
   assert.doesNotMatch(list,/assignConferenceAccommodation|moveConferenceAccommodation|saveConferenceFamilyAccommodationDraft/);
   const available=functionSource(script,'getCanonicalAccommodationAvailableParticipations');
   assert.match(available,/status==='active'/);
   assert.match(available,/canonicalAccommodationIntervalsOverlap/);
+});
+
+test('person eligibility combines gender and child independently and prefers dynamic attendance periods',()=>{
+  const context={normalizePersonKey:value=>String(value||'').trim().toLowerCase()};
+  vm.runInNewContext(functionSource(script,'canonicalAccommodationBookingPeriodKinds')+';'+functionSource(script,'canonicalAccommodationParticipationMatchesFilters')+';this.matches=canonicalAccommodationParticipationMatchesFilters;',context);
+  const child={guardianParticipationId:'guardian',person:{fullName:'مريم سمير',phone:'010',church:'الكنيسة',gender:'female'},bookings:[{bookingTypeId:'family',attendancePeriods:[{kind:'second',label:'الفترة الثانية'}],attendanceSegmentsSnapshot:['stale']} ]};
+  assert.equal(context.matches(child,{query:'مريم',gender:'female',child:'children',bookingType:'family',period:'second'}),true);
+  assert.equal(context.matches(child,{gender:'male',child:'children',bookingType:'family',period:'second'}),false);
+  assert.equal(context.matches(child,{gender:'female',child:'adults',bookingType:'family',period:'second'}),false);
+  assert.equal(context.matches(child,{gender:'female',child:'children',bookingType:'family',period:'stale'}),false);
+  const legacy={person:{fullName:'يوسف',gender:'male'},bookings:[{bookingTypeId:'full',attendancePeriods:[],attendanceSegmentsSnapshot:['full-period']}]};
+  assert.equal(context.matches(legacy,{gender:'male',child:'adults',bookingType:'full',period:'full-period'}),true);
+});
+
+test('unified room add and replacement pickers reuse the same candidate filter contract',()=>{
+  for(const id of ['canonicalRoomCandidateGenderFilter','canonicalRoomCandidateChildFilter','canonicalRoomCandidateBookingTypeFilter','canonicalRoomCandidatePeriodFilter'])assert.match(script,new RegExp(id));
+  const slot=functionSource(script,'renderCanonicalAccommodationRoomSlotCandidates');
+  const replacement=functionSource(script,'renderCanonicalAccommodationReplacementCandidates');
+  assert.match(slot,/canonicalAccommodationRoomCandidateFilterState/);
+  assert.match(slot,/canonicalAccommodationParticipationMatchesFilters/);
+  assert.match(replacement,/canonicalAccommodationRoomCandidateFilterState/);
+  assert.match(replacement,/canonicalAccommodationParticipationMatchesFilters/);
+  assert.match(script,/populateCanonicalAccommodationRoomCandidateFilters\(canonicalAccommodationRoomEditorDraft\.participations\)/);
 });
 
 test('participation projection retains every booking instead of selecting an arbitrary first booking',()=>{

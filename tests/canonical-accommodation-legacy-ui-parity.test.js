@@ -113,8 +113,8 @@ test('canonical assignment can add a central person and resume the same room dra
 });
 
 test('restored canonical person picker renders searchable rich rows and selects by participation identity',()=>{
-  const dom=new JSDOM('<input id="canonicalAccommodationAssignmentSearch"><div id="canonicalAccommodationAssignmentList"></div><button id="canonicalAccommodationAssignmentConfirm" disabled></button><small id="canonicalAccommodationSelectedPerson"></small>');
-  const renderStart=ui.indexOf('function renderCanonicalAccommodationAssignmentCandidateList(');
+  const dom=new JSDOM('<input id="canonicalAccommodationAssignmentSearch"><select id="canonicalAccommodationCategoryFilter"><option value="all">all</option></select><select id="canonicalAccommodationChildFilter"><option value="all">all</option></select><select id="canonicalAccommodationBookingTypeFilter"><option value="all">all</option></select><select id="canonicalAccommodationPeriodFilter"><option value="all">all</option></select><div id="canonicalAccommodationAssignmentResultCount"></div><div id="canonicalAccommodationAssignmentList"></div><button id="canonicalAccommodationAssignmentConfirm" disabled></button><small id="canonicalAccommodationSelectedPerson"></small>');
+  const renderStart=ui.indexOf('function canonicalAccommodationBookingPeriodKinds(');
   const renderEnd=ui.indexOf('\nfunction syncCanonicalAccommodationReplacementFields(',renderStart);
   const context={
     document:dom.window.document,
@@ -217,7 +217,7 @@ test('integrated room slot picker searches central participations and invalidate
   const start=ui.indexOf('function getCanonicalAccommodationRoomSlotDraft(');
   const end=ui.indexOf('\nfunction openCanonicalAccommodationRoomSlotPersonDialog(',start);
   const draft={participations:[{participationId:'p1',status:'active',person:{fullName:'مريم حنا',phone:'0100',church:'مارمرقس'}},{participationId:'p2',status:'active',person:{fullName:'يوسف فريد'}}],slots:{base_0:{bedType:'base',selectedParticipationId:null,selectedLabel:'',available:[]}}};
-  const context={document:dom.window.document,String,Object,Number,canonicalAccommodationRoomEditorDraft:draft,ge:id=>dom.window.document.getElementById(id),normalizePersonKey:value=>String(value||'').trim().toLowerCase(),canonicalAccommodationState:()=>({houses:[]}),getCanonicalAccommodationAvailableParticipations:items=>items,esc:value=>String(value||'')};
+  const context={document:dom.window.document,String,Object,Number,canonicalAccommodationRoomEditorDraft:draft,ge:id=>dom.window.document.getElementById(id),normalizePersonKey:value=>String(value||'').trim().toLowerCase(),canonicalAccommodationState:()=>({houses:[]}),getCanonicalAccommodationAvailableParticipations:items=>items,canonicalAccommodationRoomCandidateFilterState:query=>({query}),canonicalAccommodationParticipationMatchesFilters:(item,filters)=>!filters.query||String(item.person&&item.person.fullName||'').includes(filters.query),esc:value=>String(value||'')};
   vm.runInNewContext(ui.slice(start,end)+';this.renderCandidates=renderCanonicalAccommodationRoomSlotCandidates;this.select=selectCanonicalAccommodationRoomSlotParticipation;',context);
   assert.equal(context.renderCandidates('base_0'),2);
   assert.equal(dom.window.document.querySelectorAll('[role="option"]').length,2);

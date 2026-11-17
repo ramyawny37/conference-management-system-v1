@@ -11,7 +11,7 @@
 
 <title>منظومة الإدارة المتكاملة</title>
 <link rel="stylesheet" href="shared-design-tokens.css?rev=platform-design-system-consolidation-v2">
-<link rel="stylesheet" href="style.css?rev=accommodation-compact-density-v9">
+<link rel="stylesheet" href="style.css?rev=accommodation-person-filters-v10">
 <link rel="stylesheet" href="modules/reservations/reservations-module.css?rev=reservations-lifecycle-active-only-v4">
 <link rel="stylesheet" href="canonical-platform-shell.css?rev=conference-header-content-offset-v1">
 </head>
@@ -485,9 +485,11 @@
           </div>
           <label class="canonical-accommodation-search" for="canonicalAccommodationAssignmentSearch"><span aria-hidden="true">⌕</span><input id="canonicalAccommodationAssignmentSearch" type="search" placeholder="بحث..." autocomplete="off" oninput="renderCanonicalAccommodationAssignmentCandidateList()"></label>
           <div class="canonical-accommodation-candidate-filters">
-            <select id="canonicalAccommodationCategoryFilter" aria-label="فلتر تصنيف الأشخاص" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">الكل</option><option value="male">ذكر</option><option value="female">أنثى</option><option value="child">طفل</option><option value="unspecified">غير محدد</option></select>
+            <select id="canonicalAccommodationCategoryFilter" aria-label="فلتر الجنس" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">كل الأنواع</option><option value="male">ذكر</option><option value="female">أنثى</option><option value="unspecified">غير محدد</option></select>
+            <select id="canonicalAccommodationChildFilter" aria-label="فلتر الأطفال" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">الكل</option><option value="children">الأطفال</option><option value="adults">البالغون</option></select>
             <select id="canonicalAccommodationBookingTypeFilter" aria-label="فلتر نوع الاشتراك" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">كل أنواع الاشتراك</option><option value="none">بدون نوع اشتراك</option></select>
             <select id="canonicalAccommodationPeriodFilter" aria-label="فلتر فترة الحضور" onchange="renderCanonicalAccommodationAssignmentCandidateList()"><option value="all">كل فترات الحضور</option></select>
+            <button id="canonicalAccommodationResetFilters" type="button" class="btn btn-gray btn-sm" onclick="resetCanonicalAccommodationAssignmentFilters()">إعادة الضبط</button>
           </div>
           <div id="canonicalAccommodationAssignmentResultCount" class="canonical-accommodation-result-count" aria-live="polite"></div>
           <div id="canonicalAccommodationAssignmentCandidates">
@@ -653,7 +655,7 @@
 <script src="js/warehouse/party-management.js?rev=warehouse-party-management-v1"></script>
 <script src="js/warehouse/remaining-operations.js?rev=adjustment-conversion-ux-v1"></script>
 <script src="js/warehouse/workspace.js?rev=item-unit-add-ui-v1"></script>
-<script src="script.js?rev=accommodation-compact-density-v9"></script>
+<script src="script.js?rev=accommodation-person-filters-v10"></script>
 <script src="version.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
