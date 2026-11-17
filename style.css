@@ -1344,10 +1344,14 @@ tr:nth-child(even) td{background:#F7FBFF}
 #roomModal.canonical-room-readonly .room-information-section{padding-block:6px}
 #roomModal.canonical-room-readonly .room-modal-section{margin-bottom:5px;padding:7px 8px}
 #roomModal.canonical-room-readonly .room-modal-section-title{margin-bottom:4px;padding-bottom:4px}
-#roomModal.canonical-room-readonly .room-information-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 7px}
-#roomModal.canonical-room-readonly .room-information-grid>.room-notes-field{grid-column:1/-1}
+#roomModal.canonical-room-readonly .room-information-grid{display:grid;grid-template-columns:minmax(100px,1fr) minmax(100px,1fr) minmax(110px,1fr) minmax(135px,1.2fr);gap:5px 7px;align-items:end}
+#roomModal.canonical-room-readonly .room-information-grid>.room-modal-field{min-width:0}
+#roomModal.canonical-room-readonly .room-information-grid>.room-modal-field input{box-sizing:border-box;width:100%;min-width:0;min-height:32px;height:32px;padding:4px 8px;font-size:12px}
+#roomModal.canonical-room-readonly .room-information-grid>.room-closed-state{min-width:0;min-height:32px;padding:4px 7px}
+#roomModal.canonical-room-readonly .room-information-grid>.room-notes-field{grid-column:span 2}
+#roomModal.canonical-room-readonly .room-information-grid>.room-notes-field{grid-column:span 2}
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child){
- display:grid;grid-template-columns:68px minmax(160px,1fr) minmax(290px,1.45fr);align-items:center;gap:5px 7px;
+ display:grid;grid-template-columns:60px minmax(180px,1.2fr) minmax(270px,1.4fr);align-items:center;gap:4px 6px;
  padding:5px 7px;min-width:0;min-height:52px;border-color:var(--app-border);background:var(--app-surface)
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>*{
@@ -1363,7 +1367,7 @@ tr:nth-child(even) td{background:#F7FBFF}
  display:flex;grid-column:3;align-items:end;flex-wrap:nowrap;gap:4px;min-width:0
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields>label{
- display:flex;flex:1 1 0;flex-direction:column;gap:3px;min-width:0;max-width:none;
+ display:flex;flex:1 1 0;flex-direction:column;gap:2px;min-width:0;max-width:none;
  font-size:10px
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields>label>span{
@@ -1371,7 +1375,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields input,
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields select{
- box-sizing:border-box;width:100%;min-width:0;min-height:30px;padding:3px 5px;font-size:10px
+ box-sizing:border-box;width:100%;min-width:0;min-height:28px;height:28px;padding:2px 5px;font-size:11px
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-status-fields{
  display:flex;grid-column:2;grid-row:2;align-items:center;gap:4px;flex-wrap:wrap;min-width:0
