@@ -10,11 +10,13 @@ test('existing current stays are editable in the unified room editor',()=>{
   const renderer=script.slice(script.indexOf('function renderCanonicalAccommodationDetailOccupant('),script.indexOf('\nfunction canonicalAccommodationRoomEmptySlotHtml('));
   for(const field of ['canonicalRoomStayArrival_','canonicalRoomStayLeave_','canonicalRoomStayBed_','canonicalRoomStayExtraType_']) assert.match(renderer,new RegExp(field));
   assert.doesNotMatch(renderer,/editCanonicalAccommodation/);
-  assert.match(renderer,/setCanonicalAccommodationArrivalFromRoomEditor/);
-  assert.match(script,/roomKeyButton\.addEventListener\('click',function\(\)\{setCanonicalAccommodationRoomKey\(room\.roomId\)/);
+  assert.match(renderer,/canonical-room-arrival-icon/);
   assert.match(renderer,/moveCanonicalAccommodation/);
   assert.match(renderer,/removeCanonicalAccommodation/);
+  assert.match(renderer,/ui-icon-button canonical-room-action canonical-room-action-move/);
+  assert.doesNotMatch(renderer,/canonical-room-guest-menu/);
   assert.match(css,/canonical-room-stay-fields/);
+  assert.doesNotMatch(css,/canonical-room-guest-menu/);
 });
 
 test('draft includes original stay revisions and submits changed stays only',()=>{

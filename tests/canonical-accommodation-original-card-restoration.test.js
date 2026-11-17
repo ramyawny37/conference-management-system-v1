@@ -9,7 +9,7 @@ const css=fs.readFileSync('style.css','utf8');
 const helperStart=script.indexOf('function isCanonicalAccommodationChild(');
 const helperEnd=script.indexOf('\nfunction openCanonicalAccommodationRoomDetails(',helperStart);
 const helpers=script.slice(helperStart,helperEnd);
-const context={esc:value=>String(value).replace(/[&<>"']/g,'_')};
+const context={esc:value=>String(value).replace(/[&<>"']/g,'_'),document:{addEventListener:()=>{}}};
 vm.runInNewContext(helpers,context);
 
 test('children group under an exact guardian participation once and unresolved links stay explicit',()=>{
