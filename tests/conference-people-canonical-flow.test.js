@@ -169,3 +169,14 @@ test('room guardian staging does not leave the person dialog locked as a pending
  assert.match(ui,/if\(accommodationRoomSlotKey\)\{canonicalPersonSavePending=false;var stagedNew=stageCanonicalAccommodationRoomGuardian/);
  assert.match(ui,/function closePersonDialog\(\)\{\s*if\(canonicalPersonSavePending\)return false;/);
 });
+
+test('duplicate participation recovery preserves the active room editor and awaits slot binding',()=>{
+ const start=ui.indexOf('function refreshCanonicalPeopleAfterDuplicate(');
+ const end=ui.indexOf('function isCanonicalParticipationDuplicate(',start);
+ assert.ok(start>=0&&end>start);
+ const recovery=ui.slice(start,end);
+ assert.doesNotMatch(recovery,/if\(!accommodationAssignment\)renderSettings\(\)/);
+ assert.match(recovery,/if\(accommodationRoomSlotKey\)return Promise\.resolve\(resumeCanonicalAccommodationRoomSlotForPerson\(personId,accommodationRoomSlotKey\)\)/);
+ assert.match(recovery,/if\(resumed\)showToast/);
+ assert.match(recovery,/return !!resumed/);
+});
