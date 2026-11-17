@@ -9008,7 +9008,7 @@ function searchCanonicalPersonSuggestions(){
   if(!current||!getCanonicalConferenceCoreLink(current.id)||!window.PlatformIntegration||typeof window.PlatformIntegration.searchConferencePeople!=='function')return;
   var query=field.value.trim();if(query.length<2)return;
   window.PlatformIntegration.searchConferencePeople(current.id,query,12).then(function(items){
-    if(generation!==canonicalPersonSearchGeneration||ge('personModal').style.display==='none')return;
+    if(generation!==canonicalPersonSearchGeneration||ge('personModal').style.display==='none'||!getCurrentConference()||String(getCurrentConference().id)!==canonicalPersonDialogConferenceId)return;
     box.textContent='';
     items.forEach(function(person){var option=document.createElement('button');option.type='button';option.className='btn btn-gray';option.style.cssText='display:block;width:100%;text-align:right;margin:3px 0';option.setAttribute('role','option');option.textContent=String(person.fullName||'')+(person.phone?' — '+person.phone:'');option.onclick=function(){canonicalPersonSearchGeneration++;canonicalPersonSelectedId=person.personId;canonicalPersonSelectedName=String(person.fullName||'');canonicalPersonSelectedSnapshot={revision:Number(person.revision),church:String(person.church||''),phone:String(person.phone||''),gender:String(person.gender||''),dateOfBirth:String(person.dateOfBirth||'').slice(0,10)};field.value=canonicalPersonSelectedName;ge('person_church').value=person.church||'';ge('person_phone').value=person.phone||'';ge('person_gender').value=person.gender||'';ge('person_date_of_birth').value=String(person.dateOfBirth||'').slice(0,10);ge('person_age').value=canonicalPersonAgeFromBirthDate(person.dateOfBirth);box.style.display='none';};box.appendChild(option);});
     box.style.display=items.length?'block':'none';
@@ -9039,7 +9039,7 @@ function openPersonDialog(personId){
     var editGeneration=canonicalPersonSearchGeneration;
     return window.PlatformIntegration.getConferenceCanonicalPerson(current.id,selected.personId).then(function(person){
       var activeConference=getCurrentConference();
-      if(editGeneration!==canonicalPersonSearchGeneration||!activeConference||activeConference.id!==current.id)return false;
+      if(editGeneration!==canonicalPersonSearchGeneration||!activeConference||String(activeConference.id)!==String(current.id)||String(activeConference.id)!==canonicalPersonDialogConferenceId)return false;
       if(!person){showToast('تعذر تحميل بيانات الشخص الحالية.','#E74C3C');return false;}
       canonicalPersonSelectedId=person.personId;canonicalPersonSelectedName=person.fullName;
       canonicalPersonSelectedSnapshot={revision:Number(person.revision),church:String(person.church||''),phone:String(person.phone||''),gender:String(person.gender||''),dateOfBirth:String(person.dateOfBirth||'').slice(0,10)};
