@@ -162,3 +162,10 @@ test('stale canonical people search failures do not notify another conference',(
  assert.match(ui,/generation===canonicalPersonSearchGeneration&&active&&String\(active\.id\)===canonicalPersonDialogConferenceId/);
  assert.match(ui,/ge\('personModal'\)\.style\.display!=='none'/);
 });
+
+
+test('room guardian staging does not leave the person dialog locked as a pending remote save',()=>{
+ assert.match(ui,/if\(accommodationRoomSlotKey\)\{canonicalPersonSavePending=false;var stagedExisting=stageCanonicalAccommodationRoomGuardian/);
+ assert.match(ui,/if\(accommodationRoomSlotKey\)\{canonicalPersonSavePending=false;var stagedNew=stageCanonicalAccommodationRoomGuardian/);
+ assert.match(ui,/function closePersonDialog\(\)\{\s*if\(canonicalPersonSavePending\)return false;/);
+});
