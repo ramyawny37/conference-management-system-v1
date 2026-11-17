@@ -96,6 +96,15 @@ test('compact room restores arrival and key tools while room closure uses the ca
 test('canonical room detail viewport keeps the approved width, visible footer actions and bounded scrolling',()=>{
   assert.match(css,/#roomModal \.room-editor-modal\{width:min\(880px,calc\(100vw - 32px\)\);max-width:880px;/);
   assert.match(css,/#roomModal\.canonical-room-readonly \.room-editor-modal\{width:min\(880px,calc\(100vw - 20px\)\);max-width:880px;max-height:calc\(100dvh - 20px\)\}/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.mbody\{display:block;min-height:0;flex:1 1 auto;padding:12px 16px 20px;overflow-y:auto;overscroll-behavior:contain\}/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{position:sticky;z-index:6;bottom:-20px;/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.mbody\{display:block;min-height:0;flex:1 1 auto;padding:8px 10px 15px;overflow-y:auto;overscroll-behavior:contain\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{position:sticky;z-index:6;bottom:-15px;/);
+});
+
+test('compact accommodation keeps approved room widths while reducing dashboard and editor height',()=>{
+  assert.match(css,/#tab0 \.accommodation-floor-rooms\{display:grid;width:100%;grid-template-columns:repeat\(auto-fill,minmax\(260px,290px\)\)/);
+  assert.match(css,/\.accommodation-canonical-summary>\.card\{[^}]*min-height:54px/);
+  assert.match(css,/#tab0 \.accommodation-house-title\{min-height:38px;padding:6px 10px/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)\{[\s\S]*?min-height:52px/);
+  assert.match(script,/class="room-more-actions"[^\n]+aria-label="المزيد من إجراءات الغرفة/);
+  assert.match(script,/class="house-more-actions"[^\n]+aria-label="المزيد من إجراءات البيت/);
 });
