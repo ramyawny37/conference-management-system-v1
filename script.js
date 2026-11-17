@@ -9228,7 +9228,7 @@ function saveCanonicalConferenceParticipant(linkedCurrent,personId){
     var selectedPersonId=canonicalPersonSelectedId;
     var accommodationAssignment=personDialogContext.accommodationAssignment===true;
     var accommodationRoomSlotKey=personDialogContext.accommodationRoomSlotKey||'';
-    if(accommodationRoomSlotKey){var stagedExisting=stageCanonicalAccommodationRoomGuardian(accommodationRoomSlotKey,{personId:selectedPersonId,fullName:linkedFullName,church:snapshot.church,phone:snapshot.phone,gender:snapshot.gender,dateOfBirth:snapshot.dateOfBirth});if(stagedExisting){closePersonDialog();showToast('تمت إضافة ولي الأمر إلى مسودة الغرفة');}return stagedExisting;}
+    if(accommodationRoomSlotKey){canonicalPersonSavePending=false;var stagedExisting=stageCanonicalAccommodationRoomGuardian(accommodationRoomSlotKey,{personId:selectedPersonId,fullName:linkedFullName,church:snapshot.church,phone:snapshot.phone,gender:snapshot.gender,dateOfBirth:snapshot.dateOfBirth});if(stagedExisting){closePersonDialog();showToast('تمت إضافة ولي الأمر إلى مسودة الغرفة');}return stagedExisting;}
     return window.PlatformIntegration.createConferenceParticipationForExistingPerson(linkedCurrent.id,selectedPersonId).then(function(){canonicalPersonSavePending=false;closePersonDialog();if(accommodationAssignment)resumeCanonicalAccommodationAssignmentForPerson(selectedPersonId);else if(accommodationRoomSlotKey)resumeCanonicalAccommodationRoomSlotForPerson(selectedPersonId,accommodationRoomSlotKey);else renderSettings();showToast('✅ تمت إضافة الشخص للمؤتمر');return true;}).catch(function(error){if(isCanonicalParticipationDuplicate(error))return refreshCanonicalPeopleAfterDuplicate(linkedCurrent.id,selectedPersonId);showToast('تعذر إضافة الشخص للمؤتمر.','#E74C3C');return false;}).finally(function(){canonicalPersonSavePending=false;});
   }
   var genderValue=ge('person_gender').value.trim();
@@ -9238,7 +9238,7 @@ function saveCanonicalConferenceParticipant(linkedCurrent,personId){
   canonicalPersonSavePending=true;
   var accommodationAssignment=personDialogContext.accommodationAssignment===true;
   var accommodationRoomSlotKey=personDialogContext.accommodationRoomSlotKey||'';
-  if(accommodationRoomSlotKey){var stagedNew=stageCanonicalAccommodationRoomGuardian(accommodationRoomSlotKey,{personId:null,fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null});if(stagedNew){closePersonDialog();showToast('تمت إضافة ولي الأمر إلى مسودة الغرفة');}return stagedNew;}
+  if(accommodationRoomSlotKey){canonicalPersonSavePending=false;var stagedNew=stageCanonicalAccommodationRoomGuardian(accommodationRoomSlotKey,{personId:null,fullName:linkedFullName,church:ge('person_church').value.trim(),phone:ge('person_phone').value.trim(),gender:genderValue,dateOfBirth:ge('person_date_of_birth').value||null});if(stagedNew){closePersonDialog();showToast('تمت إضافة ولي الأمر إلى مسودة الغرفة');}return stagedNew;}
   var priorPersonIds={};
   var priorState=window.PlatformIntegration.getConferenceParticipationState(linkedCurrent.id);
   (priorState&&priorState.items||[]).forEach(function(item){priorPersonIds[String(item.personId)]=true;});
