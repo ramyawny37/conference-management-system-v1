@@ -8917,7 +8917,7 @@ function filterConferencePeopleList(query){
   var normalized=String(query||'').trim().toLocaleLowerCase();
   Array.prototype.forEach.call(list.querySelectorAll('.settings-list-item'),function(row){
     var details=row.firstElementChild;
-    row.hidden=!!(normalized&&(!details||!details.textContent.toLocaleLowerCase().includes(normalized)));
+    row.style.display=normalized&&(!details||!details.textContent.toLocaleLowerCase().includes(normalized))?'none':'';
   });
 }
 
