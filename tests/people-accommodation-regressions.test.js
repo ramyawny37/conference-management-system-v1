@@ -152,7 +152,7 @@ function functionBody(source,name,nextName){
   return extract(source,name,nextName);
 }
 assert.match(functionBody(scriptSource,'saveTemplateFloor','renderTemplateRoomModal'),
-  /refreshConferenceHouseAfterTemplateMutation\(house,\s*\{\s*templateFloorId:floor\.id/);
+  /refreshConferenceHouseAfterTemplateMutation\(hydratedHouse,\s*\{\s*templateFloorId:floor\.id/);
 assert.ok(functionBody(scriptSource,'saveTemplateRoom','saveSettings')
   .indexOf('refreshConferenceHouseAfterTemplateMutation(house)')<0);
 assert.ok(functionBody(houseTemplatesSource,'ht_deleteRoomFromTemplate','ht_roomHtml')

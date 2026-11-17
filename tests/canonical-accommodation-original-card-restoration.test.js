@@ -27,7 +27,7 @@ test('children group under an exact guardian participation once and unresolved l
   assert.equal(html.split('>ولي الأمر</span>').length-1,1,'guardian');
   for(const name of ['طفل مشترك','طفل إضافي','طفل أساسي','طفل غير مرتبط'])assert.equal(html.split(name).length-1,1,name);
   assert.ok(html.indexOf('ولي الأمر')<html.indexOf('طفل مشترك'));
-  assert.match(html,/ربط ولي الأمر مفقود/);
+  assert.match(html,/accommodation-guardian-missing/);
 });
 
 test('child labels and bed capacity follow bedType rather than age or display position',()=>{
@@ -53,8 +53,8 @@ test('compact card excludes full person metadata and keeps full actions in room 
   assert.match(details,/person\.phone/);
 });
 
-test('restored density uses the original compact width and shared design tokens',()=>{
-  assert.match(css,/grid-template-columns:repeat\(auto-fill,minmax\(230px,262px\)\)/);
+test('restored density uses the approved compact width and shared design tokens',()=>{
+  assert.match(css,/grid-template-columns:repeat\(auto-fill,minmax\(260px,290px\)\)/);
   assert.match(css,/accommodation-compact-person/);
   assert.match(css,/var\(--app-surface-soft\)/);
   assert.match(css,/canonical-room-child/);
@@ -93,9 +93,9 @@ test('compact room restores arrival and key tools while room closure uses the ca
   assert.equal(mutation.payload.p_closed_day,4);
 });
 
-test('canonical room detail viewport keeps the historic width, two visible footer actions and bounded scrolling',()=>{
-  assert.match(css,/#roomModal \.room-editor-modal\{width:min\(880px,calc\(100vw - 32px\)\);max-width:880px\}/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.room-editor-modal\{max-height:calc\(100dvh - 24px\);min-height:0\}/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.mbody\{min-height:0;overflow-y:auto;overscroll-behavior:contain\}/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{grid-template-columns:repeat\(2,minmax\(120px,160px\)\);justify-content:center\}/);
+test('canonical room detail viewport keeps the approved width, visible footer actions and bounded scrolling',()=>{
+  assert.match(css,/#roomModal \.room-editor-modal\{width:min\(880px,calc\(100vw - 32px\)\);max-width:880px;/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-editor-modal\{width:min\(810px,calc\(100vw - 20px\)\);max-height:calc\(100dvh - 20px\)\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.mbody\{display:block;min-height:0;flex:1 1 auto;padding:12px 16px 20px;overflow-y:auto;overscroll-behavior:contain\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{position:relative;bottom:auto;flex:0 0 auto;margin:0;padding:9px 16px\}/);
 });

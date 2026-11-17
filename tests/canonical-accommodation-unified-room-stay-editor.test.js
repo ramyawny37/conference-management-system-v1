@@ -14,7 +14,7 @@ test('existing current stays are editable in the unified room editor',()=>{
   assert.match(script,/roomKeyButton\.addEventListener\('click',function\(\)\{setCanonicalAccommodationRoomKey\(room\.roomId\)/);
   assert.match(renderer,/moveCanonicalAccommodation/);
   assert.match(renderer,/removeCanonicalAccommodation/);
-  assert.match(css,/canonical-room-stay-bed/);
+  assert.match(css,/canonical-room-stay-fields/);
 });
 
 test('draft includes original stay revisions and submits changed stays only',()=>{
