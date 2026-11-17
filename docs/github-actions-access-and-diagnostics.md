@@ -19,6 +19,10 @@ Use the connected GitHub app tools directly, rather than treating browser/API/DN
 - The connector's `fetch_commit_workflow_runs` is currently restricted to pull-request-triggered runs. An empty response does **not** establish that a push workflow never ran.
 - `get_commit_combined_status` may return an empty `statuses` array even when GitHub Actions ran. Do not interpret that as CI PASS or FAIL.
 
+## Confirming the exact Development HEAD (verified)
+
+Call `mcp__GitHub__compare_commits({repo_full_name:"ramyawny37/conference-management-system-v1",base:"develop",head:"develop"})`. Its `base_commit.sha` is the resolved current branch SHA when status is `identical`. To verify a particular commit is still HEAD, compare that SHA to `develop` and check `status`, `ahead_by`, and `behind_by`. Verified on 2026-11-17: `develop` resolved to `e9d386d4ad4aad5281c526e4b4e525128034c7a4` at the time of the check. This is a snapshot, not a permanently current SHA.
+
 ## Finding a current run ID
 
 Preferred: obtain the numeric ID from the repository's Actions run listing, or use an authenticated `gh run list --repo ramyawny37/conference-management-system-v1 --branch develop --limit 20 --json databaseId,headSha,status,conclusion,workflowName` where CLI connectivity is available. The GitHub REST equivalent is `GET /repos/ramyawny37/conference-management-system-v1/actions/runs?branch=develop&per_page=20`. Do not fabricate run IDs or assume the historical IDs are current.
