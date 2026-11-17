@@ -3745,14 +3745,13 @@ function renderCanonicalAccommodation(state){
   h+='<div class="card accommodation-summary-keys"><span class="accommodation-stat-icon">'+accommodationIcon('key')+'</span><span>المفاتيح المسلمة</span><strong>'+deliveredKeys+'</strong><small>غير مسلمة: '+Math.max(0,occupiedRooms-deliveredKeys)+'</small></div>';
   h+='<div class="card accommodation-summary-rate"><span class="accommodation-stat-icon">'+accommodationIcon('chart')+'</span><span>نسبة الإشغال</span><strong>'+occupancyPercent+'%</strong><small>من إجمالي السعة</small></div></div>';
   h+='<section class="accommodation-toolbar" aria-label="أدوات البحث وفلترة التسكين">';
-  h+=renderAccommodationSearchControls(matchingRooms.length,!!query);
-  h+='<div class="accommodation-search-count" aria-live="polite">الغرف المعروضة: '+matchingRooms.length+' من '+rooms.length+'</div>';
+  h+='<div class="accommodation-toolbar-search">'+renderAccommodationSearchControls(matchingRooms.length,!!query)+'<div class="accommodation-search-count" aria-live="polite">الغرف المعروضة: '+matchingRooms.length+' من '+rooms.length+'</div></div>';
   if(canManage)h+='<div class="accommodation-edit-toolbar"><button class="btn btn-blue" onclick="chooseCanonicalConferenceHouse()">اختيار بيت وغرف من بيوت المؤتمرات</button></div>';
-  h+='</section>';
+  h+=renderAccommodationQuickFilters('canonical-accommodation-filter-strip');
   h+='<div class="accommodation-secondary-summary" aria-label="مؤشرات الإشغال والأسرة"><span>المغلقة: <strong>'+closedRooms+'</strong></span><span>الأسرة الأساسية: <strong>'+totalBaseBeds+'</strong></span><span>الأسرة الإضافية: <strong>'+totalExtraBeds+'</strong></span><span>المستخدم الإضافي: <strong>'+extraBedsUsed+'</strong></span><span>الأطفال: <strong>'+childrenCount+'</strong></span><span>المرتبطون بمرافق: <strong>'+accompaniedGuests+'</strong></span></div>';
+  h+='</section>';
   if((query||filter!=='all')&&!matchingRooms.length&&rooms.length)h+='<div class="ui-state" role="status">لا توجد غرف مطابقة للبحث أو الفلتر.</div>';
   if(!houses.length)h+='<div class="ui-state" role="status">لا توجد بيوت متاحة لهذا المؤتمر. استخدم زر اختيار بيت من بيوت المؤتمرات.</div>';
-  h+=renderAccommodationQuickFilters('canonical-accommodation-filter-strip');
   h+='<div class="accommodation-workspace'+(query?' is-searching':'')+'"><div class="accommodation-primary-column">';
   state.houses.forEach(function(house){
     var visibleHouseRooms=(house.floors||[]).some(function(floor){return (floor.rooms||[]).some(function(room){return matchingRooms.indexOf(room)>=0;});});
@@ -9445,14 +9444,12 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
   var previousFocus=document.activeElement;
   var overlay=document.createElement('div');
   overlay.id='canonicalHouseDirectoryDialog';
-  overlay.className='modal-overlay';
-  overlay.style.cssText='position:fixed;inset:0;z-index:10050;background:rgba(18,35,55,.65);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto';
+  overlay.className='modal-overlay canonical-house-directory-dialog';
   var panel=document.createElement('form');
-  panel.className='card';
+  panel.className='card canonical-house-directory-panel';
   panel.dir='rtl';
   panel.setAttribute('role','dialog');
   panel.setAttribute('aria-modal','true');
-  panel.style.cssText='width:min(100%,520px);max-height:90vh;overflow:auto;padding:var(--app-space-6,24px);display:grid;gap:var(--app-space-4,16px);border:1px solid var(--app-border,#dce5ee);border-radius:var(--app-radius-card,14px);background:var(--app-surface,#fff);box-shadow:var(--app-shadow-modal,0 16px 48px rgba(18,35,55,.18))';
   var heading=document.createElement('h3');
   heading.textContent=(entity?'تعديل ':'إضافة ')+label;
   heading.id='canonicalHouseDirectoryDialogTitle';
@@ -9472,18 +9469,16 @@ function canonicalHouseDirectoryDialog(kind,entity,parentId){
     input.name=field[0];
     input.type=field[2];
     input.value=String(field[3]);
-    input.style.cssText='display:block;width:100%;margin-top:6px';
     if(field[2]==='number'){input.min='0';input.step='1';}
     if(field[0]!=='notes'&&field[0]!=='description')input.required=true;
     wrapper.appendChild(input);panel.appendChild(wrapper);controls[field[0]]=input;
   });
   var message=document.createElement('div');
   message.setAttribute('role','alert');
-  message.style.color='#b42318';
+  message.className='canonical-house-directory-message';
   panel.appendChild(message);
   var actions=document.createElement('div');
-  actions.className='row';
-  actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
+  actions.className='row canonical-house-directory-actions';
   var saveButton=document.createElement('button');
   saveButton.type='submit';saveButton.className='btn btn-purple';saveButton.textContent='حفظ '+label;
   var cancelButton=document.createElement('button');

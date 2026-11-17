@@ -95,7 +95,7 @@ test('compact room restores arrival and key tools while room closure uses the ca
 
 test('canonical room detail viewport keeps the approved width, visible footer actions and bounded scrolling',()=>{
   assert.match(css,/#roomModal \.room-editor-modal\{width:min\(880px,calc\(100vw - 32px\)\);max-width:880px;/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.room-editor-modal\{width:min\(810px,calc\(100vw - 20px\)\);max-height:calc\(100dvh - 20px\)\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-editor-modal\{width:min\(880px,calc\(100vw - 20px\)\);max-width:880px;max-height:calc\(100dvh - 20px\)\}/);
   assert.match(css,/#roomModal\.canonical-room-readonly \.mbody\{display:block;min-height:0;flex:1 1 auto;padding:12px 16px 20px;overflow-y:auto;overscroll-behavior:contain\}/);
-  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{position:relative;bottom:auto;flex:0 0 auto;margin:0;padding:9px 16px\}/);
+  assert.match(css,/#roomModal\.canonical-room-readonly \.room-modal-footer\{position:sticky;z-index:6;bottom:-20px;/);
 });
