@@ -3599,11 +3599,18 @@ function openCanonicalAccommodationRoomDetails(roomId){
   extraGuardians.forEach(function(occupancy,index){slotsHtml+=renderGuardian(occupancy,'سرير إضافي '+(index+1));});
   for(var extraIndex=manualExtraOccupancies.length;extraIndex<Number(room.extraBedCapacity||0);extraIndex++)slotsHtml+=renderEmptySlot('extra',extraIndex);
   ge('m_guests').innerHTML=slotsHtml||'<div class="accommodation-empty-room">لا توجد أسرة معرفة</div>';
-  var automaticExtraNote=ge('canonicalRoomAutomaticExtraCount');
-  if(!automaticExtraNote){automaticExtraNote=document.createElement('div');automaticExtraNote.id='canonicalRoomAutomaticExtraCount';automaticExtraNote.className='person-meta';var manualExtraContainer=ge('m_extra_beds').closest('.room-modal-field');if(manualExtraContainer)manualExtraContainer.appendChild(automaticExtraNote);}
+  var manualExtraContainer=ge('m_extra_beds').closest('.room-modal-field');
+  var extraInfo=ge('canonicalRoomExtraInfo');
+  if(!extraInfo){
+    extraInfo=document.createElement('details');
+    extraInfo.id='canonicalRoomExtraInfo';
+    extraInfo.className='canonical-room-extra-info';
+    extraInfo.innerHTML='<summary id="canonicalRoomTotalExtraBeds"></summary><div id="canonicalRoomAutomaticExtraCount" class="person-meta"></div>';
+    if(manualExtraContainer)manualExtraContainer.appendChild(extraInfo);
+  }
   var totalExtraCount=ge('canonicalRoomTotalExtraBeds');
-  if(!totalExtraCount){totalExtraCount=document.createElement('div');totalExtraCount.id='canonicalRoomTotalExtraBeds';totalExtraCount.className='person-meta';if(manualExtraContainer)manualExtraContainer.insertBefore(totalExtraCount,manualExtraContainer.firstChild);}
-  function updateDisplayedExtraBeds(){var manual=Number(ge('m_extra_beds').value||0),automatic=automaticExtraOccupancies.length;totalExtraCount.textContent='إجمالي الأسرة الإضافية: '+(manual+automatic)+' (يدوية '+manual+' + تلقائية '+automatic+')';}
+  var automaticExtraNote=ge('canonicalRoomAutomaticExtraCount');
+  function updateDisplayedExtraBeds(){var manual=Number(ge('m_extra_beds').value||0),automatic=automaticExtraOccupancies.length;totalExtraCount.textContent='الإجمالي '+(manual+automatic)+' · تلقائي '+automatic;}
   automaticExtraNote.textContent='السرير التلقائي يُضاف مع الطفل ويُزال مع تسكينه؛ تعديل السعة اليدوية لا يغيّره.';
   updateDisplayedExtraBeds();
   if(canManage)ge('m_extra_beds').oninput=function(){
