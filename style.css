@@ -1361,7 +1361,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 #roomModal.canonical-room-readonly .room-information-grid>.room-closed-state{min-width:0;min-height:32px;padding:4px 7px}
 
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child){
- display:grid;grid-template-columns:58px minmax(150px,195px) minmax(0,1fr) 66px;align-items:center;gap:3px 6px;
+ display:grid;grid-template-columns:58px minmax(150px,195px) minmax(310px,365px) 66px;justify-content:start;align-items:center;gap:3px 6px;
  padding:5px 7px;min-width:0;min-height:52px;border-color:var(--app-border);background:var(--app-surface)
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>*{
