@@ -137,3 +137,10 @@ test('conference change cursor advances only after canonical projections refresh
  assert.match(integration,/registerOperationalSyncTask\('conference_changes',4000/);
  assert.match(integration,/emitOperationalSync\('error',\{taskId:task\.id,code:task\.lastError\}\)/);
 });
+
+test('person dialog cannot save after switching to another conference',()=>{
+ assert.match(ui,/canonicalPersonDialogConferenceId=current\?String\(current\.id\):null/);
+ assert.match(ui,/if\(!linkedCurrent\|\|String\(linkedCurrent\.id\)!==canonicalPersonDialogConferenceId\)/);
+ assert.match(ui,/canonicalPersonDialogConferenceId=null/);
+ assert.match(ui,/تم تغيير المؤتمر أثناء فتح بيانات الشخص/);
+});
