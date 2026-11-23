@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'development-platform-design-cutover-foundation-v1'
+  ? 'development-reservations-lifecycle-active-only-v4-design-foundation-v1'
   : 'production-3-6-0-release-v6';
 // Reinstall the Development worker so canonical accommodation and shared Reservations financial-cache assets refresh atomically.
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
