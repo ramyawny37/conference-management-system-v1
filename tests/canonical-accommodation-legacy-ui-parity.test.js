@@ -626,3 +626,22 @@ test('stale assignment and room save completions do not mutate a newer editor',(
   assert.equal((room.match(/if\(canonicalAccommodationRoomEditorDraft===draft\)/g)||[]).length,2);
   assert.match(room,/if\(result\)closeRM\(\)/);
 });
+
+test('linked conferences reject legacy accommodation writes before local mutation authorization',()=>{
+  const begin=ui.indexOf('function requireLocalOnlyAccommodationMutation(){');
+  const end=ui.indexOf('\nfunction ',begin+10);
+  assert.ok(begin>=0&&end>begin,'legacy write guard must remain independently testable');
+  const guard=ui.slice(begin,end);
+  let localAuthorizationCalls=0;
+  const context={
+    getCurrentConference:()=>({id:'linked-conference'}),
+    getCanonicalConferenceCoreLink:()=>({remoteConferenceId:'linked-conference'}),
+    requireAccommodationMutation:()=>{localAuthorizationCalls++;return true;}
+  };
+  vm.runInNewContext(guard,context);
+  assert.throws(()=>context.requireLocalOnlyAccommodationMutation(),/LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN/);
+  assert.equal(localAuthorizationCalls,0,'linked conference must never enter the legacy mutation path');
+  context.getCanonicalConferenceCoreLink=()=>null;
+  assert.equal(context.requireLocalOnlyAccommodationMutation(),true);
+  assert.equal(localAuthorizationCalls,1,'local-only compatibility path must still delegate to its original authorization');
+});
