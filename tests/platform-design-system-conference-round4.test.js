@@ -71,3 +71,17 @@ test('Reservations and Warehouse keep module-specific layout ownership',()=>{
   assert.match(guide,/Reservations layout[\s\S]*Reservations module stylesheet/);
   assert.match(guide,/Warehouse layout[\s\S]*Warehouse-scoped section/);
 });
+
+test('compact room guest actions fit their 90px column',()=>{
+  const row=style.match(/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)\{([^}]*)\}/);
+  const actions=style.match(/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)>\.canonical-room-guest-actions\{([^}]*)\}/);
+  const icons=style.match(/#roomModal\.canonical-room-readonly \.canonical-room-action\{([^}]*)\}/);
+  assert.ok(row&&actions&&icons,'canonical room layout must remain present');
+  const column=Number(row[1].match(/\s(\d+)px\s*;/)?.[1]);
+  const gap=Number(actions[1].match(/gap:(\d+)px/)?.[1]);
+  const width=Number(icons[1].match(/width:(\d+)px/)?.[1]);
+  assert.equal(column,90);
+  assert.equal(gap,3);
+  assert.equal(width,28);
+  assert.ok(3*width+2*gap<=column,'arrival, move and remove controls must fit');
+});
