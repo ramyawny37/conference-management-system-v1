@@ -1361,7 +1361,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 #roomModal.canonical-room-readonly .room-information-grid>.room-closed-state{min-width:0;min-height:32px;padding:4px 7px}
 
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child){
- display:grid;grid-template-columns:58px minmax(150px,195px) minmax(310px,365px) 98px;justify-content:start;align-items:center;gap:3px 6px;
+ display:grid;grid-template-columns:52px minmax(110px,165px) minmax(250px,320px) 90px;justify-content:start;align-items:center;gap:3px 5px;
  padding:5px 7px;min-width:0;min-height:52px;border-color:var(--app-border);background:var(--app-surface)
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>*{
@@ -1377,7 +1377,7 @@ tr:nth-child(even) td{background:#F7FBFF}
  display:flex;grid-column:3;grid-row:1;align-items:end;flex-wrap:nowrap;gap:3px;min-width:0
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields>label{
- display:flex;flex:0 1 82px;flex-direction:column;gap:2px;min-width:62px;max-width:82px;
+ display:flex;flex:0 1 74px;flex-direction:column;gap:2px;min-width:58px;max-width:74px;
  font-size:10px
 }
 #roomModal.canonical-room-readonly .guest-person-row.canonical-room-guest:not(.canonical-room-child)>.canonical-room-stay-fields>label>span{
