@@ -15,7 +15,7 @@ const guide=read('docs/platform-design-system.md');
 test('design layers have one documented runtime owner and deterministic cache graph',()=>{
   const assets=[
     'shared-design-tokens.css?rev=platform-design-cutover-foundation-v1',
-    'style.css?rev=conference-room-modal-width-v1',
+    'style.css?rev=conference-room-grid-fit-v1',
     'canonical-platform-shell.css?rev=platform-design-cutover-foundation-v1'
   ];
   for(const asset of assets){
@@ -91,6 +91,13 @@ test('canonical room editor fits guest columns and keeps mobile override',()=>{
   assert.match(style,/@media\(max-width:600px\)\{[\s\S]*?#roomModal\.canonical-room-readonly \.room-editor-modal\{width:100%;max-height:100dvh\}/);
   const row=style.match(/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)\{([^}]*)\}/);
   assert.ok(row);
-  assert.match(row[1],/grid-template-columns:52px minmax\(110px,165px\) minmax\(250px,320px\) 90px/);
-  assert.ok(52+165+320+90+3*5+2*7<=760-2*10,'room controls must fit modal content width');
+  assert.match(row[1],/grid-template-columns:52px minmax\(150px,180px\) minmax\(0,1fr\) 90px/);
+  assert.ok(52+180+90+3*5+2*7<760-2*10,'room controls must leave flexible space for stay fields');
+});
+
+test('canonical room action controls occupy one grid row without an implicit extra row',()=>{
+  const actions=style.match(/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)>\.canonical-room-guest-actions\{([^}]*)\}/);
+  assert.ok(actions);
+  assert.match(actions[1],/grid-column:4;grid-row:1;/);
+  assert.doesNotMatch(actions[1],/grid-row:1\/3/);
 });
