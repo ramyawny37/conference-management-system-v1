@@ -17,7 +17,7 @@ const CORE_ASSETS = [
   './index.html',
   './design-system-reference.html',
   './shared-design-tokens.css?rev=platform-design-cutover-foundation-v1',
-  './style.css?rev=conference-room-guest-height-v1',
+  './style.css?rev=conference-room-modal-width-v1',
   './canonical-platform-shell.css?rev=platform-design-cutover-foundation-v1',
   './modules/reservations/reservations-module.css?rev=reservations-lifecycle-active-only-v4',
   './js/application-routing.js?rev=conference-room-assignments-v1',
