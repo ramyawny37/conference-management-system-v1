@@ -3945,40 +3945,6 @@ function openAssignConferenceHouseSelector(){
   });
 }
 
-function removeConferenceHouseFromAccommodation(houseId){
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var current = getCurrentConference();
-  if(!current || !current.houses) return;
-  var idx = -1;
-  for(var i=0;i<current.houses.length;i++){
-    if(current.houses[i].id === houseId){ idx = i; break; }
-  }
-  if(idx === -1) return;
-  var removedHouse = current.houses[idx];
-  var preflight = getConferenceHousePreflight(removedHouse);
-  var removeMessage = preflight.occupantCount
-    ? 'إزالة البيت "' + (removedHouse.name || 'بيت غير مسمى') + '"؟ يحتوي على ' + preflight.floorCount + ' دور و' + preflight.roomCount + ' غرفة و' + preflight.occupantCount + ' نزيل. سيتم حذف بيانات التسكين نهائيًا.'
-    : 'إزالة البيت "' + (removedHouse.name || 'بيت غير مسمى') + '"؟ يحتوي على ' + preflight.floorCount + ' دور و' + preflight.roomCount + ' غرفة.';
-  if(!confirm(removeMessage)) return;
-
-  var removedRoomIds = {};
-  preflight.roomIds.forEach(function(roomId){ removedRoomIds[roomId] = true; });
-
-  current.houses.splice(idx, 1);
-  ensureAccommodationDisplayState(current);
-  current.accommodationDisplayedRoomIds = (current.accommodationDisplayedRoomIds || []).filter(function(id){
-    return !removedRoomIds[id];
-  });
-  if(!(current.houses || []).length){
-    current.accommodationDisplayedRoomIds = [];
-  }
-  if(!save())return false;
-  if(activeRoomsManager.houseId === houseId){
-    closeAddRoomPickerModal();
-  }
-  renderAccommodation();
-  showToast('🗑️ تم إزالة بيت المؤتمر');
-}
 
 function getRoomMoveTargets(excludeRoomId){
   var current = getCurrentConference();
@@ -5515,48 +5481,8 @@ function saveRoomData(options){
   return true;
 }
 
-function clearConferenceRoom(houseId, floorId, roomId) {
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var result = getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId);
-  if (!result) return;
-  if (!confirm('تفريغ بيانات الغرفة بالكامل؟ سيتم حذف النزلاء فقط مع بقاء رقم الغرفة والأسرة والملاحظات.')) return;
-  var removedGuests=(result.room.guests||[]).slice();
-  var removedChildren=(result.room.children||[]).slice();
-  var previousExtraBeds=parseInt(result.room.extraBeds,10)||0;
-  result.room.guests = [];
-  result.room.children = [];
-  // تنظيف الأسرّة الإضافية المؤقتة عند إخلاء الغرفة يدوياً
-  cleanupAutoExtraBeds(result.room);
-  if(!save())return false;
-  removedGuests.forEach(function(guest){addActivityLog('guest_removed','تم حذف '+(gn(guest)||guest.name||'شخص')+' من الغرفة '+result.room.number,{section:'accommodation',entityType:'person',entityId:guest.id||guest.personId||''})});
-  removedChildren.forEach(function(child){addActivityLog('child_removed','تم حذف طفل مرافق من الغرفة '+result.room.number,{details:child.name||'',section:'accommodation',entityType:'child',entityId:child.id||child.personId||''})});
-  if((parseInt(result.room.extraBeds,10)||0)<previousExtraBeds)addActivityLog('extra_bed_removed','تم إزالة سرير إضافي من الغرفة '+result.room.number,{details:'عدد الأسرة الإضافية: '+(parseInt(result.room.extraBeds,10)||0),section:'accommodation',entityType:'room',entityId:result.room.id});
-  renderAccommodation();
-  showToast('🧹 تم تفريغ بيانات الغرفة');
-}
 
-function toggleConferenceRoomClosed(houseId, floorId, roomId) {
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var result = getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId);
-  if (!result) return;
-  result.room.closed = !result.room.closed;
-  if(!save())return false;
-  addActivityLog(result.room.closed?'room_closed':'room_opened',result.room.closed?'تم غلق الغرفة '+result.room.number:'تم فتح الغرفة '+result.room.number,{section:'accommodation',entityType:'room',entityId:result.room.id});
-  renderAccommodation();
-  showToast(result.room.closed ? '🔒 تم إغلاق الغرفة مؤقتًا' : '🔓 تم فتح الغرفة');
-}
 
-function deleteConferenceRoom(houseId, floorId, roomId) {
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var result = getRoomByContext(houseId, floorId, roomId) || getRoomById(roomId);
-  if (!result) return;
-  if (!deactivateAccommodationRoom(result.room.id)) return;
-  if(!save())return false;
-  closeRM();
-  addActivityLog('room_deleted','تم حذف الغرفة '+result.room.number,{section:'accommodation',entityType:'room',entityId:result.room.id});
-  renderAccommodation();
-  showToast('🗑️ تم إزالة الغرفة من التسكين');
-}
 
 // ═══════════════════════════════════════════════════════
 // TAB 1: TRANSPORTS
@@ -9826,45 +9752,6 @@ function saveSettings(){
   return true;
 }
 
-function applyConferenceHouseTemplate(){
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var current = getCurrentConference();
-  if (!current) return;
-  var conf = current.conf || {};
-  var templateId = ge('cfg_house_template') ? (ge('cfg_house_template').value || '') : '';
-  var preflight = getConferenceHousesPreflight(current.houses || []);
-
-  if (preflight.houseCount) {
-    var actionName = templateId ? 'استبدال بيوت المؤتمر' : 'إزالة بيوت المؤتمر';
-    var confirmationMessage = preflight.occupantCount
-      ? actionName + '؟ تحتوي البيوت الحالية على ' + preflight.roomCount + ' غرفة و' + preflight.occupantCount + ' نزيل. سيتم حذف بيانات التسكين نهائيًا.'
-      : actionName + '؟ تحتوي البيوت الحالية على ' + preflight.roomCount + ' غرفة.';
-    if (!confirm(confirmationMessage)) return;
-  }
-
-  if (templateId) {
-    var template = getHouseTemplateById(templateId);
-    if (template) {
-      var newHouse = cloneHouseTemplateToConference(template);
-      current.houses = [newHouse];
-      current.accommodationDisplayedRoomIds = [];
-      if(!save())return false;
-      renderSettings();
-      renderAccommodation();
-      showToast('✅ تم تطبيق بيت المؤتمر المختار');
-    }
-  }
-
-  if (!templateId) {
-    current.houses = [];
-    current.accommodationDisplayedRoomIds = [];
-    if(!save())return false;
-    renderSettings();
-    renderAccommodation();
-    showToast('✅ تم إزالة بيت المؤتمر');
-    return;
-  }
-}
 
 function saveHouseTemplate() {
   if (!editHouseTemplateId && !confirm('سيتم إنشاء خريطة بيت جديدة. متابعة؟')) return;
