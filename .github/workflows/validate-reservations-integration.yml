@@ -99,6 +99,9 @@ jobs:
           node --test \
             tests/canonical-accommodation-room-draft-save.test.js \
             tests/canonical-accommodation-legacy-ui-parity.test.js \
+            tests/canonical-accommodation-unified-room-stay-editor.test.js \
+            tests/canonical-accommodation-original-card-restoration.test.js \
+            tests/room-mobile-input-ux.test.js \
             tests/canonical-accommodation-frontend-cutover-p6d.test.js \
             tests/canonical-house-directory-dialog.test.js \
             tests/canonical-accommodation-guardian-child-lifecycle.test.js \
