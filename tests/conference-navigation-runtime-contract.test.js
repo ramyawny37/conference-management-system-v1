@@ -22,11 +22,13 @@ function runtime(){
   const tabs=Array.from({length:7},()=>element());
   const buttons=Array.from({length:7},(_value,id)=>{const button=element();button.attributes['data-conference-tab']=String(id);return button;});
   const calls=[];
+  const scrollCalls=[];
   const document={body:{classList:{toggle(){}}},querySelector(selector){const match=/"(\d+)"/.exec(selector);return match?buttons[Number(match[1])]:null;},querySelectorAll(){return buttons;}};
   const context={window:null,document,currentTab:6,settingsTab:'general',localStorage:{setItem(){}},LAST_APPLICATION_TAB_KEY:'last',CustomEvent:function(){},getValidApplicationTabIds:()=>[0,1,2,3,4,5,6],ge:id=>tabs[Number(id.slice(3))],getApplicationTabIdByName:name=>name==='settings'?6:null,getCurrentConference:()=>({id:'8dc1e911-eaa8-427b-9b20-6f67cce433b6'}),saveApplicationView(){},saveLastTab(){},renderTab:id=>calls.push(id),setConferenceApplicationPathname(){throw new Error('render must not publish routes');},showToast(){},console};
   context.window=context;
-  vm.runInNewContext([extract('isValidApplicationTab'),extract('switchTab')].join('\n'),context);
-  return {context,tabs,calls};
+  context.scrollTo=(...args)=>scrollCalls.push(args);
+  vm.runInNewContext([extract('isValidApplicationTab'),extract('resetAdministrativeViewScroll'),extract('switchTab')].join('\n'),context);
+  return {context,tabs,calls,scrollCalls};
 }
 test('an inactive hidden tab remains a valid target and becomes the sole visible tab',()=>{
   const state=runtime();
@@ -35,6 +37,7 @@ test('an inactive hidden tab remains a valid target and becomes the sole visible
   assert.equal(state.context.switchTab(0,{preserveRoute:true}),true);
   assert.equal(state.context.currentTab,0);
   assert.deepEqual(state.calls,[0]);
+  assert.equal(state.scrollCalls.length,1,'navigating from settings to accommodation resets page scroll');
   state.tabs.forEach((tab,id)=>{assert.equal(tab.hidden,id!==0);assert.equal(tab.attributes['aria-hidden'],id===0?'false':'true');});
 });
 test('rapid transitions keep currentTab, visible content, and renderer target identical',()=>{
@@ -45,6 +48,9 @@ test('rapid transitions keep currentTab, visible content, and renderer target id
     assert.deepEqual(state.tabs.map(tab=>!tab.hidden),state.tabs.map((_tab,index)=>index===id));
   }
   assert.deepEqual(state.calls,[0,6,2,0,6,0]);
+  assert.equal(state.scrollCalls.length,6,'each real tab transition resets scroll once');
+  assert.equal(state.context.switchTab(0,{preserveRoute:true}),true);
+  assert.equal(state.scrollCalls.length,6,'same-tab refresh must preserve scroll');
 });
 test('conference route publication has one owner',()=>{
   const integration=fs.readFileSync('js/platform-integration.js','utf8');
