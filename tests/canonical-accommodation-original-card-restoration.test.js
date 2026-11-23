@@ -64,7 +64,7 @@ test('room grid keeps the historical RTL layout through tablet width and calcula
   const owner=(css.match(/#tab0 \.accommodation-floor-rooms\{[^}]+\}/g)||[]).filter(rule=>rule.includes('display:grid'));
   assert.equal(owner.length,1,'the original scoped grid must have one owner');
   assert.match(owner[0],/direction:rtl/);
-  assert.match(owner[0],/justify-content:start/);
+  assert.match(owner[0],/justify-content:space-evenly/);
   assert.match(owner[0],/gap:8px/);
   assert.doesNotMatch(css,/@media\(max-width:680px\)\{[^}]*rooms-grid/);
   const columns=width=>Math.max(1,Math.floor((width+8)/(230+8)));

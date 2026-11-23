@@ -3,6 +3,7 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),test=require("n
 const sql=fs.readFileSync("supabase/migrations/20261020113924_canonical_central_conference_houses.sql","utf8");
 const edge=fs.readFileSync("supabase/functions/platform-device-operation/index.ts","utf8");
 const ui=fs.readFileSync("script.js","utf8");
+const css=fs.readFileSync("style.css","utf8");
 test("one permanent hierarchy and conference assignment own separate state",()=>{
  assert.match(sql,/alter table public\.conference_accommodation_houses drop column conference_id/);
  assert.match(sql,/create table public\.conference_house_assignments/);
@@ -68,4 +69,11 @@ test('inactive houses offer canonical reactivation rather than repeated deactiva
  assert.match(ui,/function reactivateCanonicalHouse\(id\)/);
  assert.match(ui,/CanonicalConferenceHouses\.mutate\('update_house',\{/);
  assert.match(ui,/isActive:true/);
+});
+
+test('central house directory is the only house renderer and action menus are not clipped',()=>{
+ assert.doesNotMatch(ui,/function renderHouseTemplateDetails\(/);
+ assert.doesNotMatch(ui,/house-templates-heading-stats[^>]*style=/);
+ assert.match(css,/\.house-floor-accordion\{position:relative;overflow:visible;/);
+ assert.match(css,/\.house-template-details-header\{display:flex;min-width:0;align-items:flex-start;/);
 });

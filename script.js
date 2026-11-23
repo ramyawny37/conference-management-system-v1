@@ -1062,95 +1062,6 @@ function refreshDeviceAuthorizationAdministration(){
   }
 }
 
-function renderHouseTemplateDetails(house) {
-  if (!house) {
-    return '<div style="color:#95a5a6;text-align:center;padding:18px">اختر بيتًا لعرض غرفه هنا</div>';
-  }
-
-  var h = '';
-  var canEditContent=true;
-  h += '<div class="house-template-details-header">';
-  h += '<div class="house-template-details-title">';
-  h += '<div class="house-template-name">' + esc(house.name || 'بيت غير مسمى') + '</div>';
-  if (house.description) {
-    h += '<div style="font-size:10px;color:#5a7a9a;margin-top:2px">' + esc(house.description) + '</div>';
-  }
-  h += '</div>';
-  h += '<div class="house-template-actions">';
-        if (canEditContent) {
-        h += '<button class="btn btn-blue btn-sm" onclick="openHouseTemplateEditor(\'' + house.id + '\')">إدارة</button>';
-        h += '<button class="btn btn-gray btn-sm" onclick="openHouseTemplateEditor(\'' + house.id + '\')">تعديل</button>';
-        }
-        if (canEditContent) {
-        h += '<button class="btn btn-teal btn-sm" onclick="duplicateHouseTemplate(\'' + house.id + '\')">نسخ</button>';
-        }
-        if (canEditContent) {
-        h += '<button class="btn btn-red btn-sm" onclick="deleteHouseTemplate(\'' + house.id + '\')">حذف</button>';
-        }
-  h += '</div>';
-  h += '</div>';
-
-  if (canEditContent) {
-    h += '<div class="house-template-create-actions">';
-    h += '<button class="btn btn-purple btn-sm" onclick="openTemplateFloorModal(\'' + house.id + '\', null)">➕ إضافة دور</button>';
-    h += '<button class="btn btn-blue btn-sm" onclick="openTemplateRoomModal(\'' + house.id + '\', null, null)">➕ إضافة غرفة</button>';
-    h += '</div>';
-  } else {
-    h += '<div class="settings-summary-note">قالب مشترك — للعرض والاستخدام فقط</div>';
-  }
-
-  if (!house.floors || !house.floors.length) {
-    h += '<div style="color:#AAB5C0;padding:12px;font-size:11px">لا توجد أدوار داخل هذا البيت بعد</div>';
-    return h;
-  }
-
-  h += '<div class="house-template-floors">';
-  house.floors.forEach(function(floor) {
-    h += '<div class="house-floor-accordion">';
-    h += '<div class="house-floor-header">';
-    h += '<button type="button" class="settings-branding-toggle house-floor-toggle" aria-expanded="false" onclick="var content=this.parentNode.nextElementSibling;var isOpen=content.classList.toggle(\'settings-branding-content-open\');content.setAttribute(\'aria-hidden\',isOpen?\'false\':\'true\');this.setAttribute(\'aria-expanded\',isOpen?\'true\':\'false\');this.querySelector(\'.settings-branding-toggle-arrow\').textContent=isOpen?\'▲\':\'▼\'"><span>' + esc(floor.name || 'دور غير مسمى') + ' <b class="settings-count-badge">' + ((floor.rooms || []).length) + ' غرف</b></span><span class="settings-branding-toggle-arrow" aria-hidden="true">▼</span></button>';
-    h += '<div class="house-floor-actions">';
-    if (canEditContent) {
-    h += '<button class="btn btn-blue btn-sm" onclick="ht_addRoomToTemplate(\'' + house.id + '\', \'' + floor.id + '\')">➕ غرفة</button>';
-    h += '<button class="btn btn-gray btn-sm" onclick="ht_editFloorName(\'' + house.id + '\', \'' + floor.id + '\')">تعديل</button>';
-    h += '<button class="btn btn-red btn-sm" onclick="ht_deleteFloorFromTemplate(\'' + house.id + '\', \'' + floor.id + '\')">حذف</button>';
-    }
-    h += '</div></div>';
-    h += '<div class="settings-branding-content house-floor-content" aria-hidden="true">';
-
-    if (floor.rooms && floor.rooms.length) {
-      h += '<div class="house-rooms-grid">';
-      floor.rooms.forEach(function(room) {
-        h += '<div class="house-room-card">';
-        h += '<div class="house-room-info">';
-        h += '<div class="house-room-number">غرفة ' + esc(room.number || '') + '</div>';
-        h += '<div class="house-room-beds">' + (parseInt(room.beds, 10) || 1) + ' أسرة</div>';
-        if (room.closed) {
-          h += '<div style="font-size:10px;color:#C0392B;margin-top:2px">مغلقة' + (room.closedDay ? ' من يوم ' + esc(room.closedDay) : '') + '</div>';
-        }
-        if (room.notes) {
-          h += '<div style="font-size:10px;color:#7D4E00;margin-top:2px">' + esc(room.notes) + '</div>';
-        }
-        h += '</div>';
-        h += '<div class="house-room-actions">';
-        if (canEditContent) {
-        h += '<button class="btn btn-gray btn-sm" onclick="openTemplateRoomModal(\'' + house.id + '\', \'' + floor.id + '\', \'' + room.id + '\')">تعديل</button>';
-        h += '<button class="btn btn-red btn-sm" onclick="ht_deleteRoomFromTemplate(\'' + house.id + '\', \'' + floor.id + '\', \'' + room.id + '\')">حذف</button>';
-        }
-        h += '</div>';
-        h += '</div>';
-      });
-      h += '</div>';
-    } else {
-      h += '<div style="color:#AAB5C0;font-size:11px;padding:4px 0">لا توجد غرف في هذا الدور</div>';
-    }
-    h += '</div></div>';
-  });
-  h += '</div>';
-
-  return h;
-}
-
 function getHouseTemplateRooms(house){
   var rooms=[];
   (house&&house.floors||[]).forEach(function(floor){
@@ -1170,7 +1081,7 @@ function renderRoomTypeStatCards(rooms,includeTotal){
     sextuple:'6️⃣',
     sevenPlus:'7️⃣'
   };
-  var h='<div class="house-templates-heading-stats" dir="rtl" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;width:100%">';
+  var h='<div class="house-templates-heading-stats" dir="rtl">';
   if(includeTotal){
     h+='<div class="house-heading-stat-card"><span class="house-heading-stat-icon">🚪</span><span class="house-heading-stat-label">إجمالي الغرف</span><strong>'+summary.counts.total+'</strong></div>';
   }
