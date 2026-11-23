@@ -1229,6 +1229,9 @@ function switchTab(n,options){
   });
   renderTab(tabId);
   saveLastTab(tabId);
+  // A real tab change must not inherit the previous page's scroll position.
+  // Re-rendering the active tab must preserve the user's reading position.
+  if(previousTab!==tabId)resetAdministrativeViewScroll();
   if(window.dispatchEvent&&window.CustomEvent)window.dispatchEvent(new CustomEvent('conference-section-change',{detail:{tabId:tabId}}));
   return true;
 }
