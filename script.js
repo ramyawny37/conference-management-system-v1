@@ -5396,50 +5396,6 @@ function cleanupAutoExtraBeds(room){
   }
 }
 
-function partialTransferGuest(guestId){
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var state = partialTransferState;
-  if(!state || !state.sourceRoom || !state.targetRoom) return;
-  state.currentOccupancy = countRoomOccupancy(state.targetRoom);
-  var available = Math.max(getAccommodationEffectiveCapacity(state.targetRoom) - state.currentOccupancy, 0);
-  if(available <= 0) return;
-
-  var guestIndex = -1;
-  var guest = null;
-  (state.sourceRoom.guests || []).forEach(function(g, idx){ if(g && g.id === guestId) { guestIndex = idx; guest = g; } });
-  if(guestIndex === -1 || !guest) return;
-
-  var movedGuest = deepClone(guest);
-  state.sourceRoom.guests.splice(guestIndex, 1);
-  state.targetRoom.guests = state.targetRoom.guests || [];
-  state.targetRoom.guests.push(movedGuest);
-  syncRoomGuestBedTypes(state.sourceRoom);
-  syncRoomGuestBedTypes(state.targetRoom);
-
-  var movedChildren = [];
-  state.sourceRoom.children = (state.sourceRoom.children || []).filter(function(c){
-    var isLinked = false;
-    if(guest.personId && c.guardianPersonId && c.guardianPersonId === guest.personId) isLinked = true;
-    if(!isLinked && !c.guardianPersonId && c.guardian && guest.name && c.guardian === guest.name) isLinked = true;
-    if(isLinked){ movedChildren.push(c); return false; }
-    return true;
-  });
-  if(movedChildren.length){
-    state.targetRoom.children = state.targetRoom.children || [];
-    state.targetRoom.children = state.targetRoom.children.concat(movedChildren);
-  }
-
-  state.currentOccupancy += 1;
-  if(!state.useDraft){
-    if(!save())return false;
-    addActivityLog('guest_moved','تم نقل '+(gn(guest)||guest.name||'شخص')+' من الغرفة '+state.sourceRoom.number+' إلى الغرفة '+state.targetRoom.number,{details:'الغرفة السابقة: '+state.sourceRoom.number+' — الغرفة الجديدة: '+state.targetRoom.number,section:'accommodation',entityType:'person',entityId:guest.id||guest.personId||''});
-    renderAccommodation();
-  } else {
-    renderRoomEditorFromDraft();
-  }
-  renderPartialTransferGuestView();
-}
-
 function addCI(name,guardian,leftDay,personId,guardianPersonId,childId,arrivalDay){
   name=name||'';guardian=guardian||'';leftDay=leftDay||'';personId=personId||'';guardianPersonId=guardianPersonId||'';childId=childId||uid();
   var id='ci_'+childId;var days=getDays();
