@@ -20,11 +20,11 @@ test('all active runtime CSS assets use identical revisioned URLs in HTML and se
   }
 });
 
-test('approved design values are recorded as a pending cutover, not falsely claimed as deployed', () => {
-  assert.match(tokens, /--platform-primary\s*:\s*#1452ad\s*;/i);
-  assert.match(tokens, /--platform-control-height\s*:\s*40px\s*;/);
+test('approved design foundation values are present in the active runtime', () => {
+  assert.match(tokens, /--platform-primary\s*:\s*#0a6cff\s*;/i);
+  assert.match(tokens, /--platform-control-height\s*:\s*36px\s*;/);
   assert.match(tokens, /--platform-font-size-body\s*:\s*14px\s*;/);
-  assert.match(shell, /--canonical-sidebar-width\s*:\s*204px\s*;/);
+  assert.match(shell, /--canonical-sidebar-width\s*:\s*224px\s*;/);
   assert.match(tokens, /--platform-touch-target\s*:\s*44px\s*;/);
 });
 
