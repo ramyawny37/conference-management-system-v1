@@ -2467,29 +2467,7 @@ function toggleAccommodationFloor(houseId,floorId){
   renderAccommodation();
 }
 
-function setAccommodationPersonArrival(houseId,floorId,roomId,personId,arrived){
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var result=findRoomInHouses((getCurrentConference()||{}).houses||[],houseId,floorId,roomId);
-  if(!result||!result.room)return false;
-  var person=getAccommodationOccupants(result.room).filter(function(item){return getAccommodationPersonIdentity(item)===String(personId);})[0];
-  if(!person)return false;
-  person.arrived=arrived===true;
-  if(!save())return false;
-  renderAccommodation();
-  return true;
-}
 
-function setAccommodationRoomKeyHolder(houseId,floorId,roomId,personId){
-  if(!requireLocalOnlyAccommodationMutation())return false;
-  var result=findRoomInHouses((getCurrentConference()||{}).houses||[],houseId,floorId,roomId);
-  if(!result||!result.room)return false;
-  var nextId=String(personId||'');
-  if(nextId&&!getAccommodationOccupants(result.room).some(function(item){return getAccommodationPersonIdentity(item)===nextId;}))return false;
-  result.room.keyHolderPersonId=nextId;
-  if(!save())return false;
-  renderAccommodation();
-  return true;
-}
 
 function closeOpenRoomActionMenus(exceptElement){
   document.querySelectorAll('.room-more-actions[open]').forEach(function(menu){
