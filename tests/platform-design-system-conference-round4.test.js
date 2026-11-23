@@ -15,7 +15,7 @@ const guide=read('docs/platform-design-system.md');
 test('design layers have one documented runtime owner and deterministic cache graph',()=>{
   const assets=[
     'shared-design-tokens.css?rev=platform-design-cutover-foundation-v1',
-    'style.css?rev=conference-room-single-base-v1',
+    'style.css?rev=conference-room-responsive-cleanup-v1',
     'canonical-platform-shell.css?rev=platform-design-cutover-foundation-v1'
   ];
   for(const asset of assets){
@@ -111,4 +111,10 @@ test('canonical room editor base geometry has a single declaration',()=>{
   const bases=[...style.matchAll(/#roomModal\.canonical-room-readonly \.room-editor-modal\{/g)];
   assert.equal(bases.length,2,'one base rule and one mobile override');
   assert.match(style,/#roomModal\.canonical-room-readonly \.room-editor-modal\{width:min\(760px,calc\(100vw - 20px\)\);max-width:760px;max-height:calc\(100dvh - 20px\);display:flex;/);
+});
+
+test('room editor has one closed-state owner and no repeated mobile stay-field reset',()=>{
+  assert.equal([...style.matchAll(/#roomModal\.canonical-room-readonly \.room-information-grid>\.room-closed-state\{/g)].length,1);
+  assert.equal([...style.matchAll(/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)>\.canonical-room-stay-fields\{grid-column:1\/-1;grid-row:auto\}/g)].length,1);
+  assert.doesNotMatch(style,/\.guest-slot-label\{flex-basis:64px\}/);
 });
