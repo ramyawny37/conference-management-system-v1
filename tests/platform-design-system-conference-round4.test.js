@@ -15,7 +15,7 @@ const guide=read('docs/platform-design-system.md');
 test('design layers have one documented runtime owner and deterministic cache graph',()=>{
   const assets=[
     'shared-design-tokens.css?rev=platform-design-cutover-foundation-v1',
-    'style.css?rev=conference-room-grid-fit-v1',
+    'style.css?rev=conference-room-css-owner-cleanup-v1',
     'canonical-platform-shell.css?rev=platform-design-cutover-foundation-v1'
   ];
   for(const asset of assets){
@@ -100,4 +100,9 @@ test('canonical room action controls occupy one grid row without an implicit ext
   assert.ok(actions);
   assert.match(actions[1],/grid-column:4;grid-row:1;/);
   assert.doesNotMatch(actions[1],/grid-row:1\/3/);
+});
+
+test('canonical room action spacing has one scoped owner',()=>{
+  assert.doesNotMatch(style,/#roomModal\.canonical-room-readonly \.canonical-room-guest-actions\{gap:/);
+  assert.match(style,/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)>\.canonical-room-guest-actions\{[^}]*gap:3px;/);
 });

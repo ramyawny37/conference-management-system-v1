@@ -1394,7 +1394,6 @@ tr:nth-child(even) td{background:#F7FBFF}
  display:flex;grid-column:4;grid-row:1;align-items:center;flex-wrap:nowrap;gap:3px;
  padding:0;margin:0;border:0;justify-content:flex-start
 }
-#roomModal.canonical-room-readonly .canonical-room-guest-actions{gap:3px;justify-content:flex-end}
 #roomModal.canonical-room-readonly .canonical-room-action{flex:0 0 28px;width:28px;height:28px;font-size:16px;line-height:1}
 #roomModal.canonical-room-readonly .canonical-room-arrival-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;border:1px solid var(--app-border);border-radius:7px;background:var(--app-surface-soft);color:var(--app-text-muted);font-size:15px;font-weight:800;line-height:1}
 #roomModal.canonical-room-readonly .canonical-room-arrival-icon.is-arrived{background:#e3f7ec;color:#16834b;border-color:#b5e3ca}
