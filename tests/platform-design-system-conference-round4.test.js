@@ -85,3 +85,12 @@ test('compact room guest actions fit their 90px column',()=>{
   assert.equal(width,28);
   assert.ok(3*width+2*gap<=column,'arrival, move and remove controls must fit');
 });
+
+test('canonical room editor fits guest columns and keeps mobile override',()=>{
+  assert.match(style,/#roomModal\.canonical-room-readonly \.room-editor-modal\{width:min\(760px,calc\(100vw - 20px\)\);max-width:760px;/);
+  assert.match(style,/@media\(max-width:600px\)\{[\s\S]*?#roomModal\.canonical-room-readonly \.room-editor-modal\{width:100%;max-height:100dvh\}/);
+  const row=style.match(/#roomModal\.canonical-room-readonly \.guest-person-row\.canonical-room-guest:not\(\.canonical-room-child\)\{([^}]*)\}/);
+  assert.ok(row);
+  assert.match(row[1],/grid-template-columns:52px minmax\(110px,165px\) minmax\(250px,320px\) 90px/);
+  assert.ok(52+165+320+90+3*5+2*7<=760-2*10,'room controls must fit modal content width');
+});
