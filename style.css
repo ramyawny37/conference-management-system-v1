@@ -328,8 +328,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 .settings-accounts-dashboard .stat-lbl{font-size:10px;line-height:1.4;margin-top:4px}
 .settings-accounts-dashboard .settings-branding-actions{gap:8px;margin-top:10px}
 .settings-accounts-dashboard .settings-branding-actions .btn,.settings-accounts-dashboard .btn-sm{min-height:36px;padding:7px 12px;font-size:11px;font-weight:700}
-.settings-accounts-dashboard .settings-branding-actions .btn-green,.settings-accounts-dashboard .settings-accounts-panel .btn-green{background:var(--platform-success);color:var(--platform-surface)}
-.settings-accounts-dashboard .btn[onclick^="edit"],.settings-accounts-dashboard .btn[onclick^="startEditing"]{border-color:var(--platform-primary);background:var(--platform-primary)!important;color:var(--platform-surface)!important}.settings-accounts-dashboard .btn-red{border-color:var(--platform-danger);background:var(--platform-danger)!important;color:var(--platform-surface)!important}.settings-accounts-dashboard .btn .app-icon{margin-inline-end:var(--platform-space-1)}
+.settings-accounts-dashboard .btn .app-icon{margin-inline-end:var(--platform-space-1)}
 .settings-accounts-dashboard .settings-section{margin-top:0}
 .settings-accounts-dashboard .settings-section-title{margin-bottom:10px;padding-bottom:7px}
 .settings-accounts-dashboard .settings-empty-state{padding:11px}

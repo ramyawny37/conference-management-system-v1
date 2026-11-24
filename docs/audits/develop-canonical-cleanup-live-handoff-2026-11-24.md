@@ -411,3 +411,9 @@ Rule counts remain intentionally high because most selectors own functional plac
 ### Settings control radius
 - Baseline `ed932e56e30d5b342837b8b188e48a1db93901d7`: CI `45434579091`, `45434579203` PASS.
 - Removed local settings button radius; retained geometry and compact typography. Updated runtime revision and known cache test contracts. Remaining action-specific color rules require consumer audit. CI pending; no JS or DB changes.
+
+
+### Settings action color ownership
+- Baseline `dd725e410f75d35e8a695fbbea44ff1b9f327976`: prior CI runs `45435944046` and `45435944278` PASS.
+- Removed settings-only semantic color duplication and the fragile `onclick^="edit"` / `onclick^="startEditing"` color override with `!important`. Active settings actions now inherit the shared semantic button variants (`.btn-blue`, `.btn-green`, `.btn-red`) from `shared-design-tokens.css`; settings retains only compact geometry/icon spacing. No handler, Arabic copy, markup, database, Cards/print/PNG/WhatsApp, `main`, or Production change.
+- Updated the stylesheet runtime revision and the four known cache-contract tests atomically. CI and Preview provenance pending.
