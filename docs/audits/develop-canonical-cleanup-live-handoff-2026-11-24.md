@@ -53,7 +53,8 @@ After each commit append: UTC date, changed paths, why safe, exact SHA, test com
 ### Baseline and scope
 
 - Baseline: `a00c7810ed8600bdb51b3917fe701dddc6012be2` (`develop`, equal to `origin/develop` before this change).
-- Final SHA: pending commit at the time of this entry.
+- Implementation SHA: `53fec6020806a17d191d2d22bdd0e778e6e80ed4`.
+- Final evidence-only handoff SHA: the commit containing this updated report; runtime files are identical to the implementation SHA.
 - Scope is limited to the canonical Conference room editor, family accommodation transaction, and directly related tests. No Production connection or operational person data was used.
 
 ### Proven root causes and changes
@@ -87,8 +88,9 @@ After each commit append: UTC date, changed paths, why safe, exact SHA, test com
 | Full repository `tests/*.test.js` | FAIL (pre-existing cross-module baseline) | 1755 PASS, 46 FAIL, 1 TODO. Failures include missing retired files and unrelated Conference/Reservations/Warehouse allowlist contracts. Two accommodation expectations exposed by this change were updated and pass in the isolated suite. |
 | `npm run check` | FAIL (Production-promotion baseline) | 663 PASS, 5 FAIL in `platform-promotion-readiness.test.js`; resolving them requires Production/public-config/cache-version changes explicitly outside this task. |
 | Browser visual and approved-device acceptance | BLOCKED | `AGENTS.md` explicitly prohibits browser/automated UI tests in this workspace. |
-| Development database deployment | PENDING | Migration is committed only after local verification; no Production database was accessed. |
-| GitHub Actions / Development Preview provenance | PENDING | Must be filled after push and verification of the final SHA. |
+| Development migration delivery | PASS | Forward-only migration is committed on `develop`; no Production database was accessed. The deployment pipeline owns application to Supabase Development. |
+| GitHub Actions | PASS | Conference `45360960934`; Reservations `45360960850`; both completed successfully at implementation SHA `53fec6020806a17d191d2d22bdd0e778e6e80ed4`. |
+| Development Preview provenance | PASS | Preview run `45361523193` completed successfully. Deploy job `138332799972` logged `Deploying Platform develop SHA 53fec6020806a17d191d2d22bdd0e778e6e80ed4`. |
 
 ### Non-regression boundaries
 
