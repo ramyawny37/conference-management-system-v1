@@ -443,3 +443,10 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Removed local border/radius/background ownership from canonical accommodation candidate-filter selects; retained modal-specific 36px height, compact padding/font size and grid sizing. Standard field surface, border, radius and focus now come from `shared-design-tokens.css`.
 - Audited transparent accommodation search inputs separately and retained their borderless/focusless declarations because they are intentionally composed inside a styled search container, not standalone competing fields.
 - Runtime stylesheet revision and four cache-contract tests advanced atomically. No JS, accommodation mutation, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.
+
+
+### Accommodation room/child field base ownership
+- Baseline `fd311c4c458293247890816f0ef5dbf4711dbf45`: Conference CI `45441132808` PASS; Reservations `45441133150` remained in progress at audit time.
+- Removed duplicate border/radius/surface ownership from readonly room candidate-filter selects and duplicate border/radius/surface/text/font ownership from canonical child-form fields. Both now inherit the global field contract while retaining their local compact height/padding/box sizing.
+- Retained the transparent search-field composition, hidden room-key select overlay, and settings-account custom focus treatment as intentional specialized consumers rather than deleting them during this accommodation pass.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. No JS handlers, family draft/mutation behavior, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.
