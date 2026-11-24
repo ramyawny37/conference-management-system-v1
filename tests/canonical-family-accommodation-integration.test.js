@@ -133,3 +133,15 @@ test('the final lifecycle migration cascades family state without unlinking chil
   assert.match(migration,/accommodation_removed/);
   assert.match(migration,/FAMILY_MOVE_SHARED_ONLY_FILTER_REMAINS/);
 });
+
+test('family structure writes use locked revisions after removal can clear the room key',()=>{
+  const migration=fs.readFileSync('supabase/migrations/20261124085051_canonical_family_room_draft_transaction_order.sql','utf8');
+  const start=migration.indexOf("structure_before_mutation:=");
+  const end=migration.indexOf("execute definition;",start);
+  assert.ok(start>=0&&end>start);
+  const mutations=migration.slice(start,end);
+  assert.equal((mutations.match(/select revision from public\.conference_room_assignments/g)||[]).length,2);
+  assert.equal((mutations.match(/select revision from public\.conference_accommodation_rooms/g)||[]).length,2);
+  assert.doesNotMatch(mutations,/expectedAssignmentRevision/);
+  assert.match(migration,/when ''remove'' then 1/);
+});
