@@ -436,3 +436,10 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Baseline `24ea511e2eb3c09abfacd648da14baa536543885`: Conference CI `45440900220` PASS; Reservations `45440899469` was still in progress at audit time.
 - Removed duplicated base button display/alignment/gap/radius from accommodation quick-filter buttons; retained their compact height/padding, neutral/active surfaces, typography, icon sizing and responsive horizontal-strip behavior. The controls continue to inherit the shared button foundation without changing filter semantics.
 - Runtime stylesheet revision and four cache-contract tests advanced atomically. No JavaScript handler, accommodation mutation, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.
+
+
+### Accommodation candidate filter field ownership
+- Baseline `0dcf1b6efa5630785e204cd290be7caed49e6c02`: Conference CI `45441003979` PASS; Reservations `45441004358` was still in progress at audit time.
+- Removed local border/radius/background ownership from canonical accommodation candidate-filter selects; retained modal-specific 36px height, compact padding/font size and grid sizing. Standard field surface, border, radius and focus now come from `shared-design-tokens.css`.
+- Audited transparent accommodation search inputs separately and retained their borderless/focusless declarations because they are intentionally composed inside a styled search container, not standalone competing fields.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. No JS, accommodation mutation, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.

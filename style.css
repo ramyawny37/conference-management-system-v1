@@ -1450,7 +1450,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 @media(max-width:390px){#tab4 #cardsGrid>.welcome-card{max-width:100%;min-width:0}}
 /* Canonical accommodation candidate filters share the existing modal design tokens. */
 #canonicalAccommodationAssignmentModal .canonical-accommodation-candidate-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:5px;margin-bottom:6px}
-#canonicalAccommodationAssignmentModal .canonical-accommodation-candidate-filters select{min-width:0;height:36px;padding:5px 7px;border:1px solid var(--platform-border);border-radius:9px;background:#fff;font-size:10px}
+#canonicalAccommodationAssignmentModal .canonical-accommodation-candidate-filters select{min-width:0;height:36px;padding:5px 7px;font-size:10px}
 #canonicalAccommodationAssignmentModal .canonical-accommodation-candidate-filters .btn{min-width:82px;min-height:36px;padding:5px 8px;white-space:nowrap}
 #canonicalAccommodationAssignmentModal .canonical-accommodation-result-count{min-height:20px;margin-bottom:5px;color:var(--platform-text-muted);font-size:10px;font-weight:700}
 @media(max-width:900px){#canonicalAccommodationAssignmentModal .canonical-accommodation-candidate-filters{grid-template-columns:repeat(2,minmax(0,1fr))}#canonicalAccommodationAssignmentModal .canonical-accommodation-candidate-filters .btn{grid-column:1/-1}}
