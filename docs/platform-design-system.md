@@ -6,7 +6,7 @@ This document records the runtime ownership boundaries for the existing design s
 
 `index.html` loads the active layers in this order:
 
-1. `shared-design-tokens.css` — the sole owner of foundations, compatibility aliases, and shared component contracts.
+1. `shared-design-tokens.css` — the sole owner of foundations, compact-density tokens, and shared component contracts.
 2. `style.css` — Conference page patterns and the remaining established application styles.
 3. `modules/reservations/reservations-module.css` — Reservations-only layouts.
 4. `canonical-platform-shell.css` — the authoritative shell, loaded last so modules cannot replace its header, right sidebar, or workspace rules.
@@ -17,12 +17,12 @@ The same URLs must be present in `service-worker.js`. A revision change is requi
 
 | Component family | Active source before Round 4 | Evidence / legacy overlap | Authoritative destination |
 | --- | --- | --- | --- |
-| Colors, spacing, type, radii, shadows, breakpoints | `shared-design-tokens.css`, with older `--app-*` aliases in `style.css` | Used by every active runtime stylesheet | `shared-design-tokens.css` |
+| Colors, spacing, type, radii, shadows, breakpoints | `shared-design-tokens.css` | Used by every active runtime stylesheet | `shared-design-tokens.css` |
 | Buttons, fields, cards, rows, common empty/loading/error states | Generic rules in `style.css`; Reservations has locally scoped controls | Generic classes are used by Conference, accommodation, settings, and dialogs | `shared-design-tokens.css` |
 | Header, right sidebar, workspace visibility, module navigation | `canonical-platform-shell.css` | One shell host in `index.html`; module registration targets that host | `canonical-platform-shell.css` |
 | Conference dashboard and conference cards | `style.css` and `renderStartupConferenceCards` in `script.js` | Active startup route renderer | `style.css` page-pattern section |
 | Canonical accommodation toolbar, summary, house/floor/room cards | `style.css` and `renderCanonicalAccommodation` in `script.js` | Active protected Conference accommodation renderer | `style.css`, scoped under `#tab0` where needed |
-| Older local accommodation views | Earlier accommodation selectors and local-only renderer functions in `style.css` / `script.js` | Still referenced by backward-compatible local data paths | Retained until those runtime paths are formally retired |
+| Accommodation compatibility layouts | Scoped accommodation selectors in `style.css` | Template/house compatibility consumers remain active; the retired room-editor closure is absent | `style.css`, layout only |
 | Reservations layout | `modules/reservations/reservations-module.css` | Loaded only with the registered Reservations module | Reservations module stylesheet; shared controls remain centrally owned |
 | Warehouse layout | Warehouse-scoped section in `style.css` | Active registered module and intentionally independent data layout | Warehouse-scoped section; shared controls remain centrally owned |
 
@@ -30,9 +30,9 @@ The same URLs must be present in `service-worker.js`. A revision change is requi
 
 `--platform-*` is the only vocabulary approved for new development. Round 5 removed the unused competing `--platform-v2-*` palette, radius, shadow, and status set. Three exact shell aliases remain temporarily (`--platform-v2-border`, `--platform-v2-navy`, and `--platform-v2-text`) because the minified canonical shell still consumes them; each resolves directly to a canonical semantic token and introduces no independent value.
 
-The active Conference stylesheet has extensive `--app-*` consumers. Their definitions now live only in `shared-design-tokens.css` and map to canonical values wherever equivalence is proven. Compact typography aliases retain their current values to avoid redesigning operational screens in this consolidation round. New code must not use `--app-*` or `--ds-*`; migration can proceed by tested page pattern without a second token authority.
+The Conference cutover removed all active `--app-*`, `--ds-*`, and `--acc-*` definitions and consumers. Exact aliases moved directly to their semantic `--platform-*` owners. The approved dense typography and 40px desktop control target are represented by the reusable `--platform-compact-*` contract; this preserves the operational Conference density without carrying a second palette, spacing scale, radius scale, or component system.
 
-Removed as dead definitions in Round 5: the 16 unused `--platform-v2-*` values plus unused `--app-surface-glass-compact`, `--app-blur-md`, `--app-blur-header`, and `--app-font-family` definitions. The active `--app-*`/`--ds-*` aliases were moved, not copied: their former `style.css` definition block was deleted.
+Removed as dead definitions in Round 5: the 16 unused `--platform-v2-*` values plus unused historical blur/font definitions. The final Conference cutover then removed the remaining `--app-*`/`--ds-*` compatibility definitions and the `#tab0` `--acc-*` alias block after repository-wide active-runtime scans showed zero remaining consumers. Three exact `--platform-v2-*` shell aliases remain until the shell naming cleanup is independently proven safe.
 
 ## Layer rules
 

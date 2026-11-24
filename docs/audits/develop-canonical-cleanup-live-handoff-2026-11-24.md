@@ -279,3 +279,44 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - Development Preview run `45393134015` passed; live `development-preview-sources.json` recorded both `platform.ref` and `platform.sha` as `657ded2661d0299563f3e4007a6959f30d04684b`. The final report-only successor SHA must receive the same exact-SHA verification before handoff.
 - Manual Desktop/Tablet/Mobile visual acceptance and approved-device operational smoke remain BLOCKED by the local browser-test prohibition and require an authorized manual pass.
 - Remaining local-only house/active-room compatibility functions are still guarded by `requireLocalOnlyAccommodationMutation()` and were not deleted in this unit because their wider template-management dependencies were outside the proven room-editor closure.
+
+## 2026-11-24 Conference design-token canonical cutover
+
+### Accepted baseline and protected behavior
+
+- Baseline: `e745037972f73a7623e133212b670f0aaef66476` on `develop`, matching `origin/develop` with a clean worktree before this unit.
+- User manually accepted deployed individual guest removal, guest addition, and room save from the previous unit: PASS. The deferred text `يُطبّق عند حفظ الغرفة` remains unchanged by explicit user decision.
+- This unit changes CSS ownership and cache revisions only. Accommodation save/move/remove/family logic, permissions, database/RPC contracts, Reservations behavior, Cards/print/PNG/WhatsApp, `main`, and Production remain untouched.
+
+### Ownership and cutover evidence
+
+- Before: active CSS contained 2,123 `--app-*` references, 15 `--ds-*` references, 29 `--acc-*` references, and ten local `--acc-*` definitions under `#tab0`.
+- Exact semantic aliases now consume `--platform-*` directly. Approved Conference density values that are intentionally smaller than the general platform scale use a single reusable `--platform-compact-*` contract in `shared-design-tokens.css`.
+- Removed the complete `--app-*` and `--ds-*` compatibility-definition blocks and the local `#tab0` `--acc-*` alias block. Active runtime CSS now has zero definitions or consumers for all three prefixes.
+- Shared foundations/components remain owned by `shared-design-tokens.css`; Conference layout and responsive geometry remain in `style.css`; shell geometry remains in `canonical-platform-shell.css`; Reservations-specific layout remains in its existing module stylesheet.
+- CSS load order is unchanged. Revisioned URLs in `index.html` and `service-worker.js` were advanced atomically so deployed clients cannot mix old token definitions with new consumers.
+
+### Before / after
+
+| Measure | Before | After implementation |
+| --- | ---: | ---: |
+| Active CSS `--app-*` references | 2,123 | 0 |
+| Active CSS `--ds-*` references | 15 | 0 |
+| Active CSS `--acc-*` references | 29 | 0 |
+| Local `--acc-*` definitions | 10 | 0 |
+| `style.css` bytes | 320,496 | 333,157 |
+| `shared-design-tokens.css` bytes | 17,916 | 15,218 |
+| `canonical-platform-shell.css` bytes | 10,665 | 10,675 |
+
+The Conference stylesheet grew because the canonical and compact token names are intentionally explicit; no selector, renderer, or business path was duplicated. Final tests, commit SHA, CI run IDs, and deployed Preview SHA are recorded below after those gates complete.
+
+### Local verification
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| Syntax and static ownership | PASS | `node --check` passed for active JavaScript/service worker; duplicate-function scan found 0 duplicates across 498 `script.js` declarations; `git diff --check` passed; active non-test runtime scan found zero `--app-*`, `--ds-*`, or `--acc-*` references. |
+| Design/accommodation selection | PASS | 30/30 tests, including compact room width, RTL grid, room editor geometry, shared component ownership, and exact cache graph. |
+| Development Preview regression | PASS | 658/658 tests across 88 platform files. |
+| `npm run check` | FAIL (unchanged baseline/out of scope) | 663 PASS, 5 FAIL: the same prohibited Production promotion/public-config/version/cache requirements; no new failure was introduced. |
+| Browser visual acceptance | BLOCKED | `AGENTS.md` prohibits browser and automated UI tests. User must perform the final Desktop/Tablet/Mobile review after exact-SHA Preview publication. |
+| Supabase / database | NOT NEEDED | No schema, RPC, migration, environment, or operational data change. |

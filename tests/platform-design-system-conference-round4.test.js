@@ -14,9 +14,9 @@ const guide=read('docs/platform-design-system.md');
 
 test('design layers have one documented runtime owner and deterministic cache graph',()=>{
   const assets=[
-    'shared-design-tokens.css?rev=platform-design-cutover-foundation-v1',
-    'style.css?rev=conference-room-responsive-cleanup-v1',
-    'canonical-platform-shell.css?rev=platform-design-cutover-foundation-v1'
+    'shared-design-tokens.css?rev=platform-design-cutover-canonical-v2',
+    'style.css?rev=conference-design-cutover-canonical-v2',
+    'canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2'
   ];
   for(const asset of assets){
     assert.equal(index.split(asset).length-1,1,asset+' must load once');

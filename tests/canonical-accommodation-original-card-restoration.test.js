@@ -56,7 +56,7 @@ test('compact card excludes full person metadata and keeps full actions in room 
 test('restored density uses the approved compact width and shared design tokens',()=>{
   assert.match(css,/grid-template-columns:repeat\(auto-fill,minmax\(260px,290px\)\)/);
   assert.match(css,/accommodation-compact-person/);
-  assert.match(css,/var\(--app-surface-soft\)/);
+  assert.match(css,/var\(--platform-surface-soft\)/);
   assert.match(css,/canonical-room-child/);
 });
 

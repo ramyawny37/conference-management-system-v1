@@ -13,9 +13,24 @@ const index=read('index.html');
 const worker=read('service-worker.js');
 const reference=read('design-system-reference.html');
 
-test('canonical tokens own visual decisions and compatibility values are aliases only',()=>{
+test('canonical tokens own visual decisions without Conference compatibility aliases',()=>{
   assert.doesNotMatch(style,/:root\s*\{[\s\S]{0,9000}--app-primary:/);
-  for(const token of ['--platform-primary','--platform-success-soft','--platform-font-size-body','--platform-motion-fast','--app-primary','--ds-primary'])assert.match(tokens,new RegExp(token.replaceAll('-','\\-')+'\\s*:'));
+  for(const token of ['--platform-primary','--platform-success-soft','--platform-font-size-body','--platform-motion-fast','--platform-compact-font-size-body'])assert.match(tokens,new RegExp(token.replaceAll('-','\\-')+'\\s*:'));
+  for(const legacyPrefix of ['--app-','--ds-','--acc-']){
+    assert.doesNotMatch(tokens,new RegExp(legacyPrefix));
+    assert.doesNotMatch(style,new RegExp(legacyPrefix));
+    assert.doesNotMatch(shell,new RegExp(legacyPrefix));
+    assert.doesNotMatch(reservations,new RegExp(legacyPrefix));
+  }
+  const compactValues={
+    '--platform-compact-touch-target':'40px',
+    '--platform-compact-font-size-xs':'8px',
+    '--platform-compact-font-size-sm':'10px',
+    '--platform-compact-font-size-body':'12px',
+    '--platform-compact-font-size-heading':'16px',
+    '--platform-compact-font-weight-bold':'800'
+  };
+  for(const [name,value] of Object.entries(compactValues))assert.match(tokens,new RegExp(name+'\\s*:\\s*'+value+'\\s*;'));
   const v2Definitions=[...tokens.matchAll(/(--platform-v2-[\w-]+)\s*:\s*([^;]+)/g)];
   assert.deepEqual(v2Definitions.map(match=>match[1]),['--platform-v2-border','--platform-v2-navy','--platform-v2-text']);
   for(const match of v2Definitions)assert.match(match[2],/^var\(--platform-/);
@@ -55,9 +70,9 @@ test('Development reference uses real components without app routing, data, or s
 });
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
-  const shared='shared-design-tokens.css?rev=platform-design-cutover-foundation-v1';
-  const pages='style.css?rev=conference-room-responsive-cleanup-v1';
-  const canonical='canonical-platform-shell.css?rev=platform-design-cutover-foundation-v1';
+  const shared='shared-design-tokens.css?rev=platform-design-cutover-canonical-v2';
+  const pages='style.css?rev=conference-design-cutover-canonical-v2';
+  const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));
   for(const asset of [shared,pages,canonical])assert.equal(worker.split('./'+asset).length-1,1);
