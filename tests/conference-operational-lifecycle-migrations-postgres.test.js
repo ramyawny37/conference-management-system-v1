@@ -58,6 +58,7 @@ test('real migrations execute and preserve the independent-child and dynamic-per
     `);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031190103_conference_operational_lifecycle_unification.sql')]);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261101213650_canonical_family_lifecycle_final_cutover.sql')]);
+    command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261124085051_canonical_family_room_draft_transaction_order.sql')]);
     command('psql',['-X','-v','ON_ERROR_STOP=1','-d',database,'-f',path.join(root,'supabase/migrations/20261031190106_reservations_dynamic_attendance_periods.sql')]);
     assert.equal(query(`select count(*) from reservations.event_periods where event_id='${event}' and kind='conference'`),'1');
     query(`insert into reservations.event_periods(scope_partition_id,event_id,kind,starts_on,ends_on,display_order,created_by,updated_by) values('${partition}','${event}','workshop','2026-10-12','2026-10-14',1,'${actor}','${actor}')`);
@@ -89,6 +90,7 @@ test('real migrations execute and preserve the independent-child and dynamic-per
     assert.equal(query(`select count(*) from public.conference_accommodation_occupancies where participation_id in('${removal.guardian}','${removal.shared}','${removal.independent}')`),'0');
     assert.equal(query(`select count(*) from public.conference_participations where id in('${removal.guardian}','${removal.shared}','${removal.independent}')`),'3');
     assert.equal(query(`select count(*) from public.conference_participations where id in('${removal.shared}','${removal.independent}') and guardian_participation_id='${removal.guardian}'`),'2');
+    assert.equal(query(`select count(*) from public.conference_transport_assignments where participation_id in('${removal.guardian}','${removal.shared}','${removal.independent}')`),'3');
 
     const childDelete=family('4');
     query(`begin;select set_config('platform.phase1c_context',jsonb_build_object('purpose','PLATFORM_DEVICE_SESSION_DISPATCH','user_id','${actor}','device_id','${device}')::text,true);select public.delete_conference_participation('${device}',gen_random_uuid(),'${childDelete.independent}',1);commit`);

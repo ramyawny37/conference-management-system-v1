@@ -62,8 +62,8 @@ test('room details use canonical actions for guests and children, and keep histo
   const room=script.slice(start,end);
   assert.match(room,/otherRoomStays=\(room\.occupancies\|\|\[\]\)\.filter/);
   assert.match(room,/getCanonicalAccommodationStayPhase\(occupancy,day\)/);
-  assert.match(room,/ge\('rmGuestsCount'\)\.textContent=guestOccupancies\.length/);
-  assert.match(room,/ge\('rmChildrenCount'\)\.textContent=childOccupancies\.length/);
+  assert.match(room,/updateCanonicalAccommodationRoomDraftSummary\(\)/);
+  assert.match(script,/canonicalAccommodationRoomDraftActiveStays/);
   assert.match(room,/groupCanonicalAccommodationOccupancies\(occupancies\)/);
   assert.match(room,/occupancyGroups\.rows\.find/);
   assert.match(room,/unlinkedChildren\.map/);

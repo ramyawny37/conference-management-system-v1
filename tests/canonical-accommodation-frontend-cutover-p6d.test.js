@@ -138,7 +138,8 @@ test('linked mutation functions use canonical occupancy and structure services w
   const source=scriptSource.slice(start,end);
   assert.match(source,/assignConferenceAccommodation/);
   assert.match(source,/moveConferenceAccommodation/);
-  assert.match(source,/removeConferenceAccommodation/);
+  assert.match(source,/saveConferenceFamilyAccommodationDraft/);
+  assert.match(source,/operation:'remove'/);
   assert.match(source,/mutateConferenceAccommodationStructure\(current\.id,'update_accommodation_room'/);
   assert.doesNotMatch(source,/current\.houses\s*=|room\.guests|room\.children|peopleDb|\bsave\s*\(/);
 });

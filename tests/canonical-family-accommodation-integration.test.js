@@ -88,9 +88,10 @@ test('room editor sends assignments updates replacements and staged children in 
   await context.submit({id:'conference-1'},{operationId:'op-1',roomId:'room-1',revision:3,assignmentRevision:4,children},null,
     [{participationId:'p1',arrivalDay:1,leaveDay:3,bedType:'base',extraBedPersonType:null}],
     [{occupancyId:'o1',expectedRevision:8,arrivalDay:2,leaveDay:4,bedType:'extra',extraBedPersonType:'child'}],
-    [{occupancyId:'o2',expectedRevision:9,participationId:'p2',effectiveDay:2,bedType:'base',extraBedPersonType:null}]);
+    [{occupancyId:'o2',expectedRevision:9,participationId:'p2',effectiveDay:2,bedType:'base',extraBedPersonType:null}],
+    [{occupancyId:'o3',expectedRevision:10}]);
   assert.equal(submitted.length,1);
-  assert.deepEqual(Array.from(submitted[0].draft.stays,stay=>stay.operation),['assign','move','replace']);
+  assert.deepEqual(Array.from(submitted[0].draft.stays,stay=>stay.operation),['remove','move','replace','assign']);
   assert.equal(submitted[0].draft.stays[1].expectedRevision,8);
   assert.equal(submitted[0].draft.stays[1].sourceRoomId,'room-1');
   assert.equal(submitted[0].draft.stays[1].targetRoomId,'room-1');

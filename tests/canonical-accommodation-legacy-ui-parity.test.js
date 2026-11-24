@@ -75,7 +75,8 @@ test('write actions remain permission gated and route to platform integration',(
     const body=ui.slice(i,j);
     assert.ok(i>=0,name);
     assert.match(body,/currentConferenceSectionCapability\('accommodationManage'\)/);
-    assert.match(body,/PlatformIntegration|integration\./);
+    if(name==='removeCanonicalAccommodation')assert.match(body,/stageCanonicalAccommodationRoomRemoval/);
+    else assert.match(body,/PlatformIntegration|integration\./);
   }
 });
 
@@ -320,14 +321,14 @@ test('move confirmation stays open on failed central mutation and disables dupli
   assert.ok(body.indexOf('closeCanonicalAccommodationMoveDayDialog();')>body.indexOf('Promise.resolve(result).then'));
 });
 
-test('successful central accommodation mutation is not misreported as failed when hydration fails',()=>{
+test('central accommodation mutation stays unconfirmed when hydration fails',()=>{
   const start=ui.indexOf('function canonicalAccommodationMutation(');
   const end=ui.indexOf('\nfunction refreshCanonicalConferenceOperationalDependencies(',start);
   const body=ui.slice(start,end);
   assert.ok(start>=0&&end>start);
   assert.match(body,/refreshCanonicalConferenceOperationalDependencies\(conferenceId,generation\)\.then/);
   assert.match(body,/تم تنفيذ العملية، لكن تعذر تحديث البيانات المعروضة/);
-  assert.match(body,/return result;/);
+  assert.match(body,/throw error\|\|\{code:'CANONICAL_CONFERENCE_REFRESH_FAILED'\}/);
   assert.match(body,/\.catch\(function\(error\)/);
 });
 
@@ -532,13 +533,14 @@ test('closing either room editor does not strand its save button disabled',()=>{
   assert.match(legacy,/ge\('roomModalSaveButton'\)\.onclick=saveRoomData/);
 });
 
-test('central guest removal tolerates an incomplete person projection without local fallback',()=>{
+test('central guest removal stages an incomplete person projection without a parallel write',()=>{
   const start=ui.indexOf('function removeCanonicalAccommodation(');
   const end=ui.indexOf('\nfunction setCanonicalAccommodationArrival(',start);
   const remove=ui.slice(start,end);
-  assert.match(remove,/if\(!current\|\|!integration\|\|!occupancy\)return false/);
+  assert.match(remove,/!draft\|\|!current\|\|!modal/);
   assert.match(remove,/occupancy\.person&&occupancy\.person\.fullName/);
-  assert.match(remove,/integration\.removeConferenceAccommodation\(current\.id,occupancy\.occupancyId,occupancy\.revision\)/);
+  assert.match(remove,/stageCanonicalAccommodationRoomRemoval/);
+  assert.doesNotMatch(remove,/removeConferenceAccommodation\(current\.id/);
   assert.doesNotMatch(remove,/saveRoomData|current\.houses\s*=|requireLocalOnlyAccommodationMutation/);
 });
 
@@ -571,7 +573,7 @@ test('stale room move completion cannot close or re-enable a newer move dialog',
   assert.match(body,/if\(canonicalAccommodationMoveDraft===draft\)\{if\(button\)button\.disabled=false/);
 });
 
-test('guest removal and arrival share a per-occupancy in-flight guard',()=>{
+test('arrival uses the per-occupancy guard while removal remains in the room draft',()=>{
   const start=ui.indexOf('var canonicalAccommodationOccupancyFlights=');
   const end=ui.indexOf('\nfunction setCanonicalAccommodationRoomKey(',start);
   const body=ui.slice(start,end);
@@ -579,9 +581,9 @@ test('guest removal and arrival share a per-occupancy in-flight guard',()=>{
   assert.match(body,/if\(canonicalAccommodationOccupancyFlights\[key\]\)return false/);
   assert.match(body,/canonicalAccommodationOccupancyFlights\[key\]=flight/);
   assert.match(body,/delete canonicalAccommodationOccupancyFlights\[key\]/);
-  assert.match(body,/integration\.removeConferenceAccommodation\(current\.id,occupancy\.occupancyId,occupancy\.revision\)/);
+  assert.match(body,/stageCanonicalAccommodationRoomRemoval/);
   assert.match(body,/setConferenceAccommodationArrival\(current\.id,occupancy\.occupancyId,occupancy\.revision,arrived===true\)/);
-  assert.equal((body.match(/runCanonicalAccommodationOccupancyMutation\(current\.id,occupancy\.occupancyId,function\(\)/g)||[]).length,2);
+  assert.equal((body.match(/runCanonicalAccommodationOccupancyMutation\(current\.id,occupancy\.occupancyId,function\(\)/g)||[]).length,1);
 });
 
 test('room transfers share the occupancy guard with removal and arrival',()=>{
@@ -698,8 +700,12 @@ test('canonical accommodation renderer never dispatches to local room draft writ
 
 test('canonical room removal is staged until the same family draft save',()=>{
   const remove=ui.slice(ui.indexOf('function removeCanonicalAccommodation('),ui.indexOf('\nfunction ',ui.indexOf('function removeCanonicalAccommodation(')+10));
-  assert.match(remove,/stay\.removed=true/);
+  assert.match(remove,/stageCanonicalAccommodationRoomRemoval/);
   assert.doesNotMatch(remove,/removeConferenceAccommodation\(|closeRM\(/);
+  const stage=ui.slice(ui.indexOf('function stageCanonicalAccommodationRoomRemoval('),ui.indexOf('\nfunction ',ui.indexOf('function stageCanonicalAccommodationRoomRemoval(')+10));
+  assert.match(stage,/stay\.removed=true/);
+  assert.match(stage,/canonicalAccommodationRoomEmptySlotHtml/);
+  assert.match(stage,/updateCanonicalAccommodationRoomDraftSummary/);
   const occupant=ui.slice(ui.indexOf('function renderCanonicalAccommodationDetailOccupant('),ui.indexOf('\nfunction ',ui.indexOf('function renderCanonicalAccommodationDetailOccupant(')+10));
   assert.doesNotMatch(occupant,/closeRM\(\);removeCanonicalAccommodation/);
   const submit=ui.slice(ui.indexOf('function submitCanonicalAccommodationRoomDraft('),ui.indexOf('\nfunction ',ui.indexOf('function submitCanonicalAccommodationRoomDraft(')+10));
