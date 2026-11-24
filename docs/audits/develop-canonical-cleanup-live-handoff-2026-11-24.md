@@ -194,7 +194,6 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - Empty slot text `يُطبّق عند حفظ الغرفة` remains visible after reopening because it is unconditional in the existing template. User explicitly deferred this cosmetic issue; do not change it in this round.
 - Resume central Conference cleanup and design unification, starting with reachability audit of room editor dependencies. Do not remove functions based on naming alone. Preserve accepted accommodation behavior, family rules, cards/print/PNG/WhatsApp, and reservations. Develop and Supabase Development only; no main/Production.
 
-
 ### Legacy room editor reachability audit
 - `getCanonicalConferenceCoreLink(id)` returns a canonical link for every nonempty trimmed ID; `requireLocalOnlyAccommodationMutation` throws `LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN` for such a current conference.
 - `openRoomEditor` and `saveRoomData` are guarded local-only paths; the latter writes `current.houses` from `draftHouses` and invokes `save()`. The room settings action still contains a canonical/local conditional. Local transfer and room management helpers also share this guard.
@@ -230,3 +229,52 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - `9027ac2e9927e1f8c49ec6cdadeecece9e5fbf56`: removed the superseded first `gap:var(--app-space-2)` declaration from `.accommodation-dashboard .accommodation-house-metrics`; the effective later `gap:4px`, grid columns and flex behavior remain unchanged.
 - No renderer, operational behavior, breakpoint, mobile/tablet rule, or Supabase object changed. This is a cascade-preserving cleanup only.
 - Pending: verify exact-SHA CI and Development Preview for `9027ac2`; continue whole-module CSS ownership/dependency audit. Visual acceptance remains pending; no claim of full legacy-design removal.
+
+## 2026-11-24 legacy room editor retirement
+
+### Baseline and implementation
+
+- Baseline after integrating concurrent `develop` cleanup: `98462ffa7bc7ec21a961686166f147f774f43b60`.
+- Implementation: `26f22932f7e426b9441a095f7a821d04a9b31211`.
+- No database, migration, Supabase project, `main`, Production, Cards/print, PNG, WhatsApp, or Reservations runtime file was changed.
+- The deferred text `يُطبّق عند حفظ الغرفة` was not changed.
+
+### Reachability proof
+
+- `getCanonicalConferenceCoreLink(localConferenceId)` returns a canonical link for every non-empty Conference id. `renderAccommodation()` renders only `renderCanonicalAccommodation(canonicalAccommodationState())`; its non-linked branch is an error state, not a local renderer.
+- Repository-wide JavaScript, HTML, CSS, inline-handler, dynamic-string, and test scans found the legacy room editor reachable only from its own generated handlers plus one Search-tab conditional fallback.
+- The Search-tab fallback was the only caller outside the legacy block. It now dispatches directly to `editCanonicalHouseRoom(roomId)`.
+- `roomModal`, `closeRM()`, room fields, canonical responsive selectors, and `reconcileAccommodationRoomKeyHolders()` remain because they are shared or have proven persistence consumers.
+- The old `guestRowId` / `childRowId` person-dialog branches were generated only by the retired editor. Canonical person creation continues through `accommodationAssignment` and `accommodationRoomSlotKey`.
+
+### Deleted legacy unit
+
+- Removed `editRoomData` / `draftHouses` ownership and the complete legacy editor call graph: `openRoomEditor`, `renderRoomEditorFromDraft`, `applyEditorFormToDraftRoom`, `saveRoomData`, `openMoveGuestDialog`, `openMoveRoomDialog`, `pickTargetRoomPrompt`, legacy guest/child row binders, the legacy guest picker, and partial-room transfer helpers.
+- Removed the dead `partialTransferModal`, its inline handlers, and all `#partialTransferModal` CSS.
+- Removed the dead legacy guest-picker CSS and obsolete child-row markup/CSS. The canonical slot picker and canonical family-child dialog remain unchanged.
+- Removed the unused static child-add button from `roomModal`; the canonical editor continues to create its owned family-child action dynamically.
+- Net implementation change: 63 insertions and 1,551 deletions across 10 files.
+
+### Verification
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Syntax, duplicate functions, dependency and inline-handler scans | PASS | `node --check`; zero duplicate declarations; retired names absent from active JS/HTML/CSS; remaining unresolved inline names are established external/browser owners (`showAuthView`, `signOut`, `ge`, `click`, `preventDefault`). |
+| Canonical room/design regression selection | PASS | 107/107 tests, including central draft, replacement, permissions, house directory, responsive compact room UI, and design foundation. |
+| Legacy-retirement boundary tests | PASS | Tests now require the old editor, picker, transfer modal, and local save owner to remain absent while requiring canonical slot/person/save ownership. |
+| `npm run check:development-preview` | PASS | 658/658 tests across 88 platform test files. |
+| `npm run check` | FAIL (pre-existing/out of scope) | 663 PASS, 5 FAIL in the existing Production-promotion baseline; resolving them requires prohibited Production/public-config/cache changes. |
+| Browser visual and operational acceptance | BLOCKED | `AGENTS.md` prohibits browser and automated UI tests in this workspace. No visual acceptance is claimed. |
+| Supabase Development | NOT NEEDED | This was a frontend/test cleanup with no schema or data change. |
+
+### Files changed
+
+- Runtime: `script.js`, `index.html`, `style.css`.
+- Regression contracts: `tests/canonical-accommodation-legacy-ui-parity.test.js`, `tests/conference-legacy-functional-canonical-cutover.test.js`, `tests/conference-section-permission-ui.test.js`, `tests/legacy-linked-runtime-state-retirement-p6f.test.js`, `tests/people-accommodation-regressions.test.js`, `tests/room-mobile-input-ux.test.js`, `tests/room-person-picker-free-text.test.js`.
+- Evidence: this handoff document.
+
+### Remaining gates
+
+- GitHub Actions and Development Preview must be verified against the final report commit SHA after push.
+- Manual Desktop/Tablet/Mobile visual acceptance and approved-device operational smoke remain BLOCKED by the local browser-test prohibition and require an authorized manual pass.
+- Remaining local-only house/active-room compatibility functions are still guarded by `requireLocalOnlyAccommodationMutation()` and were not deleted in this unit because their wider template-management dependencies were outside the proven room-editor closure.
