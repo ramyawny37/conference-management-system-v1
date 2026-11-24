@@ -98,4 +98,4 @@ Round 5 adds `design-system-reference.html` as an isolated Development reference
 
 The global `.toast` implementation and the duplicate `.body` declaration were consolidated into their authoritative definitions. Module-scoped Reservations and Warehouse visuals remain because they express active business layouts; their independent token sets are recorded as D — Legacy but Still Required until their runtime consumers can be migrated page by page without visual or behavioral redesign.
 
-The shared `.ui-dialog,.modal` rule owns the default surface, border, radius and shadow; `.app-modal .modal` retains geometry only. Specialized dialog surfaces remain pending a separate consumer-specific audit; the shared mobile radius is centrally owned.
+The shared `.ui-dialog,.modal` rule owns the default surface, border, radius and shadow; `.app-modal .modal` retains geometry only. Specialized Conference dialog shells inherit the same central chrome; their local rules retain geometry. The shared mobile radius is centrally owned.

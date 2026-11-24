@@ -90,7 +90,7 @@ test('Development reference uses real components without app routing, data, or s
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
   const shared='shared-design-tokens.css?rev=platform-dialog-contract-v4';
-  const pages='style.css?rev=conference-dialog-contract-v4';
+  const pages='style.css?rev=conference-dialog-contract-v5';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));
@@ -103,4 +103,10 @@ test('proven duplicate global definitions were actually removed',()=>{
   assert.equal((tokens.match(/^\.toast,/gm)||[]).length,1);
   assert.equal((style.match(/^\.toast(?:[.{])/gm)||[]).length,0);
   assert.equal((style.match(/--app-primary\s*:/g)||[]).length,0);
+});
+
+test('specialized Conference dialog shells inherit central chrome',()=>{
+  for(const match of style.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+    if(/(?:\.modal|\.room-editor-modal|\.transport-(?:editor|seat|bulk)-modal)$/.test(match[1].trim()))assert.doesNotMatch(match[2],/\b(?:border|border-radius|background|box-shadow):/,match[1]);
+  }
 });
