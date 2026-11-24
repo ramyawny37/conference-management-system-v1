@@ -70,7 +70,7 @@ test('tabs hydrate their real canonical dependencies and lifecycle refreshes bef
   assert.match(hydration,/tabId===1[\s\S]*hydrateCanonicalConferenceAccommodation[\s\S]*hydrateCanonicalConferenceTransport/);
   assert.match(hydration,/tabId===3[\s\S]*hydrateCanonicalConferenceAccommodation[\s\S]*hydrateCanonicalConferenceRestaurant/);
   assert.match(hydration,/tabId===4[\s\S]*hydrateCanonicalConferenceAccommodation[\s\S]*hydrateCanonicalConferenceTransport[\s\S]*hydrateCanonicalConferenceBranding/);
-  const status=source('setCanonicalParticipantStatus','openQuickAddPersonForGuest');
+  const status=source('setCanonicalParticipantStatus','renderTrashSection');
   assert.match(status,/setConferenceParticipationStatus[\s\S]*refreshCanonicalConferenceOperationalDependencies[\s\S]*showToast/);
   assert.match(source('canonicalAccommodationMutation','canonicalAccommodationState'),/refreshCanonicalConferenceOperationalDependencies[\s\S]*renderReadyConferenceTab/);
   assert.doesNotMatch(script,/skipHydration:true/);

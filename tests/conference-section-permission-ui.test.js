@@ -26,7 +26,7 @@ test('people renderer distinguishes denied, failed and genuinely empty while man
   assert.match(source,/لا توجد بيانات أشخاص بعد/);
   assert.match(body('openPersonDialog','closePersonDialog'),/peopleManage/);
   assert.match(body('deleteCanonicalConferenceParticipation','deleteLocalOnlyPersonFromDatabase'),/peopleManage/);
-  assert.match(body('setCanonicalParticipantStatus','openQuickAddPersonForGuest'),/peopleManage/);
+  assert.match(body('setCanonicalParticipantStatus','renderTrashSection'),/peopleManage/);
 });
 test('accommodation renderer has denied, loading, empty, error and retry states and hides mutation controls for viewers',()=>{
   const render=body('renderCanonicalAccommodation','renderAccommodation');

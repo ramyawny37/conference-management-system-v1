@@ -492,14 +492,13 @@ test('available-room filter excludes zero-capacity rooms',()=>{
   assert.match(body,/filter==='available'&&\(room\.isClosed\|\|Number\(room\.baseCapacity\|\|0\)\+Number\(room\.extraBedCapacity\|\|0\)<=0/);
 });
 
-test('room save action has one owner per editor, never an inline legacy fallback',()=>{
+test('room save action has one canonical owner and no inline legacy fallback',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   assert.match(html,/id="roomModalSaveButton"/);
   assert.doesNotMatch(html,/id="roomModalSaveButton"[^>]*onclick=/);
   const canonical=ui.slice(ui.indexOf('function openCanonicalAccommodationRoomDetails('),ui.indexOf('\nfunction saveCanonicalAccommodationRoomData('));
   assert.match(canonical,/saveButton\.onclick=saveCanonicalAccommodationRoomData/);
-  const legacy=ui.slice(ui.indexOf('function openRoomEditor('),ui.indexOf('\nfunction closeRM('));
-  assert.match(legacy,/ge\('roomModalSaveButton'\)\.onclick=saveRoomData/);
+  assert.doesNotMatch(ui,/function openRoomEditor\(|function saveRoomData\(|onclick=saveRoomData/);
   const teardown=ui.slice(ui.indexOf('function resetCanonicalAccommodationRoomDetails('),ui.indexOf('\nfunction openCanonicalAccommodationRoomDetails('));
   assert.match(teardown,/saveButton\.onclick=null/);
   assert.doesNotMatch(teardown,/saveButton\.onclick=saveRoomData/);
@@ -525,12 +524,10 @@ test('canonical room save rejects duplicate clicks and new editor starts enabled
   assert.match(open,/saveButton\.disabled=false/);
 });
 
-test('closing either room editor does not strand its save button disabled',()=>{
+test('closing the canonical room editor does not strand its save button disabled',()=>{
   const reset=ui.slice(ui.indexOf('function resetCanonicalAccommodationRoomDetails('),ui.indexOf('\nfunction openCanonicalAccommodationRoomDetails('));
   assert.match(reset,/saveButton\.onclick=null;saveButton\.disabled=false/);
-  const legacy=ui.slice(ui.indexOf('function openRoomEditor('),ui.indexOf('\nfunction closeRM('));
-  assert.match(legacy,/ge\('roomModalSaveButton'\)\.disabled=false/);
-  assert.match(legacy,/ge\('roomModalSaveButton'\)\.onclick=saveRoomData/);
+  assert.doesNotMatch(ui,/function openRoomEditor\(|function saveRoomData\(/);
 });
 
 test('central guest removal stages an incomplete person projection without a parallel write',()=>{
@@ -694,8 +691,9 @@ test('canonical accommodation renderer never dispatches to local room draft writ
   const entry=ui.slice(ui.indexOf('function renderAccommodation()'),ui.indexOf('\nfunction ',ui.indexOf('function renderAccommodation()')+10));
   assert.match(entry,/renderCanonicalAccommodation\(canonicalAccommodationState\(\)\)/);
   assert.doesNotMatch(entry,/\bopenRoomEditor\s*\(|\brenderRoomEditorFromDraft\s*\(/);
-  const local=ui.slice(ui.indexOf('function saveRoomData('),ui.indexOf('\nfunction ',ui.indexOf('function saveRoomData(')+10));
-  assert.match(local,/if\(!requireLocalOnlyAccommodationMutation\(\)\)return false/);
+  for(const name of ['openRoomEditor','saveRoomData','renderRoomEditorFromDraft','applyEditorFormToDraftRoom','openMoveGuestDialog','openMoveRoomDialog','pickTargetRoomPrompt']){
+    assert.doesNotMatch(ui,new RegExp('function\\s+'+name+'\\s*\\('),name);
+  }
 });
 
 test('canonical room removal is staged until the same family draft save',()=>{

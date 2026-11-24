@@ -244,7 +244,6 @@
   <section id="roomModalChildrenSection" class="room-modal-section room-children-section">
     <div class="room-modal-section-title room-modal-section-heading">
       <strong>الأطفال المرافقون <b id="rmChildrenCount">0</b></strong>
-      <button id="roomModalAddChildButton" class="btn btn-orange btn-sm" onclick="addCI()">+ طفل</button>
     </div>
     <div id="m_children"></div>
   </section>
@@ -576,16 +575,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<!-- Partial Transfer Modal -->
-
-<div class="overlay app-modal" id="partialTransferModal" style="display:none" onclick="if(event.target===this)closePartialTransferModal()">
-  <div class="modal transfer-editor-modal" role="dialog" aria-modal="true" aria-labelledby="partialTransferTitle">
-    <div class="mhead transfer-modal-header"><span id="partialTransferIcon" class="transfer-modal-header-icon" aria-hidden="true">↔</span><div class="transfer-modal-heading"><strong id="partialTransferTitle">نقل جزئي</strong><small id="partialTransferContext"></small></div><button type="button" class="transfer-modal-close" aria-label="إغلاق" onclick="closePartialTransferModal()">✕</button></div>
-    <div class="mbody transfer-modal-body">
-      <div id="partialTransferContent"></div>
-    </div>
-  </div>
-</div>
 <div id="update-bar" class="update-bar">
   <span id="update-message">يوجد تحديث جديد للبرنامج.</span>
   <div>

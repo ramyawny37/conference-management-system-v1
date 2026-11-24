@@ -161,8 +161,8 @@ assert.ok(houseTemplatesSource.slice(
   houseTemplatesSource.indexOf('function ht_deleteFloorFromTemplate(')
 )
   .indexOf('refreshConferenceHouseAfterTemplateMutation(house)')<0);
-assert.match(scriptSource,
-  /current\.houses\s*=\s*deepClone\(editRoomData\.draftHouses\);\r?\n\s*linkRoomPeopleToDatabase\(current\);/);
+assert.doesNotMatch(scriptSource,/editRoomData|renderRoomEditorFromDraft|saveRoomData/);
+assert.match(scriptSource,/saveConferenceFamilyAccommodationDraft/);
 assert.ok(scriptSource.indexOf(
   'updateConferenceHousesFromTemplate(currentConference, template)'
 )>=0);

@@ -65,14 +65,17 @@ test('linked runtime normalization cannot hydrate or mirror legacy People and Ac
   assert.doesNotMatch(conferenceNormalizer,/migrateToV3|convertLegacyRoomsToHouses/);
 });
 
-test('legacy Accommodation mutation surface is explicitly local-only',()=>{
+test('remaining local Accommodation mutation surface is guarded and retired room editor is absent',()=>{
   const gate=functionSource(script,'requireLocalOnlyAccommodationMutation');
   assert.match(gate,/getCanonicalConferenceCoreLink[\s\S]*LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN[\s\S]*requireAccommodationMutation/);
-  const handlers=['saveHouse','deleteHouse','setAccommodationPersonArrival','setAccommodationRoomKeyHolder','removeConferenceHouseFromAccommodation','addAvailableTemplateRoom','toggleActiveRoom','setAllActiveRoomsForFloor','setAllActiveRoomsForHouse','partialTransferConfirmSelection','saveRoomData','clearConferenceRoom','toggleConferenceRoomClosed','deleteConferenceRoom','applyConferenceHouseTemplate','importHouseFromTemplate'];
+  const handlers=['addAvailableTemplateRoom','toggleActiveRoom','setAllActiveRoomsForFloor','setAllActiveRoomsForHouse'];
   handlers.forEach(name=>assert.match(functionSource(script,name),/requireLocalOnlyAccommodationMutation\(\)/,name));
+  for(const name of ['openRoomEditor','saveRoomData','partialTransferConfirmSelection','renderRoomEditorFromDraft']){
+    assert.doesNotMatch(script,new RegExp('function\\s+'+name+'\\s*\\('),name);
+  }
   const canonical=script.slice(script.indexOf('function canonicalAccommodationMutation('),script.indexOf('function renderCanonicalAccommodation'));
   assert.doesNotMatch(canonical,/conference\.houses|room\.guests|room\.children|linkRoomPeopleToDatabase|\bsave\s*\(/);
-  assert.match(canonical,/mutateConferenceAccommodationStructure|assignConferenceAccommodation|moveConferenceAccommodation|removeConferenceAccommodation/);
+  assert.match(script,/saveConferenceFamilyAccommodationDraft|moveConferenceAccommodation|replaceConferenceAccommodation/);
 });
 
 test('canonical downstream remains isolated and no replacement owner is introduced',()=>{
