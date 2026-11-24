@@ -390,3 +390,5 @@ Rule counts remain intentionally high because most selectors own functional plac
 ### Specialized dialog shell cutover
 - Baseline `e330cf62b0dbf10fee1553752340ad02017363fe`: Reservations CI `45421931709` PASS; Preview `45426890150` PASS, exact source SHA verified in deploy log.
 - Removed competing shell border/background/radius/shadow from room, transport, house and general dialogs; retained width, height, layout and header/body styling. Central default and responsive chrome inherited. Updated all four known revision test contracts with HTML and worker. Added shell ownership regression. No operational JS or database change. CI and manual visual acceptance pending; shell colors may differ from baseline.
+
+- Specialized shell commit `552e892867e5e83efabac6515f551e6d0b0503ec`: Conference CI `45429421683` PASS; Reservations `45429422030` FAIL (test 122 requires trailing semicolon after approved 880px max-width). Restored CSS declaration terminator; no computed style or test change. CI pending.
