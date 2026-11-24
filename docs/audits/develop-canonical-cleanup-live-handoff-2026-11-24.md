@@ -199,3 +199,9 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - `getCanonicalConferenceCoreLink(id)` returns a canonical link for every nonempty trimmed ID; `requireLocalOnlyAccommodationMutation` throws `LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN` for such a current conference.
 - `openRoomEditor` and `saveRoomData` are guarded local-only paths; the latter writes `current.houses` from `draftHouses` and invokes `save()`. The room settings action still contains a canonical/local conditional. Local transfer and room management helpers also share this guard.
 - `renderRoomEditorFromDraft` and `applyEditorFormToDraftRoom` have local editor and transfer dependencies. Shared DOM and helper dependencies must be audited before deletion. No runtime code changed in this audit. Next: verify conference ID invariants and cross-file callers/tests, then remove the proven dead closure atomically with regression coverage. No Codex used.
+
+
+### Unreachable conference selector cleanup
+- Runtime commit `2b98c6abed67ed5d6a46c878b88034a782c52338`: removed 3,343 characters after unconditional return in `showSelectConferenceModal`; preserved active startup flow and public function name.
+- GitHub Actions confirmed success: Reservations integration `45380627812`, Conference canonical people flow `45380627860`. Preview deployment and independent static scans not yet verified. No browser automation (AGENTS.md). No database or Production changes.
+- Next: audit remaining selectConfModal references and legacy room editor closure, including cross-file tests, before deletion.
