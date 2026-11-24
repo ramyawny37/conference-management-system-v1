@@ -275,6 +275,7 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 
 ### Remaining gates
 
-- GitHub Actions and Development Preview must be verified against the final report commit SHA after push.
+- GitHub Actions passed for evidence SHA `657ded2661d0299563f3e4007a6959f30d04684b`: Conference run `45392715781` and Reservations run `45392715756`.
+- Development Preview run `45393134015` passed; live `development-preview-sources.json` recorded both `platform.ref` and `platform.sha` as `657ded2661d0299563f3e4007a6959f30d04684b`. The final report-only successor SHA must receive the same exact-SHA verification before handoff.
 - Manual Desktop/Tablet/Mobile visual acceptance and approved-device operational smoke remain BLOCKED by the local browser-test prohibition and require an authorized manual pass.
 - Remaining local-only house/active-room compatibility functions are still guarded by `requireLocalOnlyAccommodationMutation()` and were not deleted in this unit because their wider template-management dependencies were outside the proven room-editor closure.
