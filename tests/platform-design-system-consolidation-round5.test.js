@@ -89,8 +89,8 @@ test('Development reference uses real components without app routing, data, or s
 });
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
-  const shared='shared-design-tokens.css?rev=platform-dialog-contract-v4';
-  const pages='style.css?rev=conference-room-controls-v7';
+  const shared='shared-design-tokens.css?rev=platform-soft-controls-v5';
+  const pages='style.css?rev=conference-report-controls-v8';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));
@@ -117,4 +117,9 @@ test('room row and footer buttons inherit central control radius',()=>{
 
 test('retired child section title button chrome does not return',()=>{
   assert.doesNotMatch(style,/#roomModal \.room-children-section \.room-modal-section-title>\.btn/);
+});
+
+test('report actions use shared soft button chrome',()=>{
+  assert.match(tokens,/\.btn\.btn-soft\{/);
+  assert.doesNotMatch(style,/\.reports-v3-actions \.btn(?:-green|-blue|-purple|:hover)\{/);
 });

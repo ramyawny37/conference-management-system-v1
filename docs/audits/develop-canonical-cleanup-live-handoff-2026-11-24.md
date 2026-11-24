@@ -400,3 +400,6 @@ Rule counts remain intentionally high because most selectors own functional plac
 ### Retired child title button styling
 - Baseline `5a66e9708caf6c256f49da6ea52364adbaba85a9`: CI runs `45431811750` and `45431811715` PASS.
 - Inspected index child heading and script canonical addFamilyChildButton: active button is `btn btn-blue btn-sm` nested in `canonical-room-family-draft-actions` in guest heading, not direct child of child section heading. Removed two obsolete selector rules, no JS or markup change. Updated cache contracts and regression. CI pending. Report action color overrides remain for separate visual review.
+
+### Report action soft button ownership
+- Moved existing report soft surface and semantic color rules to shared `.btn-soft` variant; three report buttons opt in explicitly. Preserved report geometry and handlers. Updated runtime cache revisions and known test contracts. CI pending; hover specificity and visual acceptance require verification. No DB or protected cards changes.

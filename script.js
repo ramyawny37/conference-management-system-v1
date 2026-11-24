@@ -1585,9 +1585,9 @@ function renderV3RestaurantReport(context){
 
 function renderV3ReportsActions(){
   return '<div class="settings-branding-actions no-print reports-v3-actions">'+
-    '<button class="btn btn-green" onclick="printV3Reports()">🖨️ طباعة التقرير</button>'+
-    '<button class="btn btn-blue" onclick="saveV3ReportsPdf()">📄 حفظ PDF</button>'+
-    '<button class="btn btn-purple" onclick="exportV3ReportsExcel()">📊 تصدير Excel</button>'+
+    '<button class="btn btn-green btn-soft" onclick="printV3Reports()">🖨️ طباعة التقرير</button>'+
+    '<button class="btn btn-blue btn-soft" onclick="saveV3ReportsPdf()">📄 حفظ PDF</button>'+
+    '<button class="btn btn-purple btn-soft" onclick="exportV3ReportsExcel()">📊 تصدير Excel</button>'+
   '</div>';
 }
 
