@@ -205,3 +205,9 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - Runtime commit `2b98c6abed67ed5d6a46c878b88034a782c52338`: removed 3,343 characters after unconditional return in `showSelectConferenceModal`; preserved active startup flow and public function name.
 - GitHub Actions confirmed success: Reservations integration `45380627812`, Conference canonical people flow `45380627860`. Preview deployment and independent static scans not yet verified. No browser automation (AGENTS.md). No database or Production changes.
 - Next: audit remaining selectConfModal references and legacy room editor closure, including cross-file tests, before deletion.
+
+
+### Obsolete selection modal cleanup
+- `0a6a7bf06067ccd7b56a76c60cf1b0abcb3fff2e`: removed two obsolete selection-modal cleanup references.
+- `9801a75bddd211b9c4c13feea32b1cae38cafa61`: removed six exclusive CSS rules and stripped obsolete selectors from thirteen shared rules, preserving completed-conference selectors.
+- CI and preview acceptance pending; no database change. Legacy room editor removal remains pending dependency/test review.
