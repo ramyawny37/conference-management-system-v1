@@ -255,15 +255,6 @@
   </div>
 </div></div></div>
 
-<!-- House Modal -->
-<div class="overlay app-modal" id="houseModal" style="display:none" onclick="if(event.target===this)closeHouseModal()">
-<div class="modal"><div class="mhead"><span id="houseTitle">البيت</span><span style="cursor:pointer" onclick="closeHouseModal()">✕</span></div>
-<div class="mbody">
-  <div style="margin-bottom:9px"><label class="lbl">اسم البيت</label><input id="house_name" placeholder="اسم البيت"></div>
-  <div style="margin-bottom:9px"><label class="lbl">الوصف</label><input id="house_desc" placeholder="وصف اختياري"></div>
-  <div class="row"><button class="btn btn-green" style="flex:1" onclick="saveHouse()">💾 حفظ</button><button class="btn btn-red" id="delHouseBtn" style="display:none" onclick="deleteHouse()">🗑️ حذف</button><button class="btn btn-gray" onclick="closeHouseModal()">إلغاء</button></div>
-</div></div></div>
-
 <!-- Transport Modal -->
 <div class="overlay app-modal" id="transportModal" style="display:none" onclick="if(event.target===this)closeTM()">
 <div class="modal transport-editor-modal"><div class="mhead transport-modal-header"><span class="transport-modal-header-icon" data-app-icon="bus"></span><span id="tmTitle">وسيلة</span><button type="button" class="transport-modal-close" aria-label="إغلاق" onclick="closeTM()"><span data-app-icon="close"></span></button></div>
