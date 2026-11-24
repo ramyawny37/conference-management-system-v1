@@ -142,3 +142,47 @@ No dead runtime path was found in this final pass, so none was deleted without r
 - Migration `20261124085051` was then applied alone through the approved CLI path. Remote history records name `canonical_family_room_draft_transaction_order` with 7 statements.
 - Post-application checks confirm: ordered remove/move markers, current locked room and assignment revision reads, deferred capacity shrink, active `clear_conference_room_key_on_stay_delete` trigger, SECURITY DEFINER removal function, and EXECUTE limited to `service_role`. Supabase health advisor returned no findings.
 - Existing older migration-history drift remains visible and was deliberately not repaired or hidden because it predates and exceeds this scope.
+
+## 2026-11-24 truthful administrative removal correction
+
+### Baseline and proven failure
+
+- Baseline: `9bc2c64f3acf7e5ef879792c4b324fc57502d3af` on `develop`.
+- Implementation SHA: `da3bcc95330eeaf140e55678bd9815b574e65e71`.
+- Production logs proved the reported HTTP 500 was `ACCOMMODATION_ROOM_CAPACITY_EXCEEDED` from `assign_conference_accommodation`, called by `save_conference_family_accommodation_draft`. The preceding removal was a no-op, so the full room never released its bed before the replacement assignment.
+- The false success originated when `20261101213650_canonical_family_lifecycle_final_cutover.sql` routed administrative removal through the effective-day participation cleanup. `20261124085051_canonical_family_room_draft_transaction_order.sql` later preserved that call and returned `deleted: true` without proving the requested occupancy disappeared.
+- For an active conference whose dates had elapsed, `effective_day=conference_days+1`; an open-ended stay already ending at that boundary was skipped. Hydration therefore correctly found the supposedly removed occupancy still present.
+
+### Corrected central contract
+
+- New migration: `20261124101624_administrative_accommodation_removal_contract.sql`.
+- `accommodation_removed` is now an authorized administrative correction: it deletes the selected participant's accommodation rows, and the existing family ownership rule applies the same correction to linked children across rooms.
+- `participation_apologized` and `participation_deleted` retain the prior effective-day lifecycle behavior. No parallel RPC or frontend path was added.
+- `remove_conference_accommodation` now raises `ACCOMMODATION_REMOVAL_NOT_APPLIED` if the requested occupancy remains; it cannot return success for a no-op.
+- Participation, central Person, guardian links, transport, leases, revisions, idempotency, room-key cleanup, and audit ownership remain unchanged. Audit metadata explicitly records `administrativeCorrection=true` while retaining the previous row in `old_values`.
+- Completed conferences remain protected by the existing `require_conference_accommodation_context(..., true)` guard.
+
+### Files and cleanup
+
+- Added `supabase/migrations/20261124101624_administrative_accommodation_removal_contract.sql`.
+- Updated `tests/canonical-family-room-draft-transaction-postgres.test.js` with real PostgreSQL temporal, family, key, atomicity, replay, and conflict cases.
+- Updated `tests/canonical-family-accommodation-integration.test.js` to reject reintroduction of the mixed administrative/lifecycle contract.
+- No runtime JavaScript or design file changed. No dead runtime path was removed because dependency tracing found one active canonical path and no proven duplicate.
+
+### Verification and deployment
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| Reported past-date active-conference scenario | PASS | Disposable PostgreSQL used 2026-11-01 through 2026-11-04 while database date was 2026-11-24; removal freed the key-holder bed and the same transaction assigned its replacement. |
+| Before/during/after dates and completed conference | PASS | Administrative removal succeeded for active conferences independent of wall-clock phase; completed status raised `COMPLETED_CONFERENCE_IMMUTABLE`. |
+| Family and lifecycle | PASS | Guardian removal cleared linked child stays across rooms; child-only removal retained guardian; participation and transport remained; historical apology cleanup retained its previous effective-day behavior. |
+| Atomicity and concurrency | PASS | Remove/add/structure, move/shrink, rollback on injected failure, replay, stale revisions, and room-key trigger passed in isolated PostgreSQL. |
+| Targeted suites | PASS | 96/96 tests. |
+| All accommodation suites | PASS | 222/222 tests. Cards/print/PNG/WhatsApp contracts remained untouched. |
+| Development Preview validation | PASS | 658/658 tests across 88 platform test files. |
+| `npm run check` | FAIL (pre-existing/out of scope) | 663 PASS, 5 FAIL, all Production-promotion requirements prohibited by this task. |
+| GitHub Actions | PASS | Run `45374110040` succeeded for implementation SHA `da3bcc95330eeaf140e55678bd9815b574e65e71`. |
+| Supabase Development | PASS | Dry-run listed only `20261124101624`; it was applied to `gppwltrifgfxrkzvvxoe`. Remote history records 8 statements; post-apply function definitions, ACLs, key trigger, migration list, and advisors passed. |
+| Browser/manual operational acceptance | BLOCKED | `AGENTS.md` prohibits browser and automated UI tests. No real guest or room data was mutated for testing. |
+
+No `main`, Production, Vercel, React, operational guest data, or independent Cards/print/PNG/WhatsApp path was touched.
