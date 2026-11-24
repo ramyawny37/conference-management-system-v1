@@ -682,3 +682,16 @@ test('retired local house modal cannot reappear beside the canonical house direc
   assert.match(ui,/function deleteCanonicalHouse\(/);
   assert.match(ui,/function renderCanonicalAccommodation\(/);
 });
+
+test('canonical accommodation renderer never dispatches to local room draft writer',()=>{
+  const start=ui.indexOf('function renderCanonicalAccommodation(');
+  const end=ui.indexOf('\nfunction renderAccommodation()',start);
+  assert.ok(start>=0&&end>start,'canonical accommodation renderer must be identifiable');
+  const canonical=ui.slice(start,end);
+  assert.doesNotMatch(canonical,/\bopenRoomEditor\s*\(|\bsaveRoomData\s*\(|\brenderRoomEditorFromDraft\s*\(/);
+  const entry=ui.slice(ui.indexOf('function renderAccommodation()'),ui.indexOf('\nfunction ',ui.indexOf('function renderAccommodation()')+10));
+  assert.match(entry,/renderCanonicalAccommodation\(canonicalAccommodationState\(\)\)/);
+  assert.doesNotMatch(entry,/\bopenRoomEditor\s*\(|\brenderRoomEditorFromDraft\s*\(/);
+  const local=ui.slice(ui.indexOf('function saveRoomData('),ui.indexOf('\nfunction ',ui.indexOf('function saveRoomData(')+10));
+  assert.match(local,/if\(!requireLocalOnlyAccommodationMutation\(\)\)return false/);
+});
