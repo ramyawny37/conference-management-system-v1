@@ -186,3 +186,10 @@ No dead runtime path was found in this final pass, so none was deleted without r
 | Browser/manual operational acceptance | BLOCKED | `AGENTS.md` prohibits browser and automated UI tests. No real guest or room data was mutated for testing. |
 
 No `main`, Production, Vercel, React, operational guest data, or independent Cards/print/PNG/WhatsApp path was touched.
+
+
+## 2026-11-24 user operational acceptance and continuation
+
+- User confirmed individual removal and addition/save work after the administrative removal migration and refresh. Combined remove/add in one save is not separately confirmed by the user; isolated PostgreSQL coverage passed.
+- Empty slot text `يُطبّق عند حفظ الغرفة` remains visible after reopening because it is unconditional in the existing template. User explicitly deferred this cosmetic issue; do not change it in this round.
+- Resume central Conference cleanup and design unification, starting with reachability audit of room editor dependencies. Do not remove functions based on naming alone. Preserve accepted accommodation behavior, family rules, cards/print/PNG/WhatsApp, and reservations. Develop and Supabase Development only; no main/Production.
