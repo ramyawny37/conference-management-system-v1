@@ -379,3 +379,8 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Reservations integration run `45418308267`: PASS on the implementation SHA.
 - Development Preview run `45418676055`: PASS. The live `development-preview-sources.json` recorded both `platform.ref` and `platform.sha` as `8b9a18f9420c0f41218a5e68e8d921798662d0cb`, and the revisioned central stylesheet returned HTTP 200.
 - The following evidence-only successor commit must be subjected to the same exact-SHA Reservations and Preview provenance gates before final handoff.
+
+### 2026-11-24 shared dialog base follow-up
+
+- Baseline `f8b09bfc751baf92de99ffe932094e13a19eca42`; Preview run `45419341166` independently verified successful build/deploy with exact source SHA.
+- Unified default modal/dialog border, radius and shadow in the shared rule; removed competing app-modal base border/shadow and mobile radius. Preserved markup, visibility and layout. Specialized room/transport/house surfaces remain pending consumer-specific verification. Visual differences in default dialog chrome require manual acceptance. Cache URLs and ownership assertion updated together. No JS or database changes. CI and visual acceptance pending.

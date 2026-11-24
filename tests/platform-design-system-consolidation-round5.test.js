@@ -51,7 +51,9 @@ test('every shared component family has one central contract',()=>{
 
 test('Conference consumes central button card and dialog foundations without base competitors',()=>{
   assert.match(tokens,/\.ui-dialog-backdrop,\.overlay\{/);
-  assert.match(tokens,/\.ui-dialog,\.modal\{width:100%;background:var\(--platform-surface\)\}/);
+  assert.match(tokens,/\.ui-dialog,\.modal\{width:100%;background:var\(--platform-surface\);border:1px solid var\(--platform-border\);border-radius:var\(--platform-radius-lg\);box-shadow:var\(--platform-shadow-dialog\)\}/);
+  assert.doesNotMatch(style,/\.app-modal \.modal\{[^}]*\b(?:border|border-radius|box-shadow):/);
+  assert.doesNotMatch(tokens,/\.modal\{max-width:[^}]*\b(?:border-radius|box-shadow):/);
   assert.doesNotMatch(style,/^\.overlay\{/m);
   assert.doesNotMatch(style,/^\.modal\{/m);
   assert.doesNotMatch(style,/\.transport-toolbar \.btn,\.transport-empty-state \.btn\{[^}]*display:/);
@@ -87,8 +89,8 @@ test('Development reference uses real components without app routing, data, or s
 });
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
-  const shared='shared-design-tokens.css?rev=platform-component-ownership-v3';
-  const pages='style.css?rev=conference-component-ownership-v3';
+  const shared='shared-design-tokens.css?rev=platform-dialog-contract-v4';
+  const pages='style.css?rev=conference-dialog-contract-v4';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));

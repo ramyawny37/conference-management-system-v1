@@ -97,3 +97,5 @@ No separate demo route was introduced. This document and the live Conference/acc
 Round 5 adds `design-system-reference.html` as an isolated Development reference, not an application route. It imports the real shared stylesheet, performs no data reads, registers no module or navigation item, and demonstrates keyboard focus, disabled controls, responsive toolbar/table/dialog layouts, status badges, loading, empty, error, and denied states.
 
 The global `.toast` implementation and the duplicate `.body` declaration were consolidated into their authoritative definitions. Module-scoped Reservations and Warehouse visuals remain because they express active business layouts; their independent token sets are recorded as D — Legacy but Still Required until their runtime consumers can be migrated page by page without visual or behavioral redesign.
+
+The shared `.ui-dialog,.modal` rule owns the default surface, border, radius and shadow; `.app-modal .modal` retains geometry only. Specialized dialog surfaces remain pending a separate consumer-specific audit; the shared mobile radius is centrally owned.
