@@ -407,3 +407,7 @@ Rule counts remain intentionally high because most selectors own functional plac
 ### House library action radius ownership
 - Baseline `32bc68671e4df3de54d040b5371f506d8dc48d16`: CI `45434169425`, `45434168417` PASS; user reported successful publishing.
 - Removed redundant central-radius declaration from scoped house library action group. Kept compact typography, dimensions, wrapping and all handlers. Updated runtime revision and four known cache test contracts, added regression. CI pending; no JS or DB changes.
+
+### Settings control radius
+- Baseline `ed932e56e30d5b342837b8b188e48a1db93901d7`: CI `45434579091`, `45434579203` PASS.
+- Removed local settings button radius; retained geometry and compact typography. Updated runtime revision and known cache test contracts. Remaining action-specific color rules require consumer audit. CI pending; no JS or DB changes.
