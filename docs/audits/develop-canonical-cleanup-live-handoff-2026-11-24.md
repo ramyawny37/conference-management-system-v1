@@ -384,3 +384,5 @@ Rule counts remain intentionally high because most selectors own functional plac
 
 - Baseline `f8b09bfc751baf92de99ffe932094e13a19eca42`; Preview run `45419341166` independently verified successful build/deploy with exact source SHA.
 - Unified default modal/dialog border, radius and shadow in the shared rule; removed competing app-modal base border/shadow and mobile radius. Preserved markup, visibility and layout. Specialized room/transport/house surfaces remain pending consumer-specific verification. Visual differences in default dialog chrome require manual acceptance. Cache URLs and ownership assertion updated together. No JS or database changes. CI and visual acceptance pending.
+
+- CI on `1cf732adb1f83bbb6695ed6a9e7f6f01a7230b9c`: Conference `45421041374` PASS; Reservations `45421041391` FAIL, three stale exact CSS revision expectations in administration sidebar, administration unification and conference round4 tests. Corrected only revision literals to match the already atomic HTML/service-worker URLs; all assertions retained. Successor CI pending.
