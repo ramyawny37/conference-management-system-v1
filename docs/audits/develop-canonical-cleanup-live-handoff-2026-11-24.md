@@ -423,3 +423,10 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Baseline `d5c925f85e7debd445a63f1c08f6bd613acd77c7`: settings-color Conference CI `45440597617` PASS; Reservations run `45440597108` was still in progress when this follow-up started.
 - Removed the remaining local `border-radius:7px` from `#tab0 .accommodation-room-actions .btn`; retained its compact 28px minimum height and all room action layout/handlers. Buttons now inherit the canonical control radius from the shared button owner. No room save/remove/move behavior, family draft behavior, Arabic copy, Cards/print/share, database, `main`, or Production change.
 - Runtime stylesheet revision and four cache-contract tests advanced atomically. CI and Preview provenance pending.
+
+
+### Accommodation detail action base ownership
+- Baseline `213a479766ec77a47bc23d73bfeeeadfb1ab39ff`: Conference CI `45440774922` PASS; Reservations `45440775158` was still in progress at audit time.
+- Removed duplicated base button display/alignment/gap/border declarations from `#tab0 .action-button`; retained accommodation-specific minimum height, flex growth, soft surface/color and shadow. The active button keeps the shared `.btn` base contract and its existing handler.
+- Consumer audit proved `.room-more-actions` is not dead CSS: `script.js` still renders it for room open/close and unassign actions and has Escape/outside-close behavior. It was intentionally not deleted in this visual cleanup; retiring it requires an explicit functional cutover rather than CSS removal.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. No accommodation mutation behavior, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.

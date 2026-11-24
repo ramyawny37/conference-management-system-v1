@@ -17,7 +17,7 @@ const CORE_ASSETS = [
   './index.html',
   './design-system-reference.html',
   './shared-design-tokens.css?rev=platform-soft-controls-v5',
-  './style.css?rev=conference-accommodation-button-radius-v12',
+  './style.css?rev=conference-accommodation-action-button-v13',
   './canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2',
   './modules/reservations/reservations-module.css?rev=reservations-lifecycle-active-only-v4',
   './js/application-routing.js?rev=conference-room-assignments-v1',
