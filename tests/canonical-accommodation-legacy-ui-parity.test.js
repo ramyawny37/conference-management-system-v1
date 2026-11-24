@@ -696,12 +696,17 @@ test('canonical accommodation renderer never dispatches to local room draft writ
   assert.match(local,/if\(!requireLocalOnlyAccommodationMutation\(\)\)return false/);
 });
 
-test('removal success is reported only after refreshed canonical occupancy disappears',()=>{
-  const start=ui.indexOf('function removeCanonicalAccommodation(');
-  const end=ui.indexOf('\nfunction ',start+10);
-  const remove=ui.slice(start,end);
-  assert.match(remove,/canonicalAccommodationMutation\(integration\.removeConferenceAccommodation\([\s\S]*?\),null\)/);
-  assert.match(remove,/if\(result===false\)return false/);
-  assert.match(remove,/if\(findCanonicalAccommodationEntity\('occupancy',occupancy\.occupancyId\)\)/);
-  assert.ok(remove.indexOf("findCanonicalAccommodationEntity('occupancy',occupancy.occupancyId)",remove.indexOf('canonicalAccommodationMutation('))<remove.lastIndexOf("showToast('🗑️ تم حذف النزيل من الغرفة')"));
+test('canonical room removal is staged until the same family draft save',()=>{
+  const remove=ui.slice(ui.indexOf('function removeCanonicalAccommodation('),ui.indexOf('\nfunction ',ui.indexOf('function removeCanonicalAccommodation(')+10));
+  assert.match(remove,/stay\.removed=true/);
+  assert.doesNotMatch(remove,/removeConferenceAccommodation\(|closeRM\(/);
+  const occupant=ui.slice(ui.indexOf('function renderCanonicalAccommodationDetailOccupant('),ui.indexOf('\nfunction ',ui.indexOf('function renderCanonicalAccommodationDetailOccupant(')+10));
+  assert.doesNotMatch(occupant,/closeRM\(\);removeCanonicalAccommodation/);
+  const submit=ui.slice(ui.indexOf('function submitCanonicalAccommodationRoomDraft('),ui.indexOf('\nfunction ',ui.indexOf('function submitCanonicalAccommodationRoomDraft(')+10));
+  assert.match(submit,/operation:'remove'/);
+  assert.match(submit,/saveConferenceFamilyAccommodationDraft/);
+  const save=ui.slice(ui.indexOf('function saveCanonicalAccommodationRoomData('),ui.indexOf('\nfunction ',ui.indexOf('function saveCanonicalAccommodationRoomData(')+10));
+  assert.match(save,/if\(original\.removed\)\{removals\.push/);
+  assert.match(save,/replacements,removals\)/);
+  assert.match(save,/!removals\.length/);
 });
