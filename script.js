@@ -3038,8 +3038,16 @@ function removeCanonicalAccommodation(occupancyId){
   var editor=canonicalAccommodationRoomEditorDraft,roomId=editor&&editor.roomId,modal=ge('roomModal');
   var initialFormState=editor&&modal&&modal.style.display!=='none'?JSON.stringify(Array.from(modal.querySelectorAll('input,select,textarea')).filter(function(field){return !field.disabled;}).map(function(field){return [field.id||field.name||'',field.type==='checkbox'?field.checked:field.value];})):null;
   return runCanonicalAccommodationOccupancyMutation(current.id,occupancy.occupancyId,function(){
-    return canonicalAccommodationMutation(integration.removeConferenceAccommodation(current.id,occupancy.occupancyId,occupancy.revision),'🗑️ تم حذف النزيل من الغرفة').then(function(result){
-      if(result!==false&&initialFormState!==null)refreshCanonicalRoomEditorAfterRemoval(current.id,roomId,occupancy.occupancyId,editor,initialFormState);
+    return canonicalAccommodationMutation(integration.removeConferenceAccommodation(current.id,occupancy.occupancyId,occupancy.revision),null).then(function(result){
+      if(result===false)return false;
+      // A successful RPC response is not proof that the occupancy disappeared.
+      // Check the freshly hydrated canonical projection before reporting success.
+      if(findCanonicalAccommodationEntity('occupancy',occupancy.occupancyId)){
+        showToast('لم يتم تأكيد إزالة النزيل من بيانات التسكين المركزية. أعد تحميل الغرفة وتحقق من العملية.','#E74C3C');
+        return false;
+      }
+      showToast('🗑️ تم حذف النزيل من الغرفة');
+      if(initialFormState!==null)refreshCanonicalRoomEditorAfterRemoval(current.id,roomId,occupancy.occupancyId,editor,initialFormState);
       return result;
     });
   });

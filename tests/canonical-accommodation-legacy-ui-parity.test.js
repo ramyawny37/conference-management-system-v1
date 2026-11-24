@@ -695,3 +695,13 @@ test('canonical accommodation renderer never dispatches to local room draft writ
   const local=ui.slice(ui.indexOf('function saveRoomData('),ui.indexOf('\nfunction ',ui.indexOf('function saveRoomData(')+10));
   assert.match(local,/if\(!requireLocalOnlyAccommodationMutation\(\)\)return false/);
 });
+
+test('removal success is reported only after refreshed canonical occupancy disappears',()=>{
+  const start=ui.indexOf('function removeCanonicalAccommodation(');
+  const end=ui.indexOf('\nfunction ',start+10);
+  const remove=ui.slice(start,end);
+  assert.match(remove,/canonicalAccommodationMutation\(integration\.removeConferenceAccommodation\([\s\S]*?\),null\)/);
+  assert.match(remove,/if\(result===false\)return false/);
+  assert.match(remove,/if\(findCanonicalAccommodationEntity\('occupancy',occupancy\.occupancyId\)\)/);
+  assert.ok(remove.indexOf("findCanonicalAccommodationEntity('occupancy',occupancy.occupancyId)",remove.indexOf('canonicalAccommodationMutation('))<remove.lastIndexOf("showToast('🗑️ تم حذف النزيل من الغرفة')"));
+});
