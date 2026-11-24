@@ -193,3 +193,9 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - User confirmed individual removal and addition/save work after the administrative removal migration and refresh. Combined remove/add in one save is not separately confirmed by the user; isolated PostgreSQL coverage passed.
 - Empty slot text `يُطبّق عند حفظ الغرفة` remains visible after reopening because it is unconditional in the existing template. User explicitly deferred this cosmetic issue; do not change it in this round.
 - Resume central Conference cleanup and design unification, starting with reachability audit of room editor dependencies. Do not remove functions based on naming alone. Preserve accepted accommodation behavior, family rules, cards/print/PNG/WhatsApp, and reservations. Develop and Supabase Development only; no main/Production.
+
+
+### Legacy room editor reachability audit
+- `getCanonicalConferenceCoreLink(id)` returns a canonical link for every nonempty trimmed ID; `requireLocalOnlyAccommodationMutation` throws `LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN` for such a current conference.
+- `openRoomEditor` and `saveRoomData` are guarded local-only paths; the latter writes `current.houses` from `draftHouses` and invokes `save()`. The room settings action still contains a canonical/local conditional. Local transfer and room management helpers also share this guard.
+- `renderRoomEditorFromDraft` and `applyEditorFormToDraftRoom` have local editor and transfer dependencies. Shared DOM and helper dependencies must be audited before deletion. No runtime code changed in this audit. Next: verify conference ID invariants and cross-file callers/tests, then remove the proven dead closure atomically with regression coverage. No Codex used.
