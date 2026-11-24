@@ -90,7 +90,7 @@ test('Development reference uses real components without app routing, data, or s
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
   const shared='shared-design-tokens.css?rev=platform-dialog-contract-v4';
-  const pages='style.css?rev=conference-dialog-contract-v5';
+  const pages='style.css?rev=conference-room-controls-v6';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));
@@ -109,4 +109,8 @@ test('specialized Conference dialog shells inherit central chrome',()=>{
   for(const match of style.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
     if(/(?:\.modal|\.room-editor-modal|\.transport-(?:editor|seat|bulk)-modal)$/.test(match[1].trim()))assert.doesNotMatch(match[2],/\b(?:border|border-radius|background|box-shadow):/,match[1]);
   }
+});
+
+test('room row and footer buttons inherit central control radius',()=>{
+  for(const match of style.matchAll(/#roomModal \.(?:guest-person-row|room-modal-footer) \.btn\{([^{}]*)\}/g))assert.doesNotMatch(match[1],/border-radius:/);
 });

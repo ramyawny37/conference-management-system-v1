@@ -392,3 +392,7 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Removed competing shell border/background/radius/shadow from room, transport, house and general dialogs; retained width, height, layout and header/body styling. Central default and responsive chrome inherited. Updated all four known revision test contracts with HTML and worker. Added shell ownership regression. No operational JS or database change. CI and manual visual acceptance pending; shell colors may differ from baseline.
 
 - Specialized shell commit `552e892867e5e83efabac6515f551e6d0b0503ec`: Conference CI `45429421683` PASS; Reservations `45429422030` FAIL (test 122 requires trailing semicolon after approved 880px max-width). Restored CSS declaration terminator; no computed style or test change. CI pending.
+
+### Room control geometry cleanup
+- Baseline `d3e55ef3fd7807703769f704526409313a165a78`: Reservations CI `45430005086` PASS, Preview `45430423597` PASS exact SHA, user reported no noticeable visual difference.
+- Removed two local button radius declarations in guest rows and room footer; preserved dimensions and padding, inherited central control radius. Updated runtime revision and four known cache test contracts; added radius regression. No JS, DB, cards, printing or sharing changes. CI and preview pending.
