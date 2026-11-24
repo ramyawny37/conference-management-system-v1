@@ -217,3 +217,9 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - Scanned declarations in script.js lines 3769–5380 against the remainder of that file. External references include `cloneHouseTemplateToConference` (10199), `renderActiveRoomsManager` (9344), `openRoomEditor` (6584, liveSearch conditional), `closeRM` (3194, 3550, 3565, canonical), `bindGuestPersonRow` (8993), and `bindChildPersonRow` (9004, 9010). This is a textual intra-file scan, not complete cross-file reachability proof.
 - Reviewed `tests/canonical-accommodation-legacy-ui-parity.test.js`: existing tests explicitly require legacy save-button binding, local guard delegation, and local writer guard. Preserve canonical save/cancel/failure behavior when retiring the legacy closure. Do not weaken tests just to pass.
 - Next: trace person-dialog callbacks, active-room manager, house-template application, HTML event handlers, and cross-file tests on develop. GitHub code search covers default branch only, so it cannot prove develop-wide absence. No runtime deletion or database change in this audit; static/runtime tests and live acceptance remain UNVERIFIED. Deferred Arabic slot text unchanged. No Codex used.
+
+
+### Continued Conference design cleanup — 2026-11-24
+- `962230d229cce9ecb5fc686b4051f3c8ad15c5e9`: removed redundant room body padding override.
+- `4adb9e5eec43fa1d24f0063972d260af1ae46af7`: merged adjacent identical-selector floor title and arrival declarations without changing declaration order or responsive rules.
+- Scope: existing central design, Conference module first; retire competing CSS, preserve mobile/tablet/desktop, operational behavior and print/cards. No new design system. CI and visual acceptance UNVERIFIED. Develop only; no database changes. Remaining card header and other overlapping selectors require cascade and dependency audit before removal.
