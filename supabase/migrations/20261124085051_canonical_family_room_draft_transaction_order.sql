@@ -42,7 +42,13 @@ begin
 
   -- Client revisions were checked under locks before stay mutations.
   -- Re-read revisions after removal because key cleanup may increment them.
-  structure_before_mutation:='if not structure_applied and stay->>''operation''<>''remove'' then
+  structure_before_mutation:='if not structure_applied and stay->>''operation''<>''remove'' and not(
+     stay->>''operation''=''move''
+     and room_draft is not null and jsonb_typeof(room_draft)<>''null''
+     and room_draft->''structure'' is not null and jsonb_typeof(room_draft->''structure'')<>''null''
+     and coalesce((room_draft->''structure''->>''baseCapacity'')::integer,draft_room.base_capacity)<=draft_room.base_capacity
+     and coalesce((room_draft->''structure''->>''extraBedCapacity'')::integer,draft_assignment.extra_bed_capacity)<=draft_assignment.extra_bed_capacity
+   ) then
      if room_draft is not null and jsonb_typeof(room_draft)<>''null'' and room_draft->''structure'' is not null and jsonb_typeof(room_draft->''structure'')<>''null'' then
        perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>''roomId'')::uuid,(select revision from public.conference_accommodation_rooms where id=(room_draft->>''roomId'')::uuid),(select revision from public.conference_room_assignments where conference_id=p_conference and room_id=(room_draft->>''roomId'')::uuid),room_draft->''structure'',''[]''::jsonb,''[]''::jsonb,''[]''::jsonb);
      end if;

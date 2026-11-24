@@ -144,4 +144,7 @@ test('family structure writes use locked revisions after removal can clear the r
   assert.equal((mutations.match(/select revision from public\.conference_accommodation_rooms/g)||[]).length,2);
   assert.doesNotMatch(mutations,/expectedAssignmentRevision/);
   assert.match(migration,/when ''remove'' then 1/);
+  assert.match(mutations,/baseCapacity[\s\S]*draft_room\.base_capacity/);
+  assert.match(mutations,/extraBedCapacity[\s\S]*draft_assignment\.extra_bed_capacity/);
+  assert.match(mutations,/stay->>''operation''=''move''/);
 });
