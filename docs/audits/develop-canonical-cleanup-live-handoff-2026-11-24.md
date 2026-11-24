@@ -450,3 +450,10 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Removed duplicate border/radius/surface ownership from readonly room candidate-filter selects and duplicate border/radius/surface/text/font ownership from canonical child-form fields. Both now inherit the global field contract while retaining their local compact height/padding/box sizing.
 - Retained the transparent search-field composition, hidden room-key select overlay, and settings-account custom focus treatment as intentional specialized consumers rather than deleting them during this accommodation pass.
 - Runtime stylesheet revision and four cache-contract tests advanced atomically. No JS handlers, family draft/mutation behavior, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.
+
+
+### Report subcard base ownership
+- Baseline `90eb4f61e596a3711a25b3de90757ba16a4b8394`: Conference CI `45441325157` PASS; Reservations `45441325072` remained in progress at audit time.
+- Card/table audit preserved intentional compact card geometry in accounts/reports and the transparent wrapper used by the house library. Removed only exact shared-card duplication from `.reports-v3-subcard`: border, surface and shadow now inherit from `.card`; report-specific margin, compact padding and smaller radius remain local.
+- Cards/print/PNG/WhatsApp surfaces were explicitly excluded from this audit and remain untouched.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. No JS/business behavior, Arabic copy, database, `main`, or Production change. CI/Preview pending.
