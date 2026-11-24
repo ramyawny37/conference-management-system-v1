@@ -58,11 +58,13 @@ The central inventory is:
 | Cards and KPI cards | `.card`, `.ui-kpi-grid`, `.ui-kpi` |
 | Tables and pagination | `.ui-table-wrap`, `.ui-table`, `.ui-pagination` |
 | Filters and tabs | `.ui-filters`, `.ui-filter`, `.ui-tabs`, `.ui-tab` |
-| Dialog and confirmation | `.ui-dialog-backdrop`, `.ui-dialog`, `.ui-dialog__actions` |
+| Dialog and confirmation | `.ui-dialog-backdrop`, `.ui-dialog`, `.ui-dialog__actions`; centrally owned `.overlay` / `.modal` compatibility markup for active Conference dialogs |
 | Toast and feedback | `.toast` compatibility owner, `.ui-toast`, `.ui-feedback` |
 | Badges and status | `.ui-badge` and semantic modifiers |
 | Loading / empty / error / denied | `.ui-skeleton`, `.ui-state` and semantic modifiers |
 | Responsive toolbar | `.ui-toolbar` |
+
+Active Conference dialogs keep their established `.overlay > .modal` markup so their JavaScript open/close and focus contracts do not change. Their base backdrop, surface, width, overflow, and shadow ownership nevertheless lives in `shared-design-tokens.css` beside `.ui-dialog*`. `style.css` may scope dialog geometry, headers, bodies, sticky actions, and business-specific sections, but must not recreate the unscoped `.overlay` or `.modal` foundation.
 
 ### 3. Platform shell
 

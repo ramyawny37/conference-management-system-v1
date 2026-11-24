@@ -49,6 +49,23 @@ test('every shared component family has one central contract',()=>{
   assert.match(tokens,/@media\(max-width:600px\)[\s\S]*\.ui-toolbar/);
 });
 
+test('Conference consumes central button card and dialog foundations without base competitors',()=>{
+  assert.match(tokens,/\.ui-dialog-backdrop,\.overlay\{/);
+  assert.match(tokens,/\.ui-dialog,\.modal\{width:100%;background:var\(--platform-surface\)\}/);
+  assert.doesNotMatch(style,/^\.overlay\{/m);
+  assert.doesNotMatch(style,/^\.modal\{/m);
+  assert.doesNotMatch(style,/\.transport-toolbar \.btn,\.transport-empty-state \.btn\{[^}]*display:/);
+  assert.doesNotMatch(style,/\.transport-toolbar \.btn,\.transport-empty-state \.btn\{[^}]*border-radius:/);
+  assert.doesNotMatch(style,/\.reports-v3-actions \.btn\{[^}]*display:/);
+  assert.doesNotMatch(style,/\.reports-v3-actions \.btn\{[^}]*border-radius:/);
+  assert.doesNotMatch(style,/\.settings-accounts-panel \.card\{[^}]*background:/);
+  assert.doesNotMatch(style,/\.settings-accounts-panel \.card\{[^}]*border:/);
+  assert.doesNotMatch(style,/\.accommodation-canonical-summary>\.card\{[^}]*box-shadow:/);
+  assert.doesNotMatch(style,/--room-modal-/);
+  assert.match(style,/\.transport-toolbar \.btn,\.transport-empty-state \.btn\{[^}]*min-height:var\(--platform-compact-touch-target\)/);
+  assert.match(style,/\.settings-accounts-panel \.card\{[^}]*border-radius:var\(--platform-radius-md\)/);
+});
+
 test('Development reference uses real components without app routing, data, or scripts',()=>{
   const dom=new JSDOM(reference,{url:'https://development.invalid/design-system-reference.html'});
   const document=dom.window.document;
@@ -70,8 +87,8 @@ test('Development reference uses real components without app routing, data, or s
 });
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
-  const shared='shared-design-tokens.css?rev=platform-design-cutover-canonical-v2';
-  const pages='style.css?rev=conference-design-cutover-canonical-v2';
+  const shared='shared-design-tokens.css?rev=platform-component-ownership-v3';
+  const pages='style.css?rev=conference-component-ownership-v3';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));

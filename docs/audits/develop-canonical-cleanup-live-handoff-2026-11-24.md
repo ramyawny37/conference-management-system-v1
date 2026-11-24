@@ -328,3 +328,46 @@ The Conference stylesheet grew because the canonical and compact token names are
 - Reservations integration: run `45412373505`, PASS on the implementation SHA.
 - Development Preview: run `45412872313`, PASS. The live `development-preview-sources.json` recorded both `platform.ref` and `platform.sha` as `7e68069c82044386b252354f1ceff4ac9924da6c`; the revisioned token asset returned HTTP 200 with publication timestamp 2026-11-24 14:20 UTC.
 - This evidence update is documentation-only. Its successor SHA must receive the same exact-SHA CI and Preview provenance check before final handoff.
+
+## 2026-11-24 final Conference component-ownership closure
+
+### Baseline and protected acceptance
+
+- Baseline: `c65059ad49e395e3864fb48d598f8770de3751e4`, clean and equal to `origin/develop` before implementation.
+- The previous room-editor retirement, manual remove/add/save acceptance, token cutover, appearance acceptance, CI, and exact-SHA Preview publication remain closed and were not reimplemented.
+- No Arabic copy, accommodation operation, Cards/print/PNG/WhatsApp behavior, Reservations runtime, database, Supabase object, `main`, or Production asset changed.
+
+### Component ownership matrix
+
+| Family | Central owner | Active Conference consumers | Removed local ownership | Retained local declarations and reason | Status |
+| --- | --- | --- | --- | --- | --- |
+| Buttons | `shared-design-tokens.css` `.btn`, `.btn-sm`, semantic variants, focus/disabled states | Accommodation, transport, reports, settings, houses, users, startup and active dialogs | Repeated display/alignment/gap/border/radius declarations in transport toolbar/footer, transport rider/bulk controls, reports actions, room guest buttons, settings/house/user action groups | Width, compact height, padding, wrapping, grid/flex placement, business colors, and mobile touch sizing remain layout/density responsibilities | PASS |
+| Cards and titles | Central `.card` / `.card-title` | Settings accounts, reports, house library, accommodation KPI cards | Repeated border/background/shadow and title color/margins where the central value is effective | Compact padding, local section dividers, KPI grid geometry, specialized radius and functional zero-margin composition remain scoped | PASS |
+| Dialog/backdrop | Central `.ui-dialog*` plus centrally owned active `.overlay` / `.modal` compatibility contract | Static and generated Conference room, transport, house, person, search, account and confirmation dialogs | Unscoped `.overlay` and `.modal` definitions removed from `style.css` | `.app-modal`, headers/bodies, sticky footers, widths and business sections remain scoped; opening, closing, backdrop click, save and focus JavaScript is unchanged | PASS |
+| Fields and choices | Central standard input/select/textarea, focus and disabled contracts | All Conference forms and dialogs | No unsafe broad deletion; duplicate focus ownership remains absent from the unscoped layer | Compact heights, data-entry density, grids and specialized disabled/business states remain scoped where values differ | PASS |
+| Filters, tables, badges and UI states | Central `.ui-*` contracts | Accommodation/search/report/settings surfaces that use those contracts | No competing unscoped `.ui-*` definitions exist in `style.css` | Module selectors retain only data layout, responsive columns, scrolling and semantic state placement | PASS |
+| Room editor tokens | Canonical platform tokens plus room layout in `style.css` | Canonical room details and candidate picker | Removed the invalid `+#roomModal` local token definition and every ineffective `--room-modal-*` consumer; the undefined-variable declarations had no computed-style effect | Room widths, guest column templates, sticky footer, responsive breakpoints and compact row geometry remain functional layout | PASS |
+| Cards/print/share | Existing protected module ownership | Independent Cards tab, Print, PNG, WhatsApp | None in this unit | All component-specific declarations intentionally retained; outside this cleanup scope | PASS |
+
+### Ownership metrics
+
+| Selector family in `style.css` | Before rules / declarations | After rules / declarations |
+| --- | ---: | ---: |
+| `.btn` related | 117 / 364 | 116 / 325 |
+| `.btn-sm` related | 2 / 13 | 2 / 12 |
+| `.card` related | 55 / 212 | 54 / 203 |
+| `.card-title` related | 4 / 15 | 3 / 11 |
+| `.modal` related | 12 / 53 | 11 / 46 |
+
+Rule counts remain intentionally high because most selectors own functional placement, compact density, responsive behavior, or semantic variants rather than the base component appearance. Regression tests now require the unscoped dialog foundation to remain central and reject reintroduction of the confirmed button/card competitors and `--room-modal-*` variables.
+
+### Local verification
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| Syntax / dependencies | PASS | Active JavaScript and service worker parse; CSS braces balance; duplicate-function scan remains zero; active scans find no unscoped `.modal`/`.overlay` owner in `style.css` and no `--room-modal-*` runtime reference. |
+| Focused component and Conference regression | PASS | 62/62 tests, including dialog ownership, compact room geometry, accommodation cards, administration, shell and cache graph. |
+| Development Preview validation | PASS | 659/659 across 88 platform test files (one new ownership regression added to the previous 658-test baseline). |
+| `npm run check` | FAIL (unchanged expected baseline) | 664 PASS and the same 5 prohibited Production promotion/version/cache failures; the extra PASS is the new component-ownership test. |
+| Browser visual automation | BLOCKED | Prohibited by `AGENTS.md`. The user's accepted appearance from the baseline is preserved by declaration-equivalent inheritance and no browser acceptance is claimed for this commit. |
+| Supabase / database | NOT NEEDED | No database, migration, RPC, environment, or operational-data change. |
