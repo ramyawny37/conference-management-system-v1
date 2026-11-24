@@ -211,3 +211,9 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - `0a6a7bf06067ccd7b56a76c60cf1b0abcb3fff2e`: removed two obsolete selection-modal cleanup references.
 - `9801a75bddd211b9c4c13feea32b1cae38cafa61`: removed six exclusive CSS rules and stripped obsolete selectors from thirteen shared rules, preserving completed-conference selectors.
 - CI and preview acceptance pending; no database change. Legacy room editor removal remains pending dependency/test review.
+
+### Continued dependency audit (2026-11-24)
+- Verified develop HEAD `413a4f00a49ca908c74869b3f5c5458f9e986139`. Combined status and PR-filtered workflow lookup returned empty; current push CI and preview remain UNVERIFIED.
+- Scanned declarations in script.js lines 3769–5380 against the remainder of that file. External references include `cloneHouseTemplateToConference` (10199), `renderActiveRoomsManager` (9344), `openRoomEditor` (6584, liveSearch conditional), `closeRM` (3194, 3550, 3565, canonical), `bindGuestPersonRow` (8993), and `bindChildPersonRow` (9004, 9010). This is a textual intra-file scan, not complete cross-file reachability proof.
+- Reviewed `tests/canonical-accommodation-legacy-ui-parity.test.js`: existing tests explicitly require legacy save-button binding, local guard delegation, and local writer guard. Preserve canonical save/cancel/failure behavior when retiring the legacy closure. Do not weaken tests just to pass.
+- Next: trace person-dialog callbacks, active-room manager, house-template application, HTML event handlers, and cross-file tests on develop. GitHub code search covers default branch only, so it cannot prove develop-wide absence. No runtime deletion or database change in this audit; static/runtime tests and live acceptance remain UNVERIFIED. Deferred Arabic slot text unchanged. No Codex used.
