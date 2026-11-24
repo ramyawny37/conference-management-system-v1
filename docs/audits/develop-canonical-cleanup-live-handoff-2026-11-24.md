@@ -403,3 +403,7 @@ Rule counts remain intentionally high because most selectors own functional plac
 
 ### Report action soft button ownership
 - Moved existing report soft surface and semantic color rules to shared `.btn-soft` variant; three report buttons opt in explicitly. Preserved report geometry and handlers. Updated runtime cache revisions and known test contracts. CI pending; hover specificity and visual acceptance require verification. No DB or protected cards changes.
+
+### House library action radius ownership
+- Baseline `32bc68671e4df3de54d040b5371f506d8dc48d16`: CI `45434169425`, `45434168417` PASS; user reported successful publishing.
+- Removed redundant central-radius declaration from scoped house library action group. Kept compact typography, dimensions, wrapping and all handlers. Updated runtime revision and four known cache test contracts, added regression. CI pending; no JS or DB changes.

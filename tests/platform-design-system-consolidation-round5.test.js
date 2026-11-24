@@ -90,7 +90,7 @@ test('Development reference uses real components without app routing, data, or s
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
   const shared='shared-design-tokens.css?rev=platform-soft-controls-v5';
-  const pages='style.css?rev=conference-report-controls-v8';
+  const pages='style.css?rev=conference-house-controls-v9';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));
@@ -122,4 +122,10 @@ test('retired child section title button chrome does not return',()=>{
 test('report actions use shared soft button chrome',()=>{
   assert.match(tokens,/\.btn\.btn-soft\{/);
   assert.doesNotMatch(style,/\.reports-v3-actions \.btn(?:-green|-blue|-purple|:hover)\{/);
+});
+
+test('house library action buttons inherit central radius',()=>{
+  const rules=[...style.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(m=>m[1].includes('.settings-library-section .house-')&&m[1].includes('.btn'));
+  assert.ok(rules.length>0);
+  for(const rule of rules)assert.doesNotMatch(rule[2],/border-radius:/);
 });
