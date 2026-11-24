@@ -223,3 +223,10 @@ No `main`, Production, Vercel, React, operational guest data, or independent Car
 - `962230d229cce9ecb5fc686b4051f3c8ad15c5e9`: removed redundant room body padding override.
 - `4adb9e5eec43fa1d24f0063972d260af1ae46af7`: merged adjacent identical-selector floor title and arrival declarations without changing declaration order or responsive rules.
 - Scope: existing central design, Conference module first; retire competing CSS, preserve mobile/tablet/desktop, operational behavior and print/cards. No new design system. CI and visual acceptance UNVERIFIED. Develop only; no database changes. Remaining card header and other overlapping selectors require cascade and dependency audit before removal.
+
+
+### Conference CSS cleanup continuation — 2026-11-24
+- `be47cb90f365e30444c18574fe90942c8fc981a2`: consolidated adjacent accommodation occupancy badge and house metric declarations; CI run `45389615497` succeeded.
+- `9027ac2e9927e1f8c49ec6cdadeecece9e5fbf56`: removed the superseded first `gap:var(--app-space-2)` declaration from `.accommodation-dashboard .accommodation-house-metrics`; the effective later `gap:4px`, grid columns and flex behavior remain unchanged.
+- No renderer, operational behavior, breakpoint, mobile/tablet rule, or Supabase object changed. This is a cascade-preserving cleanup only.
+- Pending: verify exact-SHA CI and Development Preview for `9027ac2`; continue whole-module CSS ownership/dependency audit. Visual acceptance remains pending; no claim of full legacy-design removal.
