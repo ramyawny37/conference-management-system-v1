@@ -148,3 +148,14 @@ test('family structure writes use locked revisions after removal can clear the r
   assert.match(mutations,/extraBedCapacity[\s\S]*draft_assignment\.extra_bed_capacity/);
   assert.match(mutations,/stay->>''operation''=''move''/);
 });
+
+test('administrative removal is truthful and remains distinct from participation lifecycle cleanup',()=>{
+  const migration=fs.readFileSync('supabase/migrations/20261124101624_administrative_accommodation_removal_contract.sql','utf8');
+  const cleanup=migration.slice(migration.indexOf('create or replace function platform_private.cleanup_conference_accommodation_for_participation'),migration.indexOf('create or replace function public.remove_conference_accommodation'));
+  const removal=migration.slice(migration.indexOf('create or replace function public.remove_conference_accommodation'),migration.indexOf('revoke all on function platform_private.cleanup_conference_accommodation_for_participation'));
+  assert.match(cleanup,/if p_cause='accommodation_removed' then\s+delete from public\.conference_accommodation_occupancies/);
+  assert.match(cleanup,/elsif item\.arrival_day>=effective_day/);
+  assert.match(cleanup,/'administrativeCorrection',p_cause='accommodation_removed'/);
+  assert.match(removal,/ACCOMMODATION_REMOVAL_NOT_APPLIED/);
+  assert.doesNotMatch(removal,/cleanup_conference_transport_for_participation/);
+});
