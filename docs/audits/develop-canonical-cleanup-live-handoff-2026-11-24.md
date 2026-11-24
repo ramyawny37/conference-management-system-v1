@@ -36,3 +36,8 @@
 
 ## Execution protocol
 After each commit append: UTC date, changed paths, why safe, exact SHA, test commands, GitHub Actions run ID/result, and outstanding FAIL/UNVERIFIED. Never label a read-only review as implementation. Do not delete existing evidence when updating this file.
+
+## 2026-11-24 follow-up
+- `2c174a52fc0b579e01a6019b552dc5e73ff8cd7c`: added this persistent in-repository handoff. No runtime code changes.
+- `8d4c708011cbe4d9a7da6ca67ed1c5752358bdc5`: added source-boundary regression asserting canonical accommodation rendering cannot call the local room editor/writer, and that the local writer retains its guard. **CI not yet confirmed at the time of this entry**.
+- The legacy room editor and shared modal have **not** been deleted. Visual/device-session acceptance remains **UNVERIFIED**.
