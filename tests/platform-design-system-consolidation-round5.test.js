@@ -90,7 +90,7 @@ test('Development reference uses real components without app routing, data, or s
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
   const shared='shared-design-tokens.css?rev=platform-soft-controls-v5';
-  const pages='style.css?rev=conference-report-subcard-base-v17';
+  const pages='style.css?rev=conference-empty-state-cutover-v18';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));

@@ -457,3 +457,10 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Card/table audit preserved intentional compact card geometry in accounts/reports and the transparent wrapper used by the house library. Removed only exact shared-card duplication from `.reports-v3-subcard`: border, surface and shadow now inherit from `.card`; report-specific margin, compact padding and smaller radius remain local.
 - Cards/print/PNG/WhatsApp surfaces were explicitly excluded from this audit and remain untouched.
 - Runtime stylesheet revision and four cache-contract tests advanced atomically. No JS/business behavior, Arabic copy, database, `main`, or Production change. CI/Preview pending.
+
+
+### Shared empty-state cutover
+- Baseline `a731495b95f0174b763e6c4dbba323450bf9c75e`: Conference CI `45441545890` PASS; Reservations `45441545904` remained in progress at audit time.
+- Audited accounts/report tables and preserved their intentional specialized density/header/zebra styling instead of forcing `.ui-table` and changing accepted visuals.
+- Migrated generated `settings-empty-state` markup to also consume canonical `.ui-state`. The legacy class now owns only compact min-height/padding/font-size adaptation; shared state owns surface, border, radius, color and alignment. Arabic copy/state semantics unchanged.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. Cards/print/PNG/WhatsApp, business handlers, database, `main`, Production untouched. CI/Preview pending.

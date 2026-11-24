@@ -1260,9 +1260,9 @@ function isConferenceHydrationDenied(error){var code=String(error&&error.code||e
 function renderConferenceTabHydrationState(tabId,state){
   var target=ge('tab'+tabId);
   if(!target)return false;
-  if(state.status==='loading')target.innerHTML='<div class="settings-empty-state" role="status" aria-busy="true">جارٍ تحميل البيانات المحدثة...</div>';
-  else if(state.status==='denied')target.innerHTML='<div class="settings-empty-state" role="alert">ليس لديك صلاحية تحميل بيانات هذا القسم.</div>';
-  else target.innerHTML='<div class="settings-empty-state" role="alert">تعذر تحميل البيانات المحدثة. <button type="button" class="btn btn-blue btn-sm" onclick="retryConferenceTabHydration('+Number(tabId)+')">إعادة المحاولة</button></div>';
+  if(state.status==='loading')target.innerHTML='<div class="ui-state settings-empty-state" role="status" aria-busy="true">جارٍ تحميل البيانات المحدثة...</div>';
+  else if(state.status==='denied')target.innerHTML='<div class="ui-state settings-empty-state" role="alert">ليس لديك صلاحية تحميل بيانات هذا القسم.</div>';
+  else target.innerHTML='<div class="ui-state settings-empty-state" role="alert">تعذر تحميل البيانات المحدثة. <button type="button" class="btn btn-blue btn-sm" onclick="retryConferenceTabHydration('+Number(tabId)+')">إعادة المحاولة</button></div>';
   return true;
 }
 function retryConferenceTabHydration(tabId){
@@ -1330,7 +1330,7 @@ function renderConferenceTabContent(n){
     return true;
   }catch(error){
     var target=ge('tab'+n);
-    if(target)target.innerHTML='<div class="settings-empty-state" role="alert">تعذر تحميل محتوى الصفحة.</div>';
+    if(target)target.innerHTML='<div class="ui-state settings-empty-state" role="alert">تعذر تحميل محتوى الصفحة.</div>';
     if(window.console&&typeof window.console.error==='function')window.console.error('CONFERENCE_TAB_RENDER_FAILED',error);
     return false;
   }
@@ -1471,7 +1471,7 @@ function renderV3AccommodationReport(context){
   html+='</div>';
   html+='<div class="card reports-v3-subcard"><div class="card-title">جدول الليالي</div><div class="reports-v3-table-scroll"><table><thead><tr><th>الليلة</th><th>من</th><th>إلى</th><th>الأشخاص</th><th>الغرف المشغولة</th><th>نسبة الإشغال</th><th>التكلفة</th></tr></thead><tbody>';
   if(!(summary.dailySummary||[]).length){
-    html+='<tr><td colspan="7" class="settings-empty-state">لا توجد ليالٍ في جدول المؤتمر.</td></tr>';
+    html+='<tr><td colspan="7" class="ui-state settings-empty-state">لا توجد ليالٍ في جدول المؤتمر.</td></tr>';
   }else{
     summary.dailySummary.forEach(function(item){
       html+='<tr><td>ليلة '+item.night+'</td><td>'+esc(formatConferenceScheduleDate(item.date))+'</td><td>'+esc(formatConferenceScheduleDate(item.nextDate))+'</td><td>'+item.persons+'</td><td>'+item.occupiedRooms+'</td><td>'+Math.round((item.occupancyRate||0)*100)/100+'%</td><td>'+formatAccountMoney(item.cost)+'</td></tr>';
@@ -1482,7 +1482,7 @@ function renderV3AccommodationReport(context){
   if(selectedNight)accommodationReportNightDay=selectedNight.day;
   html+='<div class="card reports-v3-subcard"><div class="card-title">الكشف الليلي التفصيلي</div>';
   if(!selectedNight){
-    html+='<div class="settings-empty-state">لا توجد ليلة متاحة للعرض.</div>';
+    html+='<div class="ui-state settings-empty-state">لا توجد ليلة متاحة للعرض.</div>';
   }else{
     html+='<div class="row no-print"><button type="button" class="btn btn-gray btn-sm" onclick="changeAccommodationReportNight(-1)">الليلة السابقة</button><select onchange="setAccommodationReportNight(this.value)">';
     (summary.dailySummary||[]).forEach(function(item){html+='<option value="'+item.day+'" '+(item.day===selectedNight.day?'selected':'')+'>ليلة '+item.night+' — '+esc(formatConferenceScheduleDate(item.date))+'</option>';});
@@ -1492,13 +1492,13 @@ function renderV3AccommodationReport(context){
     html+='<div class="reports-v3-metrics-grid"><div class="reports-v3-metric"><span>الغرف المخصصة</span><strong>'+roomRows.length+'</strong></div><div class="reports-v3-metric"><span>الغرف المشغولة</span><strong>'+occupiedRows.length+'</strong></div><div class="reports-v3-metric"><span>الغرف الفارغة</span><strong>'+Math.max(0,roomRows.length-occupiedRows.length-closedRows.length)+'</strong></div><div class="reports-v3-metric"><span>الغرف المغلقة</span><strong>'+closedRows.length+'</strong></div><div class="reports-v3-metric"><span>النزلاء</span><strong>'+(baseOccupied+extraOccupied)+'</strong></div><div class="reports-v3-metric"><span>المتاح الأساسي</span><strong>'+Math.max(0,baseCapacity-baseOccupied)+'</strong></div><div class="reports-v3-metric"><span>المتاح الإضافي</span><strong>'+Math.max(0,extraCapacity-extraOccupied)+'</strong></div></div>';
     html+='<div class="reports-v3-table-scroll"><table><thead><tr><th>البيت</th><th>الدور</th><th>الغرفة</th><th>السعة الأساسية</th><th>الإضافية</th><th>النزلاء</th><th>المتاح</th></tr></thead><tbody>';
     occupiedRows.forEach(function(room){html+='<tr><td>'+esc(room.houseName)+'</td><td>'+esc(room.floorName)+'</td><td>'+esc(room.roomNumber)+'</td><td>'+room.baseCapacity+'</td><td>'+room.extraBedCapacity+'</td><td>'+room.members.map(function(person){return esc(person.name||'')+(person.bedType==='extra'?' — سرير إضافي':'');}).join('<br>')+'</td><td>'+Math.max(0,room.availableBaseBeds+room.availableExtraBeds)+'</td></tr>';});
-    if(!occupiedRows.length)html+='<tr><td colspan="7" class="settings-empty-state">لا توجد غرف مشغولة في الليلة المختارة.</td></tr>';
+    if(!occupiedRows.length)html+='<tr><td colspan="7" class="ui-state settings-empty-state">لا توجد غرف مشغولة في الليلة المختارة.</td></tr>';
     html+='</tbody></table></div>';
   }
   html+='</div>';
   html+='<div class="card reports-v3-subcard"><div class="card-title">جدول الأيام</div><div class="reports-v3-table-scroll"><table><thead><tr><th>اليوم</th><th>التاريخ</th><th>الأشخاص</th><th>الغرف المشغولة</th><th>التكلفة</th></tr></thead><tbody>';
   if(!(summary.daySummary||[]).length){
-    html+='<tr><td colspan="5" class="settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
+    html+='<tr><td colspan="5" class="ui-state settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
   }else{
     summary.daySummary.forEach(function(item){
       html+='<tr><td>اليوم '+item.dayNumber+'</td><td>'+esc(formatConferenceScheduleDate(item.date))+'</td><td>'+item.persons+'</td><td>'+item.occupiedRooms+'</td><td>'+formatAccountMoney(item.cost)+'</td></tr>';
@@ -1543,7 +1543,7 @@ function renderV3AirConditioningReport(context){
   html+='</div>';
   html+='<div class="card reports-v3-subcard"><div class="card-title">جدول الأيام</div><div class="reports-v3-table-scroll"><table><thead><tr><th>اليوم</th><th>التاريخ</th><th>الأشخاص</th><th>الغرف</th><th>الأجهزة</th><th>التكلفة</th></tr></thead><tbody>';
   if(!(summary.daySummary||[]).length){
-    html+='<tr><td colspan="6" class="settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
+    html+='<tr><td colspan="6" class="ui-state settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
   }else{
     summary.daySummary.forEach(function(item){
       html+='<tr><td>اليوم '+item.dayNumber+'</td><td>'+esc(formatConferenceScheduleDate(item.date))+'</td><td>'+item.persons+'</td><td>'+item.rooms+'</td><td>'+item.units+'</td><td>'+formatAccountMoney(item.cost)+'</td></tr>';
@@ -1572,7 +1572,7 @@ function renderV3RestaurantReport(context){
   html+='</div>';
   html+='<div class="card reports-v3-subcard"><div class="card-title">جدول الوجبات الحالي</div><div class="reports-v3-table-scroll"><table><thead><tr><th>اليوم</th><th>التاريخ</th><th>الإفطار</th><th>الغداء</th><th>العشاء</th><th>إجمالي اليوم</th></tr></thead><tbody>';
   if(!(summary.days||[]).length){
-    html+='<tr><td colspan="6" class="settings-empty-state">لا توجد بيانات وجبات حالية.</td></tr>';
+    html+='<tr><td colspan="6" class="ui-state settings-empty-state">لا توجد بيانات وجبات حالية.</td></tr>';
   }else{
     summary.days.forEach(function(day){
       html+='<tr><td>اليوم '+day.day+'</td><td>'+esc(formatConferenceScheduleDate(day.date))+'</td><td>'+formatAccountMoney(day.meals.breakfast.total)+'<div class="reports-v3-cell-note">'+day.meals.breakfast.finalCount+' × '+formatAccountMoney(day.meals.breakfast.price)+'</div></td><td>'+formatAccountMoney(day.meals.lunch.total)+'<div class="reports-v3-cell-note">'+day.meals.lunch.finalCount+' × '+formatAccountMoney(day.meals.lunch.price)+'</div></td><td>'+formatAccountMoney(day.meals.dinner.total)+'<div class="reports-v3-cell-note">'+day.meals.dinner.finalCount+' × '+formatAccountMoney(day.meals.dinner.price)+'</div></td><td>'+formatAccountMoney(day.total)+'</td></tr>';
@@ -1596,7 +1596,7 @@ function renderV3Reports(){
   if(!container)return;
   var conference=getCurrentConference();
   if(!conference){
-    container.innerHTML='<div class="settings-dashboard"><div class="settings-empty-state">لا توجد بيانات مؤتمر جاهزة حاليًا.</div></div>';
+    container.innerHTML='<div class="settings-dashboard"><div class="ui-state settings-empty-state">لا توجد بيانات مؤتمر جاهزة حاليًا.</div></div>';
     return;
   }
   var context=getV3ReportsContext(conference);
@@ -6892,7 +6892,7 @@ function renderActivityLog(){
     if(!search)return true;
     return String((entry.title||'')+' '+(entry.details||'')).toLowerCase().indexOf(search)!==-1;
   });
-  if(!entries.length){list.innerHTML='<div class="settings-empty-state">لا توجد عمليات مسجلة حتى الآن</div>';return}
+  if(!entries.length){list.innerHTML='<div class="ui-state settings-empty-state">لا توجد عمليات مسجلة حتى الآن</div>';return}
   var h='';
   entries.forEach(function(entry){
     var createdAt=new Date(entry.createdAt||'');
@@ -7029,7 +7029,7 @@ function renderAccommodationV3Settings(conference){
   html+='</div>';
   html+='<div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>الليلة</th><th>من</th><th>إلى</th><th>الأشخاص</th><th>الغرف المشغولة</th><th>نسبة الإشغال</th><th>تكلفة الليلة</th></tr></thead><tbody>';
   if(!summary.dailySummary.length){
-    html+='<tr><td colspan="7" class="settings-empty-state">لا توجد ليالٍ في جدول المؤتمر.</td></tr>';
+    html+='<tr><td colspan="7" class="ui-state settings-empty-state">لا توجد ليالٍ في جدول المؤتمر.</td></tr>';
   }else{
     summary.dailySummary.forEach(function(item){
       html+='<tr><td>ليلة '+item.night+'</td><td>'+esc(formatConferenceScheduleDate(item.date))+'</td><td>'+esc(formatConferenceScheduleDate(item.nextDate))+'</td><td>'+item.persons+'</td><td>'+item.occupiedRooms+'</td><td>'+Math.round(item.occupancyRate*100)/100+'%</td><td>'+esc(item.cost)+'</td></tr>';
@@ -7039,7 +7039,7 @@ function renderAccommodationV3Settings(conference){
   html+='<div class="settings-section-title" style="margin-top:12px">جدول أيام الإقامة</div>';
   html+='<div style="overflow-x:auto;margin-top:8px"><table><thead><tr><th>اليوم</th><th>التاريخ</th><th>الأشخاص</th><th>الغرف المشغولة</th><th>تكلفة اليوم</th></tr></thead><tbody>';
   if(!summary.daySummary.length){
-    html+='<tr><td colspan="5" class="settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
+    html+='<tr><td colspan="5" class="ui-state settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
   }else{
     summary.daySummary.forEach(function(item){
       html+='<tr><td>اليوم '+item.dayNumber+'</td><td>'+esc(formatConferenceScheduleDate(item.date))+'</td><td>'+item.persons+'</td><td>'+item.occupiedRooms+'</td><td>'+esc(item.cost)+'</td></tr>';
@@ -7134,7 +7134,7 @@ function renderAirConditioningV3Settings(conference){
   html+='</div>';
   html+='<div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>اليوم</th><th>التاريخ</th><th>الأشخاص</th><th>الغرف</th><th>الأجهزة</th><th>التكلفة</th></tr></thead><tbody>';
   if(!summary.daySummary.length){
-    html+='<tr><td colspan="6" class="settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
+    html+='<tr><td colspan="6" class="ui-state settings-empty-state">لا توجد أيام في جدول المؤتمر.</td></tr>';
   }else{
     summary.daySummary.forEach(function(item){
       html+='<tr><td>اليوم '+item.dayNumber+'</td><td>'+esc(formatConferenceScheduleDate(item.date))+'</td><td>'+item.persons+'</td><td>'+item.rooms+'</td><td>'+item.units+'</td><td>'+esc(item.cost)+'</td></tr>';
@@ -7181,7 +7181,7 @@ function renderSettings(){
     return;
   }
   if (!current) {
-    h += '<div class="settings-empty-state">يرجى اختيار مؤتمر أو إنشاء مؤتمر جديد أولًا لعرض هذا القسم.</div></div>';
+    h += '<div class="ui-state settings-empty-state">يرجى اختيار مؤتمر أو إنشاء مؤتمر جديد أولًا لعرض هذا القسم.</div></div>';
     ge('tab6').innerHTML = h;
     mountSyncSettingsSection();
     refreshDeviceAuthorizationAdministration();
@@ -7245,7 +7245,7 @@ function renderSettings(){
     });
     h+='</div>';
   } else {
-    h+='<div class="settings-empty-state">لا توجد قوالب محفوظة</div>';
+    h+='<div class="ui-state settings-empty-state">لا توجد قوالب محفوظة</div>';
   }
   h+='</div></section>';
   h += renderTrashSection();
@@ -7298,11 +7298,11 @@ function renderPeopleDatabaseSection(){
   if(canManage)h += '<button class="btn btn-purple" onclick="openPersonDialog()" '+(linked&&!canonicalState?'disabled':'')+'>➕ إضافة شخص جديد</button>';
   h += '</div>';
   if(linked&&!canView){
-    h += '<div class="settings-empty-state" role="alert">ليس لديك صلاحية مشاهدة الأشخاص.</div>';
+    h += '<div class="ui-state settings-empty-state" role="alert">ليس لديك صلاحية مشاهدة الأشخاص.</div>';
   } else if(linked&&!canonicalState){
-    h += '<div class="settings-empty-state" role="alert">تعذر تحميل بيانات الأشخاص. <button type="button" class="btn btn-blue btn-sm" onclick="retryCanonicalConferencePeople()">إعادة المحاولة</button></div>';
+    h += '<div class="ui-state settings-empty-state" role="alert">تعذر تحميل بيانات الأشخاص. <button type="button" class="btn btn-blue btn-sm" onclick="retryCanonicalConferencePeople()">إعادة المحاولة</button></div>';
   } else if(!people.length){
-    h += '<div class="settings-empty-state">لا توجد بيانات أشخاص بعد.</div>';
+    h += '<div class="ui-state settings-empty-state">لا توجد بيانات أشخاص بعد.</div>';
   } else {
     h += '<div class="settings-list settings-people-list">';
     people.slice().reverse().forEach(function(p){
