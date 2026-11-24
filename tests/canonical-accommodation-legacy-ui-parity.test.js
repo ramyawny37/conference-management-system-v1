@@ -645,3 +645,23 @@ test('linked conferences reject legacy accommodation writes before local mutatio
   assert.equal(context.requireLocalOnlyAccommodationMutation(),true);
   assert.equal(localAuthorizationCalls,1,'local-only compatibility path must still delegate to its original authorization');
 });
+
+
+test('retired local accommodation mutation entry points do not return',()=>{
+  const retired=[
+    'setAccommodationPersonArrival',
+    'setAccommodationRoomKeyHolder',
+    'removeConferenceHouseFromAccommodation',
+    'clearConferenceRoom',
+    'toggleConferenceRoomClosed',
+    'deleteConferenceRoom',
+    'applyConferenceHouseTemplate',
+    'partialTransferGuest'
+  ];
+  for(const name of retired){
+    assert.doesNotMatch(ui,new RegExp('\\bfunction\\s+'+name+'\\s*\\('),name);
+  }
+  assert.match(ui,/function requireLocalOnlyAccommodationMutation\(\)/);
+  assert.match(ui,/LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN/);
+  assert.match(ui,/function renderCanonicalAccommodation\(/);
+});
