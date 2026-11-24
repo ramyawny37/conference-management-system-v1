@@ -671,3 +671,14 @@ test('local room key reconciliation remains connected to persistence',()=>{
   assert.match(ui,/function reconcileAccommodationRoomKeyHolders\(conference\)/);
   assert.match(state,/function save\(options\)[\s\S]*?reconcileAccommodationRoomKeyHolders\(getCurrentConference\(\)\)/);
 });
+
+test('retired local house modal cannot reappear beside the canonical house directory',()=>{
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  for(const name of ['openHouseModal','closeHouseModal','saveHouse','deleteHouse']){
+    assert.doesNotMatch(ui,new RegExp('\\bfunction\\s+'+name+'\\s*\\('),name);
+  }
+  assert.doesNotMatch(html,/id="houseModal"|id="house_name"|id="delHouseBtn"/);
+  assert.match(ui,/function canonicalHouseDirectoryDialog\(/);
+  assert.match(ui,/function deleteCanonicalHouse\(/);
+  assert.match(ui,/function renderCanonicalAccommodation\(/);
+});
