@@ -320,3 +320,11 @@ The Conference stylesheet grew because the canonical and compact token names are
 | `npm run check` | FAIL (unchanged baseline/out of scope) | 663 PASS, 5 FAIL: the same prohibited Production promotion/public-config/version/cache requirements; no new failure was introduced. |
 | Browser visual acceptance | BLOCKED | `AGENTS.md` prohibits browser and automated UI tests. User must perform the final Desktop/Tablet/Mobile review after exact-SHA Preview publication. |
 | Supabase / database | NOT NEEDED | No schema, RPC, migration, environment, or operational data change. |
+
+### Implementation CI and Preview evidence
+
+- Implementation commit: `7e68069c82044386b252354f1ceff4ac9924da6c` (`refactor(conference): complete canonical design token cutover`).
+- Conference canonical people flow: run `45412373703`, PASS on the implementation SHA.
+- Reservations integration: run `45412373505`, PASS on the implementation SHA.
+- Development Preview: run `45412872313`, PASS. The live `development-preview-sources.json` recorded both `platform.ref` and `platform.sha` as `7e68069c82044386b252354f1ceff4ac9924da6c`; the revisioned token asset returned HTTP 200 with publication timestamp 2026-11-24 14:20 UTC.
+- This evidence update is documentation-only. Its successor SHA must receive the same exact-SHA CI and Preview provenance check before final handoff.
