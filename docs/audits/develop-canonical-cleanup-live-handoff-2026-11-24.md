@@ -41,3 +41,9 @@ After each commit append: UTC date, changed paths, why safe, exact SHA, test com
 - `2c174a52fc0b579e01a6019b552dc5e73ff8cd7c`: added this persistent in-repository handoff. No runtime code changes.
 - `8d4c708011cbe4d9a7da6ca67ed1c5752358bdc5`: added source-boundary regression asserting canonical accommodation rendering cannot call the local room editor/writer, and that the local writer retains its guard. **CI not yet confirmed at the time of this entry**.
 - The legacy room editor and shared modal have **not** been deleted. Visual/device-session acceptance remains **UNVERIFIED**.
+
+### Verified CI for canonical renderer boundary
+- `8d4c708011cbe4d9a7da6ca67ed1c5752358bdc5` -> GitHub Actions `45350095936` **SUCCESS** (verified after completion).
+- `2c174a52fc0b579e01a6019b552dc5e73ff8cd7c` -> GitHub Actions `45349899007` **SUCCESS**.
+- Source reachability observation: `openRoomEditor` still appears in a local room action constructed outside the active `renderAccommodation()` entry point. It is **not** safe to remove without mapping all callers and tests. Canonical entry point still calls only `renderCanonicalAccommodation()`.
+- Next execution: replace or retire remaining legacy room actions and draft helpers only as a coherent tested unit; live approved-device smoke and visual acceptance still **UNVERIFIED**.
