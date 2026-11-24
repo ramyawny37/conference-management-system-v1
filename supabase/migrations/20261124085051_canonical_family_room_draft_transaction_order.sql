@@ -40,9 +40,11 @@ begin
     'for stay in select value from jsonb_array_elements(p_payload->''stays'') loop',
     ordered_loop);
 
+  -- Client revisions were checked under locks before stay mutations.
+  -- Re-read revisions after removal because key cleanup may increment them.
   structure_before_mutation:='if not structure_applied and stay->>''operation''<>''remove'' then
      if room_draft is not null and jsonb_typeof(room_draft)<>''null'' and room_draft->''structure'' is not null and jsonb_typeof(room_draft->''structure'')<>''null'' then
-       perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>''roomId'')::uuid,(room_draft->>''expectedRevision'')::bigint,(room_draft->>''expectedAssignmentRevision'')::bigint,room_draft->''structure'',''[]''::jsonb,''[]''::jsonb,''[]''::jsonb);
+       perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>''roomId'')::uuid,(select revision from public.conference_accommodation_rooms where id=(room_draft->>''roomId'')::uuid),(select revision from public.conference_room_assignments where conference_id=p_conference and room_id=(room_draft->>''roomId'')::uuid),room_draft->''structure'',''[]''::jsonb,''[]''::jsonb,''[]''::jsonb);
      end if;
      structure_applied:=true;
    end if;
@@ -55,7 +57,7 @@ begin
   structure_after_mutations:='end loop;
  if not structure_applied then
    if room_draft is not null and jsonb_typeof(room_draft)<>''null'' and room_draft->''structure'' is not null and jsonb_typeof(room_draft->''structure'')<>''null'' then
-     perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>''roomId'')::uuid,(room_draft->>''expectedRevision'')::bigint,(room_draft->>''expectedAssignmentRevision'')::bigint,room_draft->''structure'',''[]''::jsonb,''[]''::jsonb,''[]''::jsonb);
+     perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>''roomId'')::uuid,(select revision from public.conference_accommodation_rooms where id=(room_draft->>''roomId'')::uuid),(select revision from public.conference_room_assignments where conference_id=p_conference and room_id=(room_draft->>''roomId'')::uuid),room_draft->''structure'',''[]''::jsonb,''[]''::jsonb,''[]''::jsonb);
    end if;
    structure_applied:=true;
  end if;
