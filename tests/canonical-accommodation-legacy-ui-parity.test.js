@@ -665,3 +665,9 @@ test('retired local accommodation mutation entry points do not return',()=>{
   assert.match(ui,/LINKED_CONFERENCE_LEGACY_ACCOMMODATION_FORBIDDEN/);
   assert.match(ui,/function renderCanonicalAccommodation\(/);
 });
+
+test('local room key reconciliation remains connected to persistence',()=>{
+  const state=fs.readFileSync(path.join(root,'state.js'),'utf8');
+  assert.match(ui,/function reconcileAccommodationRoomKeyHolders\(conference\)/);
+  assert.match(state,/function save\(options\)[\s\S]*?reconcileAccommodationRoomKeyHolders\(getCurrentConference\(\)\)/);
+});
