@@ -396,3 +396,7 @@ Rule counts remain intentionally high because most selectors own functional plac
 ### Room control geometry cleanup
 - Baseline `d3e55ef3fd7807703769f704526409313a165a78`: Reservations CI `45430005086` PASS, Preview `45430423597` PASS exact SHA, user reported no noticeable visual difference.
 - Removed two local button radius declarations in guest rows and room footer; preserved dimensions and padding, inherited central control radius. Updated runtime revision and four known cache test contracts; added radius regression. No JS, DB, cards, printing or sharing changes. CI and preview pending.
+
+### Retired child title button styling
+- Baseline `5a66e9708caf6c256f49da6ea52364adbaba85a9`: CI runs `45431811750` and `45431811715` PASS.
+- Inspected index child heading and script canonical addFamilyChildButton: active button is `btn btn-blue btn-sm` nested in `canonical-room-family-draft-actions` in guest heading, not direct child of child section heading. Removed two obsolete selector rules, no JS or markup change. Updated cache contracts and regression. CI pending. Report action color overrides remain for separate visual review.
