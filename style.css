@@ -1269,7 +1269,7 @@ tr:nth-child(even) td{background:#F7FBFF}
 /* Canonical accommodation parity: house metrics and collapsible floor sections. */
 .accommodation-dashboard .accommodation-house-summary{display:flex;align-items:center;gap:8px;margin:6px 10px;padding:5px 7px;border:1px solid var(--app-border);border-radius:7px;background:var(--app-surface)}
 .accommodation-dashboard .accommodation-house-summary>strong{flex:0 0 auto;margin:0;color:var(--app-primary-dark);font-size:9px}
-.accommodation-dashboard .accommodation-house-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--app-space-2);flex:1;gap:4px}
+.accommodation-dashboard .accommodation-house-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:1;gap:4px}
 .accommodation-dashboard .accommodation-house-metrics>span{display:flex;justify-content:space-between;gap:5px;padding:4px 6px;border-radius:6px;background:var(--app-surface-soft);color:var(--app-text-muted);font-size:8px}
 .accommodation-dashboard .accommodation-floor-header{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:start;padding:6px 9px;border:0;border-bottom:1px solid var(--app-border);border-radius:0;background:var(--surface,#fff);cursor:pointer;font:inherit}
 .accommodation-dashboard .floor-section.is-collapsed>.rooms-grid{display:none}
