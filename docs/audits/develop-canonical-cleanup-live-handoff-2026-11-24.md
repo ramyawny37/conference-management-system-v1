@@ -417,3 +417,9 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Baseline `dd725e410f75d35e8a695fbbea44ff1b9f327976`: prior CI runs `45435944046` and `45435944278` PASS.
 - Removed settings-only semantic color duplication and the fragile `onclick^="edit"` / `onclick^="startEditing"` color override with `!important`. Active settings actions now inherit the shared semantic button variants (`.btn-blue`, `.btn-green`, `.btn-red`) from `shared-design-tokens.css`; settings retains only compact geometry/icon spacing. No handler, Arabic copy, markup, database, Cards/print/PNG/WhatsApp, `main`, or Production change.
 - Updated the stylesheet runtime revision and the four known cache-contract tests atomically. CI and Preview provenance pending.
+
+
+### Accommodation room action radius ownership
+- Baseline `d5c925f85e7debd445a63f1c08f6bd613acd77c7`: settings-color Conference CI `45440597617` PASS; Reservations run `45440597108` was still in progress when this follow-up started.
+- Removed the remaining local `border-radius:7px` from `#tab0 .accommodation-room-actions .btn`; retained its compact 28px minimum height and all room action layout/handlers. Buttons now inherit the canonical control radius from the shared button owner. No room save/remove/move behavior, family draft behavior, Arabic copy, Cards/print/share, database, `main`, or Production change.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. CI and Preview provenance pending.
