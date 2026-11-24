@@ -430,3 +430,9 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Removed duplicated base button display/alignment/gap/border declarations from `#tab0 .action-button`; retained accommodation-specific minimum height, flex growth, soft surface/color and shadow. The active button keeps the shared `.btn` base contract and its existing handler.
 - Consumer audit proved `.room-more-actions` is not dead CSS: `script.js` still renders it for room open/close and unassign actions and has Escape/outside-close behavior. It was intentionally not deleted in this visual cleanup; retiring it requires an explicit functional cutover rather than CSS removal.
 - Runtime stylesheet revision and four cache-contract tests advanced atomically. No accommodation mutation behavior, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.
+
+
+### Accommodation quick-filter button base ownership
+- Baseline `24ea511e2eb3c09abfacd648da14baa536543885`: Conference CI `45440900220` PASS; Reservations `45440899469` was still in progress at audit time.
+- Removed duplicated base button display/alignment/gap/radius from accommodation quick-filter buttons; retained their compact height/padding, neutral/active surfaces, typography, icon sizing and responsive horizontal-strip behavior. The controls continue to inherit the shared button foundation without changing filter semantics.
+- Runtime stylesheet revision and four cache-contract tests advanced atomically. No JavaScript handler, accommodation mutation, Arabic copy, Cards/print/share, database, `main`, or Production change. CI/Preview pending.
