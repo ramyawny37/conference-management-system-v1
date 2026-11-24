@@ -7642,8 +7642,6 @@ function returnToStartupScreen(){
   document.querySelectorAll('.overlay').forEach(function(modal){ modal.style.display = 'none'; });
   var completedModal = ge('completedConfModal');
   if(completedModal) completedModal.remove();
-  var selectModal = ge('selectConfModal');
-  if(selectModal) selectModal.remove();
   return true;
 }
 
@@ -7673,7 +7671,7 @@ function openCompletedConferencesModal(){
   completedConfs.forEach(function(conf){
     html += '<div class="final-dialog-list-item">';
     html += '<div><div class="final-dialog-item-title">'+esc(conf.name)+'</div><div class="final-dialog-item-meta">'+esc(conf.startDate||'-')+'</div></div>';
-    html += '<button class="btn btn-blue btn-sm" onclick="openPreviousConferenceById(\''+conf.id+'\');var m=ge(\'completedConfModal\');if(m)m.remove();var s=ge(\'selectConfModal\');if(s)s.remove();">فتح</button>';
+    html += '<button class="btn btn-blue btn-sm" onclick="openPreviousConferenceById(\''+conf.id+'\');var m=ge(\'completedConfModal\');if(m)m.remove();">فتح</button>';
     html += '</div>';
   });
   html += '</div>';
