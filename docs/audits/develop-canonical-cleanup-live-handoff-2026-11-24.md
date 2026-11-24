@@ -97,3 +97,48 @@ After each commit append: UTC date, changed paths, why safe, exact SHA, test com
 - No React, Vercel, `main`, Production, or real Mina/operational records were touched.
 - The independent Cards tab, print layout, PNG export, and WhatsApp paths were not modified; the accommodation suite's card/PNG dimension regression passed.
 - New-person and child creation remain staged inside the family payload and therefore roll back atomically or disappear on Cancel without a database write.
+
+## 2026-11-24 final accommodation removal and transaction-order closure
+
+### Baseline and implementation
+
+- Requested baseline: `22c386dbdd82b175faee92feb7afed90a9ad40bb` on `develop`.
+- Runtime/migration implementation: `d0e108c540de32102d6e9c0f44446fd1e77ed23c`.
+- Final handoff SHA is the commit containing this report; no runtime code changed after the implementation SHA.
+- No `main`, Production, operational person data, Cards/print, PNG, or WhatsApp path was touched.
+
+### Root cause closed
+
+- Removing the room key holder invokes `clear_conference_room_key_on_stay_delete`, which increments `conference_room_assignments.revision`. The family draft now validates client revisions before mutation under its existing locks, then uses the resulting current revisions for the structure write under the same transaction and locks.
+- The earlier ordering still attempted a capacity reduction before moving an occupant out. Structure expansion remains before a move when capacity is needed, while equal/reduced base or extra-bed capacity is applied after moves free their beds. The authoritative stay order remains `remove -> move -> replace -> assign`.
+- Accommodation removal continues to preserve participation, guardian-child links, and transport. Apology/deletion retain their existing lifecycle cleanup ownership. Historical stay segments remain preserved by the existing effective-day cleanup contract.
+
+### Files changed in the final closure
+
+- `supabase/migrations/20261124085051_canonical_family_room_draft_transaction_order.sql`
+- `tests/canonical-family-accommodation-integration.test.js`
+- `tests/canonical-family-room-draft-transaction-postgres.test.js`
+- `docs/audits/develop-canonical-cleanup-live-handoff-2026-11-24.md`
+
+No dead runtime path was found in this final pass, so none was deleted without reachability proof.
+
+### Verification evidence
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Isolated PostgreSQL transaction contract | PASS | Real migration applied to a disposable database; key-holder removal + structure change + assignment ordered `remove,structure,assign`; capacity shrink ordered `move,structure`; replay returned duplicate; stale revisions failed; injected assignment failure rolled back the complete transaction. |
+| Targeted family/lifecycle suites | PASS | 95/95 tests. Includes cross-room guardian/child cleanup, participation and transport preservation, replace/move, concurrency, and current/future period behavior. |
+| All accommodation suites | PASS | 221/221 tests. Includes historical stay preservation and unchanged Cards/PNG dimensions. |
+| Development Preview validation | PASS | `npm run check:development-preview`. |
+| Static syntax, duplicate function, undefined/dependency and diff checks | PASS | `node --check`, declaration scan (575 functions, no duplicates), dependency reference scan, executed PostgreSQL paths, and `git diff --check`. |
+| `npm run check` | FAIL (pre-existing/out of scope) | 663 PASS, 5 FAIL, all in `platform-promotion-readiness.test.js`; they require Production/public-config/cache-revision changes prohibited by this task. |
+| Browser/visual acceptance | BLOCKED | `AGENTS.md` explicitly prohibits browser and automated UI tests in this workspace. |
+| GitHub Actions for implementation | PASS | Run `45366718742`, “Validate Reservations integration on develop”, completed successfully for `d0e108c540de32102d6e9c0f44446fd1e77ed23c`. Conference workflow did not trigger because the final paths do not match its path filter; Conference accommodation suites were run locally as listed above. |
+
+### Supabase Development application
+
+- Confirmed linked project: `gppwltrifgfxrkzvvxoe` only.
+- A direct repository `db push` was rejected as unsafe because old local/remote migration drift would include unrelated files. An isolated CLI worktree fetched the remote migration history, then a dry run proved that only `20261124085051_canonical_family_room_draft_transaction_order.sql` would apply.
+- Migration `20261124085051` was then applied alone through the approved CLI path. Remote history records name `canonical_family_room_draft_transaction_order` with 7 statements.
+- Post-application checks confirm: ordered remove/move markers, current locked room and assignment revision reads, deferred capacity shrink, active `clear_conference_room_key_on_stay_delete` trigger, SECURITY DEFINER removal function, and EXECUTE limited to `service_role`. Supabase health advisor returned no findings.
+- Existing older migration-history drift remains visible and was deliberately not repaired or hidden because it predates and exceeds this scope.
