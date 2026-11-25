@@ -5,3 +5,6 @@ enabled = true
 
 [studio]
 enabled = true
+
+[functions.public-registration]
+verify_jwt = false

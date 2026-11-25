@@ -142,7 +142,7 @@ Public Registration requires a separate narrow public boundary with:
 - event/channel scope derived server-side from the public identifier;
 - strict payload schema and length limits;
 - server-side registration-window/enabled checks;
-- rate limiting/abuse controls before broad release;
+- rate limiting/abuse controls before broad release; PR2 applies a DB-backed per-channel/per-fingerprint minute bucket (submit 8/minute, read/status 60/minute);
 - no service-role credential in the browser;
 - no direct client table mutation;
 - no ability to select actor/device/permission identities;
@@ -267,7 +267,7 @@ Future target may expose equivalent application operations through ASP.NET Core 
 | --- | --- | --- | --- |
 | PR0 | Repository audit + canonical contract | IMPLEMENTED | Baseline `5204d14054f1646c2a6b6e0794d321dd738a6918`; this document |
 | PR1 | Schema/security foundation for channel + request + tracking | IMPLEMENTED | Migration `20261125090000_public_registration_foundation.sql` + static contract test |
-| PR2 | Narrow public read/submit/status server boundary | NOT STARTED | — |
+| PR2 | Narrow public read/submit/status server boundary | IMPLEMENTED | Migration `20261125093000_public_registration_public_boundary.sql`, Edge Function `public-registration`, static boundary tests |
 | PR3 | Admin list/review + identity resolution integration | NOT STARTED | — |
 | PR4 | Protected approval/reject orchestration into canonical booking | NOT STARTED | — |
 | PR5 | Public/admin UI integration + cache contract | NOT STARTED | — |
@@ -355,7 +355,7 @@ At minimum:
 ## 19. Deferred decisions
 
 These are deliberately not guessed:
-- exact public URL/slug format and canonical host;
+- exact public page route/URL format; Edge CORS host is the existing GitHub Pages origin `https://ramyawny37.github.io`;
 - tracking token expiry/rotation duration;
 - exact required public form fields and which event fields are public;
 - whether registrants may edit/cancel a submitted request;
@@ -393,3 +393,15 @@ A deferred decision must be resolved in this document before code that depends o
 - No public/admin RPC is added in PR1. PR2/PR3 must add narrow server operations rather than table grants.
 - Runtime/UI/Edge Function change: none.
 - Production/main application: none.
+
+### PR2 — narrow public boundary
+- Edge Function: `supabase/functions/public-registration/index.ts`, configured with `verify_jwt = false`; it is separate from the administrator/device dispatcher.
+- Exact operation allowlist: `event`, `submit`, `status`; fixed GitHub Pages CORS origin; no browser service-role credential.
+- Edge requires `PUBLIC_REGISTRATION_HMAC_SECRET`; it derives a stable tracking capability from channel public ID + submit operation ID and sends only its HMAC digest to PostgreSQL, so replay returns the same capability without plaintext storage.
+- Database RPC execute is granted only to `service_role`; tables remain forced-RLS and ungranted.
+- Public event read returns only event name/dates/location plus active booking-type public fields.
+- Submission validates enabled/open window, event status, approval-required mode and same-event active booking type; it never writes Person or Booking.
+- Submission uses advisory-lock idempotency and an intent digest; conflicting reuse of an operation ID fails closed.
+- Status lookup requires the tracking capability digest and returns request state/reference/timestamps plus booking number only after approval.
+- DB-backed minute-bucket abuse control: submit 8/minute; read/status 60/minute per channel/fingerprint.
+- Runtime admin/UI change: none. Production/main application: none.
