@@ -25,6 +25,7 @@ on:
       - 'tools/production-release/canonical-full-foundation-acceptance.sql'
       - '.github/workflows/validate-zero-data-production-preparation.yml'
       - 'supabase/functions/**'
+      - 'supabase/migrations/**'
 jobs:
   development-schema-export:
     if: github.ref == 'refs/heads/develop'
