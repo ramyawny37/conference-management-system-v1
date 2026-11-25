@@ -43,7 +43,7 @@ test('family summary uses canonical event booking type prices and dependent chil
 });
 
 test('public share URL stays stable while tracking is kept locally and recovery remains available',()=>{
-  assert.doesNotMatch(js,/searchParams\\.set\\('track'/);
+  assert.doesNotMatch(js,/searchParams\.set\('track'/);
   assert.match(js,/localStorage\.setItem\(trackingKey\(\),value\)/);
   assert.match(js,/trackingSecret:tracking/);
   assert.match(js,/call\('recover'/);
