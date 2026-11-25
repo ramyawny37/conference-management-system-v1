@@ -32,7 +32,8 @@ const publicRegistrationAdminPatch=read('supabase/migrations/20261125100000_publ
 const publicRegistrationDecisionPatch=read('supabase/migrations/20261125113000_public_registration_protected_decision.sql');
 const publicRegistrationSettingsPatch=read('supabase/migrations/20261125123000_public_registration_channel_settings_admin.sql');
 const platformNotificationPatch=read('supabase/migrations/20261125150000_platform_notification_foundation.sql');
-const effectiveDispatcher=dispatcher+dispatcherPatches+ownerPendingReadPatch+canonicalTemplateReadPatch+canonicalBundlePatch+publicRegistrationAdminPatch+publicRegistrationDecisionPatch+publicRegistrationSettingsPatch+platformNotificationPatch;
+const publicRegistrationFamilyDecisionPatch=read('supabase/migrations/20261125161000_public_registration_family_decision.sql');
+const effectiveDispatcher=dispatcher+dispatcherPatches+ownerPendingReadPatch+canonicalTemplateReadPatch+canonicalBundlePatch+publicRegistrationAdminPatch+publicRegistrationDecisionPatch+publicRegistrationSettingsPatch+platformNotificationPatch+publicRegistrationFamilyDecisionPatch;
 
 function edgeOperations(module){
   const initial=edge.match(new RegExp(`const ${module}=new Set\\(\\[([^;]+)\\]\\)`));
