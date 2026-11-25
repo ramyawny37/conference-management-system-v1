@@ -37,9 +37,18 @@ test('family summary uses canonical event booking type prices and dependent chil
   assert.match(js,/الإجمالي/);
 });
 
-test('tracking capability stays in participant link and is required for status',()=>{
-  assert.match(js,/searchParams\.set\('track',result\.trackingSecret\)/);
+test('public share URL stays stable while tracking is kept locally and recovery remains available',()=>{
+  assert.doesNotMatch(js,/searchParams\\.set\\('track'/);
+  assert.match(js,/localStorage\.setItem\(trackingKey\(\),value\)/);
   assert.match(js,/trackingSecret:tracking/);
+  assert.match(js,/call\('recover'/);
+});
+
+test('child inheritance synchronizes the current guardian form values before copying shared context',()=>{
+  assert.match(js,/function syncMemberCard\(card\)/);
+  assert.match(js,/guardianCard=document\.querySelector/);
+  assert.match(js,/if\(guardianCard\)syncMemberCard\(guardianCard\)/);
+  assert.match(js,/\['church','governorate','cityOrVillage','serviceSector','serviceSectorOther'\]/);
 });
 
 test('tracking page renders only server-projected optional financial and accommodation fields',()=>{
