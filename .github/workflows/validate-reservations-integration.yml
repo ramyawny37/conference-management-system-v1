@@ -66,7 +66,7 @@ jobs:
             if (!sw.includes('./modules/reservations/' + name)) throw Error('SW missing root-relative ' + name);
             if (!tool.includes("const swOldRef = './' + oldRef")) throw Error('Integrator does not handle SW root-relative asset path for ' + name);
           }
-          if (!sw.includes("development-reservations-lifecycle-active-only-v4")) throw Error('Unexpected Development cache baseline');
+          if (!sw.includes("development-" + policy.currentRuntime.revision)) throw Error('Unexpected Development cache baseline');
           if (!tool.includes("branch !== 'develop'")) throw Error('Missing develop guard');
           if (!tool.includes("crypto.createHash('sha256')")) throw Error('Missing checksum guard');
           if (!Array.isArray(policy.approvedIntegrations) || policy.approvedIntegrations.length > 1) throw Error('Reservations artifact policy must permit at most one reviewed integration');
