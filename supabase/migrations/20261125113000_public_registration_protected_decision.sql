@@ -16,7 +16,7 @@ declare
   r reservations.public_registration_requests%rowtype;
   replay_request reservations.public_registration_requests%rowtype;
   v_event reservations.events%rowtype;
-  v_context jsonb; v_candidates jsonb; v_booking_result jsonb; v_result jsonb;
+  v_context jsonb; v_candidates jsonb; v_booking_args jsonb; v_booking_result jsonb; v_result jsonb;
   v_intent bytea; v_actor uuid; v_person_id uuid; v_booking_id uuid;
   v_revision bigint; v_age integer;
 begin
@@ -83,11 +83,9 @@ begin
     select 1 from jsonb_array_elements(v_candidates) candidate where candidate->>'personId'=p_person_id::text
   ) then
     raise exception 'PUBLIC_REGISTRATION_PERSON_CANDIDATE_STALE' using errcode='40001';
-  elsif p_decision='approve_new' and jsonb_array_length(v_candidates)>0 then
-    raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';
   end if;
 
-  v_booking_result:=reservations.mutate(p_device_id,'create_booking',jsonb_strip_nulls(jsonb_build_object(
+  v_booking_args:=jsonb_strip_nulls(jsonb_build_object(
     'p_operation_id',p_operation_id,'p_event_id',r.event_id,'p_booking_type_id',r.booking_type_id,
     'p_full_name',r.submitted_full_name,'p_phone',r.submitted_phone,'p_age',v_age,
     'p_church',r.submitted_church,'p_governorate',r.submitted_governorate,
@@ -95,7 +93,20 @@ begin
     'p_service_sector_other',r.submitted_service_sector_other,'p_notes',r.submitted_notes,
     'p_gender',r.submitted_gender,'p_date_of_birth',r.submitted_date_of_birth,
     'p_person_id',case when p_decision='approve_existing' then p_person_id else null end
-  )));
+  ));
+  v_booking_result:=reservations.mutate(p_device_id,'create_booking',v_booking_args);
+  if p_decision='approve_new' and coalesce((v_booking_result->>'identityResolutionRequired')::boolean,false) then
+    if nullif(v_booking_result->>'identityResolutionToken','') is null then
+      raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';
+    end if;
+    v_booking_result:=reservations.mutate(
+      p_device_id,'create_booking',
+      v_booking_args || jsonb_build_object(
+        'p_identity_resolution_token',v_booking_result->>'identityResolutionToken',
+        'p_identity_resolution_decision','different'
+      )
+    );
+  end if;
   v_booking_id:=nullif(v_booking_result->>'bookingId','')::uuid;
   if v_booking_id is null then raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001'; end if;
   select participant.person_id into v_person_id

@@ -39,13 +39,16 @@ test('stable operation replay is exact-intent and conflicting intent fails',()=>
   assert.match(sql,/return replay_request\.decision_result/);
 });
 
-test('existing and new identity decisions fail closed against current candidates',()=>{
+test('existing identity is revalidated and explicit new identity delegates different decision to canonical challenge',()=>{
   assert.match(sql,/p_decision='approve_existing' and p_person_id is null/);
   assert.match(sql,/p_decision<>'approve_existing' and p_person_id is not null/);
   assert.match(sql,/reservations_person_identity_candidates\(r\.submitted_full_name,r\.submitted_phone,10\)/);
   assert.match(sql,/PUBLIC_REGISTRATION_PERSON_CANDIDATE_STALE/);
-  assert.match(sql,/p_decision='approve_new' and jsonb_array_length\(v_candidates\)>0/);
-  assert.match(sql,/PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE/);
+  assert.match(sql,/v_booking_result:=reservations\.mutate\(p_device_id,'create_booking',v_booking_args\)/);
+  assert.match(sql,/v_booking_result->>'identityResolutionRequired'/);
+  assert.match(sql,/'p_identity_resolution_token',v_booking_result->>'identityResolutionToken'/);
+  assert.match(sql,/'p_identity_resolution_decision','different'/);
+  assert.doesNotMatch(sql,/p_decision='approve_new' and jsonb_array_length\(v_candidates\)>0/);
 });
 
 test('age is derived from submitted DOB at event start and is booking snapshot input',()=>{
