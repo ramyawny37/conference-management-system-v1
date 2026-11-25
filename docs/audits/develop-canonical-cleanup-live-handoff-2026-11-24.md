@@ -576,3 +576,38 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 5. Verify the actual Development Preview provenance for the current runtime; source CI alone is not visual/operational acceptance.
 6. Enable a push subscription on an approved Development admin device and perform real OS Push delivery/click/live-refresh acceptance.
 7. Append exact SHAs/run IDs and PASS/FAIL evidence here after each completed unit; preserve prior evidence.
+
+
+## 2026-11-25 Public Registration family UX + V1 retirement + notification routing continuation
+
+### Progressive family UX and financial summary
+- `444b25cd3dcf5f1575cede8b09944016cb31d334`: Public Registration now starts with the submitting person's normal fields, then exposes `+ إضافة فرد من العائلة` with adult / paid child / dependent child choices.
+- Paid children now render both canonical booking type and guardian selection. This closes a real UI defect where the backend required `guardianMemberKey` but the paid-child card did not render a guardian selector.
+- Booking type options display the canonical event-owned name and price. The pre-submit family summary lists every member, guardian where applicable, paid booking type/price, dependent child as no independent cost, and the canonical-price family total.
+- `80e5da9c62b699ab1c6f21fbfb83f5575f46e6b3`: page regression tests now lock the one family-capable browser submission route and the progressive guardian/financial UX. Reservations CI `45638562458` **PASS**. The implementation commit itself also passed Reservations CI `45638535531`.
+
+### V1 submit canonical retirement
+- Reachability evidence: the active browser already used only `submit_family`; Development database function-body scan found V1 `reservations.public_registration_submit` referenced only by `public.public_registration_gateway`; stale tests/contracts still named V1 and were corrected rather than used as a compatibility reason.
+- Supabase Development migration history now contains `20261125145150 retire_public_registration_v1_submit`.
+- V1 `reservations.public_registration_submit(...)` was dropped; `public_registration_gateway` no longer accepts `submit`; Public Registration Edge v6 removed the V1 operation and branch. Post-change Development verification: V1 function absent, family gateway present, V1 gateway branch absent.
+- Repository migration: `supabase/migrations/20261125145150_retire_public_registration_v1_submit.sql`. Edge/tests/parity were updated on `develop`; no compatibility route or fallback was retained.
+- Structural parity intentionally changed from 298 functions to 297. The first family-only digest was `777ace1b0e079db4a494188d0f021b4a`; the later notification-target change below changed function semantics again without changing the count.
+
+### Notification deep-link
+- Root-only `./#reservations` notification targeting is retired.
+- Supabase Development migration `20261125145319 public_registration_notification_event_deeplink` makes the family submit RPC return the internal event id to the service boundary; the Edge strips that internal field before returning the public response.
+- Public Registration Edge v7 emits `./#reservations/events/<eventId>?tab=registration`, which routes through the existing Reservations canonical router to the correct event registration panel. No second router was added.
+- Current structural parity after this semantic function change: **297 functions / `9c5b3ae4ffbe4a4be256f0e0ff28f3f2`**.
+- Notification regression requires an event deep-link and forbids the old root-only target.
+
+### Approval E2E / Preview / Push truth status
+- Paid-child approval E2E was attempted through a rollback-only SQL transaction. The first attempt stopped at the existing approved-device guard with `AUTH_REQUIRED` before approval; no permanent test data was created. The available database tool blocks session impersonation, so the guard was **not bypassed**. Full approved-device family approval remains **PENDING**, not falsely marked PASS.
+- Development Preview is currently **STALE / NOT ACCEPTED** for this unit. Latest successful Preview run checked was `45633384470`; its build provenance logged Platform source SHA `ee960f87c47fc444e00002a55199008d07e959e7`, older than this work. A new Preview deployment is required before visual/operational acceptance.
+- Push subscription count on Development remains **0 active / 0 total**. Real OS Push delivery/click acceptance therefore remains **BLOCKED on an approved admin device subscription**; Notification Foundation is unchanged and no parallel notification system was added.
+- Security advisor output after the DDL changes contained existing informational RLS-no-policy findings and pre-existing SECURITY DEFINER warnings; no new policy was added merely to silence advisor output.
+
+### Current execution gates after this continuation
+1. Wait for exact-SHA Reservations and zero-data/parity CI for the latest family-only/deep-link source state; investigate any real rejection from its job logs.
+2. Produce a fresh Development Preview whose provenance points to the latest accepted Platform SHA, then verify the deployed public-registration assets rather than source CI alone.
+3. Complete approved-device paid-child family approval E2E (independent booking, central DOB, Conference participation, guardian link, rollback/cleanup) through an authorized device-session path.
+4. Real OS Push remains pending until Development has an approved active push subscription.
