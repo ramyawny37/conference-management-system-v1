@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const ORIGIN='https://ramyawny37.github.io';
 const cors={'Access-Control-Allow-Headers':'content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Origin':ORIGIN,'Vary':'Origin'};
-const operations=new Set(['event','submit','submit_family','status']);
+const operations=new Set(['event','submit_family','status']);
 function required(name:string){const value=String(Deno.env.get(name)||'').trim();if(!value)throw new Error('PUBLIC_REGISTRATION_SERVER_CONFIGURATION');return value;}
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});}
 function exact(value:unknown,keys:string[]){if(!value||typeof value!=='object'||Array.isArray(value))return false;const actual=Object.keys(value as Record<string,unknown>).sort();return actual.length===keys.length&&actual.every((key,i)=>key===keys.slice().sort()[i]);}
@@ -44,20 +44,6 @@ Deno.serve(async request=>{
     });
     const trackingBytes=await hmac(secret,'tracking:'+publicId+':'+operationId),trackingSecret=b64url(trackingBytes);
     result=await service.rpc('public_registration_gateway',{p_operation:'submit_family',p_args:{publicId,submitOperationId:operationId,trackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint),members}});
-    if(!result.error){result={...result,data:{...result.data,trackingSecret}};try{const emitted=await service.functions.invoke('platform-notifications',{body:{operation:'emit',event:{eventType:'reservations.public_registration.submitted',moduleKey:'reservations',resourceType:'public_registration_request',resourceId:String(result.data.reference||''),title:'طلب تسجيل جديد',body:'وصل طلب تسجيل جديد ويحتاج للمراجعة.',targetUrl:'./#reservations',dedupeKey:'public-registration:'+publicId+':'+operationId}}});if(emitted.error)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}}
-  }else{
-    const keys=['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','notes','operationId','phone','publicId','serviceSector','serviceSectorOther'];
-    if(!exact(args,keys))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
-    const a=args as any,publicId=uuid(a.publicId),operationId=uuid(a.operationId);
-    const trackingBytes=await hmac(secret,'tracking:'+publicId+':'+operationId),trackingSecret=b64url(trackingBytes);
-    result=await service.rpc('public_registration_gateway',{p_operation:'submit',p_args:{
-      publicId,submitOperationId:operationId,trackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint),
-      bookingTypeId:uuid(a.bookingTypeId),fullName:bounded(a.fullName,200,true),phone:bounded(a.phone,20,true),
-      gender:a.gender===null?null:bounded(a.gender,12),dateOfBirth:a.dateOfBirth===null?null:bounded(a.dateOfBirth,10),
-      church:bounded(a.church,200),governorate:bounded(a.governorate,120),cityOrVillage:bounded(a.cityOrVillage,160),
-      serviceSector:bounded(a.serviceSector,160),serviceSectorOther:a.serviceSectorOther===null?null:bounded(a.serviceSectorOther,200),
-      notes:a.notes===null?null:bounded(a.notes,4000)
-    }});
     if(!result.error){result={...result,data:{...result.data,trackingSecret}};try{const emitted=await service.functions.invoke('platform-notifications',{body:{operation:'emit',event:{eventType:'reservations.public_registration.submitted',moduleKey:'reservations',resourceType:'public_registration_request',resourceId:String(result.data.reference||''),title:'طلب تسجيل جديد',body:'وصل طلب تسجيل جديد ويحتاج للمراجعة.',targetUrl:'./#reservations',dedupeKey:'public-registration:'+publicId+':'+operationId}}});if(emitted.error)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}}
   }
   if(result.error)throw result.error;
