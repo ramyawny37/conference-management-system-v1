@@ -6,6 +6,7 @@ const migration=fs.readFileSync('supabase/migrations/20261125180000_reservations
 const genderCorrection=fs.readFileSync('supabase/migrations/20261125183000_public_registration_child_gender_canonicalization.sql','utf8');
 const family=fs.readFileSync('supabase/migrations/20261125172000_public_registration_family_standalone_scope.sql','utf8');
 const page=fs.readFileSync('public-registration.js','utf8');
+const argumentContract=fs.readFileSync('supabase/migrations/20261125164000_public_registration_family_booking_argument_contract.sql','utf8');
 
 test('guardian-child ownership is event scoped and never stored on the global person',()=>{
   assert.match(migration,/create table reservations\.event_guardian_children/);
@@ -47,4 +48,13 @@ test('relationship survives booking lifecycle changes and supports same-event re
   assert.doesNotMatch(migration,/on delete cascade/);
   assert.doesNotMatch(migration,/lifecycle_status='active'/);
   assert.doesNotMatch(migration,/create trigger .*reservations\.bookings/is);
+});
+
+
+test('family approval preserves required booking keys and canonical dependent gender',()=>{
+  assert.match(argumentContract,/args:=jsonb_build_object\('p_operation_id'/);
+  assert.doesNotMatch(argumentContract,/new_args text := \$\$args:=jsonb_strip_nulls/);
+  assert.match(argumentContract,/'p_service_sector_other',m\.service_sector_other,'p_notes',m\.notes/);
+  assert.match(argumentContract,/'gender',m\.gender/);
+  assert.doesNotMatch(argumentContract,/new_gender text := \$\$jsonb_build_object\([^$]*'gender','child'/);
 });
