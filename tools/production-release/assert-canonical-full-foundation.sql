@@ -9,7 +9,7 @@ DECLARE
 BEGIN
   WITH expected(schema_name,tables,views) AS (
     VALUES ('public',46,0),('platform',16,0),('platform_private',11,0),
-           ('reservations',19,2),('reservations_private',1,0)
+           ('reservations',20,2),('reservations_private',1,0)
   ), actual AS (
     SELECT n.nspname::text schema_name,
       count(*) FILTER (WHERE c.relkind IN ('r','p'))::integer tables,
