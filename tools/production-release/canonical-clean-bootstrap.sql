@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict J02h9Jx6QUaRBL5zbNua0WUsnTFeJAMWK0DAIZggWOLlJHs4o61LVJjoNSDnvCM
+\restrict 0r4OdTJifJ8OlLn6jlr99sqeaQc72t94QKDVefJibjKDZrq2XV8tlY0kTGnGEjq
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -7537,6 +7537,29 @@ begin
   return new;
 end;
 $$;
+
+
+--
+-- Name: public_registration_gateway("text", "jsonb"); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION "public"."public_registration_gateway"("p_operation" "text", "p_args" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+begin
+ if p_operation='event' then
+  if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023'; end if;
+  return reservations.public_registration_read((p_args->>'publicId')::uuid,decode(replace(p_args->>'fingerprintDigest','\x',''),'hex'));
+ elsif p_operation='status' then
+  if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023'; end if;
+  return reservations.public_registration_status((p_args->>'publicId')::uuid,decode(replace(p_args->>'trackingSecretDigest','\x',''),'hex'),decode(replace(p_args->>'fingerprintDigest','\x',''),'hex'));
+ elsif p_operation='submit' then
+  if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fingerprintDigest','fullName','gender','governorate','notes','phone','publicId','serviceSector','serviceSectorOther','submitOperationId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023'; end if;
+  return reservations.public_registration_submit((p_args->>'publicId')::uuid,(p_args->>'submitOperationId')::uuid,decode(replace(p_args->>'trackingSecretDigest','\x',''),'hex'),decode(replace(p_args->>'fingerprintDigest','\x',''),'hex'),(p_args->>'bookingTypeId')::uuid,p_args->>'fullName',p_args->>'phone',p_args->>'gender',nullif(p_args->>'dateOfBirth','')::date,p_args->>'church',p_args->>'governorate',p_args->>'cityOrVillage',p_args->>'serviceSector',p_args->>'serviceSectorOther',p_args->>'notes');
+ end if;
+ raise exception 'PUBLIC_REGISTRATION_OPERATION_NOT_ALLOWED' using errcode='22023';
+end $$;
 
 
 --
@@ -19909,6 +19932,14 @@ GRANT ALL ON FUNCTION "public"."protect_platform_module_identity"() TO "service_
 
 
 --
+-- Name: FUNCTION "public_registration_gateway"("p_operation" "text", "p_args" "jsonb"); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "public"."public_registration_gateway"("p_operation" "text", "p_args" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."public_registration_gateway"("p_operation" "text", "p_args" "jsonb") TO "service_role";
+
+
+--
 -- Name: FUNCTION "record_conference_output_event"("p_actor_device_id" "uuid", "p_conference_id" "uuid", "p_event" "text"); Type: ACL; Schema: public; Owner: -
 --
 
@@ -20773,4 +20804,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict J02h9Jx6QUaRBL5zbNua0WUsnTFeJAMWK0DAIZggWOLlJHs4o61LVJjoNSDnvCM
+\unrestrict 0r4OdTJifJ8OlLn6jlr99sqeaQc72t94QKDVefJibjKDZrq2XV8tlY0kTGnGEjq
