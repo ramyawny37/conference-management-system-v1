@@ -268,7 +268,7 @@ Future target may expose equivalent application operations through ASP.NET Core 
 | PR0 | Repository audit + canonical contract | IMPLEMENTED | Baseline `5204d14054f1646c2a6b6e0794d321dd738a6918`; this document |
 | PR1 | Schema/security foundation for channel + request + tracking | IMPLEMENTED | Migration `20261125090000_public_registration_foundation.sql` + static contract test |
 | PR2 | Narrow public read/submit/status server boundary | IMPLEMENTED | Migration `20261125093000_public_registration_public_boundary.sql`, Edge Function `public-registration`, static boundary tests |
-| PR3 | Admin list/review + identity resolution integration | NOT STARTED | — |
+| PR3 | Admin list/review + identity resolution integration | IMPLEMENTED | Migration `20261125100000_public_registration_admin_review.sql`, protected device dispatch + static tests |
 | PR4 | Protected approval/reject orchestration into canonical booking | NOT STARTED | — |
 | PR5 | Public/admin UI integration + cache contract | NOT STARTED | — |
 | PR6 | Notification delivery foundation + selected provider | NOT STARTED | — |
@@ -405,3 +405,11 @@ A deferred decision must be resolved in this document before code that depends o
 - Status lookup requires the tracking capability digest and returns request state/reference/timestamps plus booking number only after approval.
 - DB-backed minute-bucket abuse control: submit 8/minute; read/status 60/minute per channel/fingerprint.
 - Runtime admin/UI change: none. Production/main application: none.
+
+### PR3 — protected admin review
+- Added protected Reservations operations `list_public_registration_requests` and `get_public_registration_request` through the existing approved-device dispatcher.
+- Both reuse `reservations.booking.create` event scope/permission; no new permission engine or bypass.
+- List is strictly event-scoped, state-filtered and bounded to 500 rows.
+- Review returns the submitted snapshot, current booking-type active/price state, and up to 20 canonical Person candidates based on normalized exact name or phone signals.
+- Candidate output includes whether that Person already has a booking in the same event; candidates are never exposed by the anonymous public endpoint.
+- PR3 is deliberately read-only: it cannot update requests, create/update People, or create Bookings. Identity decision and approval remain PR4.
