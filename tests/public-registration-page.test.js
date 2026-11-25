@@ -26,7 +26,10 @@ test('public page uses the one family-capable submission route',()=>{
 });
 
 test('family UX is progressive and every child selects a preceding guardian',()=>{
-  assert.match(js,/\+ إضافة فرد من العائلة/);
+  assert.match(js,/إضافة فرد من العائلة/);
+  assert.match(js,/data-add="adult"/);
+  assert.match(js,/data-add="child_paid"/);
+  assert.match(js,/data-add="child_dependent"/);
   assert.match(js,/child_paid/);
   assert.match(js,/child_dependent/);
   assert.match(js,/guardians=members\.slice\(0,i\)/);
@@ -83,7 +86,7 @@ test('tracking and new-registration actions remain structurally separated',()=>{
 
 test('service sector UI matches canonical submission contract',()=>{
   assert.match(js,/قطاع الخدمة<\/label><select data-f="serviceSector" required>/);
-  assert.doesNotMatch(js,/قطاع الخدمة \\*/);
+  assert.doesNotMatch(js,/قطاع الخدمة \*/);
   assert.match(js,/PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID:'اختر قطاع الخدمة/);
   assert.match(js,/otherInput\.required=m\.serviceSector==='other'/);
   assert.match(js,/if\(!m\.serviceSector\|\|\(m\.serviceSector==='other'&&!m\.serviceSectorOther\)\)throw new Error\('PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID'\)/);
@@ -91,8 +94,7 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-  const html=fs.readFileSync(path.join(root,'public-registration.html'),'utf8');
-  assert.match(html,/public-registration\.css\?rev=public-registration-v2/);
+    assert.match(html,/public-registration\.css\?rev=public-registration-v2/);
   assert.match(html,/public-registration\.js\?rev=public-registration-v2/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
