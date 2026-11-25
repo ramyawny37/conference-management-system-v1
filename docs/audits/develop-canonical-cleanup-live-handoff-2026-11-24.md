@@ -613,3 +613,10 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 4. Real OS Push remains pending until Development has an approved active push subscription.
 
 - Zero-data run `45639060128` exposed a digest-recording mistake, not a schema defect: guards and disposable replay passed, extracted Development schema reported the same per-schema function fingerprints as live Development, while the expected combined digest had been calculated with an incorrectly escaped separator. Exact assertion semantics on Development produce `297/a5317978d9223dc92acde0bcb4aae705`. Commit `7581b829b0066df4e4913e9930762775dd27ff49` corrects only that expected digest; follow-up zero-data is required before PASS.
+
+
+### 2026-11-25 — Public registration regression recovery
+- Zero-data run 45639409352: structural PASS, ACL FAIL (retired V1 grant); live ACL 340/9018274dbceece379cf1854a2aae4c25, corrected in 129a85a5e2f2d281c2cdcb8676e92bcae98dd8c2.
+- Public event load HTTP 500: gateway stripped two backslashes instead of one; reproduced invalid hexadecimal digit 22023. Development migration 20261125150328 fixes all three canonical operations using chr(92). Source bd91670b84c465376001a13c31030e6a4b18f874.
+- User browser confirmed form loads and HTTP 500 disappeared: PASS for event load only. Family submit/approval E2E remains pending.
+- Live structural digest 297/6f3efe87a90399e33569cdc3d28910b2; other structural digests unchanged. Source f566761c282ff8b21b92f573ec10ebed13d7e14c. CI pending. No production changes.
