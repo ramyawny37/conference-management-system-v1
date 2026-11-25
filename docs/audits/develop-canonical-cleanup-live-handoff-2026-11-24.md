@@ -505,3 +505,13 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Exact implementation SHA CI passed: canonical system access run `45567457428`, Conference canonical people flow `45567457523`, and Reservations integration `45567457550`.
 - Development Preview run `45567676588` passed. Its build required the successful exact-SHA Reservations run, checked out `ed34b037ef86aeeb0d574c127d9cd3eedb7fb84f`, and the deploy job logged `Deploying Platform develop SHA ed34b037ef86aeeb0d574c127d9cd3eedb7fb84f`.
 - This documentation-only successor is the final source SHA and must pass the same CI and exact-SHA Preview provenance gates before the final external handoff.
+
+
+### Reservations canonical source/runtime cutover — 2026-11-25
+
+- Reservations source repository remains the sole implementation owner; Platform stores only the generated runtime plus its source-owned contract. No generated runtime compatibility layer or parallel booking path was introduced.
+- Reservations source fixes: `04f461873e7977e78b191bffe70266bac2259ea9` enforces non-active booking read-only payment/void UI and preserves newborn age zero in edit flows. Source CI `45606635752` PASS and develop validation `45606635781` PASS.
+- Source contract publication: `9c8b37d9cc4835777b942c1c2770ccedf2378141`; Reservations CI `45607151746` PASS. Artifact `15018840910` contains JS SHA-256 `51f3667750da2dc2f37b7ef99c0b028ed8b85c0e63c109073e0483f1e4172c65`, CSS SHA-256 `e7430e2c87dbb646039466d25604f2963f52ac4d4acd1c45f38fd800d98bfa9d`, and `reservations-contract.json` SHA-256 `d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1`.
+- Platform runtime cutover commit `00a55dddac094d71d66ee636d8300eccd8863291` replaced the previous generated runtime atomically on `develop`; no `main`, Production, Vercel, or Supabase Production change.
+- Platform contract ownership commit `243fa80878ee5c68796b59b3586d5227c3a7b623` adds the source-owned artifact contract and retires duplicate assertions against minifier-local symbol names from the dedicated apology/identity workflow gates while retaining Platform DB guards and operational-review checks.
+- Development Preview remains BLOCKED until the exact Platform SHA completes the full integration/preview validation successfully.
