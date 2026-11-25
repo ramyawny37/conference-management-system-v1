@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'development-reservations-public-registration-ops-v1-design-foundation-v1'
+  ? 'development-reservations-subroute-navigation-v1'
   : 'production-3-6-0-release-v6';
 // Reinstall the Development worker so canonical accommodation and shared Reservations financial-cache assets refresh atomically.
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
@@ -36,7 +36,7 @@ const CORE_ASSETS = [
   './js/supabase/warehouse-transport.js?rev=phase-w1-v1',
   './js/supabase/client.js?rev=target-device-argument-preservation-v1',
   './js/supabase/auth.js?rev=account-session-identity-v1',
-  './js/platform-integration.js?rev=accommodation-lease-fastpath-v4',
+  './js/platform-integration.js?rev=reservations-subroute-navigation-v1',
   './js/platform-home-dashboard.js?rev=unified-platform-state-home-v3',
   './js/supabase/canonical-conference-discovery.js?rev=conference-house-link-repair-v1',
   './js/supabase/canonical-conference-transport.js?rev=p6i-b2-v1',
