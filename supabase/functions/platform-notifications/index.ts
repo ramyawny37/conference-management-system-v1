@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';import webpush from 'web-push';
+import { createClient } from '@supabase/supabase-js';import * as webpush from 'web-push';
 const ORIGIN='https://ramyawny37.github.io',cors={'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Headers':'authorization, content-type, apikey','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Vary':'Origin'};
 function required(name:string){const v=String(Deno.env.get(name)||'').trim();if(!v)throw new Error('MISSING_'+name);return v}
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}})}
