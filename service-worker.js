@@ -239,6 +239,8 @@ self.addEventListener('activate', event => {
   );
 });
 
+self.addEventListener('push',event=>{let data={};try{data=event.data?event.data.json():{}}catch(error){}const title=String(data.title||'منظومة الإدارة المتكاملة');const options={body:String(data.body||'لديك إشعار جديد'),icon:'./icons/icon-192x192-v3.png',badge:'./icons/icon-96x96-v3.png',data:{url:String(data.url||'./')},tag:String(data.type||'platform-notification'),renotify:true};event.waitUntil(self.registration.showNotification(title,options));});
+self.addEventListener('notificationclick',event=>{event.notification.close();const target=new URL(event.notification.data&&event.notification.data.url||'./',self.registration.scope).href;event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{for(const client of list){if('focus' in client){client.navigate(target);return client.focus()}}return clients.openWindow?clients.openWindow(target):null}))});
 self.addEventListener('message', event => {
   if (!event.data || !event.data.action) return;
 
