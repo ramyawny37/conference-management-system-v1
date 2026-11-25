@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const ORIGIN='https://ramyawny37.github.io';
 const cors={'Access-Control-Allow-Headers':'content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Origin':ORIGIN,'Vary':'Origin'};
-const operations=new Set(['event','submit','status']);
+const operations=new Set(['event','submit','submit_family','status']);
 function required(name:string){const value=String(Deno.env.get(name)||'').trim();if(!value)throw new Error('PUBLIC_REGISTRATION_SERVER_CONFIGURATION');return value;}
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});}
 function exact(value:unknown,keys:string[]){if(!value||typeof value!=='object'||Array.isArray(value))return false;const actual=Object.keys(value as Record<string,unknown>).sort();return actual.length===keys.length&&actual.every((key,i)=>key===keys.slice().sort()[i]);}
@@ -32,7 +32,19 @@ Deno.serve(async request=>{
   }else if(operation==='status'){
     if(!exact(args,['publicId','trackingSecret']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
     const a=args as any,tracking=bounded(a.trackingSecret,128,true);
-    result=await service.rpc('public_registration_gateway',{p_operation:'status',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),fingerprintDigest:hex(fingerprint)}});
+    result=await service.rpc('public_registration_gateway',{p_operation:'status_family',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),fingerprintDigest:hex(fingerprint)}});
+  }else if(operation==='submit_family'){
+    if(!exact(args,['members','operationId','publicId'])||!Array.isArray((args as any).members))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
+    const a=args as any,publicId=uuid(a.publicId),operationId=uuid(a.operationId);
+    if(a.members.length<1||a.members.length>12)throw new Error('PUBLIC_REGISTRATION_FAMILY_SIZE_INVALID');
+    const members=a.members.map((member:any,index:number)=>{
+      const keys=['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','guardianMemberKey','memberKey','notes','phone','role','serviceSector','serviceSectorOther'];
+      if(!exact(member,keys))throw new Error('PUBLIC_REGISTRATION_MEMBER_SHAPE_INVALID');
+      return {memberKey:uuid(member.memberKey),role:bounded(member.role,20,true),guardianMemberKey:member.guardianMemberKey===null?null:uuid(member.guardianMemberKey),bookingTypeId:member.bookingTypeId===null?null:uuid(member.bookingTypeId),fullName:bounded(member.fullName,200,true),phone:bounded(member.phone,20),gender:member.gender===null?null:bounded(member.gender,12),dateOfBirth:bounded(member.dateOfBirth,10,true),church:bounded(member.church,200),governorate:bounded(member.governorate,120),cityOrVillage:bounded(member.cityOrVillage,160),serviceSector:bounded(member.serviceSector,160),serviceSectorOther:member.serviceSectorOther===null?null:bounded(member.serviceSectorOther,200),notes:member.notes===null?null:bounded(member.notes,4000)};
+    });
+    const trackingBytes=await hmac(secret,'tracking:'+publicId+':'+operationId),trackingSecret=b64url(trackingBytes);
+    result=await service.rpc('public_registration_gateway',{p_operation:'submit_family',p_args:{publicId,submitOperationId:operationId,trackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint),members}});
+    if(!result.error){result={...result,data:{...result.data,trackingSecret}};try{const emitted=await service.functions.invoke('platform-notifications',{body:{operation:'emit',event:{eventType:'reservations.public_registration.submitted',moduleKey:'reservations',resourceType:'public_registration_request',resourceId:String(result.data.reference||''),title:'طلب تسجيل جديد',body:'وصل طلب تسجيل جديد ويحتاج للمراجعة.',targetUrl:'./#reservations',dedupeKey:'public-registration:'+publicId+':'+operationId}}});if(emitted.error)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}}
   }else{
     const keys=['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','notes','operationId','phone','publicId','serviceSector','serviceSectorOther'];
     if(!exact(args,keys))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
