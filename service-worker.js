@@ -26,6 +26,7 @@ const CORE_ASSETS = [
   './js/storage/storage-repository.js?rev=house-template-local-authority-v1',
   './js/storage/full-backup.js?rev=restore-verification-v1',
   './js/supabase/public-config.js',
+  './js/platform-reference-data.js?rev=platform-reference-data-v1',
   './js/supabase/runtime-config.js',
   './js/supabase/device-storage-namespace.js?rev=project-device-storage-isolation-v1',
   './js/supabase/device-session.js?rev=reservations-error-envelope-issue18-v1',
