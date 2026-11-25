@@ -69,3 +69,13 @@ test('tracking page renders only server-projected optional financial and accommo
   assert.match(js,/s\.accommodation/);
   assert.match(js,/لم يتم تخصيص غرفة بعد/);
 });
+
+
+test('tracking and new-registration actions remain structurally separated',()=>{
+  assert.match(js,/id="requestTrackingPanel"/);
+  assert.match(js,/id="savedRequestsHost"/);
+  assert.match(js,/طلب تسجيل جديد/);
+  assert.match(js,/savedHost=document\.getElementById\('savedRequestsHost'\)/);
+  assert.doesNotMatch(js,/var actions=document\.querySelector\('\.actions'\).*saved-request/s);
+  assert.match(js,/<details class="request-recovery">/);
+});
