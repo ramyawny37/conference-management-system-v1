@@ -40,7 +40,7 @@
       if(subnav)subnav.hidden=false;
     }
   }
-  function unavailable(){return '<div class="settings-empty-state">تعذر تحميل قسم إدارة المنصة.</div>';}
+  function unavailable(){return '<div class="ui-state settings-empty-state">تعذر تحميل قسم إدارة المنصة.</div>';}
   function sectionContent(){
     if(currentSection==='roles')return global.ModulePermissionAdministrationUI&&typeof global.ModulePermissionAdministrationUI.renderSection==='function'?global.ModulePermissionAdministrationUI.renderSection():unavailable();
     if(currentSection==='audit')return global.UserManagementUI&&typeof global.UserManagementUI.renderAuditSection==='function'?global.UserManagementUI.renderAuditSection():unavailable();

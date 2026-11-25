@@ -2782,7 +2782,7 @@ function renderCanonicalAccommodationAssignmentCandidateList(){
     var arrow=document.createElement('span');arrow.className='canonical-accommodation-person-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='‹';
     button.appendChild(icon);button.appendChild(text);button.appendChild(arrow);button.onclick=function(){selectCanonicalAccommodationParticipation(item.participationId);};list.appendChild(button);shown++;
   });
-  if(!shown)list.innerHTML='<div class="modal-empty-state">لا توجد نتائج</div>';
+  if(!shown)list.innerHTML='<div class="ui-state modal-empty-state">لا توجد نتائج</div>';
   var count=ge('canonicalAccommodationAssignmentResultCount');if(count)count.textContent='النتائج المطابقة: '+shown+' من '+candidates.length;
   var selectedItem=candidates.find(function(item){return String(item.participationId)===String(draft.selectedParticipationId||'');});
   var selectedLabel=ge('canonicalAccommodationSelectedPerson');if(selectedLabel)selectedLabel.textContent=selectedItem&&selectedItem.person&&selectedItem.person.fullName?selectedItem.person.fullName:'اختر شخصًا أولًا';
@@ -3214,7 +3214,7 @@ function renderCanonicalAccommodationReplacementCandidates(occupancyId){
     button.onclick=function(){stay.replacementParticipationId=String(item.participationId);stay.replacementLabel=item.person&&item.person.fullName||'';input.value=stay.replacementLabel;list.classList.remove('is-open');};
     list.appendChild(button);
   });
-  if(!list.children.length)list.innerHTML='<div class="modal-empty-state">لا توجد نتائج</div>';
+  if(!list.children.length)list.innerHTML='<div class="ui-state modal-empty-state">لا توجد نتائج</div>';
   list.classList.add('is-open');return true;
 }
 function canonicalAccommodationRoomEmptySlotHtml(slotKey,bedType,slotNumber,operationalDay,canManage){
@@ -3233,12 +3233,12 @@ function renderCanonicalAccommodationRoomSlotCandidates(slotKey){
   if(!slot||!draft||!list||!search)return false;
   if(slot.selectedParticipationId&&String(search.value||'')!==String(slot.selectedLabel||'')){slot.selectedParticipationId=null;slot.selectedLabel='';ge('canonicalRoomSlotParticipation_'+slotKey).value='';renderCanonicalAccommodationRoomSlotGuardianActions(slotKey);}
   var arrivalText=String(ge('canonicalRoomSlotArrival_'+slotKey).value||'').trim(),leaveText=String(ge('canonicalRoomSlotLeave_'+slotKey).value||'').trim();
-  if(!/^\d+$/.test(arrivalText)||leaveText&&(!/^\d+$/.test(leaveText)||Number(leaveText)<=Number(arrivalText))){list.innerHTML='<div class="modal-empty-state">تحقق من فترة الإقامة</div>';list.classList.remove('is-open');return false;}
+  if(!/^\d+$/.test(arrivalText)||leaveText&&(!/^\d+$/.test(leaveText)||Number(leaveText)<=Number(arrivalText))){list.innerHTML='<div class="ui-state modal-empty-state">تحقق من فترة الإقامة</div>';list.classList.remove('is-open');return false;}
   var available=getCanonicalAccommodationAvailableParticipations(draft.participations,canonicalAccommodationState(),Number(arrivalText),leaveText?Number(leaveText):null);
   var reserved={};Object.keys(draft.slots).forEach(function(key){var selected=draft.slots[key].selectedParticipationId;if(key!==slotKey&&selected)reserved[String(selected)]=true;});
   var query=normalizePersonKey(search.value||''),filters=canonicalAccommodationRoomCandidateFilterState(query);list.innerHTML='';slot.available=available.filter(function(item){return !reserved[String(item.participationId)]&&canonicalAccommodationParticipationMatchesFilters(item,filters);});
   slot.available.forEach(function(item){var person=item.person||{},button=document.createElement('button');button.type='button';button.setAttribute('role','option');button.className='canonical-room-slot-option';button.innerHTML='<strong>'+esc(person.fullName||'')+'</strong><small>'+esc([person.phone,person.church].filter(Boolean).join(' • '))+'</small>';button.onclick=function(){selectCanonicalAccommodationRoomSlotParticipation(slotKey,item.participationId);};list.appendChild(button);});
-  if(!slot.available.length)list.innerHTML='<div class="modal-empty-state">لا توجد نتائج</div>';
+  if(!slot.available.length)list.innerHTML='<div class="ui-state modal-empty-state">لا توجد نتائج</div>';
   list.classList.add('is-open');return slot.available.length;
 }
 
@@ -3737,7 +3737,7 @@ function renderSearchableSelectList(){
     shown++;
   });
   if(!shown){
-    list.innerHTML = '<div class="modal-empty-state">لا توجد نتائج</div>';
+    list.innerHTML = '<div class="ui-state modal-empty-state">لا توجد نتائج</div>';
   }
 }
 
@@ -4559,7 +4559,7 @@ function renderSeatSharedChildren(){
   });
   renderManualSharedChildren();
   if(!guardianName){
-    list.innerHTML = '<div class="modal-empty-state">اختر المرافق أولاً</div>';
+    list.innerHTML = '<div class="ui-state modal-empty-state">اختر المرافق أولاً</div>';
     refreshAdultChildSeatSelectors();
     return;
   }
@@ -4568,7 +4568,7 @@ function renderSeatSharedChildren(){
     if(!children.some(function(child){return transportChildMatches(child,linkedChild);})){children.push(linkedChild);}
   });
   if(!children.length){
-    list.innerHTML = '<div class="modal-empty-state">لا يوجد أطفال مرتبطون بهذا المرافق</div>';
+    list.innerHTML = '<div class="ui-state modal-empty-state">لا يوجد أطفال مرتبطون بهذا المرافق</div>';
     refreshAdultChildSeatSelectors();
     return;
   }

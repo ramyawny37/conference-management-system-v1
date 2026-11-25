@@ -2826,7 +2826,7 @@ function renderFinancialReportTable(section){
 
 function renderFinancialReportWarnings(section){
   if(!section.rows||!section.rows.length)return '';
-  var html='<div class="settings-empty-state">';
+  var html='<div class="ui-state settings-empty-state">';
   section.rows.forEach(function(warning){
     html+='<div style="margin-bottom:6px"><b>⚠️ '+esc(warning.message||'')+'</b>';
     if(warning.code)html+='<div class="settings-branding-file-name">'+esc(warning.code)+'</div>';
@@ -2849,10 +2849,10 @@ function renderFinancialReportSection(section){
   else if(section.id==='warnings')html+=renderFinancialReportWarnings(section);
   else if(section.rows&&section.rows.length)html+=renderFinancialReportTable(section);
   (section.notes||[]).forEach(function(note){
-    html+='<div class="settings-empty-state" style="margin-top:8px">'+esc(note)+'</div>';
+    html+='<div class="ui-state settings-empty-state" style="margin-top:8px">'+esc(note)+'</div>';
   });
   if(section.enabled!==false&&(!section.rows||!section.rows.length)&&!(section.notes||[]).length){
-    html+='<div class="settings-empty-state">لا توجد بيانات</div>';
+    html+='<div class="ui-state settings-empty-state">لا توجد بيانات</div>';
   }
   if(section.totals&&section.totals.length){
     html+='<div class="settings-summary-grid" style="margin-top:10px">';
@@ -2863,7 +2863,7 @@ function renderFinancialReportSection(section){
     html+='</div>';
   }
   (section.warnings||[]).forEach(function(warning){
-    html+='<div class="settings-empty-state" style="margin-top:8px">⚠️ '+esc(warning.message||warning)+'</div>';
+    html+='<div class="ui-state settings-empty-state" style="margin-top:8px">⚠️ '+esc(warning.message||warning)+'</div>';
   });
   html+='</section>';
   return html;
@@ -3542,7 +3542,7 @@ function renderFinancialItemDraft(item,context){
     html+='<div class="settings-branding-field"><label class="lbl">'+(method==='per_day'?'سعر اليوم':method==='per_room'?'سعر الغرفة':method==='per_person'?'سعر الشخص':'سعر الوحدة')+'</label><input type="number" min="0" step="0.01" value="'+(item.unitPrice===null?'':item.unitPrice)+'" onchange="updateFinancialItemDraft(\''+key+'\',\'unitPrice\',this.value,true)"></div>';
   }
   html+='<div class="settings-branding-field"><label class="lbl">الملاحظات</label><textarea rows="2" oninput="updateFinancialItemDraft(\''+key+'\',\'notes\',this.value,false)">'+esc(item.notes)+'</textarea></div>';
-  html+='</div><div class="settings-empty-state" style="white-space:pre-line"><b>'+esc(result.formula)+'</b><br>الناتج: '+formatAccountMoney(result.total)+'</div>';
+  html+='</div><div class="ui-state settings-empty-state" style="white-space:pre-line"><b>'+esc(result.formula)+'</b><br>الناتج: '+formatAccountMoney(result.total)+'</div>';
   html+='<div class="settings-branding-actions"><button class="btn btn-red" onclick="removeFinancialItemDraft(\''+key+'\')">حذف البند</button></div></div>';
   return html;
 }
@@ -3555,7 +3555,7 @@ function renderFinancialItemsSettings(){
   var html='<div class="settings-branding-actions" style="justify-content:space-between">';
   html+='<label class="settings-branding-auto-toggle"><input type="checkbox" '+(draft.enabled?'checked':'')+' onchange="updateFinancialItemsDraftEnabled(this.checked)"><span>تفعيل المصروفات الإضافية</span></label>';
   html+='<button class="btn btn-blue" onclick="addFinancialItemDraft()">➕ إضافة بند</button></div>';
-  if(!draft.items.length)html+='<div class="settings-empty-state">لا توجد بنود مالية إضافية في المسودة.</div>';
+  if(!draft.items.length)html+='<div class="ui-state settings-empty-state">لا توجد بنود مالية إضافية في المسودة.</div>';
   draft.items.forEach(function(item){html+=renderFinancialItemDraft(item,context)});
   html+='<div class="settings-summary-card" style="margin-top:10px"><span>إجمالي المصروفات الإضافية</span><strong>'+formatAccountMoney(total)+'</strong></div>';
   html+='<div class="settings-branding-actions"><button class="btn btn-green" onclick="saveFinancialItemsSettings()">💾 حفظ البنود</button><button class="btn btn-gray" onclick="cancelFinancialItemsSettings()">إلغاء التعديلات</button><button class="btn btn-red" onclick="resetFinancialItemsSettings()">مسح المسودة</button></div>';
@@ -3694,7 +3694,7 @@ function renderIncomeItemDraft(item,context){
     html+='<div class="settings-branding-field"><label class="lbl">'+(method==='per_day'?'سعر اليوم':method==='per_room'?'سعر الغرفة':method==='per_person'?'سعر الشخص':'سعر الوحدة')+'</label><input type="number" min="0" step="0.01" value="'+(item.unitPrice===null?'':item.unitPrice)+'" onchange="updateIncomeItemDraft(\''+key+'\',\'unitPrice\',this.value,true)"></div>';
   }
   html+='<div class="settings-branding-field"><label class="lbl">الملاحظات</label><textarea rows="2" oninput="updateIncomeItemDraft(\''+key+'\',\'notes\',this.value,false)">'+esc(item.notes)+'</textarea></div>';
-  html+='</div><div class="settings-empty-state" style="white-space:pre-line"><b>'+esc(result.formula)+'</b><br>الإيراد: '+formatAccountMoney(result.total)+'</div>';
+  html+='</div><div class="ui-state settings-empty-state" style="white-space:pre-line"><b>'+esc(result.formula)+'</b><br>الإيراد: '+formatAccountMoney(result.total)+'</div>';
   html+='<div class="settings-branding-actions"><button class="btn btn-red" onclick="removeIncomeItemDraft(\''+key+'\')">حذف بند الإيراد</button></div></div>';
   return html;
 }
@@ -3707,7 +3707,7 @@ function renderIncomeItemsSettings(){
   var html='<div class="settings-branding-actions" style="justify-content:space-between">';
   html+='<label class="settings-branding-auto-toggle"><input type="checkbox" '+(draft.enabled?'checked':'')+' onchange="updateIncomeItemsDraftEnabled(this.checked)"><span>تفعيل الإيرادات</span></label>';
   html+='<button class="btn btn-blue" onclick="addIncomeItemDraft()">➕ إضافة إيراد</button></div>';
-  if(!draft.items.length)html+='<div class="settings-empty-state">لا توجد بنود إيرادات في المسودة.</div>';
+  if(!draft.items.length)html+='<div class="ui-state settings-empty-state">لا توجد بنود إيرادات في المسودة.</div>';
   draft.items.forEach(function(item){html+=renderIncomeItemDraft(item,context)});
   html+='<div class="settings-summary-card" style="margin-top:10px"><span>إجمالي الإيرادات</span><strong>'+formatAccountMoney(total)+'</strong></div>';
   html+='<div class="settings-branding-actions"><button class="btn btn-green" onclick="saveIncomeItemsSettings()">💾 حفظ الإيرادات</button><button class="btn btn-gray" onclick="cancelIncomeItemsSettings()">إلغاء التعديلات</button><button class="btn btn-red" onclick="resetIncomeItemsSettings()">مسح المسودة</button></div>';
@@ -3844,7 +3844,7 @@ function renderSettlementDraft(item,context){
     html+='<div class="settings-branding-field"><label class="lbl">'+(method==='per_day'?'سعر اليوم':method==='per_room'?'سعر الغرفة':method==='per_person'?'سعر الشخص':'سعر الوحدة')+'</label><input type="number" min="0" step="0.01" value="'+(item.unitPrice===null?'':item.unitPrice)+'" onchange="updateSettlementDraft(\''+key+'\',\'unitPrice\',this.value,true)"></div>';
   }
   html+='<div class="settings-branding-field"><label class="lbl">الملاحظات</label><textarea rows="2" oninput="updateSettlementDraft(\''+key+'\',\'notes\',this.value,false)">'+esc(item.notes)+'</textarea></div>';
-  html+='</div><div class="settings-empty-state" style="white-space:pre-line"><b>'+esc(result.formula)+'</b><br>القيمة دون إشارة: '+formatAccountMoney(result.unsignedTotal)+'<br>قيمة التأثير: '+formatSettlementSignedAmount(result.signedAmount)+'</div>';
+  html+='</div><div class="ui-state settings-empty-state" style="white-space:pre-line"><b>'+esc(result.formula)+'</b><br>القيمة دون إشارة: '+formatAccountMoney(result.unsignedTotal)+'<br>قيمة التأثير: '+formatSettlementSignedAmount(result.signedAmount)+'</div>';
   html+='<div class="settings-branding-actions"><button class="btn btn-red" onclick="removeSettlementDraft(\''+key+'\')">حذف التسوية</button></div></div>';
   return html;
 }
@@ -3856,7 +3856,7 @@ function renderSettlementsSettings(){
   var html='<div class="settings-branding-actions" style="justify-content:space-between">';
   html+='<label class="settings-branding-auto-toggle"><input type="checkbox" '+(draft.enabled?'checked':'')+' onchange="updateSettlementsDraftEnabled(this.checked)"><span>تفعيل التسويات النهائية</span></label>';
   html+='<button class="btn btn-blue" onclick="addSettlementDraft()">➕ إضافة تسوية</button></div>';
-  if(!draft.items.length)html+='<div class="settings-empty-state">لا توجد تسويات في المسودة.</div>';
+  if(!draft.items.length)html+='<div class="ui-state settings-empty-state">لا توجد تسويات في المسودة.</div>';
   draft.items.forEach(function(item){html+=renderSettlementDraft(item,context)});
   html+='<div class="settings-summary-grid">';
   html+='<div class="settings-summary-card"><span>إضافات المصروفات</span><strong>'+formatAccountMoney(summary.expense.additions)+'</strong></div>';
@@ -3898,7 +3898,7 @@ function renderAccommodationExpenseSummary(expense,airConditioningExpense,mealsE
     html+='<div class="settings-summary-card"><span>'+card[0]+' '+card[1]+'</span><strong>'+card[2]+'</strong></div>';
   });
   html+='</div>';
-  html+='<div class="settings-empty-state" style="margin-top:10px">تم تنفيذ حساب الإقامة والتكييف والوجبات فقط. المصروفات الإضافية والتسويات لم تُنفذ بعد.</div>';
+  html+='<div class="ui-state settings-empty-state" style="margin-top:10px">تم تنفيذ حساب الإقامة والتكييف والوجبات فقط. المصروفات الإضافية والتسويات لم تُنفذ بعد.</div>';
   return html;
 }
 
@@ -3924,7 +3924,7 @@ function renderAccountsOverview(context,accommodationExpense,airConditioningExpe
     html+='<div class="settings-summary-card"><span>'+card[0]+' '+card[1]+'</span><strong>'+card[2]+'</strong></div>';
   });
   html+='</div>';
-  html+='<div class="settings-empty-state" style="margin-top:10px">هذه معاينة للبيانات الحالية فقط. لم يتم تفعيل أسعار أو قواعد حساب المصروفات بعد.</div>';
+  html+='<div class="ui-state settings-empty-state" style="margin-top:10px">هذه معاينة للبيانات الحالية فقط. لم يتم تفعيل أسعار أو قواعد حساب المصروفات بعد.</div>';
   return html;
 }
 
@@ -3959,7 +3959,7 @@ function getAirConditioningCalculationMethodLabel(value){
 
 function renderAccommodationAccountsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
-  if(!conference)return '<div class="settings-empty-state">لا يوجد مؤتمر حالي.</div>';
+  if(!conference)return '<div class="ui-state settings-empty-state">لا يوجد مؤتمر حالي.</div>';
   var accounts=normalizeConferenceAccounts(conference);
   var defaults=accounts.settings.accommodationDefaults;
   var accommodation=accounts.expenses.accommodation;
@@ -4059,7 +4059,7 @@ function saveAccommodationDefaults(){
 
 function renderAirConditioningAccountsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
-  if(!conference)return '<div class="settings-empty-state">لا يوجد مؤتمر حالي.</div>';
+  if(!conference)return '<div class="ui-state settings-empty-state">لا يوجد مؤتمر حالي.</div>';
   var canonicalAir=window.PlatformIntegration&&window.PlatformIntegration.getConferenceAirConditioningState&&window.PlatformIntegration.getConferenceAirConditioningState(conference.id);
   if(canonicalAir){
     var c=canonicalAir.defaultConfiguration,html='<div class="settings-branding-grid">';
@@ -4121,7 +4121,7 @@ function saveAirConditioningDefaults(){
 
 function renderMealsAccountsSettings(){
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
-  if(!conference)return '<div class="settings-empty-state">لا يوجد مؤتمر حالي.</div>';
+  if(!conference)return '<div class="ui-state settings-empty-state">لا يوجد مؤتمر حالي.</div>';
   var accounts=normalizeConferenceAccounts(conference);
   var defaults=accounts.settings.mealsDefaults;
   var meals=accounts.expenses.meals;
@@ -4139,7 +4139,7 @@ function renderMealsAccountsSettings(){
   html+='<div class="settings-branding-field"><label class="lbl" for="accounts_meals_manual">إجمالي يدوي عام للوجبات</label><input id="accounts_meals_manual" type="number" min="0" step="0.01" value="'+value(meals.manualTotal)+'" placeholder="غير محدد"></div>';
   html+='<div class="settings-branding-field"><label class="lbl" for="accounts_meals_notes">ملاحظات</label><textarea id="accounts_meals_notes" rows="3">'+esc(meals.notes||'')+'</textarea></div>';
   html+='</div><div class="settings-branding-actions"><button class="btn btn-green" onclick="saveMealsDefaults()">💾 حفظ إعدادات الوجبات</button></div>';
-  if(defaults.calculationMode==='manual')html+='<div class="settings-empty-state">في الوضع اليدوي تكون تفاصيل الأيام للمعاينة، والإجمالي اليدوي العام هو المعتمد.</div>';
+  if(defaults.calculationMode==='manual')html+='<div class="ui-state settings-empty-state">في الوضع اليدوي تكون تفاصيل الأيام للمعاينة، والإجمالي اليدوي العام هو المعتمد.</div>';
   return html;
 }
 
@@ -4505,7 +4505,7 @@ function renderAccommodationRoomSettings(roomContext){
   html+='<div class="settings-branding-field"><label class="lbl" for="account_room_manual">إجمالي يدوي للغرفة</label><input id="account_room_manual" type="number" min="0" step="0.01" value="'+(stored.manualTotal===null||stored.manualTotal===undefined?'':stored.manualTotal)+'" placeholder="غير محدد"></div>';
   html+='<div class="settings-branding-field"><label class="lbl" for="account_room_notes">ملاحظات</label><textarea id="account_room_notes" rows="3">'+esc(stored.notes||'')+'</textarea></div>';
   html+='</div>';
-  html+='<div class="settings-empty-state" style="margin-top:10px">نوع الغرفة الحالي: '+esc(roomTypeLabel)+'</div>';
+  html+='<div class="ui-state settings-empty-state" style="margin-top:10px">نوع الغرفة الحالي: '+esc(roomTypeLabel)+'</div>';
   html+=renderAccommodationRoomTypeRatesFields({
     sectionId:'account_room_type_rates',
     inputPrefix:'account_room_type_rate',
@@ -4754,7 +4754,7 @@ function renderAirConditioningRoomExpense(roomExpense){
 }
 
 function renderAccountsRoomsTable(houseContext,houseExpense,airConditioningHouseExpense){
-  if(!houseContext.rooms.length)return '<div class="settings-empty-state">لا توجد غرف داخل هذا البيت.</div>';
+  if(!houseContext.rooms.length)return '<div class="ui-state settings-empty-state">لا توجد غرف داخل هذا البيت.</div>';
   var roomExpenses=houseExpense&&houseExpense.rooms||[];
   var airRoomExpenses=airConditioningHouseExpense&&airConditioningHouseExpense.rooms||[];
   var html='<div style="overflow-x:auto"><table><thead><tr><th>الغرفة</th><th>الدور</th><th>الحالة</th><th>مضافة للتسكين</th><th>الأسرة الأساسية</th><th>الأسرة الإضافية</th><th>المستخدم من الإضافي</th><th>البالغون</th><th>الأطفال</th><th>الإشغال</th><th>داخلة في الحساب</th><th>سبب الاستبعاد</th><th>طريقة الحساب</th><th>الكمية</th><th>المدة</th><th>السعر</th><th>مصدر السعر</th><th>تكلفة الأسرة الإضافية</th><th>الإجمالي المحسوب</th><th>الإجمالي النهائي</th><th>المعادلة</th><th>تفاصيل التكييف</th><th>الحساب</th></tr></thead><tbody>';
@@ -4773,7 +4773,7 @@ function renderAccommodationHouseExpense(houseExpense){
     '<div class="settings-summary-card"><span>الغرف الداخلة</span><strong>'+houseExpense.includedRoomsCount+'</strong></div>'+
     '<div class="settings-summary-card"><span>الغرف المستبعدة</span><strong>'+houseExpense.excludedRoomsCount+'</strong></div>'+
     '<div class="settings-summary-card"><span>إجمالي الإقامة</span><strong>'+formatAccountMoney(houseExpense.finalTotal)+'</strong></div>'+
-    '</div><div class="settings-empty-state" style="white-space:pre-line">'+esc(houseExpense.formula)+'</div>';
+    '</div><div class="ui-state settings-empty-state" style="white-space:pre-line">'+esc(houseExpense.formula)+'</div>';
 }
 
 function renderAirConditioningHouseExpense(houseExpense){
@@ -4783,7 +4783,7 @@ function renderAirConditioningHouseExpense(houseExpense){
     '<div class="settings-summary-card"><span>غرف التكييف الداخلة</span><strong>'+houseExpense.includedRoomsCount+'</strong></div>'+
     '<div class="settings-summary-card"><span>غرف التكييف المستبعدة</span><strong>'+houseExpense.excludedRoomsCount+'</strong></div>'+
     '<div class="settings-summary-card"><span>إجمالي التكييف</span><strong>'+formatAccountMoney(houseExpense.finalTotal)+'</strong></div>'+
-    '</div><div class="settings-empty-state" style="white-space:pre-line">'+esc(houseExpense.formula)+'</div>';
+    '</div><div class="ui-state settings-empty-state" style="white-space:pre-line">'+esc(houseExpense.formula)+'</div>';
 }
 
 function renderAccountsHouseCard(houseContext,houseExpense,airConditioningHouseExpense){
@@ -4811,7 +4811,7 @@ function renderAccountsHouseCard(houseContext,houseExpense,airConditioningHouseE
 }
 
 function renderAccountsHouses(context,accommodationExpense,airConditioningExpense){
-  if(!context.houses.length)return '<div class="settings-empty-state">لا توجد بيوت مرتبطة بالمؤتمر الحالي.</div>';
+  if(!context.houses.length)return '<div class="ui-state settings-empty-state">لا توجد بيوت مرتبطة بالمؤتمر الحالي.</div>';
   var html='';
   context.houses.forEach(function(house,index){
     html+=renderAccountsHouseCard(
@@ -4843,7 +4843,7 @@ function renderMealExpenseDetails(meal){
 }
 
 function renderMealsExpenseTable(expense){
-  if(!expense.days.length)return '<div class="settings-empty-state">لا توجد أيام مؤتمر متاحة لحساب الوجبات.</div>';
+  if(!expense.days.length)return '<div class="ui-state settings-empty-state">لا توجد أيام مؤتمر متاحة لحساب الوجبات.</div>';
   var html='<div style="overflow-x:auto"><table><thead><tr><th>اليوم</th><th>البالغون</th><th>الأطفال</th><th>الإفطار</th><th>الغداء</th><th>العشاء</th><th>الإجمالي المحسوب</th><th>الإجمالي النهائي</th><th>التفاصيل</th></tr></thead><tbody>';
   expense.days.forEach(function(day){
     html+='<tr><td><b>اليوم '+day.day+'</b></td><td>'+day.adults+'</td><td>'+day.children+'</td>';
@@ -4968,8 +4968,8 @@ function renderMealsSection(expense){
 }
 
 function renderAccountsRestaurant(restaurantContext){
-  if(!restaurantContext||!restaurantContext.available)return '<div class="settings-empty-state">لا توجد بيانات مطعم متاحة للمؤتمر الحالي.</div>';
-  var html='<div class="settings-empty-state" style="margin-bottom:10px">الأسعار والأعداد مقروءة مباشرة من تبويب المطعم.</div>';
+  if(!restaurantContext||!restaurantContext.available)return '<div class="ui-state settings-empty-state">لا توجد بيانات مطعم متاحة للمؤتمر الحالي.</div>';
+  var html='<div class="ui-state settings-empty-state" style="margin-bottom:10px">الأسعار والأعداد مقروءة مباشرة من تبويب المطعم.</div>';
   html+='<div style="overflow-x:auto"><table><thead><tr><th>اليوم</th><th>البالغون</th><th>الأطفال</th><th>الإفطار</th><th>الغداء</th><th>العشاء</th><th>إجمالي اليوم</th></tr></thead><tbody>';
   restaurantContext.days.forEach(function(day){
     html+='<tr><td><b>اليوم '+day.day+'</b></td><td>'+day.adults+'</td><td>'+day.children+'</td>';
@@ -5009,7 +5009,7 @@ function renderConferenceFinancialSummary(summary){
   });
   html+='</div>';
   if(summary.warnings.length){
-    html+='<div class="settings-empty-state" style="margin-top:10px">';
+    html+='<div class="ui-state settings-empty-state" style="margin-top:10px">';
     summary.warnings.forEach(function(warning){
       html+='<div>⚠️ '+warning.message+'</div>';
     });
@@ -5199,7 +5199,7 @@ function renderFinancialV3AdjustmentEditor(summary){
   if(editing)html+='<button class="btn btn-gray" onclick="resetFinancialV3DraftFromSaved();renderAccounts()">إلغاء التعديل</button>';
   html+='</div>';
   if(summary&&summary.enabled===false){
-    html+='<div class="settings-empty-state" style="margin-top:10px">الملخص المالي معطل حاليًا، لكن التعديلات محفوظة وسيبقى الإجمالي النهائي صفرًا.</div>';
+    html+='<div class="ui-state settings-empty-state" style="margin-top:10px">الملخص المالي معطل حاليًا، لكن التعديلات محفوظة وسيبقى الإجمالي النهائي صفرًا.</div>';
   }
   return html;
 }
@@ -5208,7 +5208,7 @@ function renderFinancialV3AdjustmentsList(summary){
   var adjustments=summary&&Array.isArray(summary.adjustments)?summary.adjustments:[];
   var html='';
   if(!adjustments.length){
-    html+='<div class="settings-empty-state" style="margin-top:10px">لا توجد تعديلات مالية محفوظة.</div>';
+    html+='<div class="ui-state settings-empty-state" style="margin-top:10px">لا توجد تعديلات مالية محفوظة.</div>';
     return html;
   }
   html+='<div style="overflow-x:auto;margin-top:10px"><table><thead><tr><th>النوع</th><th>التصنيف</th><th>المبلغ</th><th>الملاحظة</th><th>الإجراءات</th></tr></thead><tbody>';
@@ -5264,7 +5264,7 @@ function renderAccounts(){
   if(!container)return;
   var conference=typeof getCurrentConference==='function'?getCurrentConference():null;
   if(!conference){
-    container.innerHTML='<div class="settings-dashboard"><div class="settings-empty-state">لا توجد بيانات مؤتمر جاهزة حاليًا.</div></div>';
+    container.innerHTML='<div class="settings-dashboard"><div class="ui-state settings-empty-state">لا توجد بيانات مؤتمر جاهزة حاليًا.</div></div>';
     return;
   }
   normalizeConferenceAccounts(conference);

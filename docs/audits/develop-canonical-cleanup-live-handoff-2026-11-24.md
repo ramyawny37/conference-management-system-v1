@@ -380,6 +380,40 @@ Rule counts remain intentionally high because most selectors own functional plac
 - Development Preview run `45418676055`: PASS. The live `development-preview-sources.json` recorded both `platform.ref` and `platform.sha` as `8b9a18f9420c0f41218a5e68e8d921798662d0cb`, and the revisioned central stylesheet returned HTTP 200.
 - The following evidence-only successor commit must be subjected to the same exact-SHA Reservations and Preview provenance gates before final handoff.
 
+## 2026-11-25 final shared-state ownership and active-runtime audit
+
+### Baseline and scope
+
+- Baseline: `14bfb34aaa5190392fde3af6d1ddeb5b4619b977`, clean and equal to `origin/develop` before this unit.
+- The closed room-editor, family-accommodation, component-ownership and token-cutover units were not reopened. No Arabic copy, operational mutation, database object, Reservations behavior, Cards/print/PNG/WhatsApp surface, `main`, or Production asset changed.
+
+### Root cause and cleanup
+
+- The prior empty-state cutover had reduced `.settings-empty-state` to compact density, but 59 active generated-markup consumers still emitted that class without the central `.ui-state` contract. Seven modal result/validation states similarly retained a complete local visual definition through `.modal-empty-state`.
+- All 66 active generated empty-state consumers now compose `ui-state` with their existing semantic/local class. The local modal rule now owns only `min-height`, padding and font size; its duplicated color, background, border, radius and alignment were removed. A regression contract scans every active JavaScript file under `js/` plus `script.js` and rejects either local class without `.ui-state`.
+- The stylesheet cache revision advanced atomically from `conference-empty-state-cutover-v18` to `conference-state-ownership-v19` in HTML, the Service Worker and all cache-contract tests.
+
+### Dead CSS, `!important`, dependencies and performance
+
+- Active runtime HTML, generated JavaScript markup, `style.css`, shared tokens, shell and module CSS were scanned together. No selector was deleted merely because it was absent from static HTML. The only proven redundant CSS in this unit was the five visual declarations on `.app-modal .modal-empty-state`; all runtime consumers were migrated before removal.
+- `room-more-actions` remains active for permission-aware room operations, outside-click and Escape handling; it was retained because removing CSS alone would break the live path and a functional cutover would reopen accepted accommodation behavior.
+- The active styles contain 152 `!important` declarations: 132 in `style.css`, 4 in shared reduced-motion accessibility rules, 16 in Reservations. The protected print/card rules, mobile 16px input safeguard, reduced-motion enforcement, and scoped transport/modal/table specializations remain intentional cascade boundaries. No new `!important` was added and no case was removed without an equivalent specificity proof.
+- Static dependency and renderer scans found no newly duplicated initialization/listener or render owner. Existing regression coverage confirms hydration deduplication, one route/hash owner, one operational refresh coordinator, and atomic cache URLs. No speculative startup or refresh optimization was made.
+
+### Local verification
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| Syntax / dependency checks | PASS | `node --check` passed for `script.js`, every active `js/**/*.js`, and `service-worker.js`; `git diff --check` passed; all 66 local state consumers include `ui-state`. |
+| Duplicate-function scan | PASS | No new duplicate was introduced. The three same-name findings in `js/conference/accounts.js` are existing function-local helpers (`numericValue`, `selectOptions`, `options`) in separate closures, not competing globals. |
+| Focused Conference/design tests | PASS | 113/113 before the final ownership assertion; the new assertion also passed in both full gates. |
+| Development Preview validation | PASS | 665/665 tests across 88 platform test files. |
+| `npm run check` | FAIL (unchanged Production-only baseline) | 670 PASS, 5 FAIL: Production public-config source approval, application-version advance, Production cache revision, and shell revision requirements. They are prohibited by this develop-only unit. |
+| Browser visual acceptance | BLOCKED | `AGENTS.md` prohibits browser and automated UI tests. No visual acceptance is claimed. |
+| Supabase / database | NOT NEEDED | No schema, migration, RPC, environment or operational-data change. |
+
+Implementation SHA, final CI run IDs and exact Development Preview provenance are appended after commit, push and deployment verification.
+
 ### 2026-11-24 shared dialog base follow-up
 
 - Baseline `f8b09bfc751baf92de99ffe932094e13a19eca42`; Preview run `45419341166` independently verified successful build/deploy with exact source SHA.

@@ -12,6 +12,7 @@ const reservations=read('modules/reservations/reservations-module.css');
 const index=read('index.html');
 const worker=read('service-worker.js');
 const reference=read('design-system-reference.html');
+const runtimeScripts=['script.js',...fs.readdirSync('js',{recursive:true}).filter(file=>file.endsWith('.js')).map(file=>'js/'+file)].map(read).join('\n');
 
 test('canonical tokens own visual decisions without Conference compatibility aliases',()=>{
   assert.doesNotMatch(style,/:root\s*\{[\s\S]{0,9000}--app-primary:/);
@@ -47,6 +48,15 @@ test('every shared component family has one central contract',()=>{
   }
   assert.match(tokens,/@media\(prefers-reduced-motion:reduce\)/);
   assert.match(tokens,/@media\(max-width:600px\)[\s\S]*\.ui-toolbar/);
+});
+
+test('Conference empty states consume the central state contract',()=>{
+  assert.doesNotMatch(runtimeScripts,/class="(?:settings|modal)-empty-state/);
+  assert.match(runtimeScripts,/class="ui-state settings-empty-state/);
+  assert.match(runtimeScripts,/class="ui-state modal-empty-state/);
+  assert.match(style,/\.settings-empty-state\{min-height:0;padding:14px;font-size:11px\}/);
+  assert.match(style,/\.app-modal \.modal-empty-state\{min-height:0;padding:13px;font-size:11px\}/);
+  assert.doesNotMatch(style,/\.app-modal \.modal-empty-state\{[^}]*\b(?:background|border|border-radius|color|text-align):/);
 });
 
 test('Conference consumes central button card and dialog foundations without base competitors',()=>{
@@ -90,7 +100,7 @@ test('Development reference uses real components without app routing, data, or s
 
 test('runtime CSS load order and cache revisions remain atomic',()=>{
   const shared='shared-design-tokens.css?rev=platform-soft-controls-v5';
-  const pages='style.css?rev=conference-empty-state-cutover-v18';
+  const pages='style.css?rev=conference-state-ownership-v19';
   const canonical='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));

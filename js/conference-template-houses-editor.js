@@ -249,7 +249,7 @@
     var html='<strong>'+esc(template.name||'قالب مؤتمر')+'</strong> '+
       '<button class="btn btn-purple btn-sm" onclick="ConferenceTemplateHousesEditor.promptAddHouse()">إضافة بيت</button>';
     var values=templateHouses(template);
-    if(!values.length)html+='<div class="settings-empty-state">لا توجد بيوت في القالب.</div>';
+    if(!values.length)html+='<div class="ui-state settings-empty-state">لا توجد بيوت في القالب.</div>';
     values.forEach(function(house){
       html+='<div class="card" style="margin-top:10px"><div class="card-title">🏠 '+esc(house.name)+'</div>'+
         '<div>'+esc(house.description||'')+'</div><div class="row" style="gap:6px">'+
@@ -257,14 +257,14 @@
         '<button class="btn btn-purple btn-sm" onclick="ConferenceTemplateHousesEditor.promptAddFloor(\''+esc(house.id)+'\')">إضافة دور</button>'+
         '<button class="btn btn-red btn-sm" onclick="ConferenceTemplateHousesEditor.removeHouse(\''+esc(house.id)+'\')">حذف البيت</button></div>';
       var floors=Array.isArray(house.floors)?house.floors:[];
-      if(!floors.length)html+='<div class="settings-empty-state">لا توجد أدوار داخل البيت.</div>';
+      if(!floors.length)html+='<div class="ui-state settings-empty-state">لا توجد أدوار داخل البيت.</div>';
       floors.forEach(function(floor){
         html+='<div style="border:1px solid #E5EEF7;border-radius:10px;padding:8px;margin-top:8px"><strong>'+esc(floor.name)+'</strong><div class="row" style="gap:6px">'+
           '<button class="btn btn-gray btn-sm" onclick="ConferenceTemplateHousesEditor.promptEditFloor(\''+esc(house.id)+'\',\''+esc(floor.id)+'\')">تعديل الدور</button>'+
           '<button class="btn btn-blue btn-sm" onclick="ConferenceTemplateHousesEditor.promptAddRoom(\''+esc(house.id)+'\',\''+esc(floor.id)+'\')">إضافة غرفة</button>'+
           '<button class="btn btn-red btn-sm" onclick="ConferenceTemplateHousesEditor.removeFloor(\''+esc(house.id)+'\',\''+esc(floor.id)+'\')">حذف الدور</button></div>';
         var rooms=Array.isArray(floor.rooms)?floor.rooms:[];
-        if(!rooms.length)html+='<div class="settings-empty-state">لا توجد غرف داخل الدور.</div>';
+        if(!rooms.length)html+='<div class="ui-state settings-empty-state">لا توجد غرف داخل الدور.</div>';
         rooms.forEach(function(room){
           html+='<div class="settings-list-item"><div><strong>غرفة '+esc(room.number)+'</strong><div style="font-size:10px">'+esc(room.beds||1)+' سرير، إضافي '+esc(room.extraBeds||0)+(room.closed?'، مغلقة'+(room.closedDay?' من يوم '+esc(room.closedDay):''):'')+'</div></div><div class="row" style="gap:6px">'+
             '<button class="btn btn-gray btn-sm" onclick="ConferenceTemplateHousesEditor.promptEditRoom(\''+esc(house.id)+'\',\''+esc(floor.id)+'\',\''+esc(room.id)+'\')">تعديل</button>'+
