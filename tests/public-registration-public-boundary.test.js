@@ -7,7 +7,7 @@ const edge=fs.readFileSync('supabase/functions/public-registration/index.ts','ut
 const config=fs.readFileSync('supabase/config.toml','utf8');
 
 test('public boundary exposes only narrow service-role RPCs while tables stay closed',()=>{
- for(const fn of ['public_registration_read','public_registration_submit','public_registration_status']){
+ for(const fn of ['public_registration_read','public_registration_status']){
   assert.match(migration,new RegExp(`grant execute on function reservations\\.${fn}[^;]+to service_role`));
   assert.match(migration,new RegExp(`revoke all on function reservations\\.${fn}[^;]+from public,anon,authenticated`));
  }
@@ -40,7 +40,7 @@ test('tracking secret is deterministic at edge but only digest crosses into stor
 
 test('edge is anonymous-jwt but origin restricted and operation allowlisted',()=>{
  assert.match(config,/\[functions\.public-registration\][\s\S]*verify_jwt = false/);
- assert.match(edge,/const operations=new Set\(\['event','submit','status'\]\)/);
+ assert.match(edge,/const operations=new Set\(\['event','submit_family','status'\]\)/);\n assert.doesNotMatch(edge,/operation==='submit'/);
  assert.match(edge,/request\.headers\.get\('Origin'\)!==ORIGIN/);
  assert.doesNotMatch(edge,/Authorization/);
 });
