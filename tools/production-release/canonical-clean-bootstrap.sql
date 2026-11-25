@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 0Pgdw4pCsynDpfXJDTk9BFJEh6OhgpvWout1mKzlNTlxVD9jiqbBfJQCjfzDGN0
+\restrict Xpmq9BB1MrXIUGrIAxO5WgXGb1zJqxkASvpNHbm6X4Hg8DXvhveHahwCtsticxx
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -7660,19 +7660,13 @@ CREATE FUNCTION "public"."public_registration_gateway"("p_operation" "text", "p_
 begin
  if p_operation='event' then
   if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023'; end if;
-  return reservations.public_registration_read((p_args->>'publicId')::uuid,decode(replace(p_args->>'fingerprintDigest','\x',''),'hex'));
- elsif p_operation='status' then
-  if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023'; end if;
-  return reservations.public_registration_status((p_args->>'publicId')::uuid,decode(replace(p_args->>'trackingSecretDigest','\x',''),'hex'),decode(replace(p_args->>'fingerprintDigest','\x',''),'hex'));
+  return reservations.public_registration_read((p_args->>'publicId')::uuid,decode(replace(p_args->>'fingerprintDigest','\\x',''),'hex'));
  elsif p_operation='status_family' then
   if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;
   return reservations.public_registration_status_family((p_args->>'publicId')::uuid,decode(replace(p_args->>'trackingSecretDigest','\\x',''),'hex'),decode(replace(p_args->>'fingerprintDigest','\\x',''),'hex'));
  elsif p_operation='submit_family' then
   if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','members','publicId','submitOperationId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;
   return reservations.public_registration_submit_family((p_args->>'publicId')::uuid,(p_args->>'submitOperationId')::uuid,decode(replace(p_args->>'trackingSecretDigest','\\x',''),'hex'),decode(replace(p_args->>'fingerprintDigest','\\x',''),'hex'),p_args->'members');
- elsif p_operation='submit' then
-  if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fingerprintDigest','fullName','gender','governorate','notes','phone','publicId','serviceSector','serviceSectorOther','submitOperationId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023'; end if;
-  return reservations.public_registration_submit((p_args->>'publicId')::uuid,(p_args->>'submitOperationId')::uuid,decode(replace(p_args->>'trackingSecretDigest','\x',''),'hex'),decode(replace(p_args->>'fingerprintDigest','\x',''),'hex'),(p_args->>'bookingTypeId')::uuid,p_args->>'fullName',p_args->>'phone',p_args->>'gender',nullif(p_args->>'dateOfBirth','')::date,p_args->>'church',p_args->>'governorate',p_args->>'cityOrVillage',p_args->>'serviceSector',p_args->>'serviceSectorOther',p_args->>'notes');
  end if;
  raise exception 'PUBLIC_REGISTRATION_OPERATION_NOT_ALLOWED' using errcode='22023';
 end $$;
@@ -8961,63 +8955,6 @@ declare v_base jsonb;v_request_id uuid;begin
 
 
 --
--- Name: public_registration_submit("uuid", "uuid", "bytea", "bytea", "uuid", "text", "text", "text", "date", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: reservations; Owner: -
---
-
-CREATE FUNCTION "reservations"."public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text") RETURNS "jsonb"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO ''
-    AS $$
-declare
- v_channel reservations.public_registration_channels%rowtype; v_event reservations.events%rowtype;
- v_existing reservations.public_registration_requests%rowtype; v_request_id uuid:=extensions.gen_random_uuid();
- v_intent bytea; v_reference text;
-begin
- if p_submit_operation_id is null or p_tracking_secret_digest is null or octet_length(p_tracking_secret_digest)<>32 then
-   raise exception 'PUBLIC_REGISTRATION_SUBMISSION_INVALID' using errcode='22023'; end if;
- select c.* into v_channel from reservations.public_registration_channels c where c.public_id=p_public_id for key share;
- if not found or not v_channel.enabled then raise exception 'PUBLIC_REGISTRATION_UNAVAILABLE' using errcode='P0002'; end if;
- perform reservations_private.public_registration_rate_limit(v_channel.id,p_fingerprint_digest,8);
- if v_channel.registration_mode<>'approval_required'
-    or (v_channel.opens_at is not null and statement_timestamp()<v_channel.opens_at)
-    or (v_channel.closes_at is not null and statement_timestamp()>=v_channel.closes_at) then
-   raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001'; end if;
- select e.* into v_event from reservations.events e where e.id=v_channel.event_id for key share;
- if not found or v_event.status<>'open' then raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001'; end if;
- if not exists(select 1 from reservations.booking_types bt where bt.id=p_booking_type_id and bt.event_id=v_event.id and bt.active) then
-   raise exception 'PUBLIC_REGISTRATION_BOOKING_TYPE_UNAVAILABLE' using errcode='22023'; end if;
-
- v_intent:=extensions.digest(convert_to(jsonb_build_object(
-   'bookingTypeId',p_booking_type_id,'fullName',btrim(coalesce(p_full_name,'')),'phone',btrim(coalesce(p_phone,'')),
-   'gender',p_gender,'dateOfBirth',p_date_of_birth,'church',coalesce(p_church,''),'governorate',coalesce(p_governorate,''),
-   'cityOrVillage',coalesce(p_city_or_village,''),'serviceSector',coalesce(p_service_sector,''),
-   'serviceSectorOther',p_service_sector_other,'notes',p_notes
- )::text,'UTF8'),'sha256');
-
- perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-submit:'||v_channel.id::text||':'||p_submit_operation_id::text,0));
- select r.* into v_existing from reservations.public_registration_requests r
- where r.channel_id=v_channel.id and r.submit_operation_id=p_submit_operation_id;
- if found then
-   if v_existing.submit_intent_digest<>v_intent or v_existing.tracking_secret_digest<>p_tracking_secret_digest then
-     raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001'; end if;
-   return jsonb_build_object('reference',v_existing.request_reference,'state',v_existing.state,'submittedAt',v_existing.submitted_at);
- end if;
-
- v_reference:='PR-'||upper(substr(replace(v_request_id::text,'-',''),1,12));
- insert into reservations.public_registration_requests(
-   id,channel_id,event_id,submit_operation_id,submit_intent_digest,request_reference,tracking_secret_digest,booking_type_id,
-   submitted_full_name,submitted_phone,submitted_gender,submitted_date_of_birth,submitted_church,submitted_governorate,
-   submitted_city_or_village,submitted_service_sector,submitted_service_sector_other,submitted_notes
- ) values(
-   v_request_id,v_channel.id,v_event.id,p_submit_operation_id,v_intent,v_reference,p_tracking_secret_digest,p_booking_type_id,
-   btrim(p_full_name),btrim(p_phone),p_gender,p_date_of_birth,coalesce(p_church,''),coalesce(p_governorate,''),
-   coalesce(p_city_or_village,''),coalesce(p_service_sector,''),p_service_sector_other,p_notes
- );
- return jsonb_build_object('reference',v_reference,'state','submitted','submittedAt',statement_timestamp());
-end $$;
-
-
---
 -- Name: public_registration_submit_family("uuid", "uuid", "bytea", "bytea", "jsonb"); Type: FUNCTION; Schema: reservations; Owner: -
 --
 
@@ -9039,7 +8976,7 @@ begin
  v_intent:=extensions.digest(convert_to(p_members::text,'UTF8'),'sha256');
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-submit:'||v_channel.id::text||':'||p_submit_operation_id::text,0));
  select * into v_existing from reservations.public_registration_requests where channel_id=v_channel.id and submit_operation_id=p_submit_operation_id;
- if found then if v_existing.submit_intent_digest<>v_intent or v_existing.tracking_secret_digest<>p_tracking_secret_digest then raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001';end if;return jsonb_build_object('reference',v_existing.request_reference,'state',v_existing.state,'submittedAt',v_existing.submitted_at);end if;
+ if found then if v_existing.submit_intent_digest<>v_intent or v_existing.tracking_secret_digest<>p_tracking_secret_digest then raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001';end if;return jsonb_build_object('reference',v_existing.request_reference,'state',v_existing.state,'submittedAt',v_existing.submitted_at,'eventId',v_existing.event_id);end if;
  for v_member in select value from jsonb_array_elements(p_members) loop
    if (select array_agg(k order by k) from jsonb_object_keys(v_member) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','guardianMemberKey','memberKey','notes','phone','role','serviceSector','serviceSectorOther']::text[] then raise exception 'PUBLIC_REGISTRATION_MEMBER_SHAPE_INVALID' using errcode='22023';end if;
    v_key:=(v_member->>'memberKey')::uuid;v_role:=v_member->>'role';v_guardian:=nullif(v_member->>'guardianMemberKey','')::uuid;v_type:=nullif(v_member->>'bookingTypeId','')::uuid;
@@ -9066,7 +9003,7 @@ begin
    insert into reservations.public_registration_request_members(request_id,member_key,ordinal,role,guardian_member_key,booking_type_id,full_name,phone,gender,date_of_birth,church,governorate,city_or_village,service_sector,service_sector_other,notes)
    values(v_request_id,(v_member->>'memberKey')::uuid,v_ordinal,v_member->>'role',nullif(v_member->>'guardianMemberKey','')::uuid,nullif(v_member->>'bookingTypeId','')::uuid,btrim(v_member->>'fullName'),btrim(coalesce(v_member->>'phone','')),v_member->>'gender',(v_member->>'dateOfBirth')::date,coalesce(v_member->>'church',''),coalesce(v_member->>'governorate',''),coalesce(v_member->>'cityOrVillage',''),coalesce(v_member->>'serviceSector',''),nullif(v_member->>'serviceSectorOther',''),nullif(v_member->>'notes',''));v_ordinal:=v_ordinal+1;
  end loop;
- return jsonb_build_object('reference',v_reference,'state','submitted','submittedAt',statement_timestamp(),'memberCount',v_count);
+ return jsonb_build_object('reference',v_reference,'state','submitted','submittedAt',statement_timestamp(),'memberCount',v_count,'eventId',v_event.id);
 end $$;
 
 
@@ -20761,14 +20698,6 @@ GRANT ALL ON FUNCTION "reservations"."public_registration_status_family"("p_publ
 
 
 --
--- Name: FUNCTION "public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text"); Type: ACL; Schema: reservations; Owner: -
---
-
-REVOKE ALL ON FUNCTION "reservations"."public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "reservations"."public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text") TO "service_role";
-
-
---
 -- Name: FUNCTION "public_registration_submit_family"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_members" "jsonb"); Type: ACL; Schema: reservations; Owner: -
 --
 
@@ -21400,4 +21329,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 0Pgdw4pCsynDpfXJDTk9BFJEh6OhgpvWout1mKzlNTlxVD9jiqbBfJQCjfzDGN0
+\unrestrict Xpmq9BB1MrXIUGrIAxO5WgXGb1zJqxkASvpNHbm6X4Hg8DXvhveHahwCtsticxx
