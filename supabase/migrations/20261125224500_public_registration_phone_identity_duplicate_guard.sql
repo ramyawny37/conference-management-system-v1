@@ -50,8 +50,7 @@ begin
    values(v_request_id,(v_member->>'memberKey')::uuid,v_ordinal,v_member->>'role',nullif(v_member->>'guardianMemberKey','')::uuid,nullif(v_member->>'bookingTypeId','')::uuid,btrim(v_member->>'fullName'),btrim(coalesce(v_member->>'phone','')),v_member->>'gender',(v_member->>'dateOfBirth')::date,coalesce(v_member->>'church',''),coalesce(v_member->>'governorate',''),coalesce(v_member->>'cityOrVillage',''),v_member->>'serviceSector',nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),''),nullif(v_member->>'notes',''));v_ordinal:=v_ordinal+1;
  end loop;
  return jsonb_build_object('reference',v_reference,'state','submitted','submittedAt',statement_timestamp(),'memberCount',v_count,'eventId',v_event.id);
-end $function$
-
+end $function$;
 
 revoke all on function reservations.public_registration_submit_family(uuid,uuid,bytea,bytea,jsonb) from public,anon,authenticated;
 grant execute on function reservations.public_registration_submit_family(uuid,uuid,bytea,bytea,jsonb) to service_role;
