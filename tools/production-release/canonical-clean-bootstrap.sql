@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict 2cbDPQuXvchRUcR6uOLzB4ikUhWrnwseehy4Ubkzwmsm2saRQ8yv8ldf7PCK7BZ
+\restrict fGnYU8g6elwkyFgamAFYq5FYH8rRF8Oqe0LrkKfckqsHCc0pPadXkzVne4R0f67
 
 -- Dumped from database version 17.6
--- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg24.04+1)
+-- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -863,6 +863,12 @@ begin
 
   if p_module='reservations' then
     case p_operation
+    when 'list_public_registration_requests' then
+      perform platform_private.require_exact_jsonb_keys(p_args,array['p_event_id','p_state','p_limit']);
+      return reservations_private.list_public_registration_requests(v_session.device_id,(p_args->>'p_event_id')::uuid,nullif(p_args->>'p_state',''),(p_args->>'p_limit')::integer);
+    when 'get_public_registration_request' then
+      perform platform_private.require_exact_jsonb_keys(p_args,array['p_request_id']);
+      return reservations_private.get_public_registration_request(v_session.device_id,(p_args->>'p_request_id')::uuid);
     when 'search_people' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_query','p_limit']);
       return reservations.read(v_session.device_id,p_operation,p_args);
@@ -1761,7 +1767,9 @@ begin
     select * from public.conference_accommodation_occupancies
     where participation_id=p_participation_id order by room_id,arrival_day,id for update
   loop
-    if item.arrival_day>=effective_day then
+    if p_cause='accommodation_removed' then
+      delete from public.conference_accommodation_occupancies where id=item.id;
+    elsif item.arrival_day>=effective_day then
       delete from public.conference_accommodation_occupancies where id=item.id;
     elsif coalesce(item.leave_day,conference_days+1)>effective_day then
       update public.conference_accommodation_occupancies
@@ -1778,8 +1786,8 @@ begin
       'conference.accommodation.participation_cleanup','accommodation_occupancy',item.id,'platform',
       to_jsonb(item),null,jsonb_build_object('conferenceId',item.conference_id,
       'participationId',p_participation_id,'occupancyId',item.id,'previousRoomId',item.room_id,
-      'effectiveDay',effective_day,'cause',p_cause,'permissionKey',
-      case when p_cause='accommodation_removed' then 'conference.accommodation.manage' else 'conference.people.manage' end,
+      'effectiveDay',effective_day,'cause',p_cause,'administrativeCorrection',p_cause='accommodation_removed',
+      'permissionKey',case when p_cause='accommodation_removed' then 'conference.accommodation.manage' else 'conference.people.manage' end,
       'authoritySource',p_authority_context->>'authoritySource','grantId',p_authority_context->'grantId'),
       p_operation_id,'rpc');
   end loop;
@@ -7269,7 +7277,7 @@ CREATE FUNCTION "public"."mutate_conference_house_directory"("p_device" "uuid", 
     AS $$
 declare context jsonb;actor uuid;auth_id uuid;entity_id uuid;expected bigint;old_row jsonb;result jsonb;parent_id uuid;
 begin
- if p_operation_id is null or p_operation not in('create_house','update_house','deactivate_house','create_floor','update_floor','delete_floor','create_room','update_room','delete_room') then raise exception 'HOUSE_DIRECTORY_ARGUMENT_INVALID' using errcode='22023'; end if;
+ if p_operation_id is null or p_operation not in('create_house','update_house','deactivate_house','delete_house','create_floor','update_floor','delete_floor','create_room','update_room','delete_room') then raise exception 'HOUSE_DIRECTORY_ARGUMENT_INVALID' using errcode='22023'; end if;
  context:=platform_private.require_conference_house_directory_context(p_device,'conference.houses.manage');actor:=(context->>'actorUserId')::uuid;auth_id:=platform_private.validated_phase1c_device_authorization(actor,p_device);
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(actor::text||':house-directory:'||p_operation_id::text,0));
  select new_values into result from platform.audit_events where actor_user_id=actor and operation_id=p_operation_id and action='conference.houses.'||p_operation limit 1;
@@ -7279,6 +7287,15 @@ begin
  elsif p_operation in('update_house','deactivate_house') then
   entity_id:=(p_args->>'houseId')::uuid;expected:=(p_args->>'expectedRevision')::bigint;select to_jsonb(h) into old_row from public.conference_accommodation_houses h where h.id=entity_id for update;if old_row is null then raise exception 'HOUSE_NOT_FOUND' using errcode='P0002';end if;if (old_row->>'revision')::bigint<>expected then raise exception 'HOUSE_REVISION_CONFLICT' using errcode='40001';end if;
   if p_operation='deactivate_house' then update public.conference_accommodation_houses set is_active=false,revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where id=entity_id;else update public.conference_accommodation_houses set name=btrim(p_args->>'name'),description=nullif(btrim(p_args->>'description'),''),position=coalesce((p_args->>'position')::integer,position),is_active=coalesce((p_args->>'isActive')::boolean,is_active),revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where id=entity_id;end if;
+ elsif p_operation='delete_house' then
+  entity_id:=(p_args->>'houseId')::uuid;
+  expected:=(p_args->>'expectedRevision')::bigint;
+  select to_jsonb(h) into old_row from public.conference_accommodation_houses h where h.id=entity_id for update;
+  if old_row is null then raise exception 'HOUSE_NOT_FOUND' using errcode='P0002';end if;
+  if (old_row->>'revision')::bigint<>expected then raise exception 'HOUSE_REVISION_CONFLICT' using errcode='40001';end if;
+  if exists(select 1 from public.conference_house_assignments where house_id=entity_id) then raise exception 'HOUSE_HAS_ASSIGNMENTS' using errcode='55000';end if;
+  if exists(select 1 from public.conference_accommodation_floors where house_id=entity_id) then raise exception 'HOUSE_NOT_EMPTY' using errcode='55000';end if;
+  delete from public.conference_accommodation_houses where id=entity_id;
  elsif p_operation='create_floor' then parent_id:=(p_args->>'houseId')::uuid;if not exists(select 1 from public.conference_accommodation_houses where id=parent_id) then raise exception 'HOUSE_NOT_FOUND' using errcode='P0002';end if;insert into public.conference_accommodation_floors(house_id,name,position,created_by,updated_by) values(parent_id,btrim(p_args->>'name'),coalesce((p_args->>'position')::integer,0),actor,actor) returning id into entity_id;
  elsif p_operation in('update_floor','delete_floor') then entity_id:=(p_args->>'floorId')::uuid;expected:=(p_args->>'expectedRevision')::bigint;select to_jsonb(f) into old_row from public.conference_accommodation_floors f where f.id=entity_id for update;if old_row is null then raise exception 'FLOOR_NOT_FOUND' using errcode='P0002';end if;if (old_row->>'revision')::bigint<>expected then raise exception 'HOUSE_REVISION_CONFLICT' using errcode='40001';end if;if p_operation='delete_floor' then if exists(select 1 from public.conference_accommodation_rooms where floor_id=entity_id) then raise exception 'FLOOR_NOT_EMPTY' using errcode='55000';end if;delete from public.conference_accommodation_floors where id=entity_id;else update public.conference_accommodation_floors set name=btrim(p_args->>'name'),position=coalesce((p_args->>'position')::integer,position),revision=revision+1,updated_at=statement_timestamp(),updated_by=actor where id=entity_id;end if;
  elsif p_operation='create_room' then parent_id:=(p_args->>'floorId')::uuid;if not exists(select 1 from public.conference_accommodation_floors where id=parent_id) then raise exception 'FLOOR_NOT_FOUND' using errcode='P0002';end if;insert into public.conference_accommodation_rooms(floor_id,room_number,base_capacity,extra_bed_capacity,notes,position,created_by,updated_by) values(parent_id,btrim(p_args->>'roomNumber'),(p_args->>'baseCapacity')::integer,coalesce((p_args->>'extraBedCapacity')::integer,0),nullif(btrim(p_args->>'notes'),''),coalesce((p_args->>'position')::integer,0),actor,actor) returning id into entity_id;
@@ -7587,7 +7604,6 @@ declare
   context jsonb; actor uuid; v_authorization uuid;
   current public.conference_accommodation_occupancies%rowtype;
   member record; family_ids uuid[]; changed_ids jsonb:='[]'::jsonb;
-  removed_transport_ids jsonb:='[]'::jsonb;
 begin
   context:=platform_private.require_conference_accommodation_context(
     p_device,p_conference,'conference.accommodation.manage',true);
@@ -7614,11 +7630,13 @@ begin
       member.participation_id,actor,v_authorization,context,'accommodation_removed',null) is not null then
       changed_ids:=changed_ids||jsonb_build_array(member.participation_id);
     end if;
-    removed_transport_ids:=removed_transport_ids||platform_private.cleanup_conference_transport_for_participation(
-      member.participation_id,actor,v_authorization,'accommodation_removed',null,'conference.accommodation.manage');
   end loop;
-  return jsonb_build_object('occupancyId',current.id,'deleted',true,'familyParticipationIds',to_jsonb(family_ids),
-    'changedParticipationIds',changed_ids,'removedTransportAssignmentIds',removed_transport_ids);
+  if exists(select 1 from public.conference_accommodation_occupancies where id=current.id) then
+    raise exception 'ACCOMMODATION_REMOVAL_NOT_APPLIED' using errcode='55000';
+  end if;
+  return jsonb_build_object('occupancyId',current.id,'deleted',true,
+    'familyParticipationIds',to_jsonb(family_ids),'changedParticipationIds',changed_ids,
+    'removedTransportAssignmentIds','[]'::jsonb);
 end $$;
 
 
@@ -8156,7 +8174,7 @@ declare
  ctx jsonb;actor uuid;authz uuid;stay jsonb;child_draft jsonb;room_ids uuid[];v_room_id uuid;result jsonb;mutation jsonb;room_draft jsonb;resolved_children jsonb:='[]'::jsonb;mutation_results jsonb:='[]'::jsonb;
  guardian_draft jsonb;guardian_participation public.conference_participations%rowtype;child_participation public.conference_participations%rowtype;
  guardian_stay public.conference_accommodation_occupancies%rowtype;v_guardian_person_id uuid;v_child_person_id uuid;
- draft_room public.conference_accommodation_rooms%rowtype;draft_assignment public.conference_room_assignments%rowtype;
+ draft_room public.conference_accommodation_rooms%rowtype;draft_assignment public.conference_room_assignments%rowtype;structure_applied boolean:=false;
 begin
  ctx:=platform_private.require_conference_accommodation_context(p_device,p_conference,'conference.accommodation.manage',true);
  perform platform_private.require_conference_participation_context(p_device,p_conference,'conference.people.manage',true);
@@ -8216,16 +8234,26 @@ begin
 	   if not found then raise exception 'ACCOMMODATION_ROOM_NOT_FOUND' using errcode='P0002';end if;
 	   if draft_room.revision<>(room_draft->>'expectedRevision')::bigint then raise exception 'ACCOMMODATION_REVISION_CONFLICT' using errcode='40001';end if;
 	 end if;
-	 if room_draft is not null and jsonb_typeof(room_draft)<>'null' and room_draft->'structure' is not null and jsonb_typeof(room_draft->'structure')<>'null' then
-   perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>'roomId')::uuid,(room_draft->>'expectedRevision')::bigint,(room_draft->>'expectedAssignmentRevision')::bigint,room_draft->'structure','[]'::jsonb,'[]'::jsonb,'[]'::jsonb);
- end if;
-	 for stay in select value from jsonb_array_elements(p_payload->'stays') loop
+	 
+	 for stay in select value from jsonb_array_elements(p_payload->'stays') order by case value->>'operation' when 'remove' then 1 when 'move' then 2 when 'replace' then 3 when 'assign' then 4 else 5 end loop
 	   if stay->>'operation'='assign' then perform platform_private.require_exact_jsonb_keys(stay,array['operation','sourceRoomId','targetRoomId','roomId','participationId','guardianDraftId','arrivalDay','leaveDay','bedType','extraBedPersonType']);
 	   elsif stay->>'operation'='move' then perform platform_private.require_exact_jsonb_keys(stay,array['operation','sourceRoomId','targetRoomId','roomId','occupancyId','expectedRevision','arrivalDay','leaveDay','bedType','extraBedPersonType']);
 	   elsif stay->>'operation'='replace' then perform platform_private.require_exact_jsonb_keys(stay,array['operation','sourceRoomId','targetRoomId','roomId','occupancyId','expectedRevision','participationId','effectiveDay','bedType','extraBedPersonType']);
 	   elsif stay->>'operation'='remove' then perform platform_private.require_exact_jsonb_keys(stay,array['operation','sourceRoomId','targetRoomId','roomId','occupancyId','expectedRevision']);
 	   else raise exception 'FAMILY_ACCOMMODATION_OPERATION_INVALID' using errcode='22023';end if;
-	   case stay->>'operation'
+	   if not structure_applied and stay->>'operation'<>'remove' and not(
+     stay->>'operation'='move'
+     and room_draft is not null and jsonb_typeof(room_draft)<>'null'
+     and room_draft->'structure' is not null and jsonb_typeof(room_draft->'structure')<>'null'
+     and coalesce((room_draft->'structure'->>'baseCapacity')::integer,draft_room.base_capacity)<=draft_room.base_capacity
+     and coalesce((room_draft->'structure'->>'extraBedCapacity')::integer,draft_assignment.extra_bed_capacity)<=draft_assignment.extra_bed_capacity
+   ) then
+     if room_draft is not null and jsonb_typeof(room_draft)<>'null' and room_draft->'structure' is not null and jsonb_typeof(room_draft->'structure')<>'null' then
+       perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>'roomId')::uuid,(select revision from public.conference_accommodation_rooms where id=(room_draft->>'roomId')::uuid),(select revision from public.conference_room_assignments where conference_id=p_conference and room_id=(room_draft->>'roomId')::uuid),room_draft->'structure','[]'::jsonb,'[]'::jsonb,'[]'::jsonb);
+     end if;
+     structure_applied:=true;
+   end if;
+   case stay->>'operation'
     when 'assign' then
       if nullif(stay->>'guardianDraftId','') is not null then
         if guardian_participation.id is null or stay->>'guardianDraftId' is distinct from guardian_draft->>'draftId' then raise exception 'FAMILY_GUARDIAN_DRAFT_ASSIGNMENT_INVALID' using errcode='23514';end if;
@@ -8238,6 +8266,12 @@ begin
 	   end case;
 	   mutation_results:=mutation_results||jsonb_build_array(mutation);
  end loop;
+ if not structure_applied then
+   if room_draft is not null and jsonb_typeof(room_draft)<>'null' and room_draft->'structure' is not null and jsonb_typeof(room_draft->'structure')<>'null' then
+     perform public.save_conference_accommodation_room_draft(p_device,gen_random_uuid(),p_conference,(room_draft->>'roomId')::uuid,(select revision from public.conference_accommodation_rooms where id=(room_draft->>'roomId')::uuid),(select revision from public.conference_room_assignments where conference_id=p_conference and room_id=(room_draft->>'roomId')::uuid),room_draft->'structure','[]'::jsonb,'[]'::jsonb,'[]'::jsonb);
+   end if;
+   structure_applied:=true;
+ end if;
  for child_draft in select value from jsonb_array_elements(resolved_children) loop
    if child_draft->>'bedType'='shared' then
      select * into guardian_stay from public.conference_accommodation_occupancies where conference_id=p_conference and participation_id=(child_draft->>'resolvedGuardianParticipationId')::uuid and room_id=(child_draft->>'targetRoomId')::uuid and arrival_day=(child_draft->>'arrivalDay')::integer and leave_day is not distinct from nullif(child_draft->>'leaveDay','')::integer for key share;
@@ -8688,6 +8722,123 @@ begin
   end if;
 
   return v_result;
+end $$;
+
+
+--
+-- Name: public_registration_read("uuid", "bytea"); Type: FUNCTION; Schema: reservations; Owner: -
+--
+
+CREATE FUNCTION "reservations"."public_registration_read"("p_public_id" "uuid", "p_fingerprint_digest" "bytea") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_channel reservations.public_registration_channels%rowtype; v_event reservations.events%rowtype;
+begin
+ select c.* into v_channel from reservations.public_registration_channels c where c.public_id=p_public_id;
+ if not found or not v_channel.enabled then raise exception 'PUBLIC_REGISTRATION_UNAVAILABLE' using errcode='P0002'; end if;
+ perform reservations_private.public_registration_rate_limit(v_channel.id,p_fingerprint_digest,60);
+ if (v_channel.opens_at is not null and statement_timestamp()<v_channel.opens_at)
+    or (v_channel.closes_at is not null and statement_timestamp()>=v_channel.closes_at) then
+   raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001';
+ end if;
+ select e.* into v_event from reservations.events e where e.id=v_channel.event_id;
+ if not found or v_event.status<>'open' then raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001'; end if;
+ return jsonb_build_object(
+   'publicId',v_channel.public_id,'event',jsonb_build_object(
+     'name',v_event.name,'startDate',v_event.start_date,'endDate',v_event.end_date,'location',v_event.location
+   ),
+   'bookingTypes',(select coalesce(jsonb_agg(jsonb_build_object(
+     'id',bt.id,'name',bt.name,'price',bt.price,'eligibleAttendanceSegments',bt.eligible_attendance_segments
+   ) order by bt.display_order,bt.id),'[]'::jsonb) from reservations.booking_types bt where bt.event_id=v_event.id and bt.active),
+   'registrationMode',v_channel.registration_mode,'opensAt',v_channel.opens_at,'closesAt',v_channel.closes_at
+ );
+end $$;
+
+
+--
+-- Name: public_registration_status("uuid", "bytea", "bytea"); Type: FUNCTION; Schema: reservations; Owner: -
+--
+
+CREATE FUNCTION "reservations"."public_registration_status"("p_public_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_channel reservations.public_registration_channels%rowtype; v_request reservations.public_registration_requests%rowtype; v_booking_number text;
+begin
+ select c.* into v_channel from reservations.public_registration_channels c where c.public_id=p_public_id;
+ if not found then raise exception 'PUBLIC_REGISTRATION_NOT_FOUND' using errcode='P0002'; end if;
+ perform reservations_private.public_registration_rate_limit(v_channel.id,p_fingerprint_digest,60);
+ if p_tracking_secret_digest is null or octet_length(p_tracking_secret_digest)<>32 then
+   raise exception 'PUBLIC_REGISTRATION_NOT_FOUND' using errcode='P0002'; end if;
+ select r.* into v_request from reservations.public_registration_requests r
+ where r.channel_id=v_channel.id and r.tracking_secret_digest=p_tracking_secret_digest;
+ if not found then raise exception 'PUBLIC_REGISTRATION_NOT_FOUND' using errcode='P0002'; end if;
+ if v_request.booking_id is not null then
+   select b.booking_number into v_booking_number from reservations.bookings b where b.id=v_request.booking_id;
+ end if;
+ return jsonb_strip_nulls(jsonb_build_object(
+   'reference',v_request.request_reference,'state',v_request.state,'revision',v_request.revision,
+   'submittedAt',v_request.submitted_at,'updatedAt',v_request.updated_at,'decisionReason',v_request.decision_reason,
+   'bookingNumber',v_booking_number
+ ));
+end $$;
+
+
+--
+-- Name: public_registration_submit("uuid", "uuid", "bytea", "bytea", "uuid", "text", "text", "text", "date", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: reservations; Owner: -
+--
+
+CREATE FUNCTION "reservations"."public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+ v_channel reservations.public_registration_channels%rowtype; v_event reservations.events%rowtype;
+ v_existing reservations.public_registration_requests%rowtype; v_request_id uuid:=extensions.gen_random_uuid();
+ v_intent bytea; v_reference text;
+begin
+ if p_submit_operation_id is null or p_tracking_secret_digest is null or octet_length(p_tracking_secret_digest)<>32 then
+   raise exception 'PUBLIC_REGISTRATION_SUBMISSION_INVALID' using errcode='22023'; end if;
+ select c.* into v_channel from reservations.public_registration_channels c where c.public_id=p_public_id for key share;
+ if not found or not v_channel.enabled then raise exception 'PUBLIC_REGISTRATION_UNAVAILABLE' using errcode='P0002'; end if;
+ perform reservations_private.public_registration_rate_limit(v_channel.id,p_fingerprint_digest,8);
+ if v_channel.registration_mode<>'approval_required'
+    or (v_channel.opens_at is not null and statement_timestamp()<v_channel.opens_at)
+    or (v_channel.closes_at is not null and statement_timestamp()>=v_channel.closes_at) then
+   raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001'; end if;
+ select e.* into v_event from reservations.events e where e.id=v_channel.event_id for key share;
+ if not found or v_event.status<>'open' then raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001'; end if;
+ if not exists(select 1 from reservations.booking_types bt where bt.id=p_booking_type_id and bt.event_id=v_event.id and bt.active) then
+   raise exception 'PUBLIC_REGISTRATION_BOOKING_TYPE_UNAVAILABLE' using errcode='22023'; end if;
+
+ v_intent:=extensions.digest(convert_to(jsonb_build_object(
+   'bookingTypeId',p_booking_type_id,'fullName',btrim(coalesce(p_full_name,'')),'phone',btrim(coalesce(p_phone,'')),
+   'gender',p_gender,'dateOfBirth',p_date_of_birth,'church',coalesce(p_church,''),'governorate',coalesce(p_governorate,''),
+   'cityOrVillage',coalesce(p_city_or_village,''),'serviceSector',coalesce(p_service_sector,''),
+   'serviceSectorOther',p_service_sector_other,'notes',p_notes
+ )::text,'UTF8'),'sha256');
+
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-submit:'||v_channel.id::text||':'||p_submit_operation_id::text,0));
+ select r.* into v_existing from reservations.public_registration_requests r
+ where r.channel_id=v_channel.id and r.submit_operation_id=p_submit_operation_id;
+ if found then
+   if v_existing.submit_intent_digest<>v_intent or v_existing.tracking_secret_digest<>p_tracking_secret_digest then
+     raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001'; end if;
+   return jsonb_build_object('reference',v_existing.request_reference,'state',v_existing.state,'submittedAt',v_existing.submitted_at);
+ end if;
+
+ v_reference:='PR-'||upper(substr(replace(v_request_id::text,'-',''),1,12));
+ insert into reservations.public_registration_requests(
+   id,channel_id,event_id,submit_operation_id,submit_intent_digest,request_reference,tracking_secret_digest,booking_type_id,
+   submitted_full_name,submitted_phone,submitted_gender,submitted_date_of_birth,submitted_church,submitted_governorate,
+   submitted_city_or_village,submitted_service_sector,submitted_service_sector_other,submitted_notes
+ ) values(
+   v_request_id,v_channel.id,v_event.id,p_submit_operation_id,v_intent,v_reference,p_tracking_secret_digest,p_booking_type_id,
+   btrim(p_full_name),btrim(p_phone),p_gender,p_date_of_birth,coalesce(p_church,''),coalesce(p_governorate,''),
+   coalesce(p_city_or_village,''),coalesce(p_service_sector,''),p_service_sector_other,p_notes
+ );
+ return jsonb_build_object('reference',v_reference,'state','submitted','submittedAt',statement_timestamp());
 end $$;
 
 
@@ -9406,6 +9557,53 @@ end $$;
 
 
 --
+-- Name: get_public_registration_request("uuid", "uuid"); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."get_public_registration_request"("p_device_id" "uuid", "p_request_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare r reservations.public_registration_requests%rowtype; v_context jsonb; v_candidates jsonb; v_type reservations.booking_types%rowtype;
+begin
+ select * into r from reservations.public_registration_requests where id=p_request_id;
+ if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002'; end if;
+ v_context:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');
+ select * into v_type from reservations.booking_types where id=r.booking_type_id and event_id=r.event_id;
+
+ select coalesce(jsonb_agg(candidate order by candidate->>'fullName',candidate->>'id'),'[]'::jsonb) into v_candidates
+ from (
+   select jsonb_build_object(
+    'id',p.id,'fullName',p.full_name,'phone',p.phone,'church',p.church,'revision',p.revision,
+    'hasEventBooking',exists(
+      select 1 from reservations.participants rp join reservations.bookings b on b.participant_id=rp.id
+      where rp.person_id=p.id and b.event_id=r.event_id
+    )
+   ) candidate
+   from platform.people p
+   where (lower(regexp_replace(btrim(p.full_name),'\\s+',' ','g'))=lower(regexp_replace(btrim(r.submitted_full_name),'\\s+',' ','g')))
+      or (nullif(regexp_replace(coalesce(p.phone,''),'[^0-9]','','g'),'') is not null
+          and regexp_replace(coalesce(p.phone,''),'[^0-9]','','g')=regexp_replace(r.submitted_phone,'[^0-9]','','g'))
+   order by p.updated_at desc,p.id limit 20
+ ) x;
+
+ return jsonb_build_object(
+  'request',jsonb_build_object(
+   'requestId',r.id,'reference',r.request_reference,'state',r.state,'revision',r.revision,
+   'eventId',r.event_id,'bookingTypeId',r.booking_type_id,'bookingTypeName',v_type.name,
+   'currentBookingTypeActive',v_type.active,'currentPrice',v_type.price,
+   'fullName',r.submitted_full_name,'phone',r.submitted_phone,'gender',r.submitted_gender,
+   'dateOfBirth',r.submitted_date_of_birth,'church',r.submitted_church,'governorate',r.submitted_governorate,
+   'cityOrVillage',r.submitted_city_or_village,'serviceSector',r.submitted_service_sector,
+   'serviceSectorOther',r.submitted_service_sector_other,'notes',r.submitted_notes,
+   'submittedAt',r.submitted_at,'updatedAt',r.updated_at
+  ),
+  'identityCandidates',v_candidates
+ );
+end $$;
+
+
+--
 -- Name: has_event_permission("uuid", "text", "uuid"); Type: FUNCTION; Schema: reservations_private; Owner: -
 --
 
@@ -9606,6 +9804,31 @@ begin
   return reservations_private.complete_operation(
     v_operation_id,v_context,'link_standalone_event_to_conference',p_args,v_result
   );
+end $$;
+
+
+--
+-- Name: list_public_registration_requests("uuid", "uuid", "text", integer); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."list_public_registration_requests"("p_device_id" "uuid", "p_event_id" "uuid", "p_state" "text", "p_limit" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_context jsonb; v_limit integer:=coalesce(p_limit,100);
+begin
+ if p_event_id is null or v_limit<1 or v_limit>500 or (p_state is not null and p_state not in('submitted','under_review','approved','rejected','waitlisted')) then
+  raise exception 'PUBLIC_REGISTRATION_ADMIN_ARGUMENT_INVALID' using errcode='22023'; end if;
+ v_context:=reservations_private.resolve_event_scope(p_device_id,p_event_id,'reservations.booking.create');
+ return (select coalesce(jsonb_agg(jsonb_build_object(
+  'requestId',r.id,'reference',r.request_reference,'state',r.state,'revision',r.revision,
+  'fullName',r.submitted_full_name,'phone',r.submitted_phone,'bookingTypeId',r.booking_type_id,
+  'bookingTypeName',bt.name,'submittedAt',r.submitted_at,'updatedAt',r.updated_at
+ ) order by r.submitted_at,r.id),'[]'::jsonb)
+ from (select * from reservations.public_registration_requests
+       where event_id=p_event_id and (p_state is null or state=p_state)
+       order by submitted_at,id limit v_limit) r
+ join reservations.booking_types bt on bt.id=r.booking_type_id and bt.event_id=r.event_id);
 end $$;
 
 
@@ -9862,6 +10085,9 @@ begin
  end if;
  if p_operation='update_operational_review' then
   perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_booking_id','p_expected_revision','p_review_status']); v_context:=reservations_private.resolve_booking_scope(p_device_id,(p_args->>'p_booking_id')::uuid,'reservations.operations.manage'); v_actor:=(v_context->>'actorUserId')::uuid;
+  select * into v_booking from reservations.bookings b where b.id=(v_context->>'bookingId')::uuid and b.scope_partition_id=(v_context->>'scopePartitionId')::uuid for update;
+  if not found then raise exception 'RESERVATIONS_BOOKING_NOT_FOUND' using errcode='P0002'; end if;
+  if v_booking.lifecycle_status<>'active' then raise exception 'RESERVATIONS_BOOKING_APOLOGIZED_IMMUTABLE' using errcode='55000'; end if;
   select o.id,o.revision into v_id,v_revision from reservations.operational_reviews o where o.booking_id=(v_context->>'bookingId')::uuid and o.scope_partition_id=(v_context->>'scopePartitionId')::uuid for update; if not found then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if; v_replay:=reservations_private.begin_operation(v_operation_id,v_context,p_operation,p_args); if v_replay is not null then return v_replay; end if;
   update reservations.operational_reviews o set review_status=p_args->>'p_review_status',reviewed_at=case when p_args->>'p_review_status'='completed' then statement_timestamp() end,reviewed_by=case when p_args->>'p_review_status'='completed' then v_actor end,reviewed_by_device_id=case when p_args->>'p_review_status'='completed' then p_device_id end,revision=o.revision+1,updated_at=statement_timestamp(),updated_by=v_actor where o.id=v_id and o.booking_id=(v_context->>'bookingId')::uuid and o.scope_partition_id=(v_context->>'scopePartitionId')::uuid and o.revision=(p_args->>'p_expected_revision')::bigint returning o.id,o.revision into v_id,v_revision; if not found then raise exception 'RESERVATIONS_REVISION_CONFLICT' using errcode='40001'; end if; v_result:=jsonb_build_object('operationalReviewId',v_id,'revision',v_revision,'status',p_args->>'p_review_status'); perform reservations_private.audit(v_context,'operational_review.updated','operational_review',v_id,v_operation_id,null,v_result); return reservations_private.complete_operation(v_operation_id,v_context,p_operation,p_args,v_result);
  end if;
@@ -10000,6 +10226,30 @@ begin
   end if;
 
   return new;
+end $$;
+
+
+--
+-- Name: public_registration_rate_limit("uuid", "bytea", integer); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."public_registration_rate_limit"("p_channel_id" "uuid", "p_fingerprint_digest" "bytea", "p_limit" integer) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_bucket timestamptz:=date_trunc('minute',statement_timestamp()); v_count integer;
+begin
+ if p_fingerprint_digest is null or octet_length(p_fingerprint_digest)<>32 or p_limit<1 or p_limit>120 then
+   raise exception 'PUBLIC_REGISTRATION_RATE_LIMIT_ARGUMENT_INVALID' using errcode='22023';
+ end if;
+ insert into reservations.public_registration_rate_limits(channel_id,fingerprint_digest,bucket_start,request_count)
+ values(p_channel_id,p_fingerprint_digest,v_bucket,1)
+ on conflict(channel_id,fingerprint_digest,bucket_start)
+ do update set request_count=reservations.public_registration_rate_limits.request_count+1
+ returning request_count into v_count;
+ if v_count>p_limit then raise exception 'PUBLIC_REGISTRATION_RATE_LIMITED' using errcode='P0001'; end if;
+ delete from reservations.public_registration_rate_limits
+ where bucket_start<v_bucket-interval '10 minutes';
 end $$;
 
 
@@ -12444,6 +12694,105 @@ ALTER TABLE ONLY "reservations"."person_credit_entries" FORCE ROW LEVEL SECURITY
 
 
 --
+-- Name: public_registration_channels; Type: TABLE; Schema: reservations; Owner: -
+--
+
+CREATE TABLE "reservations"."public_registration_channels" (
+    "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
+    "event_id" "uuid" NOT NULL,
+    "public_id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
+    "enabled" boolean DEFAULT false NOT NULL,
+    "registration_mode" "text" DEFAULT 'approval_required'::"text" NOT NULL,
+    "full_policy" "text" DEFAULT 'reject'::"text" NOT NULL,
+    "opens_at" timestamp with time zone,
+    "closes_at" timestamp with time zone,
+    "revision" bigint DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    "created_by" "uuid" NOT NULL,
+    "updated_by" "uuid" NOT NULL,
+    CONSTRAINT "public_registration_channels_check" CHECK ((("opens_at" IS NULL) OR ("closes_at" IS NULL) OR ("closes_at" > "opens_at"))),
+    CONSTRAINT "public_registration_channels_check1" CHECK (("updated_at" >= "created_at")),
+    CONSTRAINT "public_registration_channels_full_policy_check" CHECK (("full_policy" = ANY (ARRAY['reject'::"text", 'waitlist'::"text"]))),
+    CONSTRAINT "public_registration_channels_registration_mode_check" CHECK (("registration_mode" = ANY (ARRAY['approval_required'::"text", 'auto_approve'::"text"]))),
+    CONSTRAINT "public_registration_channels_revision_check" CHECK (("revision" > 0))
+);
+
+ALTER TABLE ONLY "reservations"."public_registration_channels" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: public_registration_rate_limits; Type: TABLE; Schema: reservations; Owner: -
+--
+
+CREATE TABLE "reservations"."public_registration_rate_limits" (
+    "channel_id" "uuid" NOT NULL,
+    "fingerprint_digest" "bytea" NOT NULL,
+    "bucket_start" timestamp with time zone NOT NULL,
+    "request_count" integer NOT NULL,
+    CONSTRAINT "public_registration_rate_limits_fingerprint_digest_check" CHECK (("octet_length"("fingerprint_digest") = 32)),
+    CONSTRAINT "public_registration_rate_limits_request_count_check" CHECK (("request_count" > 0))
+);
+
+ALTER TABLE ONLY "reservations"."public_registration_rate_limits" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: public_registration_requests; Type: TABLE; Schema: reservations; Owner: -
+--
+
+CREATE TABLE "reservations"."public_registration_requests" (
+    "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
+    "channel_id" "uuid" NOT NULL,
+    "event_id" "uuid" NOT NULL,
+    "submit_operation_id" "uuid" NOT NULL,
+    "request_reference" "text" NOT NULL,
+    "tracking_secret_digest" "bytea" NOT NULL,
+    "booking_type_id" "uuid" NOT NULL,
+    "submitted_full_name" "text" NOT NULL,
+    "submitted_phone" "text" NOT NULL,
+    "submitted_gender" "text",
+    "submitted_date_of_birth" "date",
+    "submitted_church" "text" DEFAULT ''::"text" NOT NULL,
+    "submitted_governorate" "text" DEFAULT ''::"text" NOT NULL,
+    "submitted_city_or_village" "text" DEFAULT ''::"text" NOT NULL,
+    "submitted_service_sector" "text" DEFAULT ''::"text" NOT NULL,
+    "submitted_service_sector_other" "text",
+    "submitted_notes" "text",
+    "state" "text" DEFAULT 'submitted'::"text" NOT NULL,
+    "revision" bigint DEFAULT 1 NOT NULL,
+    "resolved_person_id" "uuid",
+    "booking_id" "uuid",
+    "decision_reason" "text",
+    "decided_at" timestamp with time zone,
+    "decided_by" "uuid",
+    "decided_by_device_id" "uuid",
+    "submitted_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    "submit_intent_digest" "bytea" NOT NULL,
+    CONSTRAINT "public_registration_requests_check" CHECK (("updated_at" >= "submitted_at")),
+    CONSTRAINT "public_registration_requests_check1" CHECK (((("state" = ANY (ARRAY['submitted'::"text", 'under_review'::"text"])) AND ("decided_at" IS NULL) AND ("decided_by" IS NULL) AND ("decided_by_device_id" IS NULL) AND ("booking_id" IS NULL)) OR (("state" = ANY (ARRAY['rejected'::"text", 'waitlisted'::"text"])) AND ("decided_at" IS NOT NULL) AND ("decided_by" IS NOT NULL) AND ("decided_by_device_id" IS NOT NULL) AND ("booking_id" IS NULL)) OR (("state" = 'approved'::"text") AND ("decided_at" IS NOT NULL) AND ("decided_by" IS NOT NULL) AND ("decided_by_device_id" IS NOT NULL) AND ("resolved_person_id" IS NOT NULL) AND ("booking_id" IS NOT NULL)))),
+    CONSTRAINT "public_registration_requests_decision_reason_check" CHECK ((("decision_reason" IS NULL) OR ("char_length"("decision_reason") <= 1000))),
+    CONSTRAINT "public_registration_requests_request_reference_check" CHECK ((("request_reference" = "btrim"("request_reference")) AND (("char_length"("request_reference") >= 6) AND ("char_length"("request_reference") <= 40)))),
+    CONSTRAINT "public_registration_requests_revision_check" CHECK (("revision" > 0)),
+    CONSTRAINT "public_registration_requests_state_check" CHECK (("state" = ANY (ARRAY['submitted'::"text", 'under_review'::"text", 'approved'::"text", 'rejected'::"text", 'waitlisted'::"text"]))),
+    CONSTRAINT "public_registration_requests_submit_intent_digest_check" CHECK (("octet_length"("submit_intent_digest") = 32)),
+    CONSTRAINT "public_registration_requests_submitted_church_check" CHECK (("char_length"("submitted_church") <= 200)),
+    CONSTRAINT "public_registration_requests_submitted_city_or_village_check" CHECK (("char_length"("submitted_city_or_village") <= 160)),
+    CONSTRAINT "public_registration_requests_submitted_full_name_check" CHECK ((("submitted_full_name" = "btrim"("submitted_full_name")) AND (("char_length"("submitted_full_name") >= 1) AND ("char_length"("submitted_full_name") <= 200)))),
+    CONSTRAINT "public_registration_requests_submitted_gender_check" CHECK ((("submitted_gender" IS NULL) OR ("submitted_gender" = ANY (ARRAY['male'::"text", 'female'::"text", 'child'::"text"])))),
+    CONSTRAINT "public_registration_requests_submitted_governorate_check" CHECK (("char_length"("submitted_governorate") <= 120)),
+    CONSTRAINT "public_registration_requests_submitted_notes_check" CHECK ((("submitted_notes" IS NULL) OR ("char_length"("submitted_notes") <= 4000))),
+    CONSTRAINT "public_registration_requests_submitted_phone_check" CHECK ((("submitted_phone" = "btrim"("submitted_phone")) AND (("char_length"("submitted_phone") >= 7) AND ("char_length"("submitted_phone") <= 20)))),
+    CONSTRAINT "public_registration_requests_submitted_service_sector_check" CHECK (("char_length"("submitted_service_sector") <= 160)),
+    CONSTRAINT "public_registration_requests_submitted_service_sector_oth_check" CHECK ((("submitted_service_sector_other" IS NULL) OR ("char_length"("submitted_service_sector_other") <= 200))),
+    CONSTRAINT "public_registration_requests_tracking_secret_digest_check" CHECK (("octet_length"("tracking_secret_digest") = 32))
+);
+
+ALTER TABLE ONLY "reservations"."public_registration_requests" FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: refund_disbursements; Type: TABLE; Schema: reservations; Owner: -
 --
 
@@ -13785,6 +14134,86 @@ ALTER TABLE ONLY "reservations"."person_credit_entries"
 
 
 --
+-- Name: public_registration_channels public_registration_channels_event_id_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_event_id_key" UNIQUE ("event_id");
+
+
+--
+-- Name: public_registration_channels public_registration_channels_id_event_id_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_id_event_id_key" UNIQUE ("id", "event_id");
+
+
+--
+-- Name: public_registration_channels public_registration_channels_pkey; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: public_registration_channels public_registration_channels_public_id_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_public_id_key" UNIQUE ("public_id");
+
+
+--
+-- Name: public_registration_rate_limits public_registration_rate_limits_pkey; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_rate_limits"
+    ADD CONSTRAINT "public_registration_rate_limits_pkey" PRIMARY KEY ("channel_id", "fingerprint_digest", "bucket_start");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_booking_id_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_booking_id_key" UNIQUE ("booking_id");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_channel_id_request_reference_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_channel_id_request_reference_key" UNIQUE ("channel_id", "request_reference");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_channel_id_submit_operation_id_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_channel_id_submit_operation_id_key" UNIQUE ("channel_id", "submit_operation_id");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_pkey; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_tracking_secret_digest_key; Type: CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_tracking_secret_digest_key" UNIQUE ("tracking_secret_digest");
+
+
+--
 -- Name: refund_disbursements refund_disbursements_operation_id_key; Type: CONSTRAINT; Schema: reservations; Owner: -
 --
 
@@ -14279,10 +14708,31 @@ CREATE INDEX "person_credit_entries_person_idx" ON "reservations"."person_credit
 
 
 --
+-- Name: public_registration_requests_channel_submitted_idx; Type: INDEX; Schema: reservations; Owner: -
+--
+
+CREATE INDEX "public_registration_requests_channel_submitted_idx" ON "reservations"."public_registration_requests" USING "btree" ("channel_id", "submitted_at", "id");
+
+
+--
+-- Name: public_registration_requests_event_state_idx; Type: INDEX; Schema: reservations; Owner: -
+--
+
+CREATE INDEX "public_registration_requests_event_state_idx" ON "reservations"."public_registration_requests" USING "btree" ("event_id", "state", "submitted_at", "id");
+
+
+--
 -- Name: reservations_attendance_partition_booking_idx; Type: INDEX; Schema: reservations; Owner: -
 --
 
 CREATE INDEX "reservations_attendance_partition_booking_idx" ON "reservations"."attendance_records" USING "btree" ("scope_partition_id", "booking_id", "segment");
+
+
+--
+-- Name: reservations_booking_types_event_id_id_uidx; Type: INDEX; Schema: reservations; Owner: -
+--
+
+CREATE UNIQUE INDEX "reservations_booking_types_event_id_id_uidx" ON "reservations"."booking_types" USING "btree" ("event_id", "id");
 
 
 --
@@ -16826,6 +17276,86 @@ ALTER TABLE ONLY "reservations"."person_credit_entries"
 
 
 --
+-- Name: public_registration_channels public_registration_channels_created_by_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "platform"."profiles"("user_id");
+
+
+--
+-- Name: public_registration_channels public_registration_channels_event_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "reservations"."events"("id") ON DELETE RESTRICT;
+
+
+--
+-- Name: public_registration_channels public_registration_channels_updated_by_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_channels"
+    ADD CONSTRAINT "public_registration_channels_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "platform"."profiles"("user_id");
+
+
+--
+-- Name: public_registration_rate_limits public_registration_rate_limits_channel_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_rate_limits"
+    ADD CONSTRAINT "public_registration_rate_limits_channel_id_fkey" FOREIGN KEY ("channel_id") REFERENCES "reservations"."public_registration_channels"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: public_registration_requests public_registration_requests_booking_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "reservations"."bookings"("id") ON DELETE RESTRICT;
+
+
+--
+-- Name: public_registration_requests public_registration_requests_channel_id_event_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_channel_id_event_id_fkey" FOREIGN KEY ("channel_id", "event_id") REFERENCES "reservations"."public_registration_channels"("id", "event_id") ON DELETE RESTRICT;
+
+
+--
+-- Name: public_registration_requests public_registration_requests_decided_by_device_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_decided_by_device_id_fkey" FOREIGN KEY ("decided_by_device_id") REFERENCES "platform"."devices"("id");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_decided_by_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_decided_by_fkey" FOREIGN KEY ("decided_by") REFERENCES "platform"."profiles"("user_id");
+
+
+--
+-- Name: public_registration_requests public_registration_requests_event_id_booking_type_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_event_id_booking_type_id_fkey" FOREIGN KEY ("event_id", "booking_type_id") REFERENCES "reservations"."booking_types"("event_id", "id") ON DELETE RESTRICT;
+
+
+--
+-- Name: public_registration_requests public_registration_requests_resolved_person_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE ONLY "reservations"."public_registration_requests"
+    ADD CONSTRAINT "public_registration_requests_resolved_person_id_fkey" FOREIGN KEY ("resolved_person_id") REFERENCES "platform"."people"("id") ON DELETE RESTRICT;
+
+
+--
 -- Name: refund_disbursements refund_disbursements_created_by_device_id_fkey; Type: FK CONSTRAINT; Schema: reservations; Owner: -
 --
 
@@ -17573,6 +18103,24 @@ ALTER TABLE "reservations"."person_credit_accounts" ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE "reservations"."person_credit_entries" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: public_registration_channels; Type: ROW SECURITY; Schema: reservations; Owner: -
+--
+
+ALTER TABLE "reservations"."public_registration_channels" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: public_registration_rate_limits; Type: ROW SECURITY; Schema: reservations; Owner: -
+--
+
+ALTER TABLE "reservations"."public_registration_rate_limits" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: public_registration_requests; Type: ROW SECURITY; Schema: reservations; Owner: -
+--
+
+ALTER TABLE "reservations"."public_registration_requests" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: refund_disbursements; Type: ROW SECURITY; Schema: reservations; Owner: -
@@ -19376,6 +19924,30 @@ GRANT ALL ON FUNCTION "reservations"."mutate_pre_authorization_architecture_reco
 
 
 --
+-- Name: FUNCTION "public_registration_read"("p_public_id" "uuid", "p_fingerprint_digest" "bytea"); Type: ACL; Schema: reservations; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations"."public_registration_read"("p_public_id" "uuid", "p_fingerprint_digest" "bytea") FROM PUBLIC;
+GRANT ALL ON FUNCTION "reservations"."public_registration_read"("p_public_id" "uuid", "p_fingerprint_digest" "bytea") TO "service_role";
+
+
+--
+-- Name: FUNCTION "public_registration_status"("p_public_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea"); Type: ACL; Schema: reservations; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations"."public_registration_status"("p_public_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") FROM PUBLIC;
+GRANT ALL ON FUNCTION "reservations"."public_registration_status"("p_public_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") TO "service_role";
+
+
+--
+-- Name: FUNCTION "public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text"); Type: ACL; Schema: reservations; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations"."public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "reservations"."public_registration_submit"("p_public_id" "uuid", "p_submit_operation_id" "uuid", "p_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_gender" "text", "p_date_of_birth" "date", "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text") TO "service_role";
+
+
+--
 -- Name: FUNCTION "read"("p_device_id" "uuid", "p_operation" "text", "p_args" "jsonb"); Type: ACL; Schema: reservations; Owner: -
 --
 
@@ -19499,6 +20071,13 @@ GRANT ALL ON FUNCTION "reservations_private"."effective_capabilities"("p_device_
 
 
 --
+-- Name: FUNCTION "get_public_registration_request"("p_device_id" "uuid", "p_request_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."get_public_registration_request"("p_device_id" "uuid", "p_request_id" "uuid") FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "has_event_permission"("p_actor" "uuid", "p_permission" "text", "p_event_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -19518,6 +20097,13 @@ REVOKE ALL ON FUNCTION "reservations_private"."link_booking_to_canonical_partici
 --
 
 REVOKE ALL ON FUNCTION "reservations_private"."link_standalone_event_to_conference"("p_device_id" "uuid", "p_args" "jsonb") FROM PUBLIC;
+
+
+--
+-- Name: FUNCTION "list_public_registration_requests"("p_device_id" "uuid", "p_event_id" "uuid", "p_state" "text", "p_limit" integer); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."list_public_registration_requests"("p_device_id" "uuid", "p_event_id" "uuid", "p_state" "text", "p_limit" integer) FROM PUBLIC;
 
 
 --
@@ -19546,6 +20132,13 @@ REVOKE ALL ON FUNCTION "reservations_private"."protect_dynamic_attendance_period
 --
 
 REVOKE ALL ON FUNCTION "reservations_private"."protect_payment_history"() FROM PUBLIC;
+
+
+--
+-- Name: FUNCTION "public_registration_rate_limit"("p_channel_id" "uuid", "p_fingerprint_digest" "bytea", "p_limit" integer); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."public_registration_rate_limit"("p_channel_id" "uuid", "p_fingerprint_digest" "bytea", "p_limit" integer) FROM PUBLIC;
 
 
 --
@@ -19936,4 +20529,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2cbDPQuXvchRUcR6uOLzB4ikUhWrnwseehy4Ubkzwmsm2saRQ8yv8ldf7PCK7BZ
+\unrestrict fGnYU8g6elwkyFgamAFYq5FYH8rRF8Oqe0LrkKfckqsHCc0pPadXkzVne4R0f67
