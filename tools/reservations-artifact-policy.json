@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "reservations-family-registration-review-v2",
+    "revision": "reservations-public-registration-ops-v1",
     "files": {
-      "reservations-module.js": "1d69356e9073a65ac389321ef0349249d646c39337ddca3ceb0c6056db6dbf89",
+      "reservations-module.js": "cfbed85d8ba4671eadab64800e82e1f4cb6b93f068d5ac8fc30cb500ade07ca8",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
