@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict hySsKSmtnWz2wcelDXfa7BM9mYhSuUHa3B02rL3VsfHYS7PJCQqJqNnEZR6PKJE
+\restrict fmua4SnvbVFaYinkrZB8mNHHTEDqRjxFZtXWWrblKNqAsmAaVuaozKRyqzG33jY
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -9623,7 +9623,7 @@ for m in select * from reservations.public_registration_request_members where re
  if m.resolved_person_id is not null then continue;end if;res:=p_resolutions->m.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;if choice not in('existing','new')or(choice='existing' and pid is null)or(choice='new' and pid is not null)then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
  if choice='existing' and not exists(select 1 from jsonb_array_elements(platform_private.reservations_person_identity_candidates(m.full_name,m.phone,10))c where c->>'personId'=pid::text)then raise exception 'PUBLIC_REGISTRATION_PERSON_CANDIDATE_STALE' using errcode='40001';end if;
  if m.role<>'child_dependent' then
-  if m.date_of_birth is null or m.date_of_birth>e.start_date then raise exception 'PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID' using errcode='22023';end if;age:=extract(year from pg_catalog.age(e.start_date,m.date_of_birth))::int;args:=jsonb_build_object('p_operation_id',extensions.gen_random_uuid(),'p_event_id',r.event_id,'p_booking_type_id',m.booking_type_id,'p_full_name',m.full_name,'p_phone',m.phone,'p_age',age,'p_church',m.church,'p_governorate',m.governorate,'p_city_or_village',m.city_or_village,'p_service_sector',m.service_sector,'p_service_sector_other',m.service_sector_other,'p_notes',m.notes,'p_gender',m.gender,'p_date_of_birth',m.date_of_birth)||case when choice='existing' then jsonb_build_object('p_person_id',pid) else '{}'::jsonb end;br:=reservations.mutate(p_device_id,'create_booking',args);if choice='new' and coalesce((br->>'identityResolutionRequired')::boolean,false)then br:=reservations.mutate(p_device_id,'create_booking',args||jsonb_build_object('p_identity_resolution_token',br->>'identityResolutionToken','p_identity_resolution_decision','different'));end if;bid:=nullif(br->>'bookingId','')::uuid;if bid is null then raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';end if;select p.person_id into pid from reservations.bookings b join reservations.participants p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id where b.id=bid;update reservations.public_registration_request_members set resolved_person_id=pid,booking_id=bid where id=m.id;if m.role='child_paid' then select gm.resolved_person_id into gp from reservations.public_registration_request_members gm where gm.request_id=r.id and gm.member_key=m.guardian_member_key;if gp is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;if e.conference_id is not null then select cp.id into gpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=gp and cp.status='active';if gpart is null then insert into public.conference_participations(conference_id,person_id,status,created_by,updated_by)values(e.conference_id,gp,'active',actor,actor)returning id into gpart;end if;select cp.id into cpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=pid;if cpart is null then insert into public.conference_participations(conference_id,person_id,guardian_participation_id,status,created_by,updated_by)values(e.conference_id,pid,gpart,'active',actor,actor)returning id into cpart;elsif exists(select 1 from public.conference_participations where id=cpart and guardian_participation_id is distinct from gpart)then raise exception 'PUBLIC_REGISTRATION_CHILD_GUARDIAN_CONFLICT' using errcode='40001';end if;end if;end if;
+  if m.date_of_birth is null or m.date_of_birth>e.start_date then raise exception 'PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID' using errcode='22023';end if;age:=extract(year from pg_catalog.age(e.start_date,m.date_of_birth))::int;args:=reservations_private.public_registration_booking_args(extensions.gen_random_uuid(),r.event_id,m.booking_type_id,m.full_name,m.phone,age,m.church,m.governorate,m.city_or_village,m.service_sector,m.service_sector_other,m.notes,m.gender,m.date_of_birth,case when choice='existing' then pid else null end);br:=reservations.mutate(p_device_id,'create_booking',args);if choice='new' and coalesce((br->>'identityResolutionRequired')::boolean,false)then br:=reservations.mutate(p_device_id,'create_booking',args||jsonb_build_object('p_identity_resolution_token',br->>'identityResolutionToken','p_identity_resolution_decision','different'));end if;bid:=nullif(br->>'bookingId','')::uuid;if bid is null then raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';end if;select p.person_id into pid from reservations.bookings b join reservations.participants p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id where b.id=bid;update reservations.public_registration_request_members set resolved_person_id=pid,booking_id=bid where id=m.id;if m.role='child_paid' then select gm.resolved_person_id into gp from reservations.public_registration_request_members gm where gm.request_id=r.id and gm.member_key=m.guardian_member_key;if gp is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;if e.conference_id is not null then select cp.id into gpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=gp and cp.status='active';if gpart is null then insert into public.conference_participations(conference_id,person_id,status,created_by,updated_by)values(e.conference_id,gp,'active',actor,actor)returning id into gpart;end if;select cp.id into cpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=pid;if cpart is null then insert into public.conference_participations(conference_id,person_id,guardian_participation_id,status,created_by,updated_by)values(e.conference_id,pid,gpart,'active',actor,actor)returning id into cpart;elsif exists(select 1 from public.conference_participations where id=cpart and guardian_participation_id is distinct from gpart)then raise exception 'PUBLIC_REGISTRATION_CHILD_GUARDIAN_CONFLICT' using errcode='40001';end if;end if;end if;
  else
   if choice='new' then pid:=platform_private.create_reservations_dependent_person(p_device_id,actor,p_operation_id,r.event_id,jsonb_build_object('fullName',m.full_name,'phone',m.phone,'gender',m.gender,'dateOfBirth',m.date_of_birth,'church',m.church,'governorate',m.governorate,'cityOrVillage',m.city_or_village,'serviceSector',m.service_sector,'serviceSectorOther',m.service_sector_other));end if;select gm.resolved_person_id into gp from reservations.public_registration_request_members gm where gm.request_id=r.id and gm.member_key=m.guardian_member_key;if gp is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;if e.conference_id is not null then select cp.id into gpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=gp and cp.status='active';if gpart is null then insert into public.conference_participations(conference_id,person_id,status,created_by,updated_by)values(e.conference_id,gp,'active',actor,actor)returning id into gpart;end if;select cp.id into cpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=pid;if cpart is null then insert into public.conference_participations(conference_id,person_id,guardian_participation_id,status,created_by,updated_by)values(e.conference_id,pid,gpart,'active',actor,actor)returning id into cpart;elsif exists(select 1 from public.conference_participations where id=cpart and guardian_participation_id is distinct from gpart)then raise exception 'PUBLIC_REGISTRATION_CHILD_GUARDIAN_CONFLICT' using errcode='40001';end if;end if;update reservations.public_registration_request_members set resolved_person_id=pid where id=m.id;
  end if;
@@ -9711,15 +9711,12 @@ begin
     raise exception 'PUBLIC_REGISTRATION_PERSON_CANDIDATE_STALE' using errcode='40001';
   end if;
 
-  v_booking_args:=jsonb_strip_nulls(jsonb_build_object(
-    'p_operation_id',p_operation_id,'p_event_id',r.event_id,'p_booking_type_id',r.booking_type_id,
-    'p_full_name',r.submitted_full_name,'p_phone',r.submitted_phone,'p_age',v_age,
-    'p_church',r.submitted_church,'p_governorate',r.submitted_governorate,
-    'p_city_or_village',r.submitted_city_or_village,'p_service_sector',r.submitted_service_sector,
-    'p_service_sector_other',r.submitted_service_sector_other,'p_notes',r.submitted_notes,
-    'p_gender',r.submitted_gender,'p_date_of_birth',r.submitted_date_of_birth,
-    'p_person_id',case when p_decision='approve_existing' then p_person_id else null end
-  ));
+  v_booking_args:=reservations_private.public_registration_booking_args(
+    p_operation_id,r.event_id,r.booking_type_id,r.submitted_full_name,r.submitted_phone,v_age,
+    r.submitted_church,r.submitted_governorate,r.submitted_city_or_village,r.submitted_service_sector,
+    r.submitted_service_sector_other,r.submitted_notes,r.submitted_gender,r.submitted_date_of_birth,
+    case when p_decision='approve_existing' then p_person_id else null end
+  );
   v_booking_result:=reservations.mutate(p_device_id,'create_booking',v_booking_args);
   if p_decision='approve_new' and coalesce((v_booking_result->>'identityResolutionRequired')::boolean,false) then
     if nullif(v_booking_result->>'identityResolutionToken','') is null then
@@ -10650,6 +10647,33 @@ begin
 
   return new;
 end $$;
+
+
+--
+-- Name: public_registration_booking_args("uuid", "uuid", "uuid", "text", "text", integer, "text", "text", "text", "text", "text", "text", "text", "date", "uuid"); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."public_registration_booking_args"("p_operation_id" "uuid", "p_event_id" "uuid", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_age" integer, "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text", "p_gender" "text", "p_date_of_birth" "date", "p_person_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  select jsonb_build_object(
+    'p_operation_id',p_operation_id,
+    'p_event_id',p_event_id,
+    'p_booking_type_id',p_booking_type_id,
+    'p_full_name',p_full_name,
+    'p_phone',p_phone,
+    'p_age',p_age,
+    'p_church',p_church,
+    'p_governorate',p_governorate,
+    'p_city_or_village',p_city_or_village,
+    'p_service_sector',p_service_sector,
+    'p_service_sector_other',p_service_sector_other,
+    'p_notes',p_notes,
+    'p_gender',p_gender,
+    'p_date_of_birth',p_date_of_birth
+  ) || case when p_person_id is null then '{}'::jsonb else jsonb_build_object('p_person_id',p_person_id) end
+$$;
 
 
 --
@@ -21170,6 +21194,14 @@ REVOKE ALL ON FUNCTION "reservations_private"."protect_payment_history"() FROM P
 
 
 --
+-- Name: FUNCTION "public_registration_booking_args"("p_operation_id" "uuid", "p_event_id" "uuid", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_age" integer, "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text", "p_gender" "text", "p_date_of_birth" "date", "p_person_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."public_registration_booking_args"("p_operation_id" "uuid", "p_event_id" "uuid", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_age" integer, "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text", "p_gender" "text", "p_date_of_birth" "date", "p_person_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "reservations_private"."public_registration_booking_args"("p_operation_id" "uuid", "p_event_id" "uuid", "p_booking_type_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_age" integer, "p_church" "text", "p_governorate" "text", "p_city_or_village" "text", "p_service_sector" "text", "p_service_sector_other" "text", "p_notes" "text", "p_gender" "text", "p_date_of_birth" "date", "p_person_id" "uuid") TO "service_role";
+
+
+--
 -- Name: FUNCTION "public_registration_members_json"("p_request_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -21578,4 +21610,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hySsKSmtnWz2wcelDXfa7BM9mYhSuUHa3B02rL3VsfHYS7PJCQqJqNnEZR6PKJE
+\unrestrict fmua4SnvbVFaYinkrZB8mNHHTEDqRjxFZtXWWrblKNqAsmAaVuaozKRyqzG33jY
