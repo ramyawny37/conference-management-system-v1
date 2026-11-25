@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "reservations-canonical-lifecycle-profile-v1",
+  "ownership": "reservation-management-system",
+  "requiredBehaviors": [
+    "canonical-person-profile",
+    "manual-person-identity-resolution",
+    "active-apologized-deleted-lifecycle",
+    "apology-two-option-allocation",
+    "dated-partial-refund-disbursement",
+    "non-active-operational-readonly",
+    "active-only-operational-finance",
+    "historical-financial-reporting",
+    "shared-runtime-invalidation",
+    "independent-payment-and-review-actions",
+    "newborn-age-zero",
+    "canonical-dob-gender"
+  ]
+}

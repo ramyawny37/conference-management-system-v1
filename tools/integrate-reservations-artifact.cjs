@@ -13,6 +13,7 @@ if (!archive) throw new Error('Pass the verified Reservations integration ZIP pa
 const policyPath = path.join(__dirname, 'reservations-artifact-policy.json');
 const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
 const artifactNames = ['reservations-module.js', 'reservations-module.css'];
+const contractName = 'reservations-contract.json';
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'cms-reservations-'));
 function sha256(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
@@ -41,6 +42,11 @@ try {
     actualHashes[name] = sha256(bytes);
     payloads[name] = bytes;
   }
+  const contractSource = fs.existsSync(path.join(temp, contractName)) ? path.join(temp, contractName) : path.join(temp, 'modules', 'reservations', contractName);
+  if (!fs.existsSync(contractSource)) throw new Error('Artifact missing: ' + contractName);
+  const contractBytes = fs.readFileSync(contractSource);
+  const contract = JSON.parse(contractBytes.toString('utf8'));
+  if (contract.ownership !== 'reservation-management-system' || !Array.isArray(contract.requiredBehaviors)) throw new Error('RESERVATIONS_ARTIFACT_CONTRACT_INVALID');
   const rejected = policy.rejectedArtifacts.find((entry) => sameFiles(actualHashes, entry.files));
   if (rejected) throw new Error('RESERVATIONS_ARTIFACT_REJECTED:' + rejected.sourceCommit + ':' + rejected.reason);
   const approved = policy.approvedIntegrations.find((entry) => sameFiles(actualHashes, entry.files));
@@ -75,7 +81,8 @@ try {
   }
   fs.writeFileSync(indexPath, index);
   fs.writeFileSync(swPath, sw);
-  policy.currentRuntime = { revision: approved.revision, files: actualHashes };
+  fs.writeFileSync(path.join(root, 'modules', 'reservations', contractName), contractBytes);
+  policy.currentRuntime = { revision: approved.revision, files: actualHashes, contract: { version: contract.contractVersion, sha256: sha256(contractBytes) } };
   policy.approvedIntegrations = [];
   fs.writeFileSync(policyPath, JSON.stringify(policy, null, 2) + '\\n');
   execFileSync('git', ['diff', '--check'], {cwd: root, stdio:'inherit'});
