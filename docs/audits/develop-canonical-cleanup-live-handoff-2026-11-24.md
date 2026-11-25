@@ -620,3 +620,21 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Public event load HTTP 500: gateway stripped two backslashes instead of one; reproduced invalid hexadecimal digit 22023. Development migration 20261125150328 fixes all three canonical operations using chr(92). Source bd91670b84c465376001a13c31030e6a4b18f874.
 - User browser confirmed form loads and HTTP 500 disappeared: PASS for event load only. Family submit/approval E2E remains pending.
 - Live structural digest 297/6f3efe87a90399e33569cdc3d28910b2; other structural digests unchanged. Source f566761c282ff8b21b92f573ec10ebed13d7e14c. CI pending. No production changes.
+
+
+### 2026-11-25 — Canonical family admin review + standalone/conference approval closure
+- Reservations source `a334223c1b1ce0b1cc8ffacc7d0258680f6f6191`: admin Public Registration review now consumes the family request contract, renders every member/guardian/current booking price, requires an explicit central-person identity resolution for every member, and approves through `decide_public_registration_family_request`. The admin UI no longer calls the single-request decision operation.
+- Reservations CI `45643450904` **PASS** and Development Validation `45643450453` **PASS**. The first CI rejection was stale single-person UI assertions; tests were changed to require the canonical family decision path and explicitly forbid regression to `decide_public_registration_request`.
+- Supabase Development migration `20261125172000 public_registration_family_standalone_scope` guards Conference participation projection with `e.conference_id is not null`. Standalone events therefore do not attempt Conference participation writes; conference-linked events retain the existing guardian-participation projection. Repository source: `9c6105fbb35e86c2e7a8524ce06c621a23c98263`.
+- That function-body change intentionally changed the combined function structural fingerprint, with count unchanged at 297. Exact Development assertion semantics produce `297/6c3adadcd27e7d4ef157186c7f3c0847`; source parity update: `653707beec965f148432c376fc9bf3c6c657783b`.
+- Zero-data run `45645317940` **PASS**: zero-data guards, disposable catalog replay, Development schema export, disposable PostgreSQL 17 rehearsal, bootstrap staging/upload, and generated-HEAD Reservations dispatch all passed.
+- Platform Reservations validation `45645317989` **PASS** on the parity correction; latest validation `45645384906` **PASS** on `c4b8c3f17af4031d21c380e07e7bce020216bddc`.
+- Artifact preflight `45645384812` **PASS**. The earlier `45645202004` failure was an attempted automatic private-artifact download without `RESERVATIONS_SOURCE_TOKEN`; that incomplete automation was removed and the preflight restored to read-only in `c4b8c3f17af4031d21c380e07e7bce020216bddc`. Do not treat that superseded run as an active regression.
+- Verified Reservations artifact source remains `a334223c1b1ce0b1cc8ffacc7d0258680f6f6191`; its approved JS/CSS hashes are recorded in `tools/reservations-artifact-policy.json`. The artifact has **not** been manually copied into Platform; integration remains gated by the canonical artifact utility rather than an untracked bundle edit.
+- No `main`, Production, Supabase Production, or Vercel changes were made.
+
+#### Remaining acceptance gates
+1. Integrate the approved Reservations artifact into Platform through the canonical artifact utility with valid private-repository artifact access; do not bypass hash/contract policy.
+2. Produce a fresh Development Preview from the resulting Platform `develop` SHA and perform visual/operational family review acceptance.
+3. Complete approved-device family approval E2E for both standalone and conference-linked events, including paid child guardian linkage and cleanup/rollback evidence.
+4. Real OS Push remains blocked until Development has an approved active push subscription.
