@@ -46,7 +46,7 @@ Deno.serve(async request=>{
       serviceSector:bounded(a.serviceSector,160),serviceSectorOther:a.serviceSectorOther===null?null:bounded(a.serviceSectorOther,200),
       notes:a.notes===null?null:bounded(a.notes,4000)
     }});
-    if(!result.error)result={...result,data:{...result.data,trackingSecret}};
+    if(!result.error){result={...result,data:{...result.data,trackingSecret}};try{const emitted=await service.functions.invoke('platform-notifications',{body:{operation:'emit',event:{eventType:'reservations.public_registration.submitted',moduleKey:'reservations',resourceType:'public_registration_request',resourceId:String(result.data.reference||''),title:'طلب تسجيل جديد',body:'وصل طلب تسجيل جديد ويحتاج للمراجعة.',targetUrl:'./#reservations',dedupeKey:'public-registration:'+publicId+':'+operationId}}});if(emitted.error)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_EMIT_FAILED',timestamp:new Date().toISOString()}));}}
   }
   if(result.error)throw result.error;
   return json(200,{ok:true,data:result.data});
