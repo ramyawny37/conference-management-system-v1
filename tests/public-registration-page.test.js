@@ -87,3 +87,13 @@ test('service sector UI matches canonical submission contract',()=>{
   assert.match(js,/otherInput\.required=m\.serviceSector==='other'/);
   assert.match(js,/if\(!m\.serviceSector\|\|\(m\.serviceSector==='other'&&!m\.serviceSectorOther\)\)throw new Error\('PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID'\)/);
 });
+
+
+test('public registration assets stay cache-coherent and date fields open from the field',()=>{
+  const html=fs.readFileSync(path.join(root,'public-registration.html'),'utf8');
+  assert.match(html,/public-registration\.css\?rev=public-registration-v2/);
+  assert.match(html,/public-registration\.js\?rev=public-registration-v2/);
+  assert.match(js,/function bindDatePickers\(root\)/);
+  assert.match(js,/typeof input\.showPicker==='function'/);
+  assert.match(js,/bindDatePickers\(host\)/);
+});
