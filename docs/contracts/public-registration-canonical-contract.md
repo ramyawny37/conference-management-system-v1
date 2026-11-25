@@ -187,10 +187,10 @@ The exact database transaction shape must be proven during implementation. If cu
 
 ## 11. Capacity and waitlist
 
-Capacity is not invented in Phase 1 unless a canonical event/booking-type capacity source already exists and is verified. Do not infer capacity from room beds or accommodation counts.
+Capacity already has a canonical event-level source: `reservations.events.capacity` (nullable positive integer). Public Registration must reuse that field and must not infer capacity from room beds, accommodation counts, request counts, or a second capacity column.
 
 When capacity is implemented:
-- capacity must have one authoritative owner;
+- `reservations.events.capacity` is the authoritative event-level capacity owner;
 - approval and auto-approval must recheck it transactionally;
 - waitlist promotion must be explicit/idempotent;
 - position/order semantics must be defined before exposing a numbered queue.
@@ -259,14 +259,14 @@ Future target may expose equivalent application operations through ASP.NET Core 
 | PR-009 | Waitlist is a request state/policy, not another booking table/path. | ACCEPTED |
 | PR-010 | OTP/pre-fill is deferred until its security/identity contract is explicit. | ACCEPTED |
 | PR-011 | Future ASP.NET Core + Angular/PWA portability is a design constraint, not a current migration. | ACCEPTED |
-| PR-012 | No capacity source is invented; capacity work waits for an authoritative contract. | ACCEPTED |
+| PR-012 | Event-level capacity is owned by existing `reservations.events.capacity`; no second capacity source is allowed. | ACCEPTED |
 
 ## 16. Implementation phases and progress
 
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
-| PR0 | Repository audit + canonical contract | IN PROGRESS | Baseline `5204d14054f1646c2a6b6e0794d321dd738a6918`; this document |
-| PR1 | Schema/security foundation for channel + request + tracking | NOT STARTED | — |
+| PR0 | Repository audit + canonical contract | IMPLEMENTED | Baseline `5204d14054f1646c2a6b6e0794d321dd738a6918`; this document |
+| PR1 | Schema/security foundation for channel + request + tracking | IMPLEMENTED | Migration `20261125090000_public_registration_foundation.sql` + static contract test |
 | PR2 | Narrow public read/submit/status server boundary | NOT STARTED | — |
 | PR3 | Admin list/review + identity resolution integration | NOT STARTED | — |
 | PR4 | Protected approval/reject orchestration into canonical booking | NOT STARTED | — |
@@ -359,7 +359,7 @@ These are deliberately not guessed:
 - tracking token expiry/rotation duration;
 - exact required public form fields and which event fields are public;
 - whether registrants may edit/cancel a submitted request;
-- authoritative capacity model;
+- exact capacity consumption semantics (which booking states count against `reservations.events.capacity`);
 - waitlist ordering policy;
 - group/family registration;
 - OTP/pre-fill;
@@ -378,4 +378,18 @@ A deferred decision must be resolved in this document before code that depends o
 - Confirmed: `platform.people` is permanent identity; name/phone are nonunique candidate signals; current Reservations identity resolution is explicit/manual; `reservations_private.mutate_scoped` is the sole current booking writer; operational price comes from the event booking type; current admin operations are protected by approved user/device/session routing.
 - Runtime/database change: none.
 - Production/main/Supabase change: none.
-- Next: resolve PR1 exact schema/security names and public-boundary hosting/rate-limit design before writing a migration.
+- PR1 schema names resolved under `reservations`: `public_registration_channels` and `public_registration_requests`.
+- Existing `reservations.events.capacity` confirmed as the event-level capacity source; consumption semantics remain deferred until PR7.
+- Next: PR2 narrow public read/submit/status boundary, including hosting/origin and rate-limit design.
+
+
+### PR1 — schema/security foundation
+- Migration: `supabase/migrations/20261125090000_public_registration_foundation.sql`.
+- One channel per Reservations event; channel uses an opaque UUID public identifier and stores no URL/host assumption.
+- Requests are event/channel scoped by a composite foreign key, carry a UUID submit operation identity, immutable submitted profile fields, requested booking type, state/revision, tracking-secret SHA-256 digest, and optional canonical Person/Booking links.
+- Tracking secret plaintext is never stored.
+- Approval linkage is constrained so only `approved` requests can hold a booking and approved requests must hold both canonical Person and Booking identities.
+- Tables use enabled + forced RLS and grant no table privileges to `public`, `anon`, `authenticated`, or `service_role`.
+- No public/admin RPC is added in PR1. PR2/PR3 must add narrow server operations rather than table grants.
+- Runtime/UI/Edge Function change: none.
+- Production/main application: none.
