@@ -386,7 +386,7 @@ A deferred decision must be resolved in this document before code that depends o
 ### PR1 — schema/security foundation
 - Migration: `supabase/migrations/20261125090000_public_registration_foundation.sql`.
 - One channel per Reservations event; channel uses an opaque UUID public identifier and stores no URL/host assumption.
-- Requests are event/channel scoped by a composite foreign key, carry a UUID submit operation identity, immutable submitted profile fields, requested booking type, state/revision, tracking-secret SHA-256 digest, and optional canonical Person/Booking links.
+- Requests are event/channel scoped by a composite foreign key and their booking type is constrained to the same event through the restored relational `(event_id,id)` booking-type key; they carry a UUID submit operation identity, immutable submitted profile fields, requested booking type, state/revision, tracking-secret SHA-256 digest, and optional canonical Person/Booking links.
 - Tracking secret plaintext is never stored.
 - Approval linkage is constrained so only `approved` requests can hold a booking and approved requests must hold both canonical Person and Booking identities.
 - Tables use enabled + forced RLS and grant no table privileges to `public`, `anon`, `authenticated`, or `service_role`.

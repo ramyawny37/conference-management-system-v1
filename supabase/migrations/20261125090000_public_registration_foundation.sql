@@ -38,6 +38,11 @@ create table reservations.public_registration_channels(
   check(updated_at>=created_at)
 );
 
+-- booking_types.id is globally unique already; this composite unique index restores a
+-- relational event/type key without creating a second booking-type authority.
+create unique index if not exists reservations_booking_types_event_id_id_uidx
+  on reservations.booking_types(event_id,id);
+
 create table reservations.public_registration_requests(
   id uuid primary key default extensions.gen_random_uuid(),
   channel_id uuid not null,
