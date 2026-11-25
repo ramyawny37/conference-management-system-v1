@@ -35,8 +35,8 @@ test('the canonical shell is the only active global shell stylesheet',()=>{
   const canonicalAsset='canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2';
   assert.match(html,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
   assert.match(worker,new RegExp(canonicalAsset.replace(/[.?]/g,'\\$&')));
-  assert.match(html,/js\/platform-integration\.js\?rev=accommodation-lease-fastpath-v4/);
-  assert.match(worker,/js\/platform-integration\.js\?rev=accommodation-lease-fastpath-v4/);
+  assert.match(html,/js\/platform-integration\.js\?rev=reservations-subroute-navigation-v1/);
+  assert.match(worker,/js\/platform-integration\.js\?rev=reservations-subroute-navigation-v1/);
   assert.doesNotMatch(html,/platform-shell-v2\.css|class="platform-shell-v2"/);
   assert.doesNotMatch(worker,/platform-shell-v2\.css/);
   assert.strictEqual(fs.existsSync(path.join(root,'platform-shell-v2.css')),false);
