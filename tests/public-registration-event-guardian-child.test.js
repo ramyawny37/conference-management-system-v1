@@ -8,6 +8,7 @@ const family=fs.readFileSync('supabase/migrations/20261125172000_public_registra
 const page=fs.readFileSync('public-registration.js','utf8');
 const argumentContract=fs.readFileSync('supabase/migrations/20261125164000_public_registration_family_booking_argument_contract.sql','utf8');
 const canonicalArgs=fs.readFileSync('supabase/migrations/20261125170000_public_registration_canonical_booking_args.sql','utf8');
+const canonicalSnapshots=fs.readFileSync('supabase/migrations/20261125222500_public_registration_canonical_service_sector.sql','utf8');
 
 test('guardian-child ownership is event scoped and never stored on the global person',()=>{
   assert.match(migration,/create table reservations\.event_guardian_children/);
@@ -68,4 +69,14 @@ test('public registration has one canonical booking argument owner',()=>{
   assert.match(canonicalArgs,/v_booking_args:=reservations_private\.public_registration_booking_args/);
   assert.match(canonicalArgs,/args:=reservations_private\.public_registration_booking_args/);
   assert.doesNotMatch(canonicalArgs,/new_single text := \$\$v_booking_args:=jsonb_strip_nulls/);
+});
+
+
+test('public family submission rejects snapshot values that the canonical participant writer cannot accept',()=>{
+  assert.match(canonicalSnapshots,/public_registration_requests_submitted_service_sector_canonical_check/);
+  assert.match(canonicalSnapshots,/public_registration_request_members_service_sector_canonical_check/);
+  assert.match(canonicalSnapshots,/v_sector not in\('widows','widows-daughters','discipleship-primary-prep','discipleship-secondary-university','worship','media','servant-preparation','administration','other'\)/);
+  assert.match(canonicalSnapshots,/v_sector='other' and v_sector_other is null/);
+  assert.match(canonicalSnapshots,/v_sector<>'other' and v_sector_other is not null/);
+  assert.match(canonicalSnapshots,/PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID/);
 });
