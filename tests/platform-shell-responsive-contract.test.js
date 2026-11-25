@@ -96,7 +96,7 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'development-reservations-lifecycle-active-only-v4-design-foundation-v1'/);
+  assert.match(worker,/\? 'development-reservations-canonical-identity-profile-v1-design-foundation-v1'/);
   assert.doesNotMatch(worker,/conference-owner-preflight-correction-v1/);
   assert.match(worker,/: 'production-3-6-0-release-v6'/);
 });
