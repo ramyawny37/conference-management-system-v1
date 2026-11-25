@@ -2,8 +2,13 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
+const vm=require('node:vm');
 const html=fs.readFileSync('public-registration.html','utf8');
 const js=fs.readFileSync('public-registration.js','utf8');
+
+test('public registration script is valid executable JavaScript',()=>{
+  assert.doesNotThrow(()=>new vm.Script(js,{filename:'public-registration.js'}));
+});
 
 test('public page is isolated from authenticated platform shell',()=>{
   assert.match(html,/public-registration\.js/);
@@ -51,7 +56,15 @@ test('child inheritance synchronizes the current guardian form values before cop
   assert.match(js,/\['church','governorate','cityOrVillage','serviceSector','serviceSectorOther'\]/);
 });
 
-test('device-local tracking keeps multiple request capabilities without storing registration PII',()=>{\n  assert.match(js,/public-registration-history:/);\n  assert.match(js,/history\.unshift\(\{reference:reference,trackingSecret:value\}\)/);\n  assert.match(js,/history\.slice\(0,8\)/);\n  assert.match(js,/data-saved-request/);\n  assert.doesNotMatch(js,/history\.unshift\(\{[^}]*phone|history\.unshift\(\{[^}]*dateOfBirth|history\.unshift\(\{[^}]*fullName/);\n});\n\ntest('tracking page renders only server-projected optional financial and accommodation fields',()=>{
+test('device-local tracking keeps multiple request capabilities without storing registration PII',()=>{
+  assert.match(js,/public-registration-history:/);
+  assert.match(js,/history\.unshift\(\{reference:reference,trackingSecret:value\}\)/);
+  assert.match(js,/history\.slice\(0,8\)/);
+  assert.match(js,/data-saved-request/);
+  assert.doesNotMatch(js,/history\.unshift\(\{[^}]*phone|history\.unshift\(\{[^}]*dateOfBirth|history\.unshift\(\{[^}]*fullName/);
+});
+
+test('tracking page renders only server-projected optional financial and accommodation fields',()=>{
   assert.match(js,/s\.financial/);
   assert.match(js,/s\.accommodation/);
   assert.match(js,/لم يتم تخصيص غرفة بعد/);
