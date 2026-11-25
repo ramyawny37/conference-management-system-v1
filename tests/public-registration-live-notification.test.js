@@ -2,3 +2,5 @@
 
 test('registration settings stay with event while request operations have a dedicated workspace',()=>{assert.match(moduleJs,/title:"طلبات التسجيل",href:"\/registration-requests"/);assert.match(moduleJs,/label:"إعدادات التسجيل العام"/);assert.match(moduleJs,/mode:"settings"/);assert.match(moduleJs,/mode:"requests"/);assert.match(moduleJs,/public-registration-requests-workspace/);assert.match(moduleJs,/window\.addEventListener\("platform-notification"/)});
 test('notification edge uses Deno-compatible web-push namespace import',()=>{const notificationEdge=fs.readFileSync('supabase/functions/platform-notifications/index.ts','utf8');assert.match(notificationEdge,/import \* as webpush from 'web-push'/);assert.doesNotMatch(notificationEdge,/import webpush from 'web-push'/)});
+
+test('canonical Platform reservations subnav exposes registration requests before participants',()=>{const indexHtml=fs.readFileSync('index.html','utf8');const requests=indexHtml.indexOf('data-platform-route="/reservations/registration-requests"');const participants=indexHtml.indexOf('data-platform-route="/reservations/participants"');assert.ok(requests>=0);assert.ok(participants>requests);});
