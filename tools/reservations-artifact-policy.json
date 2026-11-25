@@ -9,10 +9,10 @@
   },
   "approvedIntegrations": [
     {
-      "sourceCommit": "014065a659611ef243c4bd7dc313eb3e9802dc5e",
-      "revision": "reservations-public-registration-pr5-v1",
+      "sourceCommit": "64e45507920d9c28defb3b49fd02a01bc8393d27",
+      "revision": "reservations-canonical-identity-profile-v1",
       "files": {
-        "reservations-module.js": "c57eeabdc04c96256e596d6f9728eec48e510d8d36fb4732be0d9b366decaddf",
+        "reservations-module.js": "78b8bbd089717c892a8aefbe5d1e26e1dbce1634fe6baa54fe4894653706d05c",
         "reservations-module.css": "e7430e2c87dbb646039466d25604f2963f52ac4d4acd1c45f38fd800d98bfa9d"
       }
     }
