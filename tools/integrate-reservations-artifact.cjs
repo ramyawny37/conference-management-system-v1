@@ -86,7 +86,7 @@ try {
   fs.writeFileSync(path.join(root, 'modules', 'reservations', contractName), contractBytes);
   policy.currentRuntime = { revision: approved.revision, files: actualHashes, contract: { version: contract.contractVersion, sha256: sha256(contractBytes) } };
   policy.approvedIntegrations = [];
-  fs.writeFileSync(policyPath, JSON.stringify(policy, null, 2) + '\\n');
+  fs.writeFileSync(policyPath, JSON.stringify(policy, null, 2) + '\n');
   execFileSync('git', ['diff', '--check'], {cwd: root, stdio:'inherit'});
   console.log('Integrated verified Reservations artifact into Conference develop working tree.');
   console.log('Source Reservations commit: ' + approved.sourceCommit);

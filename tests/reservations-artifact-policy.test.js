@@ -46,4 +46,5 @@ test('integration is fail closed and permits at most one explicitly approved art
   assert.match(integrator, /branch !== 'develop'/);
   assert.match(integrator, /preserve the independently owned Platform design suffix/);
   assert.doesNotMatch(integrator, /"'development-" \+ policy\.currentRuntime\.revision/);
+  assert.doesNotMatch(integrator, /JSON\.stringify\(policy, null, 2\) \+ '\\\\n'/);
 });
