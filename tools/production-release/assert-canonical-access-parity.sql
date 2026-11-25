@@ -1,4 +1,4 @@
--- Read-only access parity gate, captured from current Development after the canonical Public Registration PostgREST gateway cutover.
+-- Read-only access parity gate, captured from current Development after canonical family-only Public Registration cutover.
 -- Checks effective explicit/default ACL entries for anon/authenticated/service_role.
 -- Must be executed on a disposable clean bootstrap after grants are restored.
 DO $access$
@@ -20,7 +20,7 @@ BEGIN
       AND r.rolname IN ('anon','authenticated','service_role')
   )
   SELECT count(*),md5(coalesce(string_agg(item,E'\n' ORDER BY item),'')) INTO actual_count,actual_digest FROM grants;
-  IF actual_count<>341 OR actual_digest<>'f64e7b182cd099ed4719b2b0ce74f4ba' THEN
+  IF actual_count<>340 OR actual_digest<>'9018274dbceece379cf1854a2aae4c25' THEN
     RAISE EXCEPTION 'FOUNDATION_ACCESS_PARITY_FAILED: entries=% digest=%',actual_count,actual_digest;
   END IF;
   RAISE NOTICE 'FOUNDATION_ACCESS_PARITY_PASS';
