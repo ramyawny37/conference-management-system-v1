@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const ORIGIN='https://ramyawny37.github.io';
 const cors={'Access-Control-Allow-Headers':'content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Origin':ORIGIN,'Vary':'Origin'};
-const operations=new Set(['event','submit_family','status']);
+const operations=new Set(['event','submit_family','status','recover']);
 function required(name:string){const value=String(Deno.env.get(name)||'').trim();if(!value)throw new Error('PUBLIC_REGISTRATION_SERVER_CONFIGURATION');return value;}
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});}
 function exact(value:unknown,keys:string[]){if(!value||typeof value!=='object'||Array.isArray(value))return false;const actual=Object.keys(value as Record<string,unknown>).sort();return actual.length===keys.length&&actual.every((key,i)=>key===keys.slice().sort()[i]);}
@@ -33,6 +33,12 @@ Deno.serve(async request=>{
     if(!exact(args,['publicId','trackingSecret']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
     const a=args as any,tracking=bounded(a.trackingSecret,128,true);
     result=await service.rpc('public_registration_gateway',{p_operation:'status_family',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),fingerprintDigest:hex(fingerprint)}});
+  }else if(operation==='recover'){
+    if(!exact(args,['dateOfBirth','phone','publicId','requestReference']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
+    const a=args as any,publicId=uuid(a.publicId),requestReference=bounded(a.requestReference,40,true),phone=bounded(a.phone,20,true),dateOfBirth=bounded(a.dateOfBirth,10,true);
+    const recoveryBytes=crypto.getRandomValues(new Uint8Array(32)),trackingSecret=b64url(recoveryBytes);
+    result=await service.rpc('public_registration_gateway',{p_operation:'recover_family',p_args:{publicId,requestReference,phone,dateOfBirth,newTrackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint)}});
+    if(!result.error)result={...result,data:{...result.data,trackingSecret}};
   }else if(operation==='submit_family'){
     if(!exact(args,['members','operationId','publicId'])||!Array.isArray((args as any).members))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
     const a=args as any,publicId=uuid(a.publicId),operationId=uuid(a.operationId);
