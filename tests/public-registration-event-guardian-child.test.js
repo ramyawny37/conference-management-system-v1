@@ -3,7 +3,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const test=require('node:test');
 const migration=fs.readFileSync('supabase/migrations/20261125180000_reservations_event_guardian_child_relationship.sql','utf8');
+const genderCorrection=fs.readFileSync('supabase/migrations/20261125183000_public_registration_child_gender_canonicalization.sql','utf8');
 const family=fs.readFileSync('supabase/migrations/20261125172000_public_registration_family_standalone_scope.sql','utf8');
+const page=fs.readFileSync('public-registration.js','utf8');
 
 test('guardian-child ownership is event scoped and never stored on the global person',()=>{
   assert.match(migration,/create table reservations\.event_guardian_children/);
@@ -27,6 +29,10 @@ test('dependent identity uses the canonical audited helper and requires DOB',()=
   assert.match(migration,/PUBLIC_REGISTRATION_DEPENDENT_PERSON_WRITER_DRIFT/);
   assert.match(family,/insert into platform\.people/);
   assert.match(migration,/execute replace\(d,old_text,new_text\)/);
+  assert.match(genderCorrection,/p_profile->>'gender' not in\('male','female'\)/);
+  assert.match(genderCorrection,/p_profile->>'gender',\s*\(p_profile->>'dateOfBirth'\)::date/);
+  assert.doesNotMatch(page,/m\.gender='child'/);
+  assert.match(page,/!\['male','female'\]\.includes\(m\.gender\)/);
 });
 
 test('family approval captures both child roles without weakening Conference projection',()=>{
