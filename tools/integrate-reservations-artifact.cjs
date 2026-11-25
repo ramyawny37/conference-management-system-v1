@@ -74,7 +74,9 @@ try {
     const swNewRef = './' + newRef;
     sw = replaceOnce(sw, swOldRef, swNewRef, 'service-worker.js ' + name);
   }
-  sw = replaceOnce(sw, "'development-" + policy.currentRuntime.revision + "'", "'development-" + approved.revision + "'", 'Development cache revision');
+  // The Reservations revision is the owned prefix of the composite Development
+  // cache revision; preserve the independently owned Platform design suffix.
+  sw = replaceOnce(sw, 'development-' + policy.currentRuntime.revision, 'development-' + approved.revision, 'Development cache revision');
   // Validate all references and checksums before modifying any tracked file.
   for (const [name, bytes] of Object.entries(payloads)) {
     fs.writeFileSync(path.join(root, 'modules', 'reservations', name), bytes);
