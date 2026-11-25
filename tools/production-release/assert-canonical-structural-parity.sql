@@ -1,5 +1,5 @@
 -- Read-only exact structural parity gate for a clean, disposable Supabase-compatible target.
--- Structural fingerprints captured from Development on 2026-11-09; function semantic digest reverified against Development and disposable replay on 2026-11-14. No data is read or copied.
+-- Structural fingerprints captured from current Development after Public Registration PR1-PR3; no data is read or copied. No data is read or copied.
 -- Run with psql -X -v ON_ERROR_STOP=1 after the full foundation has been applied.
 DO $parity$
 DECLARE mismatches text;
@@ -34,9 +34,9 @@ BEGIN
     UNION ALL SELECT 'policies',count(*),md5(coalesce(string_agg(item,E'\n' ORDER BY item),'')) FROM policies
   ), expected(kind,objects,digest) AS (
     VALUES
-    ('relations',88::bigint,'97a500834dce377bdf487f4d6b8428ce'),
-    ('columns',1103::bigint,'dc306aebb9918d6e944499fce8a158c9'),
-    ('functions',279::bigint,'da9021cc21fef92ce767e72b7eca7493'),
+    ('relations',91::bigint,'8a25f37125aaee377389fc960679adb9'),
+    ('columns',1148::bigint,'f092870723fe143385877bbacd00a77e'),
+    ('functions',285::bigint,'62b8a99bc9e61fc743a85ac9bcd593e0'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
