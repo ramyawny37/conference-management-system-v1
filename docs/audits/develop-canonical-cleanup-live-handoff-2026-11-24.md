@@ -597,7 +597,7 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Root-only `./#reservations` notification targeting is retired.
 - Supabase Development migration `20261125145319 public_registration_notification_event_deeplink` makes the family submit RPC return the internal event id to the service boundary; the Edge strips that internal field before returning the public response.
 - Public Registration Edge v7 emits `./#reservations/events/<eventId>?tab=registration`, which routes through the existing Reservations canonical router to the correct event registration panel. No second router was added.
-- Current structural parity after this semantic function change: **297 functions / `9c5b3ae4ffbe4a4be256f0e0ff28f3f2`**.
+- Current structural parity after this semantic function change: **297 functions / `a5317978d9223dc92acde0bcb4aae705`**.
 - Notification regression requires an event deep-link and forbids the old root-only target.
 
 ### Approval E2E / Preview / Push truth status
@@ -611,3 +611,5 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 2. Produce a fresh Development Preview whose provenance points to the latest accepted Platform SHA, then verify the deployed public-registration assets rather than source CI alone.
 3. Complete approved-device paid-child family approval E2E (independent booking, central DOB, Conference participation, guardian link, rollback/cleanup) through an authorized device-session path.
 4. Real OS Push remains pending until Development has an approved active push subscription.
+
+- Zero-data run `45639060128` exposed a digest-recording mistake, not a schema defect: guards and disposable replay passed, extracted Development schema reported the same per-schema function fingerprints as live Development, while the expected combined digest had been calculated with an incorrectly escaped separator. Exact assertion semantics on Development produce `297/a5317978d9223dc92acde0bcb4aae705`. Commit `7581b829b0066df4e4913e9930762775dd27ff49` corrects only that expected digest; follow-up zero-data is required before PASS.
