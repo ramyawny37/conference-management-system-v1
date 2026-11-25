@@ -8,7 +8,8 @@ const family=fs.readFileSync('supabase/migrations/20261125172000_public_registra
 const page=fs.readFileSync('public-registration.js','utf8');
 const argumentContract=fs.readFileSync('supabase/migrations/20261125164000_public_registration_family_booking_argument_contract.sql','utf8');
 const canonicalArgs=fs.readFileSync('supabase/migrations/20261125170000_public_registration_canonical_booking_args.sql','utf8');
-const canonicalSnapshots=fs.readFileSync('supabase/migrations/20261125222500_public_registration_canonical_service_sector.sql','utf8');
+const canonicalSnapshotConstraints=fs.readFileSync('supabase/migrations/20261125222500_public_registration_canonical_service_sector.sql','utf8');
+const canonicalSnapshots=canonicalSnapshotConstraints+fs.readFileSync('supabase/migrations/20261125223000_public_registration_member_snapshot_validation.sql','utf8');
 
 test('guardian-child ownership is event scoped and never stored on the global person',()=>{
   assert.match(migration,/create table reservations\.event_guardian_children/);
