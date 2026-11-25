@@ -515,3 +515,64 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Platform runtime cutover commit `00a55dddac094d71d66ee636d8300eccd8863291` replaced the previous generated runtime atomically on `develop`; no `main`, Production, Vercel, or Supabase Production change.
 - Platform contract ownership commit `243fa80878ee5c68796b59b3586d5227c3a7b623` adds the source-owned artifact contract and retires duplicate assertions against minifier-local symbol names from the dedicated apology/identity workflow gates while retaining Platform DB guards and operational-review checks.
 - Development Preview remains BLOCKED until the exact Platform SHA completes the full integration/preview validation successfully.
+
+
+## 2026-11-25 Public Registration V2 — family, child/guardian, notification and parity handoff
+
+### Current canonical baseline
+- Current proven `develop` bootstrap HEAD before this documentation update: `0b84a4cb9ccd411907ed938d488f574e557cfddc`.
+- Work remains restricted to `develop` and Supabase Development project `gppwltrifgfxrkzvvxoe`. No `main`, Production, Supabase Production, or Vercel change was made.
+- Public Registration V2 is a single family-capable canonical flow. The browser submits `submit_family`; individual registration is represented by a family request containing only the primary member, not a separate UX path.
+
+### Canonical family and person contract
+- `platform.people` remains the central person bank. Public-registration member identity fields are pre-approval request snapshots; after identity resolution the canonical person is reused or created in `platform.people`.
+- Date of birth is required in the public family form and maps to canonical `platform.people.date_of_birth` when a new person is approved. Do not introduce a Public Registration person store.
+- Family member roles are `primary`, `adult`, `child_paid`, and `child_dependent`.
+- Every child, paid or dependent, must select a guardian from a preceding `primary` or `adult` member in the same request.
+- `child_paid`: guardian required, DOB required, booking type required, independent booking/price, while retaining guardian linkage in Conference participation.
+- `child_dependent`: guardian required, DOB required, no booking type and no independent booking/price.
+- Migration `20261125163000_public_registration_child_guardian_contract.sql` replaces the previous family-member structural rule; it does not add a compatibility route.
+- Family approval remains one PostgreSQL transaction. The paid-child approval path now resolves the guardian's canonical person and links the child's Conference participation to the guardian participation; a conflicting existing guardian raises `PUBLIC_REGISTRATION_CHILD_GUARDIAN_CONFLICT`.
+
+### Operational child/guardian verification
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Paid child without guardian | PASS (expected rejection) | Development gateway raised `PUBLIC_REGISTRATION_GUARDIAN_INVALID`. |
+| Paid child with guardian + DOB + booking type | PASS | Family submit returned `submitted` with two members. |
+| Test-data cleanup | PASS | The submitted smoke request was deleted before approval; no test Person or Booking was created. |
+| Public form contract | PASS | Every `child_*` requires `guardianMemberKey`; guardian candidates are preceding adult/primary members; DOB remains required. |
+| Reservations integration | PASS | Runs `45634238742`, `45634365279`, and `45634403485` succeeded for the child/guardian implementation/test sequence. |
+
+### Shared reference data and family UX
+- Browser reference ownership is centralized in `js/platform-reference-data.js`. Reservations and Public Registration consume the same governorate and service-sector arrays; `other` retains the explicit `serviceSectorOther` value.
+- Public form supports adding adults, paid children, and dependent children to one request.
+- UX direction still pending final acceptance: present the primary person's normal fields first, then progressive `+ إضافة فرد من العائلة`, then a final family summary. Do not expose the backend concept of “primary” as an unnecessary user decision.
+- Family financial summary is still **PENDING**: verify/display each paid member's canonical booking-type price and the family total; dependent children contribute no independent charge. Current status behavior must not be accepted if it only reports the primary member's financials.
+
+### Platform Notification Foundation
+- Notifications are platform infrastructure, not a Reservations-only implementation. Public Registration is the first consumer.
+- Canonical Development tables: `platform.notification_push_subscriptions`, `platform.notification_events`, and `platform.notification_deliveries`.
+- Protected device operations own push subscription enable/disable; service-role notification gateway owns enqueue/delivery work. PWA/Service Worker bridges incoming push to open clients and the Public Registration admin panel refreshes on `platform-notification` plus bounded polling.
+- Real OS Push end-to-end acceptance is **PENDING** because the last Development check found zero push subscriptions. An approved admin device must opt in before a real delivery can be proven.
+- Notification click deep-link is **PENDING**: current Public Registration emission targets the Reservations area; final acceptance requires routing to the relevant request/event through the canonical navigation owner, not a second router.
+
+### Public Registration legacy retirement gate
+- The current public Edge contract still exposes both `submit` and `submit_family`; the active browser uses `submit_family`.
+- **PENDING:** trace all consumers/tests of V1 `submit`. If no live consumer remains, retire the old Edge/gateway/DB submit path atomically with replacement tests. Do not retain two submission systems merely for compatibility, and do not delete before reachability proof.
+
+### CI/parity closure
+- Child/guardian function changes intentionally changed semantic structural fingerprints without changing function count.
+- Zero-data run `45634365319` initially failed only at structural parity: functions expected `298/0988ce929acf8f4bbe8063121f85c753`, actual `298/1adf3b83a307e48d096bfe0f06e9b790`.
+- Commit `d5ab657ed407d6596faf0f2065dc2d99caeb0349` updated the canonical structural digest to the proven Development value; no function count increase or Legacy function was introduced.
+- Run `45635106543` (zero-data production preparation) **PASS** and run `45635106435` (Reservations integration) **PASS** on `d5ab657...`.
+- The successful workflow generated canonical clean bootstrap `0b84a4cb9ccd411907ed938d488f574e557cfddc`; follow-up Reservations run `45635381093` **PASS**.
+- The earlier structural-parity rejection is CLOSED; do not reopen it unless the schema/function bodies change again.
+
+### Next execution gates
+1. Prove paid-child guardian-linked Conference participation through a safe end-to-end family approval test and clean all test data.
+2. Finish progressive family UX and family financial summary using canonical booking-type prices.
+3. Trace and, if safe, retire V1 `submit` so one canonical submission path remains.
+4. Deep-link notification clicks to the relevant request/event through existing canonical navigation.
+5. Verify the actual Development Preview provenance for the current runtime; source CI alone is not visual/operational acceptance.
+6. Enable a push subscription on an approved Development admin device and perform real OS Push delivery/click/live-refresh acceptance.
+7. Append exact SHAs/run IDs and PASS/FAIL evidence here after each completed unit; preserve prior evidence.
