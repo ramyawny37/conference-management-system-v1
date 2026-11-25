@@ -1,6 +1,6 @@
 -- FAIL-CLOSED, read-only verification. Run with psql -v ON_ERROR_STOP=1.
 -- Only after a clean bootstrap in a disposable Supabase-compatible database.
--- Expected counts are Development 2026-11-09, not a replacement for structural fingerprints.
+-- Expected counts are current Development foundation counts; structural fingerprints remain authoritative.
 DO $foundation_acceptance$
 DECLARE
   mismatch_count integer;
@@ -9,7 +9,7 @@ DECLARE
 BEGIN
   WITH expected(schema_name,tables,views) AS (
     VALUES ('public',46,0),('platform',13,0),('platform_private',11,0),
-           ('reservations',15,2),('reservations_private',1,0)
+           ('reservations',18,2),('reservations_private',1,0)
   ), actual AS (
     SELECT n.nspname::text schema_name,
       count(*) FILTER (WHERE c.relkind IN ('r','p'))::integer tables,
