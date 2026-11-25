@@ -29,7 +29,8 @@ const canonicalAccommodationOperationsPatch=[
   'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261025224500_conference_scoped_extra_bed_capacity.sql'
 ].map(read).join('\n');
 const publicRegistrationAdminPatch=read('supabase/migrations/20261125100000_public_registration_admin_review.sql');
-const effectiveDispatcher=dispatcher+dispatcherPatches+ownerPendingReadPatch+canonicalTemplateReadPatch+canonicalBundlePatch+publicRegistrationAdminPatch;
+const publicRegistrationDecisionPatch=read('supabase/migrations/20261125113000_public_registration_protected_decision.sql');
+const effectiveDispatcher=dispatcher+dispatcherPatches+ownerPendingReadPatch+canonicalTemplateReadPatch+canonicalBundlePatch+publicRegistrationAdminPatch+publicRegistrationDecisionPatch;
 
 function edgeOperations(module){
   const initial=edge.match(new RegExp(`const ${module}=new Set\\(\\[([^;]+)\\]\\)`));

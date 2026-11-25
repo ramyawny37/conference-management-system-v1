@@ -269,7 +269,7 @@ Future target may expose equivalent application operations through ASP.NET Core 
 | PR1 | Schema/security foundation for channel + request + tracking | IMPLEMENTED | Migration `20261125090000_public_registration_foundation.sql` + static contract test |
 | PR2 | Narrow public read/submit/status server boundary | IMPLEMENTED | Migration `20261125093000_public_registration_public_boundary.sql`, Edge Function `public-registration`, static boundary tests |
 | PR3 | Admin list/review + identity resolution integration | IMPLEMENTED | Migration `20261125100000_public_registration_admin_review.sql`, protected device dispatch + static tests |
-| PR4 | Protected approval/reject orchestration into canonical booking | NOT STARTED | — |
+| PR4 | Protected approval/reject orchestration into canonical booking | IMPLEMENTED | Migration `20261125113000_public_registration_protected_decision.sql`, approved-device dispatch allowlist, and protected-decision regression tests |
 | PR5 | Public/admin UI integration + cache contract | NOT STARTED | — |
 | PR6 | Notification delivery foundation + selected provider | NOT STARTED | — |
 | PR7 | Waitlist/capacity only after authoritative capacity contract | NOT STARTED | — |
