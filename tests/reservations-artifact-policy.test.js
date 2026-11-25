@@ -13,7 +13,8 @@ const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
 const digest = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
-test('current runtime baseline is exact and loaded atomically', () => {
+test('approved runtime baseline is exact and loaded atomically', () => {
+  assert.equal(policy.currentRuntime.platformCommit, '14102f906a3646487903c8d2459788b56f209497');
   for (const [name, expected] of Object.entries(policy.currentRuntime.files)) {
     assert.equal(digest(path.join(root, 'modules', 'reservations', name)), expected);
     const reference = `modules/reservations/${name}?rev=${policy.currentRuntime.revision}`;
@@ -33,15 +34,8 @@ test('reverted c56 artifact is explicitly rejected and cannot be approved simult
   assert.match(integrator, /RESERVATIONS_ARTIFACT_NOT_APPROVED/);
 });
 
-test('integration is fail closed and permits at most one explicitly approved artifact', () => {
-  assert.ok(Array.isArray(policy.approvedIntegrations));
-  assert.ok(policy.approvedIntegrations.length <= 1);
-  for (const entry of policy.approvedIntegrations) {
-    assert.match(entry.sourceCommit, /^[0-9a-f]{40}$/);
-    assert.match(entry.revision, /^[a-z0-9][a-z0-9-]{2,80}$/);
-    assert.ok(entry.files['reservations-module.js']);
-    assert.ok(entry.files['reservations-module.css']);
-  }
+test('integration remains fail closed until design and functional approval is recorded', () => {
+  assert.deepEqual(policy.approvedIntegrations, []);
   assert.match(integrator, /CURRENT_RESERVATIONS_RUNTIME_DRIFT/);
   assert.match(integrator, /branch !== 'develop'/);
 });
