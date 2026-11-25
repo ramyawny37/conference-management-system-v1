@@ -1,5 +1,5 @@
 -- Read-only exact structural parity gate for a clean, disposable Supabase-compatible target.
--- Structural fingerprints captured from current Development after Public Registration PR1-PR3; no data is read or copied. No data is read or copied.
+-- Structural fingerprints captured from current Development after Public Registration PR1-PR4; no data is read or copied. No data is read or copied.
 -- Run with psql -X -v ON_ERROR_STOP=1 after the full foundation has been applied.
 DO $parity$
 DECLARE mismatches text;
@@ -35,8 +35,8 @@ BEGIN
   ), expected(kind,objects,digest) AS (
     VALUES
     ('relations',91::bigint,'8a25f37125aaee377389fc960679adb9'),
-    ('columns',1148::bigint,'f092870723fe143385877bbacd00a77e'),
-    ('functions',285::bigint,'62b8a99bc9e61fc743a85ac9bcd593e0'),
+    ('columns',1151::bigint,'1f485cd6a8d22d123d5e8365fc799bc2'),
+    ('functions',286::bigint,'53de0ff75d57ac2d9d0741243f48dbcd'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
