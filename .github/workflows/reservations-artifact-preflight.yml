@@ -4,9 +4,10 @@ on:
     branches: [develop]
     paths:
       - '.github/workflows/reservations-artifact-preflight.yml'
+      - 'tools/reservations-artifact-policy.json'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   preflight:
     runs-on: ubuntu-latest
@@ -14,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: develop
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -30,3 +32,33 @@ jobs:
           else
             echo 'Private Reservations artifact access is not configured.'
           fi
+      - name: Integrate explicitly approved Reservations artifact
+        env:
+          GH_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN }}
+        run: |
+          node - <<'NODE' > /tmp/approved.env
+          const p=require('./tools/reservations-artifact-policy.json');
+          if(p.approvedIntegrations.length===0){console.log('APPROVED=');process.exit(0)}
+          if(p.approvedIntegrations.length!==1) throw new Error('Expected exactly one approved integration');
+          console.log('APPROVED='+p.approvedIntegrations[0].sourceCommit);
+          NODE
+          source /tmp/approved.env
+          if [ -z "$APPROVED" ]; then
+            echo 'No approved artifact pending integration.'
+            exit 0
+          fi
+          test -n "$GH_TOKEN" || { echo 'RESERVATIONS_SOURCE_TOKEN is required for approved integration'; exit 1; }
+          ARTIFACT_ID="$(gh api "repos/ramyawny37/reservation-management-system/actions/artifacts?name=reservations-platform-module&per_page=100" --jq '.artifacts[] | select(.workflow_run.head_sha=="'"$APPROVED"'" and .expired==false) | .id' | head -n1)"
+          test -n "$ARTIFACT_ID" || { echo "No live artifact found for approved source $APPROVED"; exit 1; }
+          gh api "repos/ramyawny37/reservation-management-system/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/reservations-platform-module.zip
+          node tools/integrate-reservations-artifact.cjs /tmp/reservations-platform-module.zip
+          git diff --check
+          if git diff --quiet; then
+            echo 'Approved artifact already integrated.'
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add modules/reservations/reservations-module.js modules/reservations/reservations-module.css modules/reservations/reservations-contract.json index.html service-worker.js tools/reservations-artifact-policy.json
+          git commit -m "chore(reservations): integrate approved family registration artifact"
+          git push origin HEAD:develop
