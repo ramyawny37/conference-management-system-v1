@@ -79,3 +79,11 @@ test('tracking and new-registration actions remain structurally separated',()=>{
   assert.doesNotMatch(js,/var actions=document\.querySelector\('\.actions'\).*saved-request/s);
   assert.match(js,/<details class="request-recovery">/);
 });
+
+
+test('service sector UI matches canonical submission contract',()=>{
+  assert.match(js,/قطاع الخدمة \*<\/label><select data-f="serviceSector" required>/);
+  assert.match(js,/PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID:'اختر قطاع الخدمة/);
+  assert.match(js,/otherInput\.required=m\.serviceSector==='other'/);
+  assert.match(js,/if\(!m\.serviceSector\|\|\(m\.serviceSector==='other'&&!m\.serviceSectorOther\)\)throw new Error\('PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID'\)/);
+});
