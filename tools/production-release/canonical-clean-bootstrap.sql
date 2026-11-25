@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ueTAMNAi8oyaf09nuIXCrnXqbtuCONHDanOHTC74rYpXkkjEFehnMeNHmn6eYfc
+\restrict R5ahfkhor2ZTC6orMuCoYlS2Rich1XskQEaeH8btnetWy40WmenSyg98JmGZsYv
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -9030,11 +9030,11 @@ begin
  select * into v_event from reservations.events where id=v_channel.event_id for key share;if not found or v_event.status<>'open' then raise exception 'PUBLIC_REGISTRATION_CLOSED' using errcode='P0001';end if;
  if nullif(btrim(v_primary->>'phone'),'') is null then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if;
  v_intent:=extensions.digest(convert_to(p_members::text,'UTF8'),'sha256');
- perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-identity:'||v_event.id::text||':'||platform_private.person_phone_key(v_primary->>'phone')||':'||(v_primary->>'dateOfBirth'),0));
- if exists(select 1 from reservations.public_registration_requests r left join reservations.bookings b on b.id=r.booking_id where r.event_id=v_event.id and platform_private.person_phone_key(r.submitted_phone)=platform_private.person_phone_key(v_primary->>'phone') and r.submitted_date_of_birth=(v_primary->>'dateOfBirth')::date and (r.state in('submitted','under_review') or (r.state='approved' and b.lifecycle_status='active'))) then raise exception 'PUBLIC_REGISTRATION_ALREADY_EXISTS' using errcode='23505';end if;
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-submit:'||v_channel.id::text||':'||p_submit_operation_id::text,0));
  select * into v_existing from reservations.public_registration_requests where channel_id=v_channel.id and submit_operation_id=p_submit_operation_id;
  if found then if v_existing.submit_intent_digest<>v_intent or v_existing.tracking_secret_digest<>p_tracking_secret_digest then raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001';end if;return jsonb_build_object('reference',v_existing.request_reference,'state',v_existing.state,'submittedAt',v_existing.submitted_at,'eventId',v_existing.event_id);end if;
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-identity:'||v_event.id::text||':'||platform_private.person_phone_key(v_primary->>'phone'),0));
+ if exists(select 1 from reservations.public_registration_requests r left join reservations.bookings b on b.id=r.booking_id where r.event_id=v_event.id and platform_private.person_phone_key(r.submitted_phone)=platform_private.person_phone_key(v_primary->>'phone') and (r.state in('submitted','under_review','waitlisted') or (r.state='approved' and b.lifecycle_status='active'))) then raise exception 'PUBLIC_REGISTRATION_ALREADY_EXISTS' using errcode='23505';end if;
  for v_member in select value from jsonb_array_elements(p_members) loop
    if (select array_agg(k order by k) from jsonb_object_keys(v_member) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','guardianMemberKey','memberKey','notes','phone','role','serviceSector','serviceSectorOther']::text[] then raise exception 'PUBLIC_REGISTRATION_MEMBER_SHAPE_INVALID' using errcode='22023';end if;
    v_key:=(v_member->>'memberKey')::uuid;v_role:=v_member->>'role';v_guardian:=nullif(v_member->>'guardianMemberKey','')::uuid;v_type:=nullif(v_member->>'bookingTypeId','')::uuid;v_sector:=v_member->>'serviceSector';v_sector_other:=nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),'');
@@ -21635,4 +21635,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ueTAMNAi8oyaf09nuIXCrnXqbtuCONHDanOHTC74rYpXkkjEFehnMeNHmn6eYfc
+\unrestrict R5ahfkhor2ZTC6orMuCoYlS2Rich1XskQEaeH8btnetWy40WmenSyg98JmGZsYv
