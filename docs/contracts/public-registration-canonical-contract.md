@@ -360,7 +360,7 @@ These are deliberately not guessed:
 - whether registrants may edit/cancel a submitted request;
 - exact capacity consumption semantics (which booking states count against `reservations.events.capacity`);
 - waitlist ordering policy;
-- group/family registration;
+- canonical family registration with roles `primary`, `adult`, `child_paid`, and `child_dependent`; every child selects a preceding adult/primary guardian;
 - OTP/pre-fill;
 - payment during public registration;
 - notification provider/channel/template/consent policy;
@@ -395,7 +395,7 @@ A deferred decision must be resolved in this document before code that depends o
 
 ### PR2 — narrow public boundary
 - Edge Function: `supabase/functions/public-registration/index.ts`, configured with `verify_jwt = false`; it is separate from the administrator/device dispatcher.
-- Exact operation allowlist: `event`, `submit`, `status`; fixed GitHub Pages CORS origin; no browser service-role credential.
+- Exact operation allowlist: `event`, `submit_family`, `status`; individual registration is a one-member family submission. V1 `submit` is retired from Edge, gateway, and database; fixed GitHub Pages CORS origin; no browser service-role credential.
 - Edge requires `PUBLIC_REGISTRATION_HMAC_SECRET`; it derives a stable tracking capability from channel public ID + submit operation ID and sends only its HMAC digest to PostgreSQL, so replay returns the same capability without plaintext storage.
 - Database RPC execute is granted only to `service_role`; tables remain forced-RLS and ungranted.
 - Public event read returns only event name/dates/location plus active booking-type public fields.
@@ -423,7 +423,7 @@ A deferred decision must be resolved in this document before code that depends o
 ### PR5 — implemented public/admin UI and event settings
 - Public route is now resolved: `public-registration.html?event=<publicId>`.
 - Public page files: `public-registration.html`, `public-registration.css`, `public-registration.js`.
-- Public page is isolated from the authenticated Platform shell and calls only the `public-registration` Edge operations `event`, `submit`, and `status`.
+- Public page is isolated from the authenticated Platform shell and calls only the `public-registration` Edge operations `event`, `submit_family`, and `status`.
 - After submit, the same page retains the opaque tracking capability in the participant's tracking URL and renders status without exposing Person candidates or administrative data.
 - Supabase Development Edge Function `public-registration` was deployed ACTIVE with `verify_jwt=false`; its narrow public boundary still enforces fixed origin, exact operation allowlist, HMAC-derived tracking digest, rate limits, and service-role-only database RPC execution.
 - Edge deployment required an explicit import map; repository source now includes `supabase/functions/public-registration/deno.json`.
