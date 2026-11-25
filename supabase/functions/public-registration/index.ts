@@ -28,24 +28,24 @@ Deno.serve(async request=>{
   let result;
   if(operation==='event'){
     if(!exact(args,['publicId']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
-    result=await service.schema('reservations').rpc('public_registration_read',{p_public_id:uuid((args as any).publicId),p_fingerprint_digest:hex(fingerprint)});
+    result=await service.rpc('public_registration_gateway',{p_operation:'event',p_args:{publicId:uuid((args as any).publicId),fingerprintDigest:hex(fingerprint)}});
   }else if(operation==='status'){
     if(!exact(args,['publicId','trackingSecret']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
     const a=args as any,tracking=bounded(a.trackingSecret,128,true);
-    result=await service.schema('reservations').rpc('public_registration_status',{p_public_id:uuid(a.publicId),p_tracking_secret_digest:hex(await hmac(secret,'track:'+tracking)),p_fingerprint_digest:hex(fingerprint)});
+    result=await service.rpc('public_registration_gateway',{p_operation:'status',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),fingerprintDigest:hex(fingerprint)}});
   }else{
     const keys=['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','notes','operationId','phone','publicId','serviceSector','serviceSectorOther'];
     if(!exact(args,keys))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
     const a=args as any,publicId=uuid(a.publicId),operationId=uuid(a.operationId);
     const trackingBytes=await hmac(secret,'tracking:'+publicId+':'+operationId),trackingSecret=b64url(trackingBytes);
-    result=await service.schema('reservations').rpc('public_registration_submit',{
-      p_public_id:publicId,p_submit_operation_id:operationId,p_tracking_secret_digest:hex(await hmac(secret,'track:'+trackingSecret)),p_fingerprint_digest:hex(fingerprint),
-      p_booking_type_id:uuid(a.bookingTypeId),p_full_name:bounded(a.fullName,200,true),p_phone:bounded(a.phone,20,true),
-      p_gender:a.gender===null?null:bounded(a.gender,12),p_date_of_birth:a.dateOfBirth===null?null:bounded(a.dateOfBirth,10),
-      p_church:bounded(a.church,200),p_governorate:bounded(a.governorate,120),p_city_or_village:bounded(a.cityOrVillage,160),
-      p_service_sector:bounded(a.serviceSector,160),p_service_sector_other:a.serviceSectorOther===null?null:bounded(a.serviceSectorOther,200),
-      p_notes:a.notes===null?null:bounded(a.notes,4000)
-    });
+    result=await service.rpc('public_registration_gateway',{p_operation:'submit',p_args:{
+      publicId,submitOperationId:operationId,trackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint),
+      bookingTypeId:uuid(a.bookingTypeId),fullName:bounded(a.fullName,200,true),phone:bounded(a.phone,20,true),
+      gender:a.gender===null?null:bounded(a.gender,12),dateOfBirth:a.dateOfBirth===null?null:bounded(a.dateOfBirth,10),
+      church:bounded(a.church,200),governorate:bounded(a.governorate,120),cityOrVillage:bounded(a.cityOrVillage,160),
+      serviceSector:bounded(a.serviceSector,160),serviceSectorOther:a.serviceSectorOther===null?null:bounded(a.serviceSectorOther,200),
+      notes:a.notes===null?null:bounded(a.notes,4000)
+    }});
     if(!result.error)result={...result,data:{...result.data,trackingSecret}};
   }
   if(result.error)throw result.error;
