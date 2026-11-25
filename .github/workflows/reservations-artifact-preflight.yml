@@ -1,32 +1,94 @@
-name: Reservations artifact integration preflight
+name: Reservations artifact integration
 on:
   push:
     branches: [develop]
     paths:
       - '.github/workflows/reservations-artifact-preflight.yml'
+      - 'tools/reservations-artifact-policy.json'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: reservations-artifact-integration-develop
+  cancel-in-progress: false
 jobs:
-  preflight:
+  integrate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: develop
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify integration utility
+      - name: Verify integration utility and policy
         run: |
           node --check tools/integrate-reservations-artifact.cjs
           node --test tests/reservations-artifact-policy.test.js
-      - name: Verify artifact access configuration
+      - name: Read approved artifact
+        id: approval
+        shell: bash
+        run: |
+          node <<'NODE' >> "$GITHUB_OUTPUT"
+          const p=require('./tools/reservations-artifact-policy.json');
+          if (p.approvedIntegrations.length === 0) {
+            console.log('pending=false');
+            process.exit(0);
+          }
+          if (p.approvedIntegrations.length !== 1) throw Error('Expected exactly one approved integration');
+          const a=p.approvedIntegrations[0];
+          console.log('pending=true');
+          console.log('source_commit='+a.sourceCommit);
+          console.log('revision='+a.revision);
+          NODE
+      - name: Require private Reservations artifact access
+        if: steps.approval.outputs.pending == 'true'
         env:
           HAS_SOURCE_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN != '' }}
+        run: test "$HAS_SOURCE_TOKEN" = true
+      - name: Download exact successful Reservations CI artifact
+        if: steps.approval.outputs.pending == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN }}
+          SOURCE_COMMIT: ${{ steps.approval.outputs.source_commit }}
+        shell: bash
         run: |
-          if [ "$HAS_SOURCE_TOKEN" = true ]; then
-            echo 'Private Reservations artifact access is configured.'
-          else
-            echo 'Private Reservations artifact access is not configured.'
-          fi
+          set -euo pipefail
+          api='https://api.github.com/repos/ramyawny37/reservation-management-system'
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28')
+          curl -fsSL "${auth[@]}" "$api/actions/runs?branch=develop&head_sha=$SOURCE_COMMIT&status=success&per_page=50" > /tmp/runs.json
+          RUN_ID=$(node -e "const j=require('/tmp/runs.json');const r=j.workflow_runs.find(x=>x.name==='Reservations CI'&&x.head_sha===process.env.SOURCE_COMMIT&&x.conclusion==='success');if(!r)process.exit(2);process.stdout.write(String(r.id))")
+          curl -fsSL "${auth[@]}" "$api/actions/runs/$RUN_ID/artifacts?per_page=100" > /tmp/artifacts.json
+          ARTIFACT_ID=$(node -e "const j=require('/tmp/artifacts.json');const a=j.artifacts.find(x=>x.name==='reservations-platform-module'&&!x.expired);if(!a)process.exit(2);process.stdout.write(String(a.id))")
+          curl -fsSL -L "${auth[@]}" "$api/actions/artifacts/$ARTIFACT_ID/zip" -o /tmp/reservations-platform-module.zip
+      - name: Integrate verified artifact
+        if: steps.approval.outputs.pending == 'true'
+        run: node tools/integrate-reservations-artifact.cjs /tmp/reservations-platform-module.zip
+      - name: Close approval into current runtime
+        if: steps.approval.outputs.pending == 'true'
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const file='tools/reservations-artifact-policy.json';
+          const p=JSON.parse(fs.readFileSync(file,'utf8'));
+          if(p.approvedIntegrations.length!==1) throw Error('Approval changed during integration');
+          const a=p.approvedIntegrations[0];
+          p.currentRuntime={revision:a.revision,files:a.files};
+          p.approvedIntegrations=[];
+          fs.writeFileSync(file,JSON.stringify(p,null,2)+'\n');
+          NODE
+          node --test tests/reservations-artifact-policy.test.js
+          node --check modules/reservations/reservations-module.js
+      - name: Commit canonical runtime
+        if: steps.approval.outputs.pending == 'true'
+        env:
+          SOURCE_COMMIT: ${{ steps.approval.outputs.source_commit }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add modules/reservations/reservations-module.js modules/reservations/reservations-module.css index.html service-worker.js tools/reservations-artifact-policy.json
+          git diff --cached --check
+          git commit -m "chore(reservations): integrate public registration runtime $SOURCE_COMMIT"
+          git push origin HEAD:develop
