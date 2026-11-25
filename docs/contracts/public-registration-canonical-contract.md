@@ -462,3 +462,11 @@ A deferred decision must be resolved in this document before code that depends o
 - Browser automation remains prohibited by Platform `AGENTS.md`; visual acceptance is manual.
 - No `main`, Production, Vercel, or Production data change is authorized.
 
+
+### PR8 — Development verification checkpoint
+- Verified Platform develop HEAD `f26d7f8edbf65af8e3f7bbfcad8140765cc1a611` and Reservations develop HEAD `014065a659611ef243c4bd7dc313eb3e9802dc5e` via GitHub.
+- Development Edge listing confirms public-registration ACTIVE v1, verify_jwt=false, import map enabled.
+- Live Development SQL confirms both tracking visibility columns exist as boolean.
+- Latest Actions and full structural fingerprint parity remain UNVERIFIED: available workflow query is PR-only and returned no runs; combined statuses empty.
+- HMAC secret remains UNVERIFIED: connector exposes no Edge secrets management operation. Use Development dashboard Edge Function Secrets; check existence before setting, do not rotate existing secret casually.
+- End-to-end acceptance remains BLOCKED/UNVERIFIED; no runtime or database mutations performed in this checkpoint.
