@@ -1,0 +1,44 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const test=require('node:test');
+const migration=fs.readFileSync('supabase/migrations/20261125180000_reservations_event_guardian_child_relationship.sql','utf8');
+const family=fs.readFileSync('supabase/migrations/20261125172000_public_registration_family_standalone_scope.sql','utf8');
+
+test('guardian-child ownership is event scoped and never stored on the global person',()=>{
+  assert.match(migration,/create table reservations\.event_guardian_children/);
+  assert.match(migration,/foreign key\(scope_partition_id,event_id\)[\s\S]*reservations\.events\(scope_partition_id,id\)/);
+  assert.match(migration,/unique\(event_id,child_person_id\)/);
+  assert.doesNotMatch(migration,/alter table reservations\.participants add column.*guardian/is);
+});
+
+test('paid and dependent children retain distinct financial contracts',()=>{
+  assert.match(migration,/child_role in \('child_paid','child_dependent'\)/);
+  assert.match(migration,/child_role='child_paid' and child_booking_id is not null/);
+  assert.match(migration,/child_role='child_dependent' and child_booking_id is null/);
+  assert.doesNotMatch(migration,/insert into reservations\.bookings/i);
+});
+
+test('dependent identity uses the canonical audited helper and requires DOB',()=>{
+  assert.match(migration,/platform_private\.create_reservations_dependent_person/);
+  assert.match(migration,/platform\.person\.created/);
+  assert.match(migration,/dateOfBirth/);
+  assert.match(migration,/PUBLIC_REGISTRATION_DEPENDENT_IDENTITY_INVALID/);
+  assert.match(migration,/PUBLIC_REGISTRATION_DEPENDENT_PERSON_WRITER_DRIFT/);
+  assert.match(family,/insert into platform\.people/);
+  assert.match(migration,/execute replace\(d,old_text,new_text\)/);
+});
+
+test('family approval captures both child roles without weakening Conference projection',()=>{
+  assert.match(migration,/new\.role in\('child_paid','child_dependent'\)/);
+  assert.match(migration,/PUBLIC_REGISTRATION_CHILD_GUARDIAN_CONFLICT/);
+  assert.match(family,/if e\.conference_id is not null/);
+  assert.match(family,/guardian_participation_id/);
+});
+
+test('relationship survives booking lifecycle changes and supports same-event rebooking',()=>{
+  assert.match(migration,/references reservations\.bookings\(scope_partition_id,id\) on delete restrict/);
+  assert.doesNotMatch(migration,/on delete cascade/);
+  assert.doesNotMatch(migration,/lifecycle_status='active'/);
+  assert.doesNotMatch(migration,/create trigger .*reservations\.bookings/is);
+});
