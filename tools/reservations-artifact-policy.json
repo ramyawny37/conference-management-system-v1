@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "reservations-public-registration-ops-v1",
+    "revision": "registration-requests-global-route-v1",
     "files": {
-      "reservations-module.js": "bc770dba32cbb68b9ca44b361213ff8f7ea54b0a7e8639e25c98d3b37ef3abec",
+      "reservations-module.js": "d1b2f6297d9caa1ca451017375f00ae8e4cd3ef7813e16b9a3d0a4639b2327b4",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
