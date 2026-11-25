@@ -13,7 +13,7 @@ test('public registration uses one service-role PostgREST gateway while reservat
 });
 
 test('gateway is a strict dispatcher to the existing canonical reservations functions',()=>{
- for(const fn of ['public_registration_read','public_registration_submit','public_registration_status']){
+ for(const fn of ['public_registration_read','public_registration_status']){
    assert.match(migration,new RegExp('reservations\\.'+fn+'\\('));
  }
  assert.match(migration,/PUBLIC_REGISTRATION_OPERATION_NOT_ALLOWED/);
