@@ -3,7 +3,7 @@
   "currentRuntime": {
     "revision": "reservations-public-registration-ops-v1",
     "files": {
-      "reservations-module.js": "cfbed85d8ba4671eadab64800e82e1f4cb6b93f068d5ac8fc30cb500ade07ca8",
+      "reservations-module.js": "bc770dba32cbb68b9ca44b361213ff8f7ea54b0a7e8639e25c98d3b37ef3abec",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
