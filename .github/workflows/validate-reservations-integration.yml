@@ -108,6 +108,8 @@ jobs:
         run: node --test tests/canonical-central-conference-houses.test.js
       - name: Reservations identity replay regression
         run: node --test tests/reservations-identity-replay-order.test.js tests/reservations-canonical-artifact-contract.test.js
+      - name: Public registration live workflow regression
+        run: node --test tests/public-registration-live-notification.test.js tests/public-registration-page.test.js tests/public-registration-phone-identity-duplicate-guard.test.js
       - name: Development preview validation
         if: always()
         run: npm run check:development-preview
