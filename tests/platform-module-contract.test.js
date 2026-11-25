@@ -83,6 +83,18 @@ test('a feature module can mount, reconcile routes, and unmount without owning p
   assert.strictEqual(state.classes.has('platform-reservations-active'),false);
 });
 
+test('active Reservations subnav navigation preserves the requested child route without module re-entry',async()=>{
+  const state=runtime('/reservations');
+  const lifecycle=[];
+  state.window.PlatformIntegration.registerModule({id:'reservations',mount(context){lifecycle.push(['mount',context.route]);return true;},reconcileRoute(context){lifecycle.push(['route',context.route]);return true;}});
+  await state.window.PlatformIntegration.openModule('reservations');
+  const beforeProtected=state.calls.filter(call=>call[0]==='protected'&&call[2]==='check_module_access').length;
+  const services=state.window.PlatformIntegration.getModuleServices();
+  services.navigate('/reservations/registration-requests');
+  assert.deepStrictEqual(lifecycle.at(-1),['route','/reservations/registration-requests']);
+  assert.strictEqual(state.calls.filter(call=>call[0]==='protected'&&call[2]==='check_module_access').length,beforeProtected);
+});
+
 test('platform owns module Conference context and clears it on logout',async()=>{
   const state=runtime('/');
   const services=state.window.PlatformIntegration.getModuleServices();
