@@ -1,6 +1,6 @@
 # Public Registration — canonical contract and implementation handoff
 
-Status: CONTRACT BASELINE — no runtime, database, Supabase, UI, or Production change is implied by this document.
+Status: IMPLEMENTATION HANDOFF — PR0–PR5 are implemented on `develop` / Supabase Development; Production remains untouched.
 Repository: `ramyawny37/conference-management-system-v1`
 Branch: `develop` only.
 Contract baseline: `5204d14054f1646c2a6b6e0794d321dd738a6918`
@@ -270,7 +270,7 @@ Future target may expose equivalent application operations through ASP.NET Core 
 | PR2 | Narrow public read/submit/status server boundary | IMPLEMENTED | Migration `20261125093000_public_registration_public_boundary.sql`, Edge Function `public-registration`, static boundary tests |
 | PR3 | Admin list/review + identity resolution integration | IMPLEMENTED | Migration `20261125100000_public_registration_admin_review.sql`, protected device dispatch + static tests |
 | PR4 | Protected approval/reject orchestration into canonical booking | IMPLEMENTED | Migration `20261125113000_public_registration_protected_decision.sql`, approved-device dispatch allowlist, and protected-decision regression tests |
-| PR5 | Public/admin UI integration + cache contract | NOT STARTED | — |
+| PR5 | Public/admin UI integration + event settings + public tracking projection | IMPLEMENTED | Platform public page + Edge deployment; Reservations event-tab settings/review UI; payment/accommodation visibility options |
 | PR6 | Notification delivery foundation + selected provider | NOT STARTED | — |
 | PR7 | Waitlist/capacity only after authoritative capacity contract | NOT STARTED | — |
 | PR8 | Full Development verification, Preview evidence, acceptance closure | NOT STARTED | — |
@@ -355,7 +355,6 @@ At minimum:
 ## 19. Deferred decisions
 
 These are deliberately not guessed:
-- exact public page route/URL format; Edge CORS host is the existing GitHub Pages origin `https://ramyawny37.github.io`;
 - tracking token expiry/rotation duration;
 - exact required public form fields and which event fields are public;
 - whether registrants may edit/cancel a submitted request;
@@ -413,3 +412,53 @@ A deferred decision must be resolved in this document before code that depends o
 - Review returns the submitted snapshot, current booking-type active/price state, and up to 20 canonical Person candidates based on normalized exact name or phone signals.
 - Candidate output includes whether that Person already has a booking in the same event; candidates are never exposed by the anonymous public endpoint.
 - PR3 is deliberately read-only: it cannot update requests, create/update People, or create Bookings. Identity decision and approval remain PR4.
+
+### PR4 correction — explicit different/new Person decision
+- Canonical approval remains the existing Reservations booking writer; no direct Person/Booking insert was introduced.
+- When identity candidates exist, the operator may explicitly choose a candidate or choose a different/new Person.
+- The different/new path reuses the canonical identity-resolution challenge handshake with decision `different`.
+- Development corrective migration history includes `public_registration_explicit_new_identity_canonical_challenge`; repository forward migration: `20261125120000_public_registration_explicit_new_identity_canonical_challenge.sql`.
+- Reservations UI exposes `اعتماد كشخص جديد / مختلف` even when candidates exist.
+
+### PR5 — implemented public/admin UI and event settings
+- Public route is now resolved: `public-registration.html?event=<publicId>`.
+- Public page files: `public-registration.html`, `public-registration.css`, `public-registration.js`.
+- Public page is isolated from the authenticated Platform shell and calls only the `public-registration` Edge operations `event`, `submit`, and `status`.
+- After submit, the same page retains the opaque tracking capability in the participant's tracking URL and renders status without exposing Person candidates or administrative data.
+- Supabase Development Edge Function `public-registration` was deployed ACTIVE with `verify_jwt=false`; its narrow public boundary still enforces fixed origin, exact operation allowlist, HMAC-derived tracking digest, rate limits, and service-role-only database RPC execution.
+- Edge deployment required an explicit import map; repository source now includes `supabase/functions/public-registration/deno.json`.
+- Event-level Public Registration settings are integrated into the existing Reservations event UI, not a new top-level module. Settings use protected operations and revision/idempotency semantics.
+- The admin UI exposes the actual public URL and a copy-link action. No fabricated/parallel URL path remains.
+- `auto_approve` remains schema-reserved and is intentionally not exposed as a working UI mode; the implemented/default flow is `approval_required`.
+
+### PR5 tracking visibility — canonical projections only
+- Event settings now include two independent booleans: `show_payment_status` and `show_accommodation`.
+- These settings live on the existing `reservations.public_registration_channels` row. No second settings table was created.
+- Public request rows do **not** store room, paid amount, balance, or financial/accommodation snapshots.
+- When payment visibility is enabled and the request has an approved booking, status reads the canonical operational booking and current event booking-type price plus active `reservations.payments`; it returns `price`, `paid`, and `remaining`.
+- When accommodation visibility is enabled, status reads the canonical Conference participation/occupancy/room/floor/house chain. Before assignment it returns `assigned=false`; after assignment it returns the allowed room/house/floor projection.
+- The public page renders these fields only when the server includes them.
+- Development migration: `20261125133000_public_registration_tracking_visibility.sql`.
+
+### Current handoff — 2026-11-25
+- Platform repository: `ramyawny37/conference-management-system-v1`, branch `develop` only.
+- Current Platform head at this documentation update: `0fe588b0cf9ec543a89b378a357d1753ad79ab17`.
+- Relevant implementation commits include:
+  - `9d70e7656e737554209fdcc84b01744ecfc4a78e` — Edge import map and successful Development deployment basis.
+  - `f0dd16ffb979b2b630179378a581f01834b864df` — public registration/tracking page.
+  - `7259ce116655c6f221c91901c75174c30b85c62f` — canonical payment/accommodation tracking projection.
+  - `bf58bff944226154c25065d9d2dab2c30c1803c9` — render optional payment/accommodation tracking.
+  - `36e16524fc034dd0ebcb50b8b3a6ac424ec71522` — structural parity pin after tracking visibility.
+- Reservations source repository: `ramyawny37/reservation-management-system`, branch `develop`.
+- Relevant Reservations commits:
+  - `d11b43208b33277f1b88e8894eb99ba9354858b3` — expose canonical public link.
+  - `014065a659611ef243c4bd7dc313eb3e9802dc5e` — event-level public tracking visibility controls.
+- Reservations CI and develop validation for `014065a...`: PASS.
+- Platform exact-SHA Reservations integration was PASS on the preceding PR5 commits; zero-data replay after the two visibility columns correctly reported the expected structural delta (columns 1154→1156; functions remain 288 with semantic fingerprint change), and `36e16524...` pins those Development-derived fingerprints. Re-check the latest head Actions before claiming final PR5 CI closure.
+- Supabase Development project only: `gppwltrifgfxrkzvvxoe`. Do not use Production.
+- `public-registration` Edge Function is deployed ACTIVE v1 on Development with `verify_jwt=false`.
+- **Open operational blocker:** `PUBLIC_REGISTRATION_HMAC_SECRET` must exist in the Development Edge Function environment. The available Supabase connector can deploy functions but cannot read/create project secrets. Do not replace this with a hard-coded secret, publishable key, service-role key, or client-side fallback.
+- After the HMAC secret is confirmed/set, run the real Development flow: enable one event → copy/open public link → submit → verify admin pending request → approve with existing or different/new Person → open tracking link → verify booking number → record payment and verify paid/remaining projection when enabled → assign accommodation and verify room projection when enabled.
+- Browser automation remains prohibited by Platform `AGENTS.md`; visual acceptance is manual.
+- No `main`, Production, Vercel, or Production data change is authorized.
+
