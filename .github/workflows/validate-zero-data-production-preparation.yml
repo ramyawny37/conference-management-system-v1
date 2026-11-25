@@ -137,6 +137,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           generated_sha="$(git rev-parse HEAD)"
