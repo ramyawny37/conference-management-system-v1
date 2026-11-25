@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "reservations-family-registration-review-v1",
+    "revision": "reservations-family-registration-review-v2",
     "files": {
-      "reservations-module.js": "9f4c44ff10c139ac3c75a840459438d0e5e45f758b1d34c61a1eb020063c3d42",
+      "reservations-module.js": "1d69356e9073a65ac389321ef0349249d646c39337ddca3ceb0c6056db6dbf89",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
@@ -11,16 +11,7 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [
-    {
-      "sourceCommit": "e576e5a6abd0a0527e9a3ee4b5ccf70a16fd3cac",
-      "revision": "reservations-family-registration-review-v2",
-      "files": {
-        "reservations-module.js": "1d69356e9073a65ac389321ef0349249d646c39337ddca3ceb0c6056db6dbf89",
-        "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
-      }
-    }
-  ],
+  "approvedIntegrations": [],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
