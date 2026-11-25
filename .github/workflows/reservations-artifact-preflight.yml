@@ -42,26 +42,20 @@ jobs:
           console.log('source_commit='+a.sourceCommit);
           console.log('revision='+a.revision);
           NODE
-      - name: Require private Reservations artifact access
-        if: steps.approval.outputs.pending == 'true'
-        env:
-          HAS_SOURCE_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN != '' }}
-        run: test "$HAS_SOURCE_TOKEN" = true
       - name: Download exact successful Reservations CI artifact
         if: steps.approval.outputs.pending == 'true'
         env:
-          GH_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN }}
           SOURCE_COMMIT: ${{ steps.approval.outputs.source_commit }}
         shell: bash
         run: |
           set -euo pipefail
           api='https://api.github.com/repos/ramyawny37/reservation-management-system'
-          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28')
-          curl -fsSL "${auth[@]}" "$api/actions/runs?branch=develop&head_sha=$SOURCE_COMMIT&status=success&per_page=50" > /tmp/runs.json
+          headers=(-H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28')
+          curl -fsSL "${headers[@]}" "$api/actions/runs?branch=develop&head_sha=$SOURCE_COMMIT&status=success&per_page=50" > /tmp/runs.json
           RUN_ID=$(node -e "const j=require('/tmp/runs.json');const r=j.workflow_runs.find(x=>x.name==='Reservations CI'&&x.head_sha===process.env.SOURCE_COMMIT&&x.conclusion==='success');if(!r)process.exit(2);process.stdout.write(String(r.id))")
-          curl -fsSL "${auth[@]}" "$api/actions/runs/$RUN_ID/artifacts?per_page=100" > /tmp/artifacts.json
+          curl -fsSL "${headers[@]}" "$api/actions/runs/$RUN_ID/artifacts?per_page=100" > /tmp/artifacts.json
           ARTIFACT_ID=$(node -e "const j=require('/tmp/artifacts.json');const a=j.artifacts.find(x=>x.name==='reservations-platform-module'&&!x.expired);if(!a)process.exit(2);process.stdout.write(String(a.id))")
-          curl -fsSL -L "${auth[@]}" "$api/actions/artifacts/$ARTIFACT_ID/zip" -o /tmp/reservations-platform-module.zip
+          curl -fsSL -L "${headers[@]}" "$api/actions/artifacts/$ARTIFACT_ID/zip" -o /tmp/reservations-platform-module.zip
       - name: Integrate verified artifact
         if: steps.approval.outputs.pending == 'true'
         run: node tools/integrate-reservations-artifact.cjs /tmp/reservations-platform-module.zip
