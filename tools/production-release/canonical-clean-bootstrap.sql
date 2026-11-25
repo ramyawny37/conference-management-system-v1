@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 5b4Fh4SliXDwulH1fd6BrWr1bcv7tSXxT1Y0AKo6zEJuszipczRL27c9otfFEmK
+\restrict zALicZre3v8K08VHc3GvsZsZ5jNDFxVmT4E8gJ2EX4i2Vd5rWMVSEFAQsKYtlXt
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -13385,6 +13385,7 @@ CREATE TABLE "reservations"."public_registration_request_members" (
     CONSTRAINT "public_registration_request_members_ordinal_check" CHECK ((("ordinal" >= 0) AND ("ordinal" < 50))),
     CONSTRAINT "public_registration_request_members_phone_check" CHECK (("char_length"("phone") <= 20)),
     CONSTRAINT "public_registration_request_members_role_check" CHECK (("role" = ANY (ARRAY['primary'::"text", 'adult'::"text", 'child_paid'::"text", 'child_dependent'::"text"]))),
+    CONSTRAINT "public_registration_request_members_service_sector_canonical_ch" CHECK (("service_sector" = ANY (ARRAY['widows'::"text", 'widows-daughters'::"text", 'discipleship-primary-prep'::"text", 'discipleship-secondary-university'::"text", 'worship'::"text", 'media'::"text", 'servant-preparation'::"text", 'administration'::"text", 'other'::"text"]))),
     CONSTRAINT "public_registration_request_members_service_sector_check" CHECK (("char_length"("service_sector") <= 160)),
     CONSTRAINT "public_registration_request_members_service_sector_other_check" CHECK ((("service_sector_other" IS NULL) OR ("char_length"("service_sector_other") <= 200)))
 );
@@ -13443,6 +13444,7 @@ CREATE TABLE "reservations"."public_registration_requests" (
     CONSTRAINT "public_registration_requests_submitted_governorate_check" CHECK (("char_length"("submitted_governorate") <= 120)),
     CONSTRAINT "public_registration_requests_submitted_notes_check" CHECK ((("submitted_notes" IS NULL) OR ("char_length"("submitted_notes") <= 4000))),
     CONSTRAINT "public_registration_requests_submitted_phone_check" CHECK ((("submitted_phone" = "btrim"("submitted_phone")) AND (("char_length"("submitted_phone") >= 7) AND ("char_length"("submitted_phone") <= 20)))),
+    CONSTRAINT "public_registration_requests_submitted_service_sector_canonical" CHECK (("submitted_service_sector" = ANY (ARRAY['widows'::"text", 'widows-daughters'::"text", 'discipleship-primary-prep'::"text", 'discipleship-secondary-university'::"text", 'worship'::"text", 'media'::"text", 'servant-preparation'::"text", 'administration'::"text", 'other'::"text"]))),
     CONSTRAINT "public_registration_requests_submitted_service_sector_check" CHECK (("char_length"("submitted_service_sector") <= 160)),
     CONSTRAINT "public_registration_requests_submitted_service_sector_oth_check" CHECK ((("submitted_service_sector_other" IS NULL) OR ("char_length"("submitted_service_sector_other") <= 200))),
     CONSTRAINT "public_registration_requests_tracking_secret_digest_check" CHECK (("octet_length"("tracking_secret_digest") = 32))
@@ -21636,4 +21638,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5b4Fh4SliXDwulH1fd6BrWr1bcv7tSXxT1Y0AKo6zEJuszipczRL27c9otfFEmK
+\unrestrict zALicZre3v8K08VHc3GvsZsZ5jNDFxVmT4E8gJ2EX4i2Vd5rWMVSEFAQsKYtlXt
