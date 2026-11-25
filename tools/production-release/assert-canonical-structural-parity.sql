@@ -34,9 +34,9 @@ BEGIN
     UNION ALL SELECT 'policies',count(*),md5(coalesce(string_agg(item,E'\n' ORDER BY item),'')) FROM policies
   ), expected(kind,objects,digest) AS (
     VALUES
-    ('relations',95::bigint,'d3f7fd0b9f3abe14b7d7f806dcc1257c'),
-    ('columns',1205::bigint,'3d71d880da71b3945b2fd9e65840654e'),
-    ('functions',297::bigint,'6c3adadcd27e7d4ef157186c7f3c0847'),
+    ('relations',96::bigint,'3a42a4ebe83dd98eac89270f3449bac3'),
+    ('columns',1215::bigint,'807984d8b6c48dea374fab2e43de8de7'),
+    ('functions',299::bigint,'b4de4d76a343422535e6d8c08925b686'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
