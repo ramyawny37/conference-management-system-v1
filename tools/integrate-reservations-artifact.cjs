@@ -10,7 +10,8 @@ const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const archive = process.argv[2];
 if (!archive) throw new Error('Pass the verified Reservations integration ZIP path');
-const policy = JSON.parse(fs.readFileSync(path.join(__dirname, 'reservations-artifact-policy.json'), 'utf8'));
+const policyPath = path.join(__dirname, 'reservations-artifact-policy.json');
+const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
 const artifactNames = ['reservations-module.js', 'reservations-module.css'];
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'cms-reservations-'));
 function sha256(bytes) {
@@ -74,6 +75,9 @@ try {
   }
   fs.writeFileSync(indexPath, index);
   fs.writeFileSync(swPath, sw);
+  policy.currentRuntime = { revision: approved.revision, files: actualHashes };
+  policy.approvedIntegrations = [];
+  fs.writeFileSync(policyPath, JSON.stringify(policy, null, 2) + '\\n');
   execFileSync('git', ['diff', '--check'], {cwd: root, stdio:'inherit'});
   console.log('Integrated verified Reservations artifact into Conference develop working tree.');
   console.log('Source Reservations commit: ' + approved.sourceCommit);
