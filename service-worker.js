@@ -19,7 +19,7 @@ const CORE_ASSETS = [
   './shared-design-tokens.css?rev=platform-soft-controls-v5',
   './style.css?rev=conference-state-ownership-v19',
   './canonical-platform-shell.css?rev=platform-design-cutover-canonical-v2',
-  './modules/reservations/reservations-module.css?rev=reservations-public-registration-ops-v1',
+  './modules/reservations/reservations-module.css?rev=registration-requests-global-route-v1',
   './js/application-routing.js?rev=conference-room-assignments-v1',
   './js/storage/environment-namespace.js',
   './js/storage/indexeddb.js?rev=single-local-persistence-v1',
