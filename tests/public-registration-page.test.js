@@ -51,7 +51,7 @@ test('child inheritance synchronizes the current guardian form values before cop
   assert.match(js,/\['church','governorate','cityOrVillage','serviceSector','serviceSectorOther'\]/);
 });
 
-test('tracking page renders only server-projected optional financial and accommodation fields',()=>{
+test('device-local tracking keeps multiple request capabilities without storing registration PII',()=>{\n  assert.match(js,/public-registration-history:/);\n  assert.match(js,/history\.unshift\(\{reference:reference,trackingSecret:value\}\)/);\n  assert.match(js,/history\.slice\(0,8\)/);\n  assert.match(js,/data-saved-request/);\n  assert.doesNotMatch(js,/history\.unshift\(\{[^}]*phone|history\.unshift\(\{[^}]*dateOfBirth|history\.unshift\(\{[^}]*fullName/);\n});\n\ntest('tracking page renders only server-projected optional financial and accommodation fields',()=>{
   assert.match(js,/s\.financial/);
   assert.match(js,/s\.accommodation/);
   assert.match(js,/لم يتم تخصيص غرفة بعد/);
