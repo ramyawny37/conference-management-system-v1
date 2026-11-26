@@ -8,7 +8,7 @@ const CACHE_NAMESPACE = IS_DEVELOPMENT
   : '';
 const CACHE_PREFIX = CACHE_NAMESPACE + 'conference-manager-core-';
 const CACHE_REVISION = IS_DEVELOPMENT
-  ? 'development-registration-route-reconcile-v1-design-foundation-v1'
+  ? 'development-notification-inbox-route-closure-v1-design-foundation-v1'
   : 'production-3-6-0-release-v6';
 // Reinstall the Development worker so canonical accommodation and shared Reservations financial-cache assets refresh atomically.
 const CACHE_NAME = CACHE_PREFIX + 'v' + APP_VERSION + '-' + CACHE_REVISION;
@@ -87,7 +87,7 @@ const CORE_ASSETS = [
   './js/warehouse/workspace.js?rev=item-unit-add-ui-v1',
   './script.js?rev=conference-ui-final-cleanup-v1',
   './version.js',
-  './pwa.js?rev=notification-lifecycle-closure-v2',
+  './pwa.js?rev=notification-inbox-route-closure-v1',
   './libs/html2canvas.min.js',
   './assets/logo.jpg',
   './assets/make-a-difference-logo.png',
