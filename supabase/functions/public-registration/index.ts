@@ -24,7 +24,7 @@ Deno.serve(async request=>{
   const secret=required('PUBLIC_REGISTRATION_HMAC_SECRET');
   const forwarded=String(request.headers.get('x-forwarded-for')||'').split(',')[0].trim();
   const fingerprint=await hmac(secret,'rate:'+forwarded+'|'+String(request.headers.get('user-agent')||'').slice(0,256));
-  const service=createClient(required('SUPABASE_URL'),required('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false,autoRefreshToken:false}});
+  const serviceKey=JSON.parse(required('SUPABASE_SECRET_KEYS'))['default'];if(!serviceKey)throw new Error('SUPABASE_SECRET_KEY_MISSING');const service=createClient(required('SUPABASE_URL'),serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
   let result;
   if(operation==='event'){
     if(!exact(args,['publicId']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
