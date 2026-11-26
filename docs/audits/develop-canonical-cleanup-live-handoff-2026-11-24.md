@@ -697,3 +697,9 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Applied `20261126054947_public_registration_age_helper_private_acl.sql`; anon/authenticated/service_role direct execute denied; owner age calculation returned 26.
 - Commit `0a0e39de662a2ea2669de2a326107b0565c662db`: live structural fingerprints 96 relations, 1215 columns, 302 functions/a693d3115332697a267e4de313d581ed, 15 policies; access 342/a6692964e1900b01d6d59724016de852 unchanged.
 - Reservations CI 45764171990 PASS; zero-data CI 45764171976 PASS (all three jobs). Preview deployment and manual UI acceptance pending. No main or Production changes.
+
+## 2026-11-26 — Central notification architecture
+- User approved one Platform notification engine, durable recipient inbox, authorized private Realtime Broadcast for foreground and standards Web Push for background. No Firebase/OneSignal or parallel legacy engine.
+- Development observed zero registration notification events, zero active reservations subscriptions, zero deliveries. Logs confirmed missing PLATFORM_WEB_PUSH_VAPID_PUBLIC_KEY; prior web-push default import boot failure fixed.
+- Commits 34732dea and a137d725 separate browser GET origin from authenticated backend POST and expose activation failure. CI 45765516288, 45765516319, 45765580542 PASS; Development platform-notifications v3 ACTIVE.
+- Pending: provision VAPID secrets outside source control; verify actual subscription and recipient authorization at delivery/read time, including revoked devices and event scope; transactional durable event creation, retry/claim and expiry handling; authorized inbox/read state and private Broadcast; canonical request route with event selection; retire polling only after acceptance. No claim of delivery or UI acceptance. Develop and Development only.
