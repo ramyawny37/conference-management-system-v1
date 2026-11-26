@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 jobs:
   preflight:
     runs-on: ubuntu-latest
@@ -59,3 +60,4 @@ jobs:
           git diff --cached --check
           git commit -m "chore(reservations): integrate verified exact-SHA artifact"
           git push origin HEAD:develop
+          gh workflow run validate-reservations-integration.yml --repo "$GITHUB_REPOSITORY" --ref develop
