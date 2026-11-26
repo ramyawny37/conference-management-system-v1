@@ -102,3 +102,20 @@ test('public registration assets stay cache-coherent and date fields open from t
 });
 
 test('public registration explains canonical age errors',()=>{const js=fs.readFileSync('public-registration.js','utf8');assert.match(js,/PUBLIC_REGISTRATION_AGE_INVALID/);assert.match(js,/PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID/);});
+
+
+test('governorate is required by UI and frontend before canonical family submission',()=>{
+  assert.match(js,/المحافظة<\/label><select data-f="governorate" required>/);
+  assert.match(js,/PUBLIC_REGISTRATION_GOVERNORATE_REQUIRED:'اختر المحافظة.'/);
+  assert.match(js,/if\(!m\.governorate\)throw new Error\('PUBLIC_REGISTRATION_GOVERNORATE_REQUIRED'\)/);
+  assert.match(js,/\['church','governorate','cityOrVillage','serviceSector','serviceSectorOther'\]/);
+});
+
+test('server migration makes governorate authoritative and preserves guardian shared context',()=>{
+ const migration=fs.readFileSync('supabase/migrations/20261126193000_public_registration_governorate_contract.sql','utf8');
+ assert.match(migration,/PUBLIC_REGISTRATION_GOVERNORATE_REQUIRED/);
+ assert.match(migration,/char_length\(v_governorate\)>120/);
+ assert.match(migration,/PUBLIC_REGISTRATION_GUARDIAN_CONTEXT_MISMATCH/);
+ assert.match(migration,/v_guardian_member/);
+ assert.doesNotMatch(migration,/participants_governorate_check/);
+});
