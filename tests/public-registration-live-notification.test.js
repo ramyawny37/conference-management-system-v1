@@ -13,6 +13,8 @@ test('registration requests runtime asset is cache coherent',()=>{const html=fs.
 
 test('notification browser origin guard is confined to GET and emit requires backend authentication',()=>{const source=fs.readFileSync('supabase/functions/platform-notifications/index.ts','utf8');assert.ok(source.includes("if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)"));assert.ok(source.includes("if(apiKey!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED')"));assert.match(source,/\['emit','flush'\]/);});
 
+test('notification delivery edge uses one secret-api-key auth path without legacy jwt gateway verification',()=>{const source=fs.readFileSync('supabase/functions/platform-notifications/index.ts','utf8'),config=fs.readFileSync('supabase/config.toml','utf8');assert.match(config,/\[functions\.platform-notifications\]\s*verify_jwt = false/);assert.match(source,/req\.headers\.get\('apikey'\)/);assert.doesNotMatch(source,/bearer\(/);assert.doesNotMatch(source,/Authorization/);});
+
 
 test('failed server push activation rolls back a newly-created browser subscription',()=>{assert.match(pwa,/existing=await registration\.pushManager\.getSubscription\(\)/);assert.match(pwa,/if\(!existing\)try\{await subscription\.unsubscribe\(\)/);assert.match(pwa,/upsert_notification_push_subscription/);});
 
