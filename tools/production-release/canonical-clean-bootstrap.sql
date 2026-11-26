@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict GIp0V8VLP8akYIymAKOTELlyIUf7DBWvR9IJJQwsJlzfsjpGyZmdQh2lw8awGN4
+\restrict MJRuhfdtjPekPRZ4znesOy5S29ecNlfhdAJeIvs4jTHDGIUiCYoxJ61VdoVpx2V
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -3447,6 +3447,22 @@ end $_$;
 
 
 --
+-- Name: retire_notification_push_subscriptions_for_device("uuid", "uuid"); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."retire_notification_push_subscriptions_for_device"("p_user_id" "uuid", "p_device_id" "uuid") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$declare changed integer;begin
+update platform.notification_push_subscriptions
+set active=false,updated_at=statement_timestamp()
+where user_id=p_user_id and device_id=p_device_id and active;
+get diagnostics changed=row_count;
+return changed;
+end$$;
+
+
+--
 -- Name: revoke_permission_grant("uuid", "uuid", "uuid", "text", "uuid"); Type: FUNCTION; Schema: platform_private; Owner: -
 --
 
@@ -3881,7 +3897,7 @@ end$$;
 CREATE FUNCTION "platform_private"."stage_public_registration_request_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare v_public_id uuid;begin select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values('reservations.public_registration.submitted','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#reservations/events/'||new.event_id::text||'?tab=registration','public-registration:'||v_public_id::text||':'||new.submit_operation_id::text)on conflict(dedupe_key)do nothing;return new;end$$;
+    AS $$declare v_public_id uuid;begin select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values('reservations.public_registration.submitted','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#/reservations/events/'||new.event_id::text||'?tab=registration','public-registration:'||v_public_id::text||':'||new.submit_operation_id::text)on conflict(dedupe_key)do nothing;return new;end$$;
 
 
 --
@@ -5135,6 +5151,7 @@ begin
       and consumed_at is null and failed_at is null;
     update platform_private.device_sessions set revoked_at=operation_at
     where user_id=p_target_user_id and device_id=p_target_device_id and revoked_at is null;
+    perform platform_private.retire_notification_push_subscriptions_for_device(p_target_user_id,p_target_device_id);
     update platform.device_key_bindings set lifecycle_status='revoked',revoked_at=operation_at
     where user_id=p_target_user_id and device_id=p_target_device_id
       and device_authorization_id=target.id and lifecycle_status='active'
@@ -20267,6 +20284,13 @@ REVOKE ALL ON FUNCTION "platform_private"."restore_conference_bundle_table"("p_t
 
 
 --
+-- Name: FUNCTION "retire_notification_push_subscriptions_for_device"("p_user_id" "uuid", "p_device_id" "uuid"); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."retire_notification_push_subscriptions_for_device"("p_user_id" "uuid", "p_device_id" "uuid") FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "revoke_permission_grant"("p_actor" "uuid", "p_device" "uuid", "p_grant" "uuid", "p_reason" "text", "p_operation_id" "uuid"); Type: ACL; Schema: platform_private; Owner: -
 --
 
@@ -22017,4 +22041,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GIp0V8VLP8akYIymAKOTELlyIUf7DBWvR9IJJQwsJlzfsjpGyZmdQh2lw8awGN4
+\unrestrict MJRuhfdtjPekPRZ4znesOy5S29ecNlfhdAJeIvs4jTHDGIUiCYoxJ61VdoVpx2V
