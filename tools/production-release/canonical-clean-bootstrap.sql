@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict a79iD13V6meDid63wN2lWs3dskK84dUMvSIOFbWcaQNWyELtdNAEJ60jKBh78Hj
+\restrict RO1Qo7QIbbpqleBsycapkHorchz7IFd1ad0YYffIyjLazep7bUQwR2PFkVmZ5vV
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -3845,33 +3845,20 @@ begin new.updated_at:=pg_catalog.now(); return new; end; $$;
 
 
 --
--- Name: stage_notification("text", "text", "text", "text", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: platform_private; Owner: -
---
-
-CREATE FUNCTION "platform_private"."stage_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO ''
-    AS $_$begin if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or p_scope_type !~ '^[a-z0-9_.-]{1,80}$' or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing;end$_$;
-
-
---
 -- Name: stage_public_registration_request_notification(); Type: FUNCTION; Schema: platform_private; Owner: -
 --
 
 CREATE FUNCTION "platform_private"."stage_public_registration_request_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare v_public_id uuid;begin select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;perform platform_private.stage_public_registration_submitted_notification(new.id,new.event_id,new.request_reference,v_public_id,new.submit_operation_id);return new;end$$;
-
-
---
--- Name: stage_public_registration_submitted_notification("uuid", "uuid", "text", "uuid", "uuid"); Type: FUNCTION; Schema: platform_private; Owner: -
---
-
-CREATE FUNCTION "platform_private"."stage_public_registration_submitted_notification"("p_request_id" "uuid", "p_event_id" "uuid", "p_reference" "text", "p_public_id" "uuid", "p_operation_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO ''
-    AS $$begin if not exists(select 1 from reservations.public_registration_requests r where r.id=p_request_id and r.event_id=p_event_id and r.request_reference=p_reference and r.submit_operation_id=p_operation_id) then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;perform platform_private.stage_notification('reservations.public_registration.submitted','reservations','public_registration_request',p_reference,'event',p_event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#reservations/registration-requests','public-registration:'||p_public_id::text||':'||p_operation_id::text);end$$;
+    AS $$declare v_public_id uuid;begin
+ select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;
+ if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;
+ insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)
+ values('reservations.public_registration.submitted','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#reservations/registration-requests','public-registration:'||v_public_id::text||':'||new.submit_operation_id::text)
+ on conflict(dedupe_key)do nothing;
+ return new;
+end$$;
 
 
 --
@@ -20237,24 +20224,10 @@ REVOKE ALL ON FUNCTION "platform_private"."set_updated_at"() FROM PUBLIC;
 
 
 --
--- Name: FUNCTION "stage_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text"); Type: ACL; Schema: platform_private; Owner: -
---
-
-REVOKE ALL ON FUNCTION "platform_private"."stage_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") FROM PUBLIC;
-
-
---
 -- Name: FUNCTION "stage_public_registration_request_notification"(); Type: ACL; Schema: platform_private; Owner: -
 --
 
 REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_request_notification"() FROM PUBLIC;
-
-
---
--- Name: FUNCTION "stage_public_registration_submitted_notification"("p_request_id" "uuid", "p_event_id" "uuid", "p_reference" "text", "p_public_id" "uuid", "p_operation_id" "uuid"); Type: ACL; Schema: platform_private; Owner: -
---
-
-REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_submitted_notification"("p_request_id" "uuid", "p_event_id" "uuid", "p_reference" "text", "p_public_id" "uuid", "p_operation_id" "uuid") FROM PUBLIC;
 
 
 --
@@ -21952,4 +21925,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict a79iD13V6meDid63wN2lWs3dskK84dUMvSIOFbWcaQNWyELtdNAEJ60jKBh78Hj
+\unrestrict RO1Qo7QIbbpqleBsycapkHorchz7IFd1ad0YYffIyjLazep7bUQwR2PFkVmZ5vV
