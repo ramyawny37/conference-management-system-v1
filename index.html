@@ -118,6 +118,10 @@
     </div>
     <div class="startup-auth-signed-in" data-startup-auth-signed-in style="display:none">
       <span class="startup-auth-account-name" data-startup-auth-account-name></span>
+      <div class="platform-notification-center">
+        <button id="platform-notifications-inbox" type="button" class="platform-notification-bell" aria-label="التنبيهات" aria-expanded="false">🔔<span id="platform-notifications-count" class="platform-notification-count" hidden>0</span></button>
+        <div id="platform-notifications-panel" class="platform-notification-panel" hidden><div class="platform-notification-panel__head"><strong>التنبيهات</strong><span id="platform-notifications-status"></span></div><div id="platform-notifications-list" class="platform-notification-list"></div></div>
+      </div>
       <button id="platform-notifications-enable" type="button" class="startup-auth-create">تفعيل التنبيهات</button>
       <button type="button" class="startup-auth-create" onclick="SyncSettingsUI.signOut()">تسجيل الخروج</button>
     </div>
