@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict R5ahfkhor2ZTC6orMuCoYlS2Rich1XskQEaeH8btnetWy40WmenSyg98JmGZsYv
+\restrict ZbdPUnXgfy2HrHAz2dg7IE9eVZTtLOVTDhU7sR07sWMjHp1AiTzr3GJj9e3Esr4
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -9018,7 +9018,7 @@ CREATE FUNCTION "reservations"."public_registration_submit_family"("p_public_id"
     SET "search_path" TO ''
     AS $$
 declare v_channel reservations.public_registration_channels%rowtype;v_event reservations.events%rowtype;v_existing reservations.public_registration_requests%rowtype;
- v_request_id uuid:=extensions.gen_random_uuid();v_reference text;v_intent bytea;v_primary jsonb;v_member jsonb;v_key uuid;v_guardian uuid;v_role text;v_type uuid;v_count int;v_ordinal int:=0;v_sector text;v_sector_other text;
+ v_request_id uuid:=extensions.gen_random_uuid();v_reference text;v_intent bytea;v_primary jsonb;v_member jsonb;v_key uuid;v_guardian uuid;v_role text;v_type uuid;v_count int;v_ordinal int:=0;v_sector text;v_sector_other text;v_dob date;
 begin
  if p_submit_operation_id is null or p_tracking_secret_digest is null or octet_length(p_tracking_secret_digest)<>32 or jsonb_typeof(p_members)<>'array' then raise exception 'PUBLIC_REGISTRATION_SUBMISSION_INVALID' using errcode='22023';end if;
  v_count:=jsonb_array_length(p_members);if v_count<1 or v_count>12 then raise exception 'PUBLIC_REGISTRATION_FAMILY_SIZE_INVALID' using errcode='22023';end if;
@@ -9039,7 +9039,7 @@ begin
    if (select array_agg(k order by k) from jsonb_object_keys(v_member) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','guardianMemberKey','memberKey','notes','phone','role','serviceSector','serviceSectorOther']::text[] then raise exception 'PUBLIC_REGISTRATION_MEMBER_SHAPE_INVALID' using errcode='22023';end if;
    v_key:=(v_member->>'memberKey')::uuid;v_role:=v_member->>'role';v_guardian:=nullif(v_member->>'guardianMemberKey','')::uuid;v_type:=nullif(v_member->>'bookingTypeId','')::uuid;v_sector:=v_member->>'serviceSector';v_sector_other:=nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),'');
    if v_role not in('primary','adult','child_paid','child_dependent') or (v_ordinal=0 and v_role<>'primary') or (v_ordinal>0 and v_role='primary') then raise exception 'PUBLIC_REGISTRATION_MEMBER_ROLE_INVALID' using errcode='22023';end if;
-   if nullif(btrim(v_member->>'fullName'),'') is null or nullif(v_member->>'dateOfBirth','') is null or (v_member->>'gender') not in('male','female') then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if;
+   if nullif(btrim(v_member->>'fullName'),'') is null or nullif(v_member->>'dateOfBirth','') is null or (v_member->>'gender') not in('male','female') then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if; v_dob:=(v_member->>'dateOfBirth')::date; perform reservations_private.require_public_registration_member_age(v_event.start_date,v_dob,v_role);
    if v_sector not in('widows','widows-daughters','discipleship-primary-prep','discipleship-secondary-university','worship','media','servant-preparation','administration','other') or (v_sector='other' and v_sector_other is null) or (v_sector<>'other' and v_sector_other is not null) then raise exception 'PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID' using errcode='22023';end if;
    if v_role in('child_paid','child_dependent') then
      if v_guardian is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;
@@ -10835,6 +10835,24 @@ begin
   perform reservations_private.audit(context,'person_credit.redeemed','person_credit',account.person_id,
     operation_id,to_jsonb(account),result);
   return reservations_private.complete_operation(operation_id,context,'redeem_person_credit',p_args,result);
+end $$;
+
+
+--
+-- Name: require_public_registration_member_age("date", "date", "text"); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."require_public_registration_member_age"("p_event_start_date" "date", "p_date_of_birth" "date", "p_role" "text") RETURNS integer
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+declare v_age integer;
+begin
+ if p_event_start_date is null or p_date_of_birth is null or p_date_of_birth>p_event_start_date then raise exception 'PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID' using errcode='22023';end if;
+ v_age:=extract(year from pg_catalog.age(p_event_start_date,p_date_of_birth))::integer;
+ if p_role<>'child_dependent' and (v_age<1 or v_age>120) then raise exception 'PUBLIC_REGISTRATION_AGE_INVALID' using errcode='22023';end if;
+ if p_role='child_dependent' and v_age>120 then raise exception 'PUBLIC_REGISTRATION_AGE_INVALID' using errcode='22023';end if;
+ return v_age;
 end $$;
 
 
@@ -21255,6 +21273,13 @@ REVOKE ALL ON FUNCTION "reservations_private"."redeem_person_credit_scoped"("p_d
 
 
 --
+-- Name: FUNCTION "require_public_registration_member_age"("p_event_start_date" "date", "p_date_of_birth" "date", "p_role" "text"); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."require_public_registration_member_age"("p_event_start_date" "date", "p_date_of_birth" "date", "p_role" "text") FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "resolve_booking_scope"("p_device_id" "uuid", "p_booking_id" "uuid", "p_permission" "text"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -21635,4 +21660,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict R5ahfkhor2ZTC6orMuCoYlS2Rich1XskQEaeH8btnetWy40WmenSyg98JmGZsYv
+\unrestrict ZbdPUnXgfy2HrHAz2dg7IE9eVZTtLOVTDhU7sR07sWMjHp1AiTzr3GJj9e3Esr4
