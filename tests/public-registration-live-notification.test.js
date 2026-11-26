@@ -11,7 +11,7 @@ test('global registration requests route owns scope discovery and bypasses confe
 
 test('registration requests runtime asset is cache coherent',()=>{const html=fs.readFileSync('index.html','utf8');const sw=fs.readFileSync('service-worker.js','utf8');const asset='modules/reservations/reservations-module.js?rev=registration-requests-global-route-v1';assert.ok(html.includes(asset));assert.ok(sw.includes(asset));});
 
-test('notification browser origin guard is confined to GET and emit requires backend authentication',()=>{const source=fs.readFileSync('supabase/functions/platform-notifications/index.ts','utf8');assert.ok(source.includes("if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)"));assert.ok(source.includes('if(bearer(req)!==serviceKey)'));assert.match(source,/\['emit','flush'\]/);});
+test('notification browser origin guard is confined to GET and emit requires backend authentication',()=>{const source=fs.readFileSync('supabase/functions/platform-notifications/index.ts','utf8');assert.ok(source.includes("if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)"));assert.ok(source.includes("if(apiKey!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED')"));assert.match(source,/\['emit','flush'\]/);});
 
 
 test('failed server push activation rolls back a newly-created browser subscription',()=>{assert.match(pwa,/existing=await registration\.pushManager\.getSubscription\(\)/);assert.match(pwa,/if\(!existing\)try\{await subscription\.unsubscribe\(\)/);assert.match(pwa,/upsert_notification_push_subscription/);});
