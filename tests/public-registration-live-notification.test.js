@@ -30,4 +30,13 @@ test('notification lifecycle reconciles permission and remote device revocation 
 });
 
 
+
+test('notification click durably marks read, refreshes unread count, then navigates',()=>{
+  const inboxSql=fs.readFileSync('supabase/migrations/20261126113000_platform_notification_durable_inbox.sql','utf8');
+  assert.match(inboxSql,/read_at=coalesce\(r\.read_at,statement_timestamp\(\)\)/);
+  assert.match(inboxSql,/r\.read_at is null[\s\S]*notification_user_is_authorized/);
+  assert.match(pwa,/markPlatformNotificationRead\(item\.getAttribute\('data-platform-notification-id'\)\)\.then\(function\(\)\{return refreshPlatformNotificationInbox\(\);\}\)\.then\(function\(\)\{if\(url\)window\.location\.href=url;\}\)/);
+  assert.match(pwa,/count\.textContent=unread>99\?'99\+':String\(unread\);count\.hidden=unread<1/);
+});
+
 test('platform device edge admits the complete canonical notification lifecycle',()=>{const source=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');for(const operation of ['list_my_notifications','mark_my_notification_read','get_notification_push_subscription_state','upsert_notification_push_subscription','disable_notification_push_subscription'])assert.ok(source.includes("platform.add('"+operation+"')"),operation+' missing from platform device edge allowlist');});
