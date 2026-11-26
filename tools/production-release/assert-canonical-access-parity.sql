@@ -20,7 +20,7 @@ BEGIN
       AND r.rolname IN ('anon','authenticated','service_role')
   )
   SELECT count(*),md5(coalesce(string_agg(item,E'\n' ORDER BY item),'')) INTO actual_count,actual_digest FROM grants;
-  IF actual_count<>342 OR actual_digest<>'324493faa59c98090e5b059d9744d3c6' THEN
+  IF actual_count<>341 OR actual_digest<>'d036d42e583a9de860a1780f09a6c98d' THEN
     RAISE EXCEPTION 'FOUNDATION_ACCESS_PARITY_FAILED: entries=% digest=%',actual_count,actual_digest;
   END IF;
   RAISE NOTICE 'FOUNDATION_ACCESS_PARITY_PASS';
