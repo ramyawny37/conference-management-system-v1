@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict tVFbrx8bSBIJQ59pJz5elFvzErxnNfUnWqxmq2nOPBUam6KvRgc1bj2fu9mgn76
+\restrict Yp930jWDOecI4IVP6dhO3zBJ27MKCVd6tA1yw42qk07i5wbHsJhzLWBTk9oTJCz
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -1706,6 +1706,16 @@ end $$;
 
 
 --
+-- Name: broadcast_notification_recipient(); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."broadcast_notification_recipient"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$declare e platform.notification_events%rowtype;begin select * into e from platform.notification_events where id=new.notification_event_id;if not found then return null;end if;perform realtime.send(jsonb_build_object('id',e.id,'eventType',e.event_type,'moduleKey',e.module_key,'resourceType',e.resource_type,'resourceId',e.resource_id,'scopeType',e.scope_type,'scopeId',e.scope_id,'title',e.title,'body',e.body,'targetUrl',e.target_url,'createdAt',e.created_at,'readAt',new.read_at),case when tg_op='INSERT' then 'notification_created' else 'notification_read' end,'user:'||new.user_id::text||':notifications',true);return null;end$$;
+
+
+--
 -- Name: canonical_device_count("uuid"); Type: FUNCTION; Schema: platform_private; Owner: -
 --
 
@@ -2211,6 +2221,16 @@ end$$;
 
 
 --
+-- Name: dispatch_staged_notification(); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."dispatch_staged_notification"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$begin perform platform_private.enqueue_notification_core(new.event_type,new.module_key,new.resource_type,new.resource_id,new.scope_type,new.scope_id,new.title,new.body,new.target_url,new.dedupe_key);update platform.notification_outbox set dispatched_at=statement_timestamp() where id=new.id;return new;end$$;
+
+
+--
 -- Name: enforce_conference_participation_guardian_one_level(); Type: FUNCTION; Schema: platform_private; Owner: -
 --
 
@@ -2345,7 +2365,17 @@ end $$;
 CREATE FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $_$declare event_id uuid;inserted boolean:=false;delivery_count integer;recipient_count integer;begin if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or ((p_scope_type is null)<>(p_scope_id is null)) or (p_scope_type is not null and p_scope_type !~ '^[a-z0-9_.-]{1,80}$') or (p_module_key='reservations' and (p_scope_type is distinct from 'event' or p_scope_id is null)) or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing returning id into event_id;if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key;else inserted:=true;end if;insert into platform.notification_recipients(notification_event_id,user_id)select event_id,pr.user_id from platform.profiles pr where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_scope_type,p_scope_id)on conflict do nothing;get diagnostics recipient_count=row_count;insert into platform.notification_deliveries(notification_event_id,subscription_id)select event_id,s.id from platform.notification_push_subscriptions s join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)on conflict(notification_event_id,subscription_id)do nothing;get diagnostics delivery_count=row_count;return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);end$_$;
+    AS $$begin if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;return platform_private.enqueue_notification_core(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key);end$$;
+
+
+--
+-- Name: enqueue_notification_core("text", "text", "text", "text", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."enqueue_notification_core"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$declare event_id uuid;inserted boolean:=false;delivery_count integer;recipient_count integer;begin if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or ((p_scope_type is null)<>(p_scope_id is null)) or (p_scope_type is not null and p_scope_type !~ '^[a-z0-9_.-]{1,80}$') or (p_module_key='reservations' and (p_scope_type is distinct from 'event' or p_scope_id is null)) or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing returning id into event_id;if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key;else inserted:=true;end if;insert into platform.notification_recipients(notification_event_id,user_id)select event_id,pr.user_id from platform.profiles pr where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_scope_type,p_scope_id)on conflict do nothing;get diagnostics recipient_count=row_count;insert into platform.notification_deliveries(notification_event_id,subscription_id)select event_id,s.id from platform.notification_push_subscriptions s join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)on conflict(notification_event_id,subscription_id)do nothing;get diagnostics delivery_count=row_count;return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);end$_$;
 
 
 --
@@ -3800,6 +3830,36 @@ CREATE FUNCTION "platform_private"."set_updated_at"() RETURNS "trigger"
     SET "search_path" TO ''
     AS $$
 begin new.updated_at:=pg_catalog.now(); return new; end; $$;
+
+
+--
+-- Name: stage_notification("text", "text", "text", "text", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."stage_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$begin if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or p_scope_type !~ '^[a-z0-9_.-]{1,80}$' or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing;end$_$;
+
+
+--
+-- Name: stage_public_registration_request_notification(); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."stage_public_registration_request_notification"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$declare v_public_id uuid;begin select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;perform platform_private.stage_public_registration_submitted_notification(new.id,new.event_id,new.request_reference,v_public_id,new.submit_operation_id);return new;end$$;
+
+
+--
+-- Name: stage_public_registration_submitted_notification("uuid", "uuid", "text", "uuid", "uuid"); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."stage_public_registration_submitted_notification"("p_request_id" "uuid", "p_event_id" "uuid", "p_reference" "text", "p_public_id" "uuid", "p_operation_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$begin if not exists(select 1 from reservations.public_registration_requests r where r.id=p_request_id and r.event_id=p_event_id and r.request_reference=p_reference and r.submit_operation_id=p_operation_id) then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;perform platform_private.stage_notification('reservations.public_registration.submitted','reservations','public_registration_request',p_reference,'event',p_event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#reservations/registration-requests','public-registration:'||p_public_id::text||':'||p_operation_id::text);end$$;
 
 
 --
@@ -11218,6 +11278,29 @@ ALTER TABLE ONLY "platform"."notification_events" FORCE ROW LEVEL SECURITY;
 
 
 --
+-- Name: notification_outbox; Type: TABLE; Schema: platform; Owner: -
+--
+
+CREATE TABLE "platform"."notification_outbox" (
+    "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
+    "event_type" "text" NOT NULL,
+    "module_key" "text" NOT NULL,
+    "resource_type" "text" NOT NULL,
+    "resource_id" "text" NOT NULL,
+    "scope_type" "text" NOT NULL,
+    "scope_id" "text" NOT NULL,
+    "title" "text" NOT NULL,
+    "body" "text" NOT NULL,
+    "target_url" "text" NOT NULL,
+    "dedupe_key" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    "dispatched_at" timestamp with time zone
+);
+
+ALTER TABLE ONLY "platform"."notification_outbox" FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: notification_push_subscriptions; Type: TABLE; Schema: platform; Owner: -
 --
 
@@ -13650,6 +13733,22 @@ ALTER TABLE ONLY "platform"."notification_events"
 
 
 --
+-- Name: notification_outbox notification_outbox_dedupe_key_key; Type: CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_outbox"
+    ADD CONSTRAINT "notification_outbox_dedupe_key_key" UNIQUE ("dedupe_key");
+
+
+--
+-- Name: notification_outbox notification_outbox_pkey; Type: CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_outbox"
+    ADD CONSTRAINT "notification_outbox_pkey" PRIMARY KEY ("id");
+
+
+--
 -- Name: notification_push_subscriptions notification_push_subscriptions_endpoint_key; Type: CONSTRAINT; Schema: platform; Owner: -
 --
 
@@ -15726,6 +15825,20 @@ CREATE TRIGGER "devices_set_updated_at" BEFORE UPDATE ON "platform"."devices" FO
 
 
 --
+-- Name: notification_outbox notification_outbox_dispatch; Type: TRIGGER; Schema: platform; Owner: -
+--
+
+CREATE TRIGGER "notification_outbox_dispatch" AFTER INSERT ON "platform"."notification_outbox" FOR EACH ROW EXECUTE FUNCTION "platform_private"."dispatch_staged_notification"();
+
+
+--
+-- Name: notification_recipients notification_recipient_broadcast; Type: TRIGGER; Schema: platform; Owner: -
+--
+
+CREATE TRIGGER "notification_recipient_broadcast" AFTER INSERT OR UPDATE OF "read_at" ON "platform"."notification_recipients" FOR EACH ROW EXECUTE FUNCTION "platform_private"."broadcast_notification_recipient"();
+
+
+--
 -- Name: people people_updated_at; Type: TRIGGER; Schema: platform; Owner: -
 --
 
@@ -15975,6 +16088,13 @@ CREATE TRIGGER "system_owner_recovery_authorizations_lifecycle_guard" BEFORE INS
 --
 
 CREATE TRIGGER "public_registration_guardian_child_capture" AFTER UPDATE OF "resolved_person_id", "booking_id" ON "reservations"."public_registration_request_members" FOR EACH ROW WHEN ((("new"."resolved_person_id" IS NOT NULL) AND ("new"."role" = ANY (ARRAY['child_paid'::"text", 'child_dependent'::"text"])))) EXECUTE FUNCTION "reservations_private"."capture_public_registration_guardian_child"();
+
+
+--
+-- Name: public_registration_requests public_registration_request_notification_outbox; Type: TRIGGER; Schema: reservations; Owner: -
+--
+
+CREATE TRIGGER "public_registration_request_notification_outbox" AFTER INSERT ON "reservations"."public_registration_requests" FOR EACH ROW EXECUTE FUNCTION "platform_private"."stage_public_registration_request_notification"();
 
 
 --
@@ -18607,6 +18727,12 @@ ALTER TABLE "platform"."notification_deliveries" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "platform"."notification_events" ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: notification_outbox; Type: ROW SECURITY; Schema: platform; Owner: -
+--
+
+ALTER TABLE "platform"."notification_outbox" ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: notification_push_subscriptions; Type: ROW SECURITY; Schema: platform; Owner: -
 --
 
@@ -19506,6 +19632,13 @@ REVOKE ALL ON FUNCTION "platform_private"."audit_conference_transport_assignment
 
 
 --
+-- Name: FUNCTION "broadcast_notification_recipient"(); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."broadcast_notification_recipient"() FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "canonical_device_count"("p_user_id" "uuid"); Type: ACL; Schema: platform_private; Owner: -
 --
 
@@ -19661,6 +19794,13 @@ REVOKE ALL ON FUNCTION "platform_private"."disable_notification_push_subscriptio
 
 
 --
+-- Name: FUNCTION "dispatch_staged_notification"(); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."dispatch_staged_notification"() FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "enforce_conference_participation_guardian_one_level"(); Type: ACL; Schema: platform_private; Owner: -
 --
 
@@ -19694,6 +19834,13 @@ REVOKE ALL ON FUNCTION "platform_private"."enforce_transport_resident_assignment
 
 REVOKE ALL ON FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") TO "service_role";
+
+
+--
+-- Name: FUNCTION "enqueue_notification_core"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text"); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."enqueue_notification_core"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") FROM PUBLIC;
 
 
 --
@@ -20068,6 +20215,27 @@ REVOKE ALL ON FUNCTION "platform_private"."set_conference_automatic_extra_bed_so
 --
 
 REVOKE ALL ON FUNCTION "platform_private"."set_updated_at"() FROM PUBLIC;
+
+
+--
+-- Name: FUNCTION "stage_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text"); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."stage_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") FROM PUBLIC;
+
+
+--
+-- Name: FUNCTION "stage_public_registration_request_notification"(); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_request_notification"() FROM PUBLIC;
+
+
+--
+-- Name: FUNCTION "stage_public_registration_submitted_notification"("p_request_id" "uuid", "p_event_id" "uuid", "p_reference" "text", "p_public_id" "uuid", "p_operation_id" "uuid"); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_submitted_notification"("p_request_id" "uuid", "p_event_id" "uuid", "p_reference" "text", "p_public_id" "uuid", "p_operation_id" "uuid") FROM PUBLIC;
 
 
 --
@@ -21765,4 +21933,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict tVFbrx8bSBIJQ59pJz5elFvzErxnNfUnWqxmq2nOPBUam6KvRgc1bj2fu9mgn76
+\unrestrict Yp930jWDOecI4IVP6dhO3zBJ27MKCVd6tA1yw42qk07i5wbHsJhzLWBTk9oTJCz
