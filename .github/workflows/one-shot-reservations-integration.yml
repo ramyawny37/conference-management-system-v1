@@ -1,0 +1,40 @@
+name: One-shot verified Reservations artifact integration
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/one-shot-reservations-integration.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download exact verified Reservations artifact
+        env:
+          GH_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN }}
+        run: gh api repos/ramyawny37/reservation-management-system/actions/artifacts/15130942250/zip > /tmp/reservations.zip
+      - name: Integrate through canonical guarded tool
+        run: node tools/integrate-reservations-artifact.cjs /tmp/reservations.zip
+      - name: Verify integrated runtime
+        run: |
+          node --check modules/reservations/reservations-module.js
+          node --test tests/reservations-artifact-policy.test.js
+          test "$(sha256sum modules/reservations/reservations-module.js | cut -d' ' -f1)" = "89248a853d89107d54e9f0d88dbe65c43dc76e8d54153251f9fd9b0b8d1a76d9"
+          test "$(sha256sum modules/reservations/reservations-module.css | cut -d' ' -f1)" = "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
+      - name: Remove one-shot workflow and commit atomically
+        run: |
+          rm .github/workflows/one-shot-reservations-integration.yml
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add modules/reservations/reservations-module.js modules/reservations/reservations-module.css modules/reservations/reservations-contract.json index.html service-worker.js tools/reservations-artifact-policy.json .github/workflows/one-shot-reservations-integration.yml
+          git diff --cached --check
+          git commit -m "fix(reservations): integrate verified registration requests workspace"
+          git push origin HEAD:develop
