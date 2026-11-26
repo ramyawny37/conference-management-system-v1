@@ -799,3 +799,13 @@ The internal notification system is not declared CLOSED until all of the followi
 - User-confirmed Chrome acceptance PR-DDB88E26930D: inbox closed immediately, global requests workspace opened, correct eventId/requestId preserved, exact RequestReview opened, sidebar selected, no manual refresh or old event registration workspace.
 - Prior documented evidence supports transactional producer, private Realtime, authorization checks, server-owned read state, subscription lifecycle, retry/lease, expired endpoint retirement and real Chrome Web Push (sent 3, failed 0). Latest report closes targeted navigation, but does not explicitly establish durable read decrement or fresh authorized-recipient uniqueness evidence. Final source-wide obsolete-path audit and exact validation of this documentation successor remain to be verified. Internal closure remains pending verification; external implementation deferred.
 - Documentation-only update on Platform develop; no runtime, generated bundle, database or Production changes.
+
+
+### 2026-11-26 — Governorate correction and notification review retargeting
+
+- Reservations source 97970c2b4769f80c561f1e9f7d5a0addccca4abe: runs 45868200634 and 45868200391 PASS; official artifact 15140309678, runtime revision registration-notification-deeplink-v1.
+- Platform exact validated SHA 3286b2ac8bac0b36663145180e57c692ef96ede9: run 45872953919 SUCCESS. Development Preview run 45877753647 build/deploy SUCCESS; deployment logs explicitly identify the same Platform SHA.
+- Prior rejection chain involved malformed source JSX/literal newline and stale cache revision assertions. Final validation passed after correction; notification asset coherence test now derives revision from artifact policy. Other hardcoded revision assertions still require consolidation.
+- Development governorate correction migrations 20261126194500 and 20261126200000 retain participant constraints and provide audited request correction; historical missing values must not be invented.
+- Same-route request retargeting and review scrolling are included in the published artifact. Browser acceptance remains pending. Previous delivery evidence reported sent=1, failed=0 for PR-99A23643E065; this is not proof of visible Chrome notification presentation.
+- INTERNAL NOTIFICATION SYSTEM remains OPEN pending live browser acceptance and final push diagnosis. External delivery deferred. No Production changes.
