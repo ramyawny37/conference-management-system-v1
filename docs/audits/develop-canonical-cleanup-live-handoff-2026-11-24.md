@@ -754,3 +754,12 @@ The internal notification system is not declared CLOSED until all of the followi
 - Background Web Push network acceptance remains blocked only by the Development VAPID secrets; no key was placed in source, database, or chat and no bypass was added.
 - Cleanup commits on `develop`: `1ed1ef94cc1b8e4d9c69cf6a3e2d4081d2b6070c` (remove request polling), `0e8d73cb5edad1b519bb2ddb028cecbffe0ba5b6` (forbid polling contract), `86f1b001833635586c766b2c8cf4f1940d574d87` (push activation rollback), `8a35431dacafb38e50cd450370835f8597f2e6ed` (push rollback contract), `954c729f3df65687c5cb8cc2bff7bd4fdc5ee8d1` + `e8e1dd20624e21198421a555d00dfe2d0c944ec3` (PWA revision), and `d86b1cae7f570b6ce18669f23015a12b1dddd6d1` (revision contract).
 - Final CI / zero-data / clean-bootstrap successor validation is still a mandatory gate after these source commits. Do not declare `INTERNAL NOTIFICATION SYSTEM = CLOSED` until those automatic runs and the exact bootstrap successor are PASS.
+
+
+### 2026-11-26 — CI rejection-chain correction
+
+- The rejection chain after notification cleanup was traced to a malformed test boundary in `tests/public-registration-live-notification.test.js`: the polling-removal assertion test was not closed before the transactional-outbox test began, nesting subsequent tests and causing CI rejection independently of the notification runtime.
+- Root correction: restored the missing `});` boundary. No runtime fallback, polling, duplicate path, DB mutation, or Production change was introduced.
+- Corrective commit: `a7059cf0722afb91472d0e8b7cc3797ea3b0f18a`.
+- Re-validated source ownership after correction: the Reservations runtime still contains no `setInterval(F,15000)`; canonical `platform-notification` refresh remains the only live refresh event beyond initial load.
+- CI successor remains the acceptance authority; continue through the entire successor chain rather than treating earlier failures as current after this root correction.
