@@ -35,4 +35,4 @@ test('writer remains one canonical function with fail-closed browser ACL',()=>{
   assert.doesNotMatch(sql,/create table/i);
 });
 
-test('public registration validates booking age before persistence',()=>{const sql=fs.readFileSync('supabase/migrations/20261126053000_public_registration_canonical_age_validation.sql','utf8');assert.match(sql,/require_public_registration_member_age/);assert.match(sql,/PUBLIC_REGISTRATION_AGE_INVALID/);assert.match(sql,/v_role<>'child_dependent' and \(v_age<1 or v_age>120\)/);assert.match(sql,/perform reservations_private\.require_public_registration_member_age\(v_event\.start_date,v_dob,v_role\)/);});
+test('public registration validates booking age before persistence',()=>{const sql=fs.readFileSync('supabase/migrations/20261126053000_public_registration_canonical_age_validation.sql','utf8');assert.match(sql,/require_public_registration_member_age/);assert.match(sql,/PUBLIC_REGISTRATION_AGE_INVALID/);assert.ok(sql.includes("v_role<>'child_dependent' and (v_age<1 or v_age>120)"));assert.match(sql,/perform reservations_private\.require_public_registration_member_age\(v_event\.start_date,v_dob,v_role\)/);});
