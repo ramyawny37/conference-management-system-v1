@@ -14,7 +14,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: develop
-      - name: Verify develop has not moved\n        run: test \"$(git rev-parse HEAD)\" = \"${{ github.sha }}\"\n      - uses: actions/setup-node@v4
+      - name: Verify develop has not moved
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Verify integration utility
