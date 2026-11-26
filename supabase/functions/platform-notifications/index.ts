@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';import * as webpush from 'web-push';
-const ORIGIN='https://ramyawny37.github.io',cors={'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Headers':'content-type, x-platform-notification-worker-token','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Vary':'Origin'};
+const ORIGIN='https://ramyawny37.github.io',cors={'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Headers':'content-type, apikey','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Vary':'Origin'};
 function required(name:string){const v=String(Deno.env.get(name)||'').trim();if(!v)throw new Error('MISSING_'+name);return v}
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}})}
 Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{
  if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)throw new Error('PLATFORM_NOTIFICATION_ORIGIN_DENIED');return json(200,{ok:true,data:{vapidPublicKey:required('PLATFORM_WEB_PUSH_VAPID_PUBLIC_KEY')}})}
  if(req.method!=='POST')return json(405,{ok:false,error:{code:'METHOD_NOT_ALLOWED'}});
- const workerToken=required('PLATFORM_NOTIFICATION_WORKER_TOKEN');const suppliedWorkerToken=String(req.headers.get('x-platform-notification-worker-token')||'').trim();if(suppliedWorkerToken!==workerToken)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED');const serviceKey=required('SUPABASE_SERVICE_ROLE_KEY');
+ const serviceKey=JSON.parse(required('SUPABASE_SECRET_KEYS'))['default'];if(!serviceKey)throw new Error('MISSING_SUPABASE_SECRET_KEYS');const apiKey=String(req.headers.get('apikey')||'').trim();if(apiKey!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED');
  const body=await req.json();if(!body||!['emit','flush'].includes(String(body.operation||''))||(body.operation==='emit'&&(!body.event||typeof body.event!=='object')))throw new Error('PLATFORM_NOTIFICATION_ARGUMENT_INVALID');
  const service=createClient(required('SUPABASE_URL'),serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
  let queued:any=null;if(body.operation==='emit'){queued=await service.schema('platform').rpc('notification_gateway',{p_operation:'enqueue',p_args:body.event});if(queued.error)throw queued.error;}
