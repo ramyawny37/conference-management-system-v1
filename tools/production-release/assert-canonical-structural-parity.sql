@@ -36,7 +36,7 @@ BEGIN
     VALUES
     ('relations',99::bigint,'1b9865232922d1aba1c4b2b5486be838'),
     ('columns',1250::bigint,'0cb027c2dcd7c773b7d88be28f20737e'),
-    ('functions',313::bigint,'37f2d043b8ecb0770973c7e185939209'),
+    ('functions',314::bigint,'09738c52158253c992d96c05bcb57689'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
