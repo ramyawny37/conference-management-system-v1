@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict XOL1HQFZK8P5iS0tyzawdPYpVkCHPP6uN6N5zbcqvXyVnG7fYJM6WSbjhdBjqIY
+\restrict mcgvVqWILaA6hPXOXg5lBfWWxwx2o2ERzIPpW1TL6UTDhIbiiH1Wf1goh9nVd4J
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -7796,7 +7796,7 @@ CREATE FUNCTION "public"."public_registration_gateway"("p_operation" "text", "p_
 begin
  if p_operation='event' then if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;return reservations.public_registration_read((p_args->>'publicId')::uuid,decode(replace(p_args->>'fingerprintDigest',chr(92)||'x',''),'hex'));
  elsif p_operation='status_family' then if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','publicId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;return reservations.public_registration_status_family((p_args->>'publicId')::uuid,decode(replace(p_args->>'trackingSecretDigest',chr(92)||'x',''),'hex'),decode(replace(p_args->>'fingerprintDigest',chr(92)||'x',''),'hex'));
- elsif p_operation='recover_family' then if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['dateOfBirth','fingerprintDigest','newTrackingSecretDigest','phone','publicId','requestReference']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;return reservations.public_registration_recover_family((p_args->>'publicId')::uuid,p_args->>'requestReference',p_args->>'phone',(p_args->>'dateOfBirth')::date,decode(replace(p_args->>'newTrackingSecretDigest',chr(92)||'x',''),'hex'),decode(replace(p_args->>'fingerprintDigest',chr(92)||'x',''),'hex'));
+ elsif p_operation='recover_family' then if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['dateOfBirth','fingerprintDigest','fullName','newTrackingSecretDigest','phone','publicId']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;return reservations.public_registration_recover_family((p_args->>'publicId')::uuid,p_args->>'fullName',p_args->>'phone',(p_args->>'dateOfBirth')::date,decode(replace(p_args->>'newTrackingSecretDigest',chr(92)||'x',''),'hex'),decode(replace(p_args->>'fingerprintDigest',chr(92)||'x',''),'hex'));
  elsif p_operation='submit_family' then if p_args is null or jsonb_typeof(p_args)<>'object' or (select array_agg(k order by k) from jsonb_object_keys(p_args) k)<>array['fingerprintDigest','members','publicId','submitOperationId','trackingSecretDigest']::text[] then raise exception 'PUBLIC_REGISTRATION_ARGUMENT_INVALID' using errcode='22023';end if;return reservations.public_registration_submit_family((p_args->>'publicId')::uuid,(p_args->>'submitOperationId')::uuid,decode(replace(p_args->>'trackingSecretDigest',chr(92)||'x',''),'hex'),decode(replace(p_args->>'fingerprintDigest',chr(92)||'x',''),'hex'),p_args->'members');
  end if;raise exception 'PUBLIC_REGISTRATION_OPERATION_NOT_ALLOWED' using errcode='22023';
 end $$;
@@ -9032,20 +9032,19 @@ end $$;
 -- Name: public_registration_recover_family("uuid", "text", "text", "date", "bytea", "bytea"); Type: FUNCTION; Schema: reservations; Owner: -
 --
 
-CREATE FUNCTION "reservations"."public_registration_recover_family"("p_public_id" "uuid", "p_request_reference" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") RETURNS "jsonb"
+CREATE FUNCTION "reservations"."public_registration_recover_family"("p_public_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
-declare v_channel reservations.public_registration_channels%rowtype;v_request reservations.public_registration_requests%rowtype;
-begin
- if nullif(btrim(p_request_reference),'') is null or nullif(btrim(p_phone),'') is null or p_date_of_birth is null or p_new_tracking_secret_digest is null or octet_length(p_new_tracking_secret_digest)<>32 then raise exception 'PUBLIC_REGISTRATION_RECOVERY_INVALID' using errcode='22023';end if;
+    AS $$declare v_channel reservations.public_registration_channels%rowtype;v_request reservations.public_registration_requests%rowtype;v_matches integer;begin
+ if nullif(btrim(p_full_name),'') is null or char_length(btrim(p_full_name))>200 or nullif(btrim(p_phone),'') is null or p_date_of_birth is null or p_new_tracking_secret_digest is null or octet_length(p_new_tracking_secret_digest)<>32 then raise exception 'PUBLIC_REGISTRATION_RECOVERY_INVALID' using errcode='22023';end if;
  select * into v_channel from reservations.public_registration_channels where public_id=p_public_id and enabled for key share;if not found then raise exception 'PUBLIC_REGISTRATION_NOT_FOUND' using errcode='P0002';end if;
  perform reservations_private.public_registration_rate_limit(v_channel.id,p_fingerprint_digest,8);
- select * into v_request from reservations.public_registration_requests where channel_id=v_channel.id and upper(request_reference)=upper(btrim(p_request_reference)) and platform_private.person_phone_key(submitted_phone)=platform_private.person_phone_key(p_phone) and submitted_date_of_birth=p_date_of_birth for update;
- if not found then raise exception 'PUBLIC_REGISTRATION_RECOVERY_NOT_FOUND' using errcode='P0002';end if;
+ select count(*) into v_matches from reservations.public_registration_requests where channel_id=v_channel.id and platform_private.person_name_key(submitted_full_name)=platform_private.person_name_key(p_full_name) and platform_private.person_phone_key(submitted_phone)=platform_private.person_phone_key(p_phone) and submitted_date_of_birth=p_date_of_birth;
+ if v_matches<>1 then raise exception 'PUBLIC_REGISTRATION_RECOVERY_NOT_FOUND' using errcode='P0002';end if;
+ select * into v_request from reservations.public_registration_requests where channel_id=v_channel.id and platform_private.person_name_key(submitted_full_name)=platform_private.person_name_key(p_full_name) and platform_private.person_phone_key(submitted_phone)=platform_private.person_phone_key(p_phone) and submitted_date_of_birth=p_date_of_birth for update;
  update reservations.public_registration_requests set tracking_secret_digest=p_new_tracking_secret_digest,updated_at=statement_timestamp() where id=v_request.id;
  return jsonb_build_object('reference',v_request.request_reference,'state',v_request.state,'eventId',v_request.event_id);
-end $$;
+end$$;
 
 
 --
@@ -21264,11 +21263,10 @@ GRANT ALL ON FUNCTION "reservations"."public_registration_read"("p_public_id" "u
 
 
 --
--- Name: FUNCTION "public_registration_recover_family"("p_public_id" "uuid", "p_request_reference" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea"); Type: ACL; Schema: reservations; Owner: -
+-- Name: FUNCTION "public_registration_recover_family"("p_public_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea"); Type: ACL; Schema: reservations; Owner: -
 --
 
-REVOKE ALL ON FUNCTION "reservations"."public_registration_recover_family"("p_public_id" "uuid", "p_request_reference" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") FROM PUBLIC;
-GRANT ALL ON FUNCTION "reservations"."public_registration_recover_family"("p_public_id" "uuid", "p_request_reference" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") TO "service_role";
+REVOKE ALL ON FUNCTION "reservations"."public_registration_recover_family"("p_public_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_date_of_birth" "date", "p_new_tracking_secret_digest" "bytea", "p_fingerprint_digest" "bytea") FROM PUBLIC;
 
 
 --
@@ -21941,4 +21939,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XOL1HQFZK8P5iS0tyzawdPYpVkCHPP6uN6N5zbcqvXyVnG7fYJM6WSbjhdBjqIY
+\unrestrict mcgvVqWILaA6hPXOXg5lBfWWxwx2o2ERzIPpW1TL6UTDhIbiiH1Wf1goh9nVd4J
