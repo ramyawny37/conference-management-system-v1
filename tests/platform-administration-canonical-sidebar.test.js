@@ -87,7 +87,7 @@ test('Development PWA serves the same revisioned canonical administration visibi
   const asset='style.css?rev=conference-state-ownership-v19';
   assert.ok(index.includes(asset),'HTML must request revised workspace stylesheet');
   assert.ok(worker.includes("'./"+asset+"'"),'service worker must precache the revised stylesheet');
-  assert.match(worker,/development-registration-governorate-correction-v1-design-foundation-v1/);
+  assert.match(worker,/development-registration-notification-deeplink-v1-design-foundation-v1/);
 });
 
 
