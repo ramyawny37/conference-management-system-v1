@@ -11,7 +11,20 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [],
+  "approvedIntegrations": [
+    {
+      "sourceCommit": "97970c2b4769f80c561f1e9f7d5a0addccca4abe",
+      "revision": "registration-notification-deeplink-v1",
+      "files": {
+        "reservations-module.js": "e47cf78f51bc874f7dddfca4755b122d88aea5716195acfc15a3e0bcabe22f49",
+        "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
+      },
+      "contract": {
+        "version": "reservations-canonical-lifecycle-profile-v1",
+        "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
+      }
+    }
+  ],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
