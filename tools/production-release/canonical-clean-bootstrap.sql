@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 5cCPiw2iMcOAUh5CmntSs2NjvZ9QxRTkcsahrS3HK7MOI5CfEknxK842J77h6QK
+\restrict tVFbrx8bSBIJQ59pJz5elFvzErxnNfUnWqxmq2nOPBUam6KvRgc1bj2fu9mgn76
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -1313,7 +1313,7 @@ $$;
 CREATE FUNCTION "platform"."notification_gateway"("p_operation" "text", "p_args" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare result jsonb;delivery_id uuid;status_value text;begin if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;if p_operation='enqueue' then perform platform_private.require_exact_jsonb_keys(p_args,array['eventType','moduleKey','resourceType','resourceId','title','body','targetUrl','dedupeKey']);return platform_private.enqueue_notification(p_args->>'eventType',p_args->>'moduleKey',p_args->>'resourceType',p_args->>'resourceId',p_args->>'title',p_args->>'body',p_args->>'targetUrl',p_args->>'dedupeKey');elsif p_operation='pending' then perform platform_private.require_exact_jsonb_keys(p_args,array['limit']);select coalesce(jsonb_agg(jsonb_build_object('deliveryId',d.id,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type) order by e.created_at,d.id),'[]'::jsonb) into result from (select * from platform.notification_deliveries where status in('pending','failed') and attempt_count<5 order by notification_event_id,id limit least(greatest((p_args->>'limit')::int,1),100)) d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id where platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.resource_type,e.resource_id);return result;elsif p_operation='mark' then perform platform_private.require_exact_jsonb_keys(p_args,array['deliveryId','status','errorCode']);delivery_id:=(p_args->>'deliveryId')::uuid;status_value:=p_args->>'status';if status_value not in('sent','failed','expired') then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_STATUS_INVALID' using errcode='22023';end if;update platform.notification_deliveries set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),last_error_code=nullif(p_args->>'errorCode',''),delivered_at=case when status_value='sent' then statement_timestamp() else delivered_at end where id=delivery_id;if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_NOT_FOUND' using errcode='P0002';end if;return jsonb_build_object('deliveryId',delivery_id,'status',status_value);else raise exception 'PLATFORM_NOTIFICATION_OPERATION_NOT_ALLOWED' using errcode='42501';end if;end$$;
+    AS $$declare result jsonb;delivery_id uuid;status_value text;begin if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;if p_operation='enqueue' then perform platform_private.require_exact_jsonb_keys(p_args,array['eventType','moduleKey','resourceType','resourceId','scopeType','scopeId','title','body','targetUrl','dedupeKey']);return platform_private.enqueue_notification(p_args->>'eventType',p_args->>'moduleKey',p_args->>'resourceType',p_args->>'resourceId',p_args->>'scopeType',p_args->>'scopeId',p_args->>'title',p_args->>'body',p_args->>'targetUrl',p_args->>'dedupeKey');elsif p_operation='pending' then perform platform_private.require_exact_jsonb_keys(p_args,array['limit']);select coalesce(jsonb_agg(jsonb_build_object('deliveryId',d.id,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type) order by e.created_at,d.id),'[]'::jsonb)into result from(select * from platform.notification_deliveries where status in('pending','failed') and attempt_count<5 order by notification_event_id,id limit least(greatest((p_args->>'limit')::int,1),100))d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id where platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.scope_type,e.scope_id);return result;elsif p_operation='mark' then perform platform_private.require_exact_jsonb_keys(p_args,array['deliveryId','status','errorCode']);delivery_id:=(p_args->>'deliveryId')::uuid;status_value:=p_args->>'status';if status_value not in('sent','failed','expired')then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_STATUS_INVALID' using errcode='22023';end if;update platform.notification_deliveries set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),last_error_code=nullif(p_args->>'errorCode',''),delivered_at=case when status_value='sent' then statement_timestamp()else delivered_at end where id=delivery_id;if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_NOT_FOUND' using errcode='P0002';end if;return jsonb_build_object('deliveryId',delivery_id,'status',status_value);else raise exception 'PLATFORM_NOTIFICATION_OPERATION_NOT_ALLOWED' using errcode='42501';end if;end$$;
 
 
 --
@@ -2339,24 +2339,13 @@ end $$;
 
 
 --
--- Name: enqueue_notification("text", "text", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: platform_private; Owner: -
+-- Name: enqueue_notification("text", "text", "text", "text", "text", "text", "text", "text", "text", "text"); Type: FUNCTION; Schema: platform_private; Owner: -
 --
 
-CREATE FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "jsonb"
+CREATE FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $_$declare event_id uuid;inserted boolean:=false;delivery_count integer;recipient_count integer;begin
- if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;
- if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;
- insert into platform.notification_events(event_type,module_key,resource_type,resource_id,title,body,target_url,dedupe_key) values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_title,p_body,p_target_url,p_dedupe_key) on conflict(dedupe_key) do nothing returning id into event_id;
- if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key;else inserted:=true;end if;
- insert into platform.notification_recipients(notification_event_id,user_id) select event_id,pr.user_id from platform.profiles pr where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_resource_type,p_resource_id) on conflict do nothing;
- get diagnostics recipient_count=row_count;
- insert into platform.notification_deliveries(notification_event_id,subscription_id)
- select event_id,s.id from platform.notification_push_subscriptions s join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_resource_type,p_resource_id) on conflict(notification_event_id,subscription_id) do nothing;
- get diagnostics delivery_count=row_count;
- return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);
-end$_$;
+    AS $_$declare event_id uuid;inserted boolean:=false;delivery_count integer;recipient_count integer;begin if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or ((p_scope_type is null)<>(p_scope_id is null)) or (p_scope_type is not null and p_scope_type !~ '^[a-z0-9_.-]{1,80}$') or (p_module_key='reservations' and (p_scope_type is distinct from 'event' or p_scope_id is null)) or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing returning id into event_id;if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key;else inserted:=true;end if;insert into platform.notification_recipients(notification_event_id,user_id)select event_id,pr.user_id from platform.profiles pr where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_scope_type,p_scope_id)on conflict do nothing;get diagnostics recipient_count=row_count;insert into platform.notification_deliveries(notification_event_id,subscription_id)select event_id,s.id from platform.notification_push_subscriptions s join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)on conflict(notification_event_id,subscription_id)do nothing;get diagnostics delivery_count=row_count;return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);end$_$;
 
 
 --
@@ -2564,19 +2553,7 @@ $_$;
 CREATE FUNCTION "platform_private"."list_my_notifications"("p_actor_device_id" "uuid", "p_limit" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare ctx jsonb;actor uuid;result jsonb;begin
- ctx:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;
- if ctx is null or ctx->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (ctx->>'device_id')::uuid is distinct from p_actor_device_id then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';end if;
- actor:=(ctx->>'user_id')::uuid;
- if p_limit not between 1 and 100 then raise exception 'PLATFORM_NOTIFICATION_LIMIT_INVALID' using errcode='22023';end if;
- select coalesce(jsonb_agg(x.payload order by x.created_at desc),'[]'::jsonb) into result from (
-  select r.created_at,jsonb_build_object('id',e.id,'eventType',e.event_type,'moduleKey',e.module_key,'resourceType',e.resource_type,'resourceId',e.resource_id,'title',e.title,'body',e.body,'targetUrl',e.target_url,'createdAt',e.created_at,'readAt',r.read_at) payload
-  from platform.notification_recipients r join platform.notification_events e on e.id=r.notification_event_id
-  where r.user_id=actor and platform_private.notification_user_is_authorized(actor,e.module_key,e.resource_type,e.resource_id)
-  order by r.created_at desc limit p_limit
- )x;
- return jsonb_build_object('items',result,'unreadCount',(select count(*) from platform.notification_recipients r join platform.notification_events e on e.id=r.notification_event_id where r.user_id=actor and r.read_at is null and platform_private.notification_user_is_authorized(actor,e.module_key,e.resource_type,e.resource_id)));
-end$$;
+    AS $$declare ctx jsonb;actor uuid;result jsonb;begin ctx:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;if ctx is null or ctx->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (ctx->>'device_id')::uuid is distinct from p_actor_device_id then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';end if;actor:=(ctx->>'user_id')::uuid;if p_limit not between 1 and 100 then raise exception 'PLATFORM_NOTIFICATION_LIMIT_INVALID' using errcode='22023';end if;select coalesce(jsonb_agg(x.payload order by x.created_at desc),'[]'::jsonb)into result from(select r.created_at,jsonb_build_object('id',e.id,'eventType',e.event_type,'moduleKey',e.module_key,'resourceType',e.resource_type,'resourceId',e.resource_id,'scopeType',e.scope_type,'scopeId',e.scope_id,'title',e.title,'body',e.body,'targetUrl',e.target_url,'createdAt',e.created_at,'readAt',r.read_at)payload from platform.notification_recipients r join platform.notification_events e on e.id=r.notification_event_id where r.user_id=actor and platform_private.notification_user_is_authorized(actor,e.module_key,e.scope_type,e.scope_id)order by r.created_at desc limit p_limit)x;return jsonb_build_object('items',result,'unreadCount',(select count(*) from platform.notification_recipients r join platform.notification_events e on e.id=r.notification_event_id where r.user_id=actor and r.read_at is null and platform_private.notification_user_is_authorized(actor,e.module_key,e.scope_type,e.scope_id)));end$$;
 
 
 --
@@ -2586,15 +2563,7 @@ end$$;
 CREATE FUNCTION "platform_private"."mark_my_notification_read"("p_actor_device_id" "uuid", "p_notification_event_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare ctx jsonb;actor uuid;changed integer;begin
- ctx:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;
- if ctx is null or ctx->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (ctx->>'device_id')::uuid is distinct from p_actor_device_id then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';end if;
- actor:=(ctx->>'user_id')::uuid;
- update platform.notification_recipients r set read_at=coalesce(r.read_at,statement_timestamp())
- from platform.notification_events e where r.notification_event_id=p_notification_event_id and r.user_id=actor and e.id=r.notification_event_id and platform_private.notification_user_is_authorized(actor,e.module_key,e.resource_type,e.resource_id);
- get diagnostics changed=row_count;
- return jsonb_build_object('notificationEventId',p_notification_event_id,'read',changed>0);
-end$$;
+    AS $$declare ctx jsonb;actor uuid;changed integer;begin ctx:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;if ctx is null or ctx->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (ctx->>'device_id')::uuid is distinct from p_actor_device_id then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';end if;actor:=(ctx->>'user_id')::uuid;update platform.notification_recipients r set read_at=coalesce(r.read_at,statement_timestamp())from platform.notification_events e where r.notification_event_id=p_notification_event_id and r.user_id=actor and e.id=r.notification_event_id and platform_private.notification_user_is_authorized(actor,e.module_key,e.scope_type,e.scope_id);get diagnostics changed=row_count;return jsonb_build_object('notificationEventId',p_notification_event_id,'read',changed>0);end$$;
 
 
 --
@@ -2628,15 +2597,7 @@ $$;
 CREATE FUNCTION "platform_private"."notification_user_is_authorized"("p_user_id" "uuid", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
- select platform_private.is_account_approved(p_user_id) and (
-  p_module_key='platform'
-  or (p_module_key='reservations' and p_resource_type='event' and p_resource_id is not null
-      and platform_private.user_has_module_permission_for(p_user_id,'reservations.booking.create','event',p_resource_id))
-  or (p_module_key not in('platform','reservations')
-      and platform_private.user_has_module_permission_for(p_user_id,p_module_key||'.module.access',null,null))
- )
-$$;
+    AS $$select platform_private.is_account_approved(p_user_id) and (p_module_key='platform' or (p_module_key='reservations' and p_resource_type='event' and p_resource_id is not null and platform_private.user_has_module_permission_for(p_user_id,'reservations.booking.create','event',p_resource_id)) or (p_module_key not in('platform','reservations') and platform_private.user_has_module_permission_for(p_user_id,p_module_key||'.module.access',null,null)))$$;
 
 
 --
@@ -11240,11 +11201,15 @@ CREATE TABLE "platform"."notification_events" (
     "target_url" "text" NOT NULL,
     "dedupe_key" "text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    "scope_type" "text",
+    "scope_id" "text",
     CONSTRAINT "notification_events_body_check" CHECK ((("char_length"("body") >= 1) AND ("char_length"("body") <= 500))),
     CONSTRAINT "notification_events_dedupe_key_check" CHECK ((("char_length"("dedupe_key") >= 1) AND ("char_length"("dedupe_key") <= 240))),
     CONSTRAINT "notification_events_event_type_check" CHECK (("event_type" ~ '^[a-z0-9_.-]{3,120}$'::"text")),
     CONSTRAINT "notification_events_module_key_check" CHECK (("module_key" = ANY (ARRAY['conference'::"text", 'reservations'::"text", 'warehouse'::"text", 'platform'::"text"]))),
     CONSTRAINT "notification_events_resource_type_check" CHECK (("resource_type" ~ '^[a-z0-9_.-]{1,80}$'::"text")),
+    CONSTRAINT "notification_events_scope_pair" CHECK ((("scope_type" IS NULL) = ("scope_id" IS NULL))),
+    CONSTRAINT "notification_events_scope_type_check" CHECK ((("scope_type" IS NULL) OR ("scope_type" ~ '^[a-z0-9_.-]{1,80}$'::"text"))),
     CONSTRAINT "notification_events_target_url_check" CHECK ((("char_length"("target_url") >= 1) AND ("char_length"("target_url") <= 1000))),
     CONSTRAINT "notification_events_title_check" CHECK ((("char_length"("title") >= 1) AND ("char_length"("title") <= 160)))
 );
@@ -19724,11 +19689,11 @@ REVOKE ALL ON FUNCTION "platform_private"."enforce_transport_resident_assignment
 
 
 --
--- Name: FUNCTION "enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text"); Type: ACL; Schema: platform_private; Owner: -
+-- Name: FUNCTION "enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text"); Type: ACL; Schema: platform_private; Owner: -
 --
 
-REVOKE ALL ON FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") TO "service_role";
+REVOKE ALL ON FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") TO "service_role";
 
 
 --
@@ -21800,4 +21765,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5cCPiw2iMcOAUh5CmntSs2NjvZ9QxRTkcsahrS3HK7MOI5CfEknxK842J77h6QK
+\unrestrict tVFbrx8bSBIJQ59pJz5elFvzErxnNfUnWqxmq2nOPBUam6KvRgc1bj2fu9mgn76
