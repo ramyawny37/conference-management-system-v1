@@ -50,7 +50,7 @@ Deno.serve(async request=>{
     });
     const trackingBytes=await hmac(secret,'tracking:'+publicId+':'+operationId),trackingSecret=b64url(trackingBytes);
     result=await service.rpc('public_registration_gateway',{p_operation:'submit_family',p_args:{publicId,submitOperationId:operationId,trackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint),members}});
-    if(!result.error){const eventId=uuid(result.data.eventId),publicData={...result.data,trackingSecret};delete publicData.eventId;result={...result,data:publicData};try{const flushed=await service.functions.invoke('platform-notifications',{body:{operation:'flush'},headers:{Authorization:'Bearer '+serviceKey}});if(flushed.error)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_PUSH_FLUSH_FAILED',timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_PUSH_FLUSH_FAILED',timestamp:new Date().toISOString()}));}}
+    if(!result.error){const eventId=uuid(result.data.eventId),publicData={...result.data,trackingSecret};delete publicData.eventId;result={...result,data:publicData};try{const flushed=await service.functions.invoke('platform-notifications',{body:{operation:'flush'},headers:{apikey:serviceKey}});if(flushed.error)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_PUSH_FLUSH_FAILED',timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_PUSH_FLUSH_FAILED',timestamp:new Date().toISOString()}));}}
   }
   if(result.error)throw result.error;
   return json(200,{ok:true,data:result.data});
