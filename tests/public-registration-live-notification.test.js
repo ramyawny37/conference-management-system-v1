@@ -19,7 +19,7 @@ test('failed server push activation rolls back a newly-created browser subscript
 test('notification lifecycle PWA asset revision is coherent',()=>{const html=fs.readFileSync('index.html','utf8'),worker=fs.readFileSync('service-worker.js','utf8'),asset='pwa.js?rev=notification-lifecycle-closure-v2';assert.ok(html.includes(asset));assert.ok(worker.includes(asset));});
 
 test('notification lifecycle reconciles permission and remote device revocation without polling',()=>{
-  const pwa=read('pwa.js');
+  const pwa=fs.readFileSync('pwa.js','utf8');
   assert.match(pwa,/Notification\.permission!=='granted'/);
   assert.match(pwa,/disable_notification_push_subscription/);
   assert.match(pwa,/revokedSubscription\.unsubscribe\(\)/);
