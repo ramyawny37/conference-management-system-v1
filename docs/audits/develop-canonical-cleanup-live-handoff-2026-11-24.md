@@ -703,3 +703,40 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Development observed zero registration notification events, zero active reservations subscriptions, zero deliveries. Logs confirmed missing PLATFORM_WEB_PUSH_VAPID_PUBLIC_KEY; prior web-push default import boot failure fixed.
 - Commits 34732dea and a137d725 separate browser GET origin from authenticated backend POST and expose activation failure. CI 45765516288, 45765516319, 45765580542 PASS; Development platform-notifications v3 ACTIVE.
 - Pending: provision VAPID secrets outside source control; verify actual subscription and recipient authorization at delivery/read time, including revoked devices and event scope; transactional durable event creation, retry/claim and expiry handling; authorized inbox/read state and private Broadcast; canonical request route with event selection; retire polling only after acceptance. No claim of delivery or UI acceptance. Develop and Development only.
+
+
+## 2026-11-26 — Central notification internal-system closure track
+
+### Accepted architecture and completed internal path
+- One canonical Platform notification engine remains the only internal notification path. No Firebase, OneSignal, legacy polling inbox, or parallel notification store was introduced.
+- Durable internal source of truth is `platform.notification_events` + `platform.notification_recipients`; read/unread state is server-owned. The signed-in Platform shell exposes the central bell/inbox and uses canonical device-session operations to list and mark notifications read.
+- Foreground delivery uses private Supabase Realtime Broadcast on the per-user topic. Authorization is rechecked against the user, active device/account, module permission and event scope; the notification resource identity is separate from authorization scope.
+- Public-registration submission creation is transactionally staged in the database: request INSERT -> canonical notification outbox -> core enqueue -> durable event/authorized recipients/push deliveries. Edge no longer owns durable creation and only requests a push flush after the DB transaction succeeds.
+- Web Push delivery is server-authoritative. Browser subscription alone is not treated as enabled unless the matching server registration is active.
+- Push concurrency is closed with atomic claim/lease, `FOR UPDATE ... SKIP LOCKED`, a two-minute lease token and lease-protected mark. The old plain pending consumer is not used.
+- Push failure lifecycle is closed: retryable failures use `next_attempt_at` exponential backoff (30 seconds increasing to a 30-minute cap, maximum five attempts); HTTP 404/410-style expired deliveries deactivate the dead subscription so future events do not keep targeting it.
+- Applicant decision notifications are intentionally NOT part of the internal Platform inbox because applicants are not Platform users. Decision transitions to approved/rejected/waitlisted are transactionally staged in the separate external outbox for future WhatsApp/SMS provider delivery. That external sending layer is explicitly deferred until the internal notification system is fully accepted; no provider delivery is claimed.
+- Public request recovery/tracking no longer requires retaining the request reference. Canonical recovery uses full name + phone/WhatsApp + DOB within the public registration channel, requires exactly one identity match, preserves rate limiting and rotates the tracking secret. Direct helper execution remains revoked.
+
+### Current Development proof
+- Internal notification authorization, durable inbox, private Realtime, transactional request notification staging, explicit event scope, server-authoritative push state, push claim/lease, retry/backoff and dead-subscription retirement are present in Supabase Development and source migrations.
+- Latest proven clean-bootstrap HEAD before this documentation update: `ffdaf16e8a847edf87af69af149d1b5e67553f4b`; its exact Reservations validation run `45802980259` PASS.
+- The source run immediately before that bootstrap, `37624a9cdb022797c18512ac93c5384dcad3d85f`, passed Reservations run `45802657631` and zero-data/schema replay run `45802657717`.
+- Development-only scope remains enforced. Platform `main`, Production, Supabase Production and Vercel were not modified.
+
+### Internal notification closure gate — finish this before external delivery
+The internal notification system is not declared CLOSED until all of the following are verified together:
+1. New public registration creates exactly one durable admin notification for authorized users of the correct event and none for unauthorized users.
+2. Bell/unread count and notification list update without page refresh through the private Realtime path.
+3. Opening an item marks the durable recipient read and routes to the canonical registration-requests target without losing event context.
+4. Permission/device revocation prevents subsequent read/delivery authorization; no stale recipient or Push subscription bypass exists.
+5. Push subscription enable/disable/server-state lifecycle is internally consistent, including dead endpoint retirement and retry/backoff behavior.
+6. No notification polling timer, duplicate internal producer, obsolete pending delivery consumer, or parallel inbox remains in source/runtime.
+7. Clean bootstrap, structural/access parity, notification contract tests and exact-successor CI remain PASS after the final internal cleanup.
+8. Background Web Push network acceptance remains dependent on Development VAPID secrets; absence of those secrets must be reported as an external configuration blocker, not bypassed in code.
+
+### Explicitly deferred until the internal gate is CLOSED
+- Actual WhatsApp provider delivery.
+- Actual SMS provider delivery.
+- Email provider/model and applicant email collection if required.
+- External-delivery worker/provider credentials, receipts and provider-specific retry semantics.
