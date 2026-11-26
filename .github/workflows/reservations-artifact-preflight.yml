@@ -4,16 +4,16 @@ on:
     branches: [develop]
     paths:
       - '.github/workflows/reservations-artifact-preflight.yml'
-  workflow_dispatch:
+      - 'tools/reservations-artifact-policy.json'
 permissions:
-  contents: read
+  contents: write
 jobs:
   preflight:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -21,12 +21,31 @@ jobs:
         run: |
           node --check tools/integrate-reservations-artifact.cjs
           node --test tests/reservations-artifact-policy.test.js
-      - name: Verify artifact access configuration
+      - name: Integrate the single policy-approved Reservations artifact
         env:
-          HAS_SOURCE_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN != '' }}
+          GH_TOKEN: ${{ secrets.RESERVATIONS_SOURCE_TOKEN }}
+          SOURCE_REPO: ramyawny37/reservation-management-system
         run: |
-          if [ "$HAS_SOURCE_TOKEN" = true ]; then
-            echo 'Private Reservations artifact access is configured.'
-          else
-            echo 'Private Reservations artifact access is not configured.'
-          fi
+          node <<'NODE'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json','utf8'));
+          if(p.approvedIntegrations.length===0){console.log('No approved artifact pending integration.');process.exit(0)}
+          if(p.approvedIntegrations.length!==1)throw new Error('RESERVATIONS_ARTIFACT_APPROVAL_COUNT_INVALID');
+          if(!process.env.GH_TOKEN)throw new Error('RESERVATIONS_SOURCE_TOKEN_REQUIRED');
+          fs.writeFileSync('/tmp/reservations-source-sha',p.approvedIntegrations[0].sourceCommit);
+          NODE
+          if [ ! -s /tmp/reservations-source-sha ]; then exit 0; fi
+          SOURCE_SHA="$(cat /tmp/reservations-source-sha)"
+          RUN_ID="$(gh api "repos/$SOURCE_REPO/actions/runs?head_sha=$SOURCE_SHA&status=success&per_page=20" --jq '.workflow_runs[] | select(.name=="Reservations CI") | .id' | head -n1)"
+          test -n "$RUN_ID" || { echo 'No successful exact-SHA Reservations CI run'; exit 1; }
+          ARTIFACT_ID="$(gh api "repos/$SOURCE_REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name=="reservations-platform-module" and (.expired|not)) | .id' | head -n1)"
+          test -n "$ARTIFACT_ID" || { echo 'Exact-SHA Reservations artifact not found'; exit 1; }
+          gh api "repos/$SOURCE_REPO/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/reservations-platform-module.zip
+          node tools/integrate-reservations-artifact.cjs /tmp/reservations-platform-module.zip
+          if git diff --quiet; then echo 'No integration changes.'; exit 0; fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add modules/reservations/reservations-module.js modules/reservations/reservations-module.css modules/reservations/reservations-contract.json index.html service-worker.js tools/reservations-artifact-policy.json
+          git diff --cached --check
+          git commit -m "chore(reservations): integrate verified exact-SHA artifact"
+          git push origin HEAD:develop
