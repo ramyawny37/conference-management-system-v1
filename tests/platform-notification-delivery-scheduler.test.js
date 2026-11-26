@@ -1,0 +1,13 @@
+const fs=require('fs'),assert=require('assert');
+const migration=fs.readFileSync('supabase/migrations/20261126173000_platform_notification_delivery_scheduler.sql','utf8');
+assert.match(migration,/create extension if not exists pg_net/);
+assert.match(migration,/create extension if not exists pg_cron/);
+assert.match(migration,/cron\.schedule\(\s*'platform-notification-delivery-flush',\s*'30 seconds'/s);
+assert.match(migration,/\/functions\/v1\/platform-notifications/);
+assert.match(migration,/'apikey',secret_key\.decrypted_secret/);
+assert.match(migration,/platform_project_url/);
+assert.match(migration,/platform_notification_secret_key/);
+assert.match(migration,/'\{"operation":"flush"\}'::jsonb/);
+assert.doesNotMatch(migration,/service_role|sb_secret_|PLATFORM_NOTIFICATION_WORKER_TOKEN/);
+assert.doesNotMatch(migration,/notification_gateway|webpush|sendNotification/);
+console.log('platform notification delivery scheduler contract: PASS');
