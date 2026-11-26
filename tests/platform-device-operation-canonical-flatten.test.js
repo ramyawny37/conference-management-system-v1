@@ -15,8 +15,10 @@ const conferencePeoplePatches=[
   'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261014182000_conference_people_search_canonical_device_route.sql',
   'supabase/migrations/20261014172510_conference_canonical_person_revision_update.sql',
   'supabase/migrations/20261014174526_conference_canonical_person_exact_read.sql',
-].map(read).join('\n');
-const conferenceHousePatch=read('supabase/migrations/20261020113924_canonical_central_conference_houses.sql')+'\n'+read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261020131411_conference_room_assignment_foundation.sql');
+].map(read).join('
+');
+const conferenceHousePatch=read('supabase/migrations/20261020113924_canonical_central_conference_houses.sql')+'
+'+read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261020131411_conference_room_assignment_foundation.sql');
 const dispatcher=migration.match(/create or replace function platform\.execute_device_operation\([\s\S]*?end \$\$;/i)?.[0]||'';
 const dispatcherPatches=read('supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261013141000_reservations_canonical_people_device_dispatch.sql');
 const ownerPendingReadPatch=read('supabase/migrations/20261018173157_canonical_owner_pending_device_session_read.sql');
@@ -27,14 +29,16 @@ const canonicalAccommodationOperationsPatch=[
   'supabase/migrations/20261023103201_canonical_accommodation_arrivals_and_room_keys.sql',
   'supabase/migrations/20261025202253_atomic_accommodation_room_draft_save.sql',
   'supabase/migration-archive/development-pre-canonical-reconciliation-20261104/20261025224500_conference_scoped_extra_bed_capacity.sql'
-].map(read).join('\n');
+].map(read).join('
+');
 const publicRegistrationAdminPatch=read('supabase/migrations/20261125100000_public_registration_admin_review.sql');
 const publicRegistrationDecisionPatch=read('supabase/migrations/20261125113000_public_registration_protected_decision.sql');
 const publicRegistrationSettingsPatch=read('supabase/migrations/20261125123000_public_registration_channel_settings_admin.sql');
 const platformNotificationPatch=read('supabase/migrations/20261125150000_platform_notification_foundation.sql');
 const platformNotificationInboxPatch=read('supabase/migrations/20261126113000_platform_notification_durable_inbox.sql');
 const platformNotificationPushStatePatch=read('supabase/migrations/20261126130000_platform_notification_push_subscription_server_state.sql');
-const publicRegistrationFamilyDecisionPatch=read('supabase/migrations/20261125161000_public_registration_family_decision.sql');\nconst publicRegistrationProfileCorrectionPatch=read('supabase/migrations/20261126200000_public_registration_profile_correction_dispatch.sql');
+const publicRegistrationFamilyDecisionPatch=read('supabase/migrations/20261125161000_public_registration_family_decision.sql');
+const publicRegistrationProfileCorrectionPatch=read('supabase/migrations/20261126200000_public_registration_profile_correction_dispatch.sql');
 const effectiveDispatcher=dispatcher+dispatcherPatches+ownerPendingReadPatch+canonicalTemplateReadPatch+canonicalBundlePatch+publicRegistrationAdminPatch+publicRegistrationDecisionPatch+publicRegistrationSettingsPatch+platformNotificationPatch+platformNotificationInboxPatch+platformNotificationPushStatePatch+publicRegistrationFamilyDecisionPatch+publicRegistrationProfileCorrectionPatch;
 
 function edgeOperations(module){
