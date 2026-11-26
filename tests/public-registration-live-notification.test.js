@@ -15,3 +15,5 @@ test('notification browser origin guard is confined to GET and emit requires bac
 
 
 test('failed server push activation rolls back a newly-created browser subscription',()=>{assert.match(pwa,/existing=await registration\.pushManager\.getSubscription\(\)/);assert.match(pwa,/if\(!existing\)try\{await subscription\.unsubscribe\(\)/);assert.match(pwa,/upsert_notification_push_subscription/);});
+
+test('notification lifecycle PWA asset revision is coherent',()=>{const html=fs.readFileSync('index.html','utf8'),worker=fs.readFileSync('service-worker.js','utf8'),asset='pwa.js?rev=notification-lifecycle-closure-v1';assert.ok(html.includes(asset));assert.ok(worker.includes(asset));});
