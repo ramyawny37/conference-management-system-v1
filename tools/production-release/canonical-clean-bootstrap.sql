@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict WBlZxgk1dOVaX0va7nSMVAFxC0dzS2ZPDzJIh0YGnXuFesmYNaukZvnLENXgqQv
+\restrict N7EHARBK1mn8K4LYjvbXdFo5qe60h1XGQhBo05WH51I6NPPxBhFwaMpBu0Jvg4U
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -3881,14 +3881,7 @@ end$$;
 CREATE FUNCTION "platform_private"."stage_public_registration_request_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare v_public_id uuid;begin
- select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;
- if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;
- insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)
- values('reservations.public_registration.submitted','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#reservations/registration-requests','public-registration:'||v_public_id::text||':'||new.submit_operation_id::text)
- on conflict(dedupe_key)do nothing;
- return new;
-end$$;
+    AS $$declare v_public_id uuid;begin select c.public_id into v_public_id from reservations.public_registration_channels c where c.id=new.channel_id and c.event_id=new.event_id;if v_public_id is null then raise exception 'PUBLIC_REGISTRATION_NOTIFICATION_SCOPE_INVALID' using errcode='42501';end if;insert into platform.notification_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values('reservations.public_registration.submitted','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'طلب تسجيل جديد','وصل طلب تسجيل جديد ويحتاج للمراجعة.','./#reservations/registration-requests?eventId='||new.event_id::text,'public-registration:'||v_public_id::text||':'||new.submit_operation_id::text)on conflict(dedupe_key)do nothing;return new;end$$;
 
 
 --
@@ -22024,4 +22017,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict WBlZxgk1dOVaX0va7nSMVAFxC0dzS2ZPDzJIh0YGnXuFesmYNaukZvnLENXgqQv
+\unrestrict N7EHARBK1mn8K4LYjvbXdFo5qe60h1XGQhBo05WH51I6NPPxBhFwaMpBu0Jvg4U
