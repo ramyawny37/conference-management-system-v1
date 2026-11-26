@@ -39,12 +39,12 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('fs'); const p=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json','utf8'));
-          if(p.approvedIntegrations.length===0){console.log('No approved artifact pending integration.');process.exit(0)}
+          if(p.approvedIntegrations.length===0){console.log('No approved artifact pending integration.');fs.writeFileSync('/tmp/no-reservations-artifact','1');process.exit(0)}
           if(p.approvedIntegrations.length!==1)throw new Error('RESERVATIONS_ARTIFACT_APPROVAL_COUNT_INVALID');
           if(!process.env.GH_TOKEN)throw new Error('RESERVATIONS_SOURCE_TOKEN_REQUIRED');
           fs.writeFileSync('/tmp/reservations-source-sha',p.approvedIntegrations[0].sourceCommit);
           NODE
-          SOURCE_SHA="$(cat /tmp/reservations-source-sha)"
+          if [ -f /tmp/no-reservations-artifact ]; then exit 0; fi\n          SOURCE_SHA="$(cat /tmp/reservations-source-sha)"
           RUN_ID="$(gh api "repos/$SOURCE_REPO/actions/runs?head_sha=$SOURCE_SHA&status=success&per_page=20" --jq '.workflow_runs[] | select(.name=="Reservations CI") | .id' | head -n1)"
           test -n "$RUN_ID" || { echo 'No successful exact-SHA Reservations CI run'; exit 1; }
           ARTIFACT_ID="$(gh api "repos/$SOURCE_REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name=="reservations-platform-module" and (.expired|not)) | .id' | head -n1)"
