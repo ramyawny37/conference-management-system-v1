@@ -763,3 +763,14 @@ The internal notification system is not declared CLOSED until all of the followi
 - Corrective commit: `a7059cf0722afb91472d0e8b7cc3797ea3b0f18a`.
 - Re-validated source ownership after correction: the Reservations runtime still contains no `setInterval(F,15000)`; canonical `platform-notification` refresh remains the only live refresh event beyond initial load.
 - CI successor remains the acceptance authority; continue through the entire successor chain rather than treating earlier failures as current after this root correction.
+
+
+### 2026-11-26 — Notification CI rejection chain: exact root cause and permanent diagnostic path
+
+- The repeated red `Validate Reservations integration on develop` runs were not evidence of a notification runtime regression. Exact Actions inspection now uses the canonical diagnostic path: source SHA -> GitHub Actions run collection filtered by `head_sha` -> run jobs -> first failing step -> job log. Do not infer push-run state from commit combined status or PR-only workflow lookup.
+- Exact failed successor: Platform SHA `c2659cdbd12c8a9b06282aa0799c8437f3d85659`, Actions run `45816152347` (#1397). Steps 1-17 passed, Development Preview validation passed, and the only failing step was `Public registration live workflow regression`.
+- The job log proved a test-source syntax defect before any runtime assertion executed: `tests/public-registration-live-notification.test.js` contained one extra closing brace in the first notification-refresh test and Node 22 stopped with `SyntaxError: Unexpected token '}'`.
+- Root correction only: removed the extra brace and syntax-validated the complete test source before commit. No notification runtime, polling path, fallback, database behavior, Preview design, Production surface, or external delivery behavior was changed.
+- Corrective commit: `44cd44d9c04728c6ae5fc79c7175f6641c4b706b` (`test(notifications): fix live workflow test syntax boundary`). Exact successor Actions run `45816713804` (#1398) completed **SUCCESS**, including Platform regressions, accommodation regressions, Reservations identity replay, public-registration live workflow, and Development Preview validation.
+- Temporary exact-SHA CI marker used during the earlier blind rejection loop was removed rather than accumulated. Commit `c2659cdbd12c8a9b06282aa0799c8437f3d85659` contains that cleanup.
+- The notification closure track may now proceed to the required zero-data / clean-bootstrap successor gate. `INTERNAL NOTIFICATION SYSTEM = CLOSED` must still not be declared until that gate and the remaining Development Web Push/VAPID acceptance are proven.
