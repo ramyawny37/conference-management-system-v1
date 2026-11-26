@@ -1,0 +1,11 @@
+const fs=require('fs'),assert=require('assert');
+const m=fs.readFileSync('supabase/migrations/20261126174500_platform_notification_device_revocation_cleanup.sql','utf8');
+const lifecycle=fs.readFileSync('supabase/migrations/20261018210900_canonical_device_revocation_lifecycle.sql','utf8');
+assert.match(m,/update platform\.notification_push_subscriptions\s+set active=false/);
+assert.match(m,/where user_id=p_user_id and device_id=p_device_id and active/);
+assert.match(m,/retire_notification_push_subscriptions_for_device\(p_target_user_id,p_target_device_id\)/);
+assert.match(m,/PLATFORM_NOTIFICATION_DEVICE_REVOCATION_DRIFT/);
+assert.match(m,/revoke all on function platform_private\.retire_notification_push_subscriptions_for_device\(uuid,uuid\) from public,anon,authenticated,service_role/);
+assert.match(lifecycle,/update platform_private\.device_sessions set revoked_at=operation_at/);
+assert.doesNotMatch(m,/create trigger|notification_gateway|net\.http_post|webpush/);
+console.log('platform notification device revocation cleanup contract: PASS');
