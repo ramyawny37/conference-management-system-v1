@@ -8,7 +8,7 @@ test('registration requests workspace requires explicit event selection',()=>{as
 
 test('global registration requests route owns scope discovery and bypasses conference-only gates',()=>{assert.match(moduleJs,/title:"طلبات التسجيل",href:"\/registration-requests"/);assert.match(moduleJs,/t==="\/registration-requests"\?l\.jsx\(/);assert.match(moduleJs,/listPublicRegistrationEventOptions\(\)/);assert.match(moduleJs,/p_scope_type:"standalone"/);assert.match(moduleJs,/scopeLabel:"فعاليات مستقلة"/);assert.match(moduleJs,/p_conference_id:s\.conferenceId/);});
 
-test('registration requests runtime asset is cache coherent',()=>{const html=fs.readFileSync('index.html','utf8');const sw=fs.readFileSync('service-worker.js','utf8');const asset='modules/reservations/reservations-module.js?rev=registration-requests-workspace-v2';assert.ok(html.includes(asset));assert.ok(sw.includes(asset));});
+test('registration requests runtime asset is cache coherent',()=>{const html=fs.readFileSync('index.html','utf8');const sw=fs.readFileSync('service-worker.js','utf8');const asset='modules/reservations/reservations-module.js?rev=registration-targeted-request-v3';assert.ok(html.includes(asset));assert.ok(sw.includes(asset));});
 
 test('notification browser origin guard is confined to GET and emit requires backend authentication',()=>{const source=fs.readFileSync('supabase/functions/platform-notifications/index.ts','utf8');assert.ok(source.includes("if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)"));assert.ok(source.includes("if(apiKey!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED')"));assert.match(source,/\['emit','flush'\]/)});
 

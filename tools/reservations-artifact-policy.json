@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "registration-requests-workspace-v2",
+    "revision": "registration-targeted-request-v3",
     "files": {
-      "reservations-module.js": "f0d713521ccacb1ed74b569c8f0bfcf4bdc66a0c3535b9e4ac71dd0d7a1aff78",
+      "reservations-module.js": "6658c838d1f5f424dff7ba9d945b15d0fecee4d56e3ce2a73b2bdd7c95c21f09",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {

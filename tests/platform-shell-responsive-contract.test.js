@@ -96,9 +96,10 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'development-registration-requests-workspace-v2-design-foundation-v1'/);
+  assert.match(worker,/\? 'development-registration-targeted-request-v3-design-foundation-v1'/);
   assert.doesNotMatch(worker,/conference-owner-preflight-correction-v1/);
   assert.match(worker,/: 'production-3-6-0-release-v6'/);
 });
 
 test('active sidebar entries are reconciled from the canonical route and module, not stale click state',()=>{const integration=fs.readFileSync(path.join(root,'js/platform-integration.js'),'utf8');assert.match(integration,/function reflectActiveModule\(id\)/);assert.match(integration,/shell\.querySelectorAll\('\[data-platform-module\],\[data-platform-route\]'\)/);assert.match(integration,/item\.classList\.toggle\('active',selected\)/);assert.match(integration,/item\.removeAttribute\('aria-current'\)/);});
+test('query-bearing routes use only their pathname for sidebar selection',()=>{const integration=fs.readFileSync(path.join(root,'js/platform-integration.js'),'utf8');assert.match(integration,/function routePathname\(route\)/);assert.match(integration,/current=routePathname\(route\)/);assert.match(integration,/pathname=routePathname\(route\)/);assert.doesNotMatch(integration,/route===target\|\|route\.indexOf\(target\+'\/'\)===0/);});
