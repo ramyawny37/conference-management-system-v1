@@ -87,7 +87,7 @@ const CORE_ASSETS = [
   './js/warehouse/workspace.js?rev=item-unit-add-ui-v1',
   './script.js?rev=conference-ui-final-cleanup-v1',
   './version.js',
-  './pwa.js?rev=notification-lifecycle-closure-v1',
+  './pwa.js?rev=notification-lifecycle-closure-v2',
   './libs/html2canvas.min.js',
   './assets/logo.jpg',
   './assets/make-a-difference-logo.png',
