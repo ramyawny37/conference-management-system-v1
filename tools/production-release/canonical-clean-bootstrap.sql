@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict mcgvVqWILaA6hPXOXg5lBfWWxwx2o2ERzIPpW1TL6UTDhIbiiH1Wf1goh9nVd4J
+\restrict vxIk6sVkpsgtX6famqRtpgHYLWehxk6BiFZPTTOmrpA70jcdKUKii946jvZ2Sbo
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -1319,15 +1319,14 @@ CREATE FUNCTION "platform"."notification_gateway"("p_operation" "text", "p_args"
  if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;
  if p_operation='enqueue' then perform platform_private.require_exact_jsonb_keys(p_args,array['eventType','moduleKey','resourceType','resourceId','scopeType','scopeId','title','body','targetUrl','dedupeKey']);return platform_private.enqueue_notification(p_args->>'eventType',p_args->>'moduleKey',p_args->>'resourceType',p_args->>'resourceId',p_args->>'scopeType',p_args->>'scopeId',p_args->>'title',p_args->>'body',p_args->>'targetUrl',p_args->>'dedupeKey');
  elsif p_operation='claim' then
-  perform platform_private.require_exact_jsonb_keys(p_args,array['limit']);
-  lease:=extensions.gen_random_uuid();
-  with candidates as(select d.id from platform.notification_deliveries d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id where d.status in('pending','failed') and d.attempt_count<5 and (d.lease_expires_at is null or d.lease_expires_at<=statement_timestamp()) and platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.scope_type,e.scope_id) order by d.notification_event_id,d.id for update of d skip locked limit least(greatest((p_args->>'limit')::int,1),100)),claimed as(update platform.notification_deliveries d set lease_token=lease,lease_expires_at=statement_timestamp()+interval '2 minutes' from candidates c where d.id=c.id returning d.*)
-  select coalesce(jsonb_agg(jsonb_build_object('deliveryId',d.id,'leaseToken',d.lease_token,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type) order by e.created_at,d.id),'[]'::jsonb) into result from claimed d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id;
-  return result;
+  perform platform_private.require_exact_jsonb_keys(p_args,array['limit']);lease:=extensions.gen_random_uuid();
+  with candidates as(select d.id from platform.notification_deliveries d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id where d.status in('pending','failed') and d.attempt_count<5 and (d.next_attempt_at is null or d.next_attempt_at<=statement_timestamp()) and(d.lease_expires_at is null or d.lease_expires_at<=statement_timestamp())and platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.scope_type,e.scope_id) order by d.notification_event_id,d.id for update of d skip locked limit least(greatest((p_args->>'limit')::int,1),100)),claimed as(update platform.notification_deliveries d set lease_token=lease,lease_expires_at=statement_timestamp()+interval '2 minutes' from candidates c where d.id=c.id returning d.*)select coalesce(jsonb_agg(jsonb_build_object('deliveryId',d.id,'leaseToken',d.lease_token,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type)order by e.created_at,d.id),'[]'::jsonb)into result from claimed d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id;return result;
  elsif p_operation='mark' then
   perform platform_private.require_exact_jsonb_keys(p_args,array['deliveryId','leaseToken','status','errorCode']);delivery_id:=(p_args->>'deliveryId')::uuid;lease:=(p_args->>'leaseToken')::uuid;status_value:=p_args->>'status';if status_value not in('sent','failed','expired')then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_STATUS_INVALID' using errcode='22023';end if;
-  update platform.notification_deliveries set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),last_error_code=nullif(p_args->>'errorCode',''),delivered_at=case when status_value='sent' then statement_timestamp()else delivered_at end,lease_token=null,lease_expires_at=null where id=delivery_id and lease_token=lease and lease_expires_at>statement_timestamp();
-  if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID' using errcode='42501';end if;return jsonb_build_object('deliveryId',delivery_id,'status',status_value);
+  update platform.notification_deliveries set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),last_error_code=nullif(p_args->>'errorCode',''),delivered_at=case when status_value='sent' then statement_timestamp()else delivered_at end,next_attempt_at=case when status_value='failed' then statement_timestamp()+make_interval(secs=>least(1800,30*(2^least(attempt_count,6)))) else null end,lease_token=null,lease_expires_at=null where id=delivery_id and lease_token=lease and lease_expires_at>statement_timestamp();
+  if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID' using errcode='42501';end if;
+  if status_value='expired' then update platform.notification_push_subscriptions s set active=false,updated_at=statement_timestamp() from platform.notification_deliveries d where d.id=delivery_id and s.id=d.subscription_id and s.active;end if;
+  return jsonb_build_object('deliveryId',delivery_id,'status',status_value);
  else raise exception 'PLATFORM_NOTIFICATION_OPERATION_NOT_ALLOWED' using errcode='42501';end if;
 end$$;
 
@@ -11253,6 +11252,7 @@ CREATE TABLE "platform"."notification_deliveries" (
     "delivered_at" timestamp with time zone,
     "lease_token" "uuid",
     "lease_expires_at" timestamp with time zone,
+    "next_attempt_at" timestamp with time zone,
     CONSTRAINT "notification_deliveries_attempt_count_check" CHECK (("attempt_count" >= 0)),
     CONSTRAINT "notification_deliveries_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'sent'::"text", 'failed'::"text", 'expired'::"text"])))
 );
@@ -15352,7 +15352,7 @@ CREATE UNIQUE INDEX "device_key_bindings_one_active_device_idx" ON "platform"."d
 -- Name: notification_deliveries_pending_idx; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX "notification_deliveries_pending_idx" ON "platform"."notification_deliveries" USING "btree" ("status", "lease_expires_at", "notification_event_id") WHERE ("status" = ANY (ARRAY['pending'::"text", 'failed'::"text"]));
+CREATE INDEX "notification_deliveries_pending_idx" ON "platform"."notification_deliveries" USING "btree" ("status", "next_attempt_at", "lease_expires_at", "notification_event_id") WHERE ("status" = ANY (ARRAY['pending'::"text", 'failed'::"text"]));
 
 
 --
@@ -21939,4 +21939,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mcgvVqWILaA6hPXOXg5lBfWWxwx2o2ERzIPpW1TL6UTDhIbiiH1Wf1goh9nVd4J
+\unrestrict vxIk6sVkpsgtX6famqRtpgHYLWehxk6BiFZPTTOmrpA70jcdKUKii946jvZ2Sbo
