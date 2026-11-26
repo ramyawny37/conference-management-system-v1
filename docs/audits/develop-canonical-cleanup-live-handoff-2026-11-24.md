@@ -688,3 +688,12 @@ Implementation SHA, final CI run IDs and exact Development Preview provenance ar
 - Platform SHA `bc8db1cceeffcfb9a76a7c8bd9997e6796b9e40f`: Reservations CI `45698333124` PASS, including Development preview validation.
 - Required next acceptance after Development Preview publishes `bc8db1cceeffcfb9a76a7c8bd9997e6796b9e40f`: hard refresh the public page; confirm no syntax error; attempt a fresh submission for the same event/phone with changed DOB/data and confirm no new request reference is created. Then validate waitlisted -> approved only with a non-duplicate identity/request as appropriate.
 - Scope remains Development only. Platform `main`, Production, Supabase Production and Vercel were not touched.
+
+
+## 2026-11-26 — Public registration age and private helper closure
+
+- Age migration `20261126053000_public_registration_canonical_age_validation.sql`; route and age regression CI 45760986026 PASS.
+- Zero-data 45760603764 failed structural parity (301 expected, 302 actual); live Development also had default PUBLIC execute on age helper.
+- Applied `20261126054947_public_registration_age_helper_private_acl.sql`; anon/authenticated/service_role direct execute denied; owner age calculation returned 26.
+- Commit `0a0e39de662a2ea2669de2a326107b0565c662db`: live structural fingerprints 96 relations, 1215 columns, 302 functions/a693d3115332697a267e4de313d581ed, 15 policies; access 342/a6692964e1900b01d6d59724016de852 unchanged.
+- Reservations CI 45764171990 PASS; zero-data CI 45764171976 PASS (all three jobs). Preview deployment and manual UI acceptance pending. No main or Production changes.
