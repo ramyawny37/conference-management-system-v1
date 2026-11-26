@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict y7ze0sZ5WjAVRXjUurT5btnVBFRisLnt85ZUnfiRBJUZqtRo0yeWcG3kLlXLDWq
+\restrict VcBLOJjt3fchGybO45uTlHVZBzCFt9u6AGccBYRj3zSdcFt84JFHeadertNcsKl
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -881,6 +881,9 @@ when 'upsert_notification_push_subscription' then
     when 'update_public_registration_settings' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_expected_revision','p_enabled','p_registration_mode','p_full_policy','p_show_payment_status','p_show_accommodation'],array['p_opens_at','p_closes_at']);
       return reservations_private.update_public_registration_settings(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_event_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_enabled')::boolean,p_args->>'p_registration_mode',p_args->>'p_full_policy',nullif(p_args->>'p_opens_at','')::timestamptz,nullif(p_args->>'p_closes_at','')::timestamptz,(p_args->>'p_show_payment_status')::boolean,(p_args->>'p_show_accommodation')::boolean);
+    when 'update_public_registration_member_profile' then
+      perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_request_id','p_expected_revision','p_member_key','p_governorate','p_church','p_city_or_village']);
+      return reservations_private.update_public_registration_member_profile(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_request_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_member_key')::uuid,p_args->>'p_governorate',p_args->>'p_church',p_args->>'p_city_or_village');
     when 'decide_public_registration_family_request' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_request_id','p_expected_revision','p_decision'],array['p_resolutions','p_reason']);
       return reservations_private.decide_public_registration_family_request(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_request_id')::uuid,(p_args->>'p_expected_revision')::bigint,p_args->>'p_decision',coalesce(p_args->'p_resolutions','{}'::jsonb),p_args->>'p_reason');
@@ -9148,7 +9151,7 @@ CREATE FUNCTION "reservations"."public_registration_submit_family"("p_public_id"
     SET "search_path" TO ''
     AS $$
 declare v_channel reservations.public_registration_channels%rowtype;v_event reservations.events%rowtype;v_existing reservations.public_registration_requests%rowtype;
- v_request_id uuid:=extensions.gen_random_uuid();v_reference text;v_intent bytea;v_primary jsonb;v_member jsonb;v_key uuid;v_guardian uuid;v_role text;v_type uuid;v_count int;v_ordinal int:=0;v_sector text;v_sector_other text;v_dob date;
+ v_request_id uuid:=extensions.gen_random_uuid();v_reference text;v_intent bytea;v_primary jsonb;v_member jsonb;v_key uuid;v_guardian uuid;v_role text;v_type uuid;v_count int;v_ordinal int:=0;v_sector text;v_sector_other text;v_dob date;v_governorate text;v_guardian_member jsonb;
 begin
  if p_submit_operation_id is null or p_tracking_secret_digest is null or octet_length(p_tracking_secret_digest)<>32 or jsonb_typeof(p_members)<>'array' then raise exception 'PUBLIC_REGISTRATION_SUBMISSION_INVALID' using errcode='22023';end if;
  v_count:=jsonb_array_length(p_members);if v_count<1 or v_count>12 then raise exception 'PUBLIC_REGISTRATION_FAMILY_SIZE_INVALID' using errcode='22023';end if;
@@ -9167,13 +9170,16 @@ begin
  if exists(select 1 from reservations.public_registration_requests r left join reservations.bookings b on b.id=r.booking_id where r.event_id=v_event.id and platform_private.person_phone_key(r.submitted_phone)=platform_private.person_phone_key(v_primary->>'phone') and (r.state in('submitted','under_review','waitlisted') or (r.state='approved' and b.lifecycle_status='active'))) then raise exception 'PUBLIC_REGISTRATION_ALREADY_EXISTS' using errcode='23505';end if;
  for v_member in select value from jsonb_array_elements(p_members) loop
    if (select array_agg(k order by k) from jsonb_object_keys(v_member) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','guardianMemberKey','memberKey','notes','phone','role','serviceSector','serviceSectorOther']::text[] then raise exception 'PUBLIC_REGISTRATION_MEMBER_SHAPE_INVALID' using errcode='22023';end if;
-   v_key:=(v_member->>'memberKey')::uuid;v_role:=v_member->>'role';v_guardian:=nullif(v_member->>'guardianMemberKey','')::uuid;v_type:=nullif(v_member->>'bookingTypeId','')::uuid;v_sector:=v_member->>'serviceSector';v_sector_other:=nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),'');
+   v_key:=(v_member->>'memberKey')::uuid;v_role:=v_member->>'role';v_guardian:=nullif(v_member->>'guardianMemberKey','')::uuid;v_type:=nullif(v_member->>'bookingTypeId','')::uuid;v_sector:=v_member->>'serviceSector';v_governorate:=nullif(btrim(v_member->>'governorate'),'');v_sector_other:=nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),'');
    if v_role not in('primary','adult','child_paid','child_dependent') or (v_ordinal=0 and v_role<>'primary') or (v_ordinal>0 and v_role='primary') then raise exception 'PUBLIC_REGISTRATION_MEMBER_ROLE_INVALID' using errcode='22023';end if;
    if nullif(btrim(v_member->>'fullName'),'') is null or nullif(v_member->>'dateOfBirth','') is null or (v_member->>'gender') not in('male','female') then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if; v_dob:=(v_member->>'dateOfBirth')::date; perform reservations_private.require_public_registration_member_age(v_event.start_date,v_dob,v_role);
+   if v_governorate is null or char_length(v_governorate)>120 then raise exception 'PUBLIC_REGISTRATION_GOVERNORATE_REQUIRED' using errcode='22023';end if;
    if v_sector not in('widows','widows-daughters','discipleship-primary-prep','discipleship-secondary-university','worship','media','servant-preparation','administration','other') or (v_sector='other' and v_sector_other is null) or (v_sector<>'other' and v_sector_other is not null) then raise exception 'PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID' using errcode='22023';end if;
    if v_role in('child_paid','child_dependent') then
      if v_guardian is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;
-     if not exists(select 1 from jsonb_array_elements(p_members) with ordinality as g(value,ord) where (g.value->>'memberKey')::uuid=v_guardian and g.value->>'role' in('primary','adult') and g.ord<=v_ordinal) then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;
+     select g.value into v_guardian_member from jsonb_array_elements(p_members) with ordinality as g(value,ord) where (g.value->>'memberKey')::uuid=v_guardian and g.value->>'role' in('primary','adult') and g.ord<=v_ordinal limit 1;
+     if v_guardian_member is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;
+     if btrim(v_member->>'governorate') is distinct from btrim(coalesce(v_guardian_member->>'governorate','')) or btrim(coalesce(v_member->>'church','')) is distinct from btrim(coalesce(v_guardian_member->>'church','')) or btrim(coalesce(v_member->>'cityOrVillage','')) is distinct from btrim(coalesce(v_guardian_member->>'cityOrVillage','')) or coalesce(v_member->>'serviceSector','') is distinct from coalesce(v_guardian_member->>'serviceSector','') or btrim(coalesce(v_member->>'serviceSectorOther','')) is distinct from btrim(coalesce(v_guardian_member->>'serviceSectorOther','')) then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_CONTEXT_MISMATCH' using errcode='22023';end if;
      if v_role='child_dependent' then if v_type is not null then raise exception 'PUBLIC_REGISTRATION_DEPENDENT_INVALID' using errcode='22023';end if;
      elsif v_type is null or not exists(select 1 from reservations.booking_types bt where bt.id=v_type and bt.event_id=v_event.id and bt.active) then raise exception 'PUBLIC_REGISTRATION_BOOKING_TYPE_UNAVAILABLE' using errcode='22023';end if;
    else
@@ -9183,11 +9189,11 @@ begin
  end loop;
  v_reference:='PR-'||upper(substr(replace(v_request_id::text,'-',''),1,12));
  insert into reservations.public_registration_requests(id,channel_id,event_id,submit_operation_id,submit_intent_digest,request_reference,tracking_secret_digest,booking_type_id,submitted_full_name,submitted_phone,submitted_gender,submitted_date_of_birth,submitted_church,submitted_governorate,submitted_city_or_village,submitted_service_sector,submitted_service_sector_other,submitted_notes)
- values(v_request_id,v_channel.id,v_event.id,p_submit_operation_id,v_intent,v_reference,p_tracking_secret_digest,(v_primary->>'bookingTypeId')::uuid,btrim(v_primary->>'fullName'),btrim(v_primary->>'phone'),v_primary->>'gender',(v_primary->>'dateOfBirth')::date,coalesce(v_primary->>'church',''),coalesce(v_primary->>'governorate',''),coalesce(v_primary->>'cityOrVillage',''),v_primary->>'serviceSector',nullif(btrim(coalesce(v_primary->>'serviceSectorOther','')),''),nullif(v_primary->>'notes',''));
+ values(v_request_id,v_channel.id,v_event.id,p_submit_operation_id,v_intent,v_reference,p_tracking_secret_digest,(v_primary->>'bookingTypeId')::uuid,btrim(v_primary->>'fullName'),btrim(v_primary->>'phone'),v_primary->>'gender',(v_primary->>'dateOfBirth')::date,coalesce(v_primary->>'church',''),btrim(v_primary->>'governorate'),coalesce(v_primary->>'cityOrVillage',''),v_primary->>'serviceSector',nullif(btrim(coalesce(v_primary->>'serviceSectorOther','')),''),nullif(v_primary->>'notes',''));
  v_ordinal:=0;
  for v_member in select value from jsonb_array_elements(p_members) loop
    insert into reservations.public_registration_request_members(request_id,member_key,ordinal,role,guardian_member_key,booking_type_id,full_name,phone,gender,date_of_birth,church,governorate,city_or_village,service_sector,service_sector_other,notes)
-   values(v_request_id,(v_member->>'memberKey')::uuid,v_ordinal,v_member->>'role',nullif(v_member->>'guardianMemberKey','')::uuid,nullif(v_member->>'bookingTypeId','')::uuid,btrim(v_member->>'fullName'),btrim(coalesce(v_member->>'phone','')),v_member->>'gender',(v_member->>'dateOfBirth')::date,coalesce(v_member->>'church',''),coalesce(v_member->>'governorate',''),coalesce(v_member->>'cityOrVillage',''),v_member->>'serviceSector',nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),''),nullif(v_member->>'notes',''));v_ordinal:=v_ordinal+1;
+   values(v_request_id,(v_member->>'memberKey')::uuid,v_ordinal,v_member->>'role',nullif(v_member->>'guardianMemberKey','')::uuid,nullif(v_member->>'bookingTypeId','')::uuid,btrim(v_member->>'fullName'),btrim(coalesce(v_member->>'phone','')),v_member->>'gender',(v_member->>'dateOfBirth')::date,coalesce(v_member->>'church',''),btrim(v_member->>'governorate'),coalesce(v_member->>'cityOrVillage',''),v_member->>'serviceSector',nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),''),nullif(v_member->>'notes',''));v_ordinal:=v_ordinal+1;
  end loop;
  return jsonb_build_object('reference',v_reference,'state','submitted','submittedAt',statement_timestamp(),'memberCount',v_count,'eventId',v_event.id);
 end $$;
@@ -11107,6 +11113,36 @@ CREATE FUNCTION "reservations_private"."standalone_create_intent"("p_args" "json
     AS $$
  select encode(extensions.digest(convert_to(jsonb_build_object('operation','create_event','scopeType','standalone','args',reservations_private.standalone_create_business_args(p_args))::text,'UTF8'),'sha256'),'hex');
 $$;
+
+
+--
+-- Name: update_public_registration_member_profile("uuid", "uuid", "uuid", bigint, "uuid", "text", "text", "text"); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;ctx jsonb;oldv jsonb;newv jsonb;v_governorate text:=nullif(btrim(coalesce(p_governorate,'')),'');v_church text:=btrim(coalesce(p_church,''));v_city text:=btrim(coalesce(p_city_or_village,''));
+begin
+ if p_device_id is null or p_operation_id is null or p_request_id is null or p_member_key is null or p_expected_revision is null or v_governorate is null or char_length(v_governorate)>120 or char_length(v_church)>200 or char_length(v_city)>160 then raise exception 'PUBLIC_REGISTRATION_PROFILE_DATA_INVALID' using errcode='22023';end if;
+ select * into r from reservations.public_registration_requests where id=p_request_id for update;if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002';end if;
+ ctx:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');
+ if r.revision<>p_expected_revision then raise exception 'PUBLIC_REGISTRATION_REQUEST_REVISION_CONFLICT' using errcode='40001';end if;
+ if r.state not in('submitted','under_review','waitlisted') then raise exception 'PUBLIC_REGISTRATION_REQUEST_STATE_INVALID' using errcode='22023';end if;
+ select * into m from reservations.public_registration_request_members where request_id=r.id and member_key=p_member_key for update;if not found then raise exception 'PUBLIC_REGISTRATION_MEMBER_NOT_FOUND' using errcode='P0002';end if;
+ oldv:=jsonb_build_object('memberKey',m.member_key,'governorate',m.governorate,'church',m.church,'cityOrVillage',m.city_or_village,'revision',r.revision);
+ if m.role in('child_paid','child_dependent') then
+   if not exists(select 1 from reservations.public_registration_request_members g where g.request_id=r.id and g.member_key=m.guardian_member_key and btrim(g.governorate)=v_governorate and btrim(g.church)=v_church and btrim(g.city_or_village)=v_city) then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_CONTEXT_MISMATCH' using errcode='22023';end if;
+ end if;
+ update reservations.public_registration_request_members set governorate=v_governorate,church=v_church,city_or_village=v_city where id=m.id;
+ if m.role in('primary','adult') then update reservations.public_registration_request_members set governorate=v_governorate,church=v_church,city_or_village=v_city where request_id=r.id and guardian_member_key=m.member_key;end if;
+ if m.ordinal=0 then update reservations.public_registration_requests set submitted_governorate=v_governorate,submitted_church=v_church,submitted_city_or_village=v_city where id=r.id;end if;
+ update reservations.public_registration_requests set revision=revision+1,updated_at=statement_timestamp() where id=r.id returning * into r;
+ newv:=jsonb_build_object('memberKey',m.member_key,'governorate',v_governorate,'church',v_church,'cityOrVillage',v_city,'revision',r.revision);
+ perform reservations_private.audit(ctx,'public_registration.profile_corrected','public_registration_request',r.id,p_operation_id,oldv,newv);
+ return jsonb_build_object('requestId',r.id,'revision',r.revision,'members',reservations_private.public_registration_members_json(r.id));
+end $$;
 
 
 --
@@ -21721,6 +21757,13 @@ REVOKE ALL ON FUNCTION "reservations_private"."standalone_create_intent"("p_args
 
 
 --
+-- Name: FUNCTION "update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text"); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text") FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -22051,4 +22094,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict y7ze0sZ5WjAVRXjUurT5btnVBFRisLnt85ZUnfiRBJUZqtRo0yeWcG3kLlXLDWq
+\unrestrict VcBLOJjt3fchGybO45uTlHVZBzCFt9u6AGccBYRj3zSdcFt84JFHeadertNcsKl
