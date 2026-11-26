@@ -3,6 +3,9 @@ const ORIGIN='https://ramyawny37.github.io',cors={'Access-Control-Allow-Headers'
 const platform=new Set(['list_system_owner_pending_device_authorizations','get_user_management_actor_capabilities','search_user_management_users','get_user_management_overview','get_user_management_devices','get_user_management_account','device_guarded_manage_system_user','list_module_permission_grants','search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant','recover_revoke_final_module_manager']);
 platform.add('list_library_templates');
 platform.add('apply_library_template_content_operation');
+platform.add('list_my_notifications');
+platform.add('mark_my_notification_read');
+platform.add('get_notification_push_subscription_state');
 platform.add('upsert_notification_push_subscription');
 platform.add('disable_notification_push_subscription');
 const conference=new Set(['create_canonical_conference','mutate_conference_core','get_conference_core','list_conference_participations','create_conference_participation','set_conference_participation_status','set_conference_participation_guardian','delete_conference_participation','list_conference_houses','mutate_conference_house_directory','assign_conference_house','list_conference_house_room_options','assign_conference_room','get_conference_accommodation','assign_conference_accommodation','move_conference_accommodation','remove_conference_accommodation','acquire_conference_lock','renew_conference_lock','release_conference_lock','get_conference_lock','acquire_conference_section_lock','renew_conference_section_lock','release_conference_section_lock','get_conference_section_lock']);
