@@ -4,6 +4,7 @@ on:
     branches: [develop]
     paths:
       - '.github/workflows/reservations-artifact-preflight.yml'
+      - 'tools/reservations-artifact-policy.json'
   workflow_dispatch:
 permissions:
   contents: write
