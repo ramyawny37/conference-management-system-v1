@@ -1,0 +1,6 @@
+begin;
+create policy "platform_notification_recipient_broadcast_read" on realtime.messages for select to authenticated using (realtime.messages.extension='broadcast' and realtime.topic()='user:'||auth.uid()::text||':notifications');
+create or replace function platform_private.broadcast_notification_recipient() returns trigger language plpgsql security definer set search_path='' as $$declare e platform.notification_events%rowtype;begin select * into e from platform.notification_events where id=new.notification_event_id;if not found then return null;end if;perform realtime.send(jsonb_build_object('id',e.id,'eventType',e.event_type,'moduleKey',e.module_key,'resourceType',e.resource_type,'resourceId',e.resource_id,'scopeType',e.scope_type,'scopeId',e.scope_id,'title',e.title,'body',e.body,'targetUrl',e.target_url,'createdAt',e.created_at,'readAt',new.read_at),case when tg_op='INSERT' then 'notification_created' else 'notification_read' end,'user:'||new.user_id::text||':notifications',true);return null;end$$;
+revoke all on function platform_private.broadcast_notification_recipient() from public,anon,authenticated,service_role;
+create trigger notification_recipient_broadcast after insert or update of read_at on platform.notification_recipients for each row execute function platform_private.broadcast_notification_recipient();
+commit;
