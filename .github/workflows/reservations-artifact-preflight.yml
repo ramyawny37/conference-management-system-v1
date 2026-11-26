@@ -57,4 +57,4 @@ jobs:
           git add modules/reservations/reservations-module.js modules/reservations/reservations-module.css modules/reservations/reservations-contract.json index.html service-worker.js tools/reservations-artifact-policy.json
           git diff --cached --check
           git commit -m "chore(reservations): integrate verified exact-SHA artifact"
-          git push origin HEAD:develop
+          git push origin HEAD:develop\n          gh workflow run validate-reservations-integration.yml --repo ${{ github.repository }} --ref develop
