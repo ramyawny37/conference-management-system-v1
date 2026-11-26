@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict vxIk6sVkpsgtX6famqRtpgHYLWehxk6BiFZPTTOmrpA70jcdKUKii946jvZ2Sbo
+\restrict WBlZxgk1dOVaX0va7nSMVAFxC0dzS2ZPDzJIh0YGnXuFesmYNaukZvnLENXgqQv
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -3855,6 +3855,23 @@ CREATE FUNCTION "platform_private"."set_updated_at"() RETURNS "trigger"
     SET "search_path" TO ''
     AS $$
 begin new.updated_at:=pg_catalog.now(); return new; end; $$;
+
+
+--
+-- Name: stage_public_registration_decision_external_notification(); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."stage_public_registration_decision_external_notification"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$begin
+ if new.state in('approved','rejected','waitlisted') and new.state is distinct from old.state then
+  insert into platform.notification_external_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,destination_kind,destination,channels,payload,dedupe_key)
+  values('public_registration.decision','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'phone',new.submitted_phone,array['whatsapp','sms']::text[],jsonb_build_object('requestReference',new.request_reference,'state',new.state,'decisionReason',new.decision_reason,'decidedAt',new.decided_at),'public-registration-decision:'||new.id::text||':'||new.revision::text)
+  on conflict(dedupe_key) do nothing;
+ end if;
+ return new;
+end$$;
 
 
 --
@@ -11292,6 +11309,38 @@ ALTER TABLE ONLY "platform"."notification_events" FORCE ROW LEVEL SECURITY;
 
 
 --
+-- Name: notification_external_outbox; Type: TABLE; Schema: platform; Owner: -
+--
+
+CREATE TABLE "platform"."notification_external_outbox" (
+    "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
+    "event_type" "text" NOT NULL,
+    "module_key" "text" NOT NULL,
+    "resource_type" "text" NOT NULL,
+    "resource_id" "text" NOT NULL,
+    "scope_type" "text" NOT NULL,
+    "scope_id" "text" NOT NULL,
+    "destination_kind" "text" NOT NULL,
+    "destination" "text" NOT NULL,
+    "channels" "text"[] NOT NULL,
+    "payload" "jsonb" NOT NULL,
+    "dedupe_key" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    CONSTRAINT "notification_external_outbox_channels_check" CHECK ((("channels" <@ ARRAY['whatsapp'::"text", 'sms'::"text", 'email'::"text"]) AND ("cardinality"("channels") > 0))),
+    CONSTRAINT "notification_external_outbox_dedupe_key_check" CHECK ((("char_length"("dedupe_key") >= 1) AND ("char_length"("dedupe_key") <= 240))),
+    CONSTRAINT "notification_external_outbox_destination_check" CHECK ((("char_length"("destination") >= 3) AND ("char_length"("destination") <= 320))),
+    CONSTRAINT "notification_external_outbox_destination_kind_check" CHECK (("destination_kind" = ANY (ARRAY['phone'::"text", 'email'::"text"]))),
+    CONSTRAINT "notification_external_outbox_event_type_check" CHECK (("event_type" ~ '^[a-z][a-z0-9_.-]{2,80}$'::"text")),
+    CONSTRAINT "notification_external_outbox_module_key_check" CHECK (("module_key" = ANY (ARRAY['conference'::"text", 'reservations'::"text", 'warehouse'::"text", 'platform'::"text"]))),
+    CONSTRAINT "notification_external_outbox_payload_check" CHECK (("jsonb_typeof"("payload") = 'object'::"text")),
+    CONSTRAINT "notification_external_outbox_resource_type_check" CHECK (("resource_type" ~ '^[a-z][a-z0-9_.-]{2,80}$'::"text")),
+    CONSTRAINT "notification_external_outbox_scope_type_check" CHECK (("scope_type" ~ '^[a-z][a-z0-9_.-]{2,80}$'::"text"))
+);
+
+ALTER TABLE ONLY "platform"."notification_external_outbox" FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: notification_outbox; Type: TABLE; Schema: platform; Owner: -
 --
 
@@ -13747,6 +13796,22 @@ ALTER TABLE ONLY "platform"."notification_events"
 
 
 --
+-- Name: notification_external_outbox notification_external_outbox_dedupe_key_key; Type: CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_external_outbox"
+    ADD CONSTRAINT "notification_external_outbox_dedupe_key_key" UNIQUE ("dedupe_key");
+
+
+--
+-- Name: notification_external_outbox notification_external_outbox_pkey; Type: CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_external_outbox"
+    ADD CONSTRAINT "notification_external_outbox_pkey" PRIMARY KEY ("id");
+
+
+--
 -- Name: notification_outbox notification_outbox_dedupe_key_key; Type: CONSTRAINT; Schema: platform; Owner: -
 --
 
@@ -16095,6 +16160,13 @@ CREATE TRIGGER "system_owner_device_authorization_operations_immutable" BEFORE D
 --
 
 CREATE TRIGGER "system_owner_recovery_authorizations_lifecycle_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."system_owner_credential_recovery_authorizations" FOR EACH ROW EXECUTE FUNCTION "public"."guard_system_owner_recovery_authorization_lifecycle"();
+
+
+--
+-- Name: public_registration_requests public_registration_decision_external_notification; Type: TRIGGER; Schema: reservations; Owner: -
+--
+
+CREATE TRIGGER "public_registration_decision_external_notification" AFTER UPDATE OF "state" ON "reservations"."public_registration_requests" FOR EACH ROW EXECUTE FUNCTION "platform_private"."stage_public_registration_decision_external_notification"();
 
 
 --
@@ -18741,6 +18813,12 @@ ALTER TABLE "platform"."notification_deliveries" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "platform"."notification_events" ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: notification_external_outbox; Type: ROW SECURITY; Schema: platform; Owner: -
+--
+
+ALTER TABLE "platform"."notification_external_outbox" ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: notification_outbox; Type: ROW SECURITY; Schema: platform; Owner: -
 --
 
@@ -20236,6 +20314,13 @@ REVOKE ALL ON FUNCTION "platform_private"."set_conference_automatic_extra_bed_so
 --
 
 REVOKE ALL ON FUNCTION "platform_private"."set_updated_at"() FROM PUBLIC;
+
+
+--
+-- Name: FUNCTION "stage_public_registration_decision_external_notification"(); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_decision_external_notification"() FROM PUBLIC;
 
 
 --
@@ -21939,4 +22024,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vxIk6sVkpsgtX6famqRtpgHYLWehxk6BiFZPTTOmrpA70jcdKUKii946jvZ2Sbo
+\unrestrict WBlZxgk1dOVaX0va7nSMVAFxC0dzS2ZPDzJIh0YGnXuFesmYNaukZvnLENXgqQv
