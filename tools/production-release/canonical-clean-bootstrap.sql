@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Yp930jWDOecI4IVP6dhO3zBJ27MKCVd6tA1yw42qk07i5wbHsJhzLWBTk9oTJCz
+\restrict a79iD13V6meDid63wN2lWs3dskK84dUMvSIOFbWcaQNWyELtdNAEJ60jKBh78Hj
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -857,6 +857,8 @@ begin
 perform platform_private.require_exact_jsonb_keys(p_args,array['p_limit']);return platform_private.list_my_notifications(v_session.device_id,(p_args->>'p_limit')::integer);
 when 'mark_my_notification_read' then -- mark_my_notification_read
 perform platform_private.require_exact_jsonb_keys(p_args,array['p_notification_event_id']);return platform_private.mark_my_notification_read(v_session.device_id,(p_args->>'p_notification_event_id')::uuid);
+when 'get_notification_push_subscription_state' then -- get_notification_push_subscription_state
+perform platform_private.require_exact_jsonb_keys(p_args,array['p_endpoint']);return platform_private.get_notification_push_subscription_state(v_session.device_id,p_args->>'p_endpoint');
 when 'upsert_notification_push_subscription' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_endpoint','p_p256dh','p_auth','p_module_keys','p_user_agent']);
       return platform_private.upsert_notification_push_subscription(v_session.device_id,p_args->>'p_endpoint',p_args->>'p_p256dh',p_args->>'p_auth',array(select jsonb_array_elements_text(p_args->'p_module_keys')),p_args->>'p_user_agent');
@@ -2376,6 +2378,16 @@ CREATE FUNCTION "platform_private"."enqueue_notification_core"("p_event_type" "t
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $_$declare event_id uuid;inserted boolean:=false;delivery_count integer;recipient_count integer;begin if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or ((p_scope_type is null)<>(p_scope_id is null)) or (p_scope_type is not null and p_scope_type !~ '^[a-z0-9_.-]{1,80}$') or (p_module_key='reservations' and (p_scope_type is distinct from 'event' or p_scope_id is null)) or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing returning id into event_id;if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key;else inserted:=true;end if;insert into platform.notification_recipients(notification_event_id,user_id)select event_id,pr.user_id from platform.profiles pr where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_scope_type,p_scope_id)on conflict do nothing;get diagnostics recipient_count=row_count;insert into platform.notification_deliveries(notification_event_id,subscription_id)select event_id,s.id from platform.notification_push_subscriptions s join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)on conflict(notification_event_id,subscription_id)do nothing;get diagnostics delivery_count=row_count;return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);end$_$;
+
+
+--
+-- Name: get_notification_push_subscription_state("uuid", "text"); Type: FUNCTION; Schema: platform_private; Owner: -
+--
+
+CREATE FUNCTION "platform_private"."get_notification_push_subscription_state"("p_actor_device_id" "uuid", "p_endpoint" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$declare ctx jsonb;actor uuid;s platform.notification_push_subscriptions%rowtype;begin ctx:=nullif(pg_catalog.current_setting('platform.phase1c_context',true),'')::jsonb;if ctx is null or ctx->>'purpose'<>'PLATFORM_DEVICE_SESSION_DISPATCH' or (ctx->>'device_id')::uuid is distinct from p_actor_device_id then raise exception 'APPROVED_DEVICE_SESSION_REQUIRED' using errcode='42501';end if;actor:=(ctx->>'user_id')::uuid;if p_endpoint is null or p_endpoint not like 'https://%' or char_length(p_endpoint)>2048 then raise exception 'PLATFORM_NOTIFICATION_SUBSCRIPTION_INVALID' using errcode='22023';end if;select * into s from platform.notification_push_subscriptions where user_id=actor and device_id=p_actor_device_id and endpoint=p_endpoint limit 1;return jsonb_build_object('registered',found,'active',coalesce(s.active,false),'moduleKeys',coalesce(to_jsonb(s.module_keys),'[]'::jsonb),'updatedAt',s.updated_at);end$$;
 
 
 --
@@ -19844,6 +19856,13 @@ REVOKE ALL ON FUNCTION "platform_private"."enqueue_notification_core"("p_event_t
 
 
 --
+-- Name: FUNCTION "get_notification_push_subscription_state"("p_actor_device_id" "uuid", "p_endpoint" "text"); Type: ACL; Schema: platform_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "platform_private"."get_notification_push_subscription_state"("p_actor_device_id" "uuid", "p_endpoint" "text") FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "get_resource_lease"("p_actor_device_id" "uuid", "p_module_id" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope" "text"); Type: ACL; Schema: platform_private; Owner: -
 --
 
@@ -21933,4 +21952,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Yp930jWDOecI4IVP6dhO3zBJ27MKCVd6tA1yw42qk07i5wbHsJhzLWBTk9oTJCz
+\unrestrict a79iD13V6meDid63wN2lWs3dskK84dUMvSIOFbWcaQNWyELtdNAEJ60jKBh78Hj
