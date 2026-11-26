@@ -35,8 +35,8 @@ BEGIN
   ), expected(kind,objects,digest) AS (
     VALUES
     ('relations',97::bigint,'111321c72e2e8dc683f52c2bee11d189'),
-    ('columns',1219::bigint,'d4c38fe8cee3d4f079b509924b0b6e7d'),
-    ('functions',306::bigint,'99e86855ddf7899e6ee126ff195d8f9a'),
+    ('columns',1221::bigint,'b4f8386a809c11771656e366ea57e9eb'),
+    ('functions',306::bigint,'c8dff7eba8ed9d3c626e999eabb0c302'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
