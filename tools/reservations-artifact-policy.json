@@ -3,7 +3,7 @@
   "currentRuntime": {
     "revision": "registration-requests-global-route-v1",
     "files": {
-      "reservations-module.js": "d1b2f6297d9caa1ca451017375f00ae8e4cd3ef7813e16b9a3d0a4639b2327b4",
+      "reservations-module.js": "fb36c92c9e40d392e47150ab9200402dbe94230ce48d8387b3c7c5d031045899",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
