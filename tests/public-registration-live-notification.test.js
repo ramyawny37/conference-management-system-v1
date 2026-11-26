@@ -28,3 +28,6 @@ test('notification lifecycle reconciles permission and remote device revocation 
   assert.match(pwa,/stopPlatformNotificationRealtime\(\)/);
   assert.doesNotMatch(pwa,/setInterval\(/);
 });
+
+
+test('platform device edge admits the complete canonical notification lifecycle',()=>{const source=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');for(const operation of ['list_my_notifications','mark_my_notification_read','get_notification_push_subscription_state','upsert_notification_push_subscription','disable_notification_push_subscription'])assert.ok(source.includes("platform.add('"+operation+"')"),operation+' missing from platform device edge allowlist');});
