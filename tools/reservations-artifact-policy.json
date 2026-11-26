@@ -11,16 +11,7 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [
-    {
-      "sourceCommit": "00eabbedf83e51181071a2474c07cb7175b22302",
-      "revision": "registration-requests-workspace-v1",
-      "files": {
-        "reservations-module.js": "89248a853d89107d54e9f0d88dbe65c43dc76e8d54153251f9fd9b0b8d1a76d9",
-        "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
-      }
-    }
-  ],
+  "approvedIntegrations": [],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
