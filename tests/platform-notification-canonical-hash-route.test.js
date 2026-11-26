@@ -1,1 +1,16 @@
-const fs=require('fs'),assert=require('assert');const m=fs.readFileSync('supabase/migrations/20261126180000_platform_notification_canonical_hash_route.sql','utf8'),r=fs.readFileSync('js/application-routing.js','utf8');assert.match(r,/hash\.indexOf\('#\/'\)===0/);assert.match(m,/\.\/#\/reservations\/events\//);assert.doesNotMatch(m,/'\.\/#reservations\/events\//);assert.match(m,/update platform\.notification_events/);assert.match(m,/update platform\.notification_outbox/);console.log('platform notification canonical hash route: PASS');
+const fs=require('fs'),assert=require('assert');
+const legacy=fs.readFileSync('supabase/migrations/20261126180000_platform_notification_canonical_hash_route.sql','utf8');
+const canonical=fs.readFileSync('supabase/migrations/20261126181500_platform_registration_notification_requests_route.sql','utf8');
+const routing=fs.readFileSync('js/application-routing.js','utf8');
+const pwa=fs.readFileSync('pwa.js','utf8');
+assert.match(routing,/hash\\.indexOf\\('#\\/'\\)===0/);
+assert.match(canonical,/\\.\\\/#\\/reservations\\/registration-requests\\?eventId='/);
+assert.doesNotMatch(canonical,/registration-requests[^\\n]*tab=registration/);
+assert.match(canonical,/update platform\\.notification_events/);
+assert.match(canonical,/update platform\\.notification_outbox/);
+assert.match(canonical,/event_type='reservations\\.public_registration\\.submitted'/);
+assert.match(pwa,/function closePlatformNotificationPanel\\(\\)/);
+assert.match(pwa,/if\\(item\\)\\{var url=.*closePlatformNotificationPanel\\(\\);markPlatformNotificationRead/);
+assert.match(pwa,/setAttribute\\('aria-expanded','false'\\)/);
+assert.match(legacy,/\\.\\\/#\\/reservations\\/events\\//);
+console.log('platform notification canonical requests route: PASS');
