@@ -100,3 +100,5 @@ test('public registration assets stay cache-coherent and date fields open from t
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
 });
+
+test('public registration explains canonical age errors',()=>{const js=fs.readFileSync('public-registration.js','utf8');assert.match(js,/PUBLIC_REGISTRATION_AGE_INVALID/);assert.match(js,/PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID/);});
