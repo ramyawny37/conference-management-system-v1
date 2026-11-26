@@ -34,10 +34,10 @@ Deno.serve(async request=>{
     const a=args as any,tracking=bounded(a.trackingSecret,128,true);
     result=await service.rpc('public_registration_gateway',{p_operation:'status_family',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),fingerprintDigest:hex(fingerprint)}});
   }else if(operation==='recover'){
-    if(!exact(args,['dateOfBirth','phone','publicId','requestReference']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
-    const a=args as any,publicId=uuid(a.publicId),requestReference=bounded(a.requestReference,40,true),phone=bounded(a.phone,20,true),dateOfBirth=bounded(a.dateOfBirth,10,true);
+    if(!exact(args,['dateOfBirth','fullName','phone','publicId']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
+    const a=args as any,publicId=uuid(a.publicId),fullName=bounded(a.fullName,200,true),phone=bounded(a.phone,20,true),dateOfBirth=bounded(a.dateOfBirth,10,true);
     const recoveryBytes=crypto.getRandomValues(new Uint8Array(32)),trackingSecret=b64url(recoveryBytes);
-    result=await service.rpc('public_registration_gateway',{p_operation:'recover_family',p_args:{publicId,requestReference,phone,dateOfBirth,newTrackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint)}});
+    result=await service.rpc('public_registration_gateway',{p_operation:'recover_family',p_args:{publicId,fullName,phone,dateOfBirth,newTrackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint)}});
     if(!result.error)result={...result,data:{...result.data,trackingSecret}};
   }else if(operation==='submit_family'){
     if(!exact(args,['members','operationId','publicId'])||!Array.isArray((args as any).members))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');
