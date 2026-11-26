@@ -4,8 +4,7 @@ function required(name:string){const v=String(Deno.env.get(name)||'').trim();if(
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}})}
 function bearer(req:Request){return String(req.headers.get('Authorization')||'').replace(/^Bearer\s+/,'')}
 Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{
- if(req.headers.get('Origin')!==ORIGIN)throw new Error('PLATFORM_NOTIFICATION_ORIGIN_DENIED');
- if(req.method==='GET'){return json(200,{ok:true,data:{vapidPublicKey:required('PLATFORM_WEB_PUSH_VAPID_PUBLIC_KEY')}})}
+ if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)throw new Error('PLATFORM_NOTIFICATION_ORIGIN_DENIED');return json(200,{ok:true,data:{vapidPublicKey:required('PLATFORM_WEB_PUSH_VAPID_PUBLIC_KEY')}})}
  if(req.method!=='POST')return json(405,{ok:false,error:{code:'METHOD_NOT_ALLOWED'}});
  const serviceKey=required('SUPABASE_SERVICE_ROLE_KEY');if(bearer(req)!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED');
  const body=await req.json();if(!body||body.operation!=='emit'||!body.event||typeof body.event!=='object')throw new Error('PLATFORM_NOTIFICATION_ARGUMENT_INVALID');
