@@ -48,3 +48,9 @@ test('integration is fail closed and permits at most one explicitly approved art
   assert.doesNotMatch(integrator, /"'development-" \+ policy\.currentRuntime\.revision/);
   assert.doesNotMatch(integrator, /JSON\.stringify\(policy, null, 2\) \+ '\\\\n'/);
 });
+
+test('notification refresh is source-owned and timer polling is forbidden', () => {
+  const runtime = fs.readFileSync(path.join(root, 'modules', 'reservations', 'reservations-module.js'), 'utf8');
+  assert.match(runtime, /platform-notification/);
+  assert.doesNotMatch(runtime, /setInterval\([^,]+,15000\)/);
+});
