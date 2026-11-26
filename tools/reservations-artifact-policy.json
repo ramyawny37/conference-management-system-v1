@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "registration-requests-global-route-v1",
+    "revision": "registration-route-reconcile-v1",
     "files": {
-      "reservations-module.js": "fb36c92c9e40d392e47150ab9200402dbe94230ce48d8387b3c7c5d031045899",
+      "reservations-module.js": "2ed81ce429d953826d57850c302a43b15712f31a09a83314df3ad75673ca68ee",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
@@ -11,16 +11,7 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [
-    {
-      "sourceCommit": "7e562463d9f06ce4ed401297fe16a291d90336c1",
-      "revision": "registration-route-reconcile-v1",
-      "files": {
-        "reservations-module.js": "2ed81ce429d953826d57850c302a43b15712f31a09a83314df3ad75673ca68ee",
-        "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
-      }
-    }
-  ],
+  "approvedIntegrations": [],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
