@@ -5,7 +5,7 @@ function json(status:number,body:unknown){return new Response(JSON.stringify(bod
 Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{
  if(req.method==='GET'){if(req.headers.get('Origin')!==ORIGIN)throw new Error('PLATFORM_NOTIFICATION_ORIGIN_DENIED');return json(200,{ok:true,data:{vapidPublicKey:required('PLATFORM_WEB_PUSH_VAPID_PUBLIC_KEY')}})}
  if(req.method!=='POST')return json(405,{ok:false,error:{code:'METHOD_NOT_ALLOWED'}});
- const serviceKey=required('SUPABASE_SERVICE_ROLE_KEY');const apiKey=String(req.headers.get('apikey')||'').trim();if(apiKey!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED');
+ const serviceKey=JSON.parse(required('SUPABASE_SECRET_KEYS'))['default'];if(!serviceKey)throw new Error('SUPABASE_SECRET_KEY_MISSING');const apiKey=String(req.headers.get('apikey')||'').trim();if(apiKey!==serviceKey)throw new Error('PLATFORM_NOTIFICATION_BACKEND_REQUIRED');
  const body=await req.json();if(!body||!['emit','flush'].includes(String(body.operation||''))||(body.operation==='emit'&&(!body.event||typeof body.event!=='object')))throw new Error('PLATFORM_NOTIFICATION_ARGUMENT_INVALID');
  const service=createClient(required('SUPABASE_URL'),serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
  let queued:any=null;if(body.operation==='emit'){queued=await service.schema('platform').rpc('notification_gateway',{p_operation:'enqueue',p_args:body.event});if(queued.error)throw queued.error;}
