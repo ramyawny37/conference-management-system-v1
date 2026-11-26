@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-# Manual validation marker: exact-SHA refresh 2026-11-26 after notification CI rejection-chain correction.
+# Manual validation marker: exact-SHA refresh 2026-11-26 notification rejection successor 2.
 permissions:
   contents: read
 jobs:
