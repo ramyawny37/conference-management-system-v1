@@ -54,7 +54,7 @@ on conflict do nothing;
 
 create or replace function platform_private.stage_public_registration_decision_notification()
 returns trigger language plpgsql security definer set search_path='' as $$
-declare v_event_id uuid; v_title text; v_body text; v_target text; v_dedupe text; v_destination_id uuid; v_old platform.notification_external_outbox%rowtype;
+declare v_event_id uuid; v_title text; v_body text; v_target text; v_dedupe text; v_destination_id uuid;
 begin
  if new.state not in('approved','rejected','waitlisted') or new.state is not distinct from old.state then return new; end if;
  v_title:=case new.state when 'approved' then 'تم اعتماد طلب التسجيل' when 'rejected' then 'تم رفض طلب التسجيل' else 'تم وضع طلب التسجيل في قائمة الانتظار' end;
