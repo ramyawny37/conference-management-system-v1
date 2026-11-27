@@ -9,6 +9,9 @@ const html=read('index.html');
 const shell=read('canonical-platform-shell.css');
 const integration=read('js/platform-integration.js');
 const worker=read('service-worker.js');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 
 test('runtime owns one canonical header, sidebar and workspace host',()=>{
   assert.equal((html.match(/data-canonical-platform-header(?=[\s>])/g)||[]).length,1);
@@ -34,5 +37,5 @@ test('reservations prototype is absent from runtime, cache and module ownership'
 test('responsive shell retains one right sidebar and mobile drawer',()=>{
   assert.match(shell,/\.canonical-platform-sidebar\{[^}]*inset:12px 12px 12px auto/);
   assert.match(shell,/@media\(max-width:900px\)[\s\S]*platform-navigation-open \.canonical-platform-sidebar\{transform:translateX\(0\)\}/);
-  assert.match(worker,/development-registration-notification-deeplink-v1-design-foundation-v1/);
+  assert.ok(worker.includes(developmentCacheRevision));
 });
