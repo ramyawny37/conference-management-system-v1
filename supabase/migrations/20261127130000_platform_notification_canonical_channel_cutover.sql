@@ -3,16 +3,17 @@ begin;
 create table platform.notification_destinations(
   id uuid primary key default extensions.gen_random_uuid(),
   notification_event_id uuid not null references platform.notification_events(id) on delete cascade,
-  destination_kind text not null check(destination_kind in('platform_user','phone','email')),
+  destination_kind text not null check(destination_kind in('push_subscription','phone','email')),
   user_id uuid references platform.profiles(user_id) on delete cascade,
+  push_subscription_id uuid references platform.notification_push_subscriptions(id) on delete cascade,
   destination text,
   created_at timestamptz not null default statement_timestamp(),
   check(
-    (destination_kind='platform_user' and user_id is not null and destination is null)
-    or (destination_kind in('phone','email') and user_id is null and destination is not null and char_length(destination) between 3 and 320)
+    (destination_kind='push_subscription' and user_id is not null and push_subscription_id is not null and destination is null)
+    or (destination_kind in('phone','email') and user_id is null and push_subscription_id is null and destination is not null and char_length(destination) between 3 and 320)
   )
 );
-create unique index notification_destinations_user_uidx on platform.notification_destinations(notification_event_id,user_id) where user_id is not null;
+create unique index notification_destinations_push_uidx on platform.notification_destinations(notification_event_id,push_subscription_id) where push_subscription_id is not null;
 create unique index notification_destinations_external_uidx on platform.notification_destinations(notification_event_id,destination_kind,destination) where destination is not null;
 alter table platform.notification_destinations enable row level security;
 alter table platform.notification_destinations force row level security;
@@ -42,14 +43,13 @@ alter table platform.notification_channel_deliveries enable row level security;
 alter table platform.notification_channel_deliveries force row level security;
 revoke all on platform.notification_channel_deliveries from public,anon,authenticated,service_role;
 
-insert into platform.notification_destinations(notification_event_id,destination_kind,user_id)
-select r.notification_event_id,'platform_user',r.user_id from platform.notification_recipients r on conflict do nothing;
+insert into platform.notification_destinations(notification_event_id,destination_kind,user_id,push_subscription_id)
+select d.notification_event_id,'push_subscription',s.user_id,s.id from platform.notification_deliveries d join platform.notification_push_subscriptions s on s.id=d.subscription_id on conflict do nothing;
 
 insert into platform.notification_channel_deliveries(notification_event_id,destination_id,channel,status,attempt_count,last_attempt_at,delivered_at,last_error_code,next_attempt_at,created_at)
 select d.notification_event_id,nd.id,'web_push',d.status,d.attempt_count,d.last_attempt_at,d.delivered_at,d.last_error_code,d.next_attempt_at,d.created_at
 from platform.notification_deliveries d
-join platform.notification_push_subscriptions s on s.id=d.subscription_id
-join platform.notification_destinations nd on nd.notification_event_id=d.notification_event_id and nd.destination_kind='platform_user' and nd.user_id=s.user_id
+join platform.notification_destinations nd on nd.notification_event_id=d.notification_event_id and nd.destination_kind='push_subscription' and nd.push_subscription_id=d.subscription_id
 on conflict do nothing;
 
 create or replace function platform_private.stage_public_registration_decision_notification()
