@@ -1,0 +1,14 @@
+const fs=require('fs'),assert=require('assert');
+const m=fs.readFileSync('supabase/migrations/20261127130000_platform_notification_canonical_channel_cutover.sql','utf8');
+assert.match(m,/create table platform\.notification_destinations/);
+assert.match(m,/create table platform\.notification_channel_deliveries/);
+assert.match(m,/channel in\('web_push','whatsapp','sms','email'\)/);
+assert.match(m,/stage_public_registration_decision_notification/);
+assert.match(m,/insert into platform\.notification_events/);
+assert.match(m,/insert into platform\.notification_destinations/);
+assert.match(m,/insert into platform\.notification_channel_deliveries/);
+assert.match(m,/drop trigger public_registration_decision_external_notification/);
+assert.match(m,/drop function platform_private\.stage_public_registration_decision_external_notification/);
+assert.match(m,/drop table platform\.notification_external_outbox/);
+assert.doesNotMatch(m,/create table platform\.notification_external_outbox/);
+console.log('platform notification canonical channel cutover: PASS');
