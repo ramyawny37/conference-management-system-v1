@@ -38,11 +38,11 @@ test('integration is fail closed and permits at most one explicitly approved art
   assert.ok(policy.approvedIntegrations.length <= 1);
   for (const entry of policy.approvedIntegrations) {
     assert.match(entry.sourceCommit, /^[0-9a-f]{40}$/);
-    assert.match(entry.revision, /^[a-z0-9][a-z0-9-]{2,80}$/);
-    assert.ok(entry.files['reservations-module.js']);
-    assert.ok(entry.files['reservations-module.css']);
+    assert.deepEqual(Object.keys(entry).sort(), ['sourceCommit']);
   }
   assert.match(integrator, /CURRENT_RESERVATIONS_RUNTIME_DRIFT/);
+  assert.match(integrator, /const approvedRevision = 'source-' \+ approved\.sourceCommit\.slice\(0, 12\)/);
+  assert.doesNotMatch(integrator, /approved\.files|approved\.revision/);
   assert.match(integrator, /branch !== 'develop'/);
   assert.match(integrator, /preserve the independently owned Platform design suffix/);
   assert.doesNotMatch(integrator, /"'development-" \+ policy\.currentRuntime\.revision/);
