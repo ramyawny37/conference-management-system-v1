@@ -63,8 +63,7 @@ test('Reservations generated runtime remains governed by the artifact policy', (
   assert.ok(policy.approvedIntegrations.length <= 1);
   for (const entry of policy.approvedIntegrations) {
     assert.match(entry.sourceCommit, /^[0-9a-f]{40}$/);
-    assert.ok(entry.files?.['reservations-module.js']);
-    assert.ok(entry.files?.['reservations-module.css']);
+    assert.deepEqual(Object.keys(entry).sort(), ['sourceCommit']);
   }
   assert.ok(policy.rejectedArtifacts.some((entry) => entry.sourceCommit === 'c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9'));
   assert.equal(read('modules/reservations/reservations-module.js').includes('PlatformIntegration'), true);
