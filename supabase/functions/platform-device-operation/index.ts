@@ -75,6 +75,7 @@ Deno.serve(async(request)=>{
     const service=createClient(required('SUPABASE_URL'),required('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false,autoRefreshToken:false}});
     const result=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:module,p_operation:operation,p_args:args});
     if(result.error)throw result.error;
+    if(module==='reservations'&&operation==='decide_public_registration_family_request'){try{const secretKey=JSON.parse(required('SUPABASE_SECRET_KEYS'))['default'];if(!secretKey)throw new Error('MISSING_SUPABASE_SECRET_KEYS_DEFAULT');const flushed=await fetch(required('SUPABASE_URL')+'/functions/v1/platform-notifications',{method:'POST',headers:{'Content-Type':'application/json','apikey':secretKey},body:JSON.stringify({operation:'flush'})});if(!flushed.ok)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_DECISION_FLUSH_FAILED',requestId,timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_DECISION_FLUSH_FAILED',requestId,timestamp:new Date().toISOString()}));}}
     return json(200,{ok:true,data:result.data});
   }catch(error){
     const safe=classified(error,requestedModule),candidate=error&&typeof error==='object'?error as {code?:unknown,message?:unknown}:{},sqlstate=typeof candidate.code==='string'&&/^[A-Z0-9]{5}$/.test(candidate.code)?candidate.code:null,raw=String(candidate.message||''),applicationCode=/^[A-Z][A-Z0-9_]{0,95}$/.test(raw)?raw:null;
