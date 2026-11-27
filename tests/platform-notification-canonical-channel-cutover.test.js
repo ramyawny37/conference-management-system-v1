@@ -9,7 +9,7 @@ assert.match(m,/create or replace function platform_private\.enqueue_notificatio
 assert.match(m,/insert into platform\.notification_destinations[\s\S]*'push_subscription'/);
 assert.match(m,/insert into platform\.notification_channel_deliveries[\s\S]*'web_push'/);
 assert.match(m,/create or replace function platform\.notification_gateway/);
-assert.match(m,/from platform\.notification_channel_deliveries d join platform\.notification_destinations nd/);
+assert.match(m,/from platform\.notification_channel_deliveries d\s+join platform\.notification_destinations nd/);
 assert.match(m,/d\.channel='web_push'/);
 assert.match(m,/lease_token=lease/);
 assert.match(m,/PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID/);
