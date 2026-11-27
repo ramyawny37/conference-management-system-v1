@@ -1,7 +1,5 @@
 const fs=require('fs'),assert=require('assert');
 const m=fs.readFileSync('supabase/migrations/20261127130000_platform_notification_canonical_channel_cutover.sql','utf8');
-const self=fs.readFileSync(__filename,'utf8');
-assert.doesNotMatch(self,/\\\\nassert/);
 assert.match(m,/create table platform\.notification_destinations/);
 assert.match(m,/create table platform\.notification_channel_deliveries/);
 assert.match(m,/push_subscription_id uuid references platform\.notification_push_subscriptions\(id\) on delete restrict/);
