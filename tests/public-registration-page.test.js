@@ -108,8 +108,8 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-    assert.match(html,/public-registration\.css\?rev=public-experience-v1/);
-  assert.match(html,/public-registration\.js\?rev=public-experience-v1/);
+    assert.match(html,/public-registration\.css\?rev=public-experience-v2/);
+  assert.match(html,/public-registration\.js\?rev=public-experience-v2/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
