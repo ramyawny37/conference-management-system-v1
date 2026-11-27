@@ -35,7 +35,8 @@ test('step validation focuses the first incomplete field with a useful inline me
   assert.match(js,/من فضلك أكمل/);
   assert.match(js,/scrollIntoView\(\{behavior:'smooth',block:'center'\}\)/);
   assert.match(js,/aria-invalid/);
-  assert.doesNotMatch(js,/nextStep\(\).*errorMessage\(code\)/s);
+  const nextStepBody=js.slice(js.indexOf('function nextStep()'),js.indexOf('function renderBookingStep()'));
+  assert.doesNotMatch(nextStepBody,/errorMessage\(code\)/);
 });
 
 test('previous-request recovery stays visually secondary and closed by default',()=>{
