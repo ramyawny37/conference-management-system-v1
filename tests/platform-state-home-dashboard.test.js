@@ -9,6 +9,9 @@ const html=fs.readFileSync('index.html','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 const dashboard=fs.readFileSync('js/platform-home-dashboard.js','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 
 test('Platform root owns a dashboard workspace independent from Conference home',()=>{
   assert.match(html,/id="platformHomeWorkspace"[\s\S]*?id="conferenceWorkspace"/);
@@ -58,7 +61,7 @@ test('one operational coordinator owns polling, reconnection and visibility refr
 
 test('session reset invalidates dashboard state and PWA caches its exact asset revision',()=>{
   assert.match(dashboard,/platform-session-reset[\s\S]*deactivate\(\)[\s\S]*lastState=null/);
-  assert.match(worker,/development-registration-notification-deeplink-v1-design-foundation-v1/);
+  assert.ok(worker.includes(developmentCacheRevision));
   assert.match(worker,/\.\/js\/platform-home-dashboard\.js\?rev=unified-platform-state-home-v3/);
   assert.match(html,/js\/platform-home-dashboard\.js\?rev=unified-platform-state-home-v3/);
 });
