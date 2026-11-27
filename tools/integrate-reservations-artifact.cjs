@@ -49,10 +49,10 @@ try {
   if (contract.ownership !== 'reservation-management-system' || !Array.isArray(contract.requiredBehaviors)) throw new Error('RESERVATIONS_ARTIFACT_CONTRACT_INVALID');
   const rejected = policy.rejectedArtifacts.find((entry) => sameFiles(actualHashes, entry.files));
   if (rejected) throw new Error('RESERVATIONS_ARTIFACT_REJECTED:' + rejected.sourceCommit + ':' + rejected.reason);
-  const approved = policy.approvedIntegrations.find((entry) => sameFiles(actualHashes, entry.files));
-  if (!approved) throw new Error('RESERVATIONS_ARTIFACT_NOT_APPROVED:' + JSON.stringify(actualHashes));
+  if (!Array.isArray(policy.approvedIntegrations) || policy.approvedIntegrations.length !== 1) throw new Error('RESERVATIONS_ARTIFACT_NOT_APPROVED:' + JSON.stringify(actualHashes));
+  const approved = policy.approvedIntegrations[0];
   if (!/^[0-9a-f]{40}$/.test(approved.sourceCommit || '')) throw new Error('Approved source commit is invalid');
-  if (!/^[a-z0-9][a-z0-9-]{2,80}$/.test(approved.revision || '')) throw new Error('Approved cache revision is invalid');
+  const approvedRevision = 'source-' + approved.sourceCommit.slice(0, 12);
   for (const name of artifactNames) {
     const currentPath = path.join(root, 'modules', 'reservations', name);
     const currentHash = sha256(fs.readFileSync(currentPath));
@@ -67,7 +67,7 @@ try {
   for (const name of artifactNames) {
     const oldRev = policy.currentRuntime.revision;
     const oldRef = 'modules/reservations/' + name + '?rev=' + oldRev;
-    const newRef = 'modules/reservations/' + name + '?rev=' + approved.revision;
+    const newRef = 'modules/reservations/' + name + '?rev=' + approvedRevision;
     index = replaceOnce(index, oldRef, newRef, 'index.html ' + name);
     // Service-worker asset URLs are root-relative and include a leading "./".
     const swOldRef = './' + oldRef;
@@ -76,7 +76,7 @@ try {
   }
   // The Reservations revision is the owned prefix of the composite Development
   // cache revision; preserve the independently owned Platform design suffix.
-  sw = replaceOnce(sw, 'development-' + policy.currentRuntime.revision, 'development-' + approved.revision, 'Development cache revision');
+  sw = replaceOnce(sw, 'development-' + policy.currentRuntime.revision, 'development-' + approvedRevision, 'Development cache revision');
   // Validate all references and checksums before modifying any tracked file.
   for (const [name, bytes] of Object.entries(payloads)) {
     fs.writeFileSync(path.join(root, 'modules', 'reservations', name), bytes);
@@ -84,7 +84,7 @@ try {
   fs.writeFileSync(indexPath, index);
   fs.writeFileSync(swPath, sw);
   fs.writeFileSync(path.join(root, 'modules', 'reservations', contractName), contractBytes);
-  policy.currentRuntime = { revision: approved.revision, files: actualHashes, contract: { version: contract.contractVersion, sha256: sha256(contractBytes) } };
+  policy.currentRuntime = { revision: approvedRevision, files: actualHashes, contract: { version: contract.contractVersion, sha256: sha256(contractBytes) } };
   policy.approvedIntegrations = [];
   fs.writeFileSync(policyPath, JSON.stringify(policy, null, 2) + '\n');
   execFileSync('git', ['diff', '--check'], {cwd: root, stdio:'inherit'});
