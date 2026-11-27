@@ -13,6 +13,9 @@ const reservations=fs.readFileSync(path.join(root,'modules/reservations/reservat
 const reservationsCss=fs.readFileSync(path.join(root,'modules/reservations/reservations-module.css'),'utf8');
 const warehouse=fs.readFileSync(path.join(root,'js/warehouse/workspace.js'),'utf8');
 const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 
 test('the document exposes exactly one canonical shell, sidebar, header, and workspace host',()=>{
   assert.strictEqual((html.match(/data-canonical-platform-shell(?=[\s>])/g)||[]).length,1);
@@ -96,7 +99,7 @@ test('module workspaces do not reintroduce a second brand, topbar, or account sh
 });
 
 test('Development installs the canonical foundation cache without changing Production revision',()=>{
-  assert.match(worker,/\? 'development-registration-notification-deeplink-v1-design-foundation-v1'/);
+  assert.ok(worker.includes(`? 'development-${reservationsRevision}-design-foundation-v1'`));
   assert.doesNotMatch(worker,/conference-owner-preflight-correction-v1/);
   assert.match(worker,/: 'production-3-6-0-release-v6'/);
 });
