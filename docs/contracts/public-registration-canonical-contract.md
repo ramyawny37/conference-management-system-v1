@@ -470,3 +470,35 @@ A deferred decision must be resolved in this document before code that depends o
 - Latest Actions and full structural fingerprint parity remain UNVERIFIED: available workflow query is PR-only and returned no runs; combined statuses empty.
 - HMAC secret remains UNVERIFIED: connector exposes no Edge secrets management operation. Use Development dashboard Edge Function Secrets; check existence before setting, do not rotate existing secret casually.
 - End-to-end acceptance remains BLOCKED/UNVERIFIED; no runtime or database mutations performed in this checkpoint.
+
+
+## 2026-11-27 — PR6 canonical applicant notification design (pre-implementation)
+
+Binding implementation design before the single execution pass:
+
+- Applicant browser notification is opt-in only after a successful public submission or while viewing an authenticated tracking result. Never request browser notification permission on initial page load.
+- User-facing CTA is non-technical: «أبلغني بالنتيجة». Browser permission is requested only after that explicit click. Denial/dismissal never affects the registration request or tracking.
+- Public applicant authorization is the existing high-entropy tracking capability. Request reference, phone number, public event id, browser fingerprint, or localStorage alone are not sufficient authority to bind a push endpoint.
+- Reuse the existing site service worker, Web Push VAPID key pair, canonical notification event graph, destination table, channel-delivery lifecycle, lease/retry policy and platform-notifications transport. Do not create a second service worker, external outbox, delivery table, retry scheduler, or applicant notification event system.
+- Existing `platform.notification_push_subscriptions` remains the authenticated Platform-user/device subscription store. Do not make its user/device ownership nullable and do not overload it with anonymous applicants.
+- Add one private applicant push-subscription authority keyed to a public-registration request and endpoint, storing endpoint + Web Push keys, active state and timestamps. It must be RLS/forced-RLS, directly inaccessible, and writable only through the public-registration server boundary after tracking-secret verification. Endpoint uniqueness/rotation and re-opt-in must be idempotent.
+- Canonical `platform.notification_destinations` must support applicant push destinations without pretending that an applicant is a Platform profile. The destination must bind to the private applicant subscription identity; authenticated Platform push destinations keep their current user-owned identity. Constraints must make the two push ownership modes mutually exclusive and explicit.
+- On an approved/rejected/waitlisted decision, the existing single `public_registration.decision` notification event fans out to every active applicant Web Push subscription for that request plus the existing phone destination. The same event therefore owns applicant `web_push`, WhatsApp and SMS deliveries. No duplicate decision event is allowed.
+- Applicant push click target must never contain the tracking secret and must not use the obsolete/hash-style `./#/public-registration?requestReference=...` target. Use the real public registration page with the event public id and a non-secret request reference hint. On the original device, the page resolves the matching locally saved tracking capability; on another device it presents the existing recovery flow. The tracking secret remains browser-held and server-verified, never notification-event payload.
+- Service-worker click/read behavior must distinguish authenticated Platform inbox notifications from public applicant notifications. Applicant notifications have no Platform inbox recipient/read row, so clicking them must navigate without attempting `mark_my_notification_read`. The payload needs an explicit audience/interaction contract rather than inferring from URL.
+- Public registration Edge Function gains narrow operations for applicant push configuration/state/upsert/disable. Exact JSON shapes, endpoint/key bounds, origin enforcement, rate limiting and tracking-secret verification are mandatory. No service-role credential or privileged RPC is exposed to the browser.
+- The public page obtains the VAPID public key only through its own public-registration boundary (or another explicitly public configuration response owned by the same boundary), not by weakening the backend-authenticated POST contract of `platform-notifications`.
+- Recovery rotates the tracking capability. Existing applicant push bindings remain request-owned; possession of a newly recovered tracking capability may manage them. Recovery must not silently subscribe the new browser; that browser must explicitly press «أبلغني بالنتيجة».
+- Provider dispatch remains downstream. WhatsApp/SMS use the same `notification_channel_deliveries` lease/retry/mark lifecycle when providers are connected. Email remains unavailable until applicant email becomes a canonical captured field; do not invent or infer email.
+- Decision reason / decided-at provider metadata must be represented provider-neutrally if required for templates; do not recreate a channel-specific payload store.
+- Notification failure never rolls back or repeats a booking decision.
+
+Acceptance gates for the implementation pass:
+1. Anonymous caller without a valid tracking capability cannot read, add, replace or disable an applicant push binding.
+2. Explicit opt-in creates/reuses exactly one active request/endpoint binding and does not alter authenticated Platform push ownership.
+3. Decision creates one canonical event and exactly one `web_push` delivery per active applicant subscription, while preserving phone WhatsApp/SMS fan-out.
+4. Push gateway claims both authenticated and applicant `web_push` destinations through one lease/retry lifecycle; expired applicant endpoints are deactivated in their own authority.
+5. Applicant click opens the real public registration page and never calls Platform inbox read RPC.
+6. Existing 7 migrated Platform push deliveries and current pending external deliveries remain valid through the migration.
+7. No legacy/parallel notification tables/functions/routes remain after cutover.
+8. Focused tests, Reservations integration, zero-data validation and Development Preview guards pass before live browser acceptance.
