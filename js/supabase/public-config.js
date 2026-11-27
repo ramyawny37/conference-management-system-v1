@@ -12,7 +12,8 @@
     publishableKey:
       'sb_publishable_lWUuYqgGiez3RB_Kh5hhyA_PylfyAlC'
   });
-  const IS_DEVELOPMENT=global.location.pathname.includes(DEVELOPMENT_PATH);
+  const pathname=String(global.location&&global.location.pathname||'/');
+  const IS_DEVELOPMENT=pathname.indexOf(DEVELOPMENT_PATH)===0 || pathname.indexOf('/conference-management-system-v1'+DEVELOPMENT_PATH)===0;
 
   global.SUPABASE_RUNTIME_CONFIG=IS_DEVELOPMENT
     ? DEVELOPMENT_CONFIG
