@@ -1,5 +1,5 @@
 -- Read-only exact structural parity gate for a clean, disposable Supabase-compatible target.
--- Structural fingerprints captured from current Development after the canonical Public Registration family approval standalone/conference scope cutover; no data is read or copied.
+-- Structural fingerprints captured from current Development after the canonical notification channel cutover on Development; no data is read or copied.
 -- Run with psql -X -v ON_ERROR_STOP=1 after the full foundation has been applied.
 DO $parity$
 DECLARE mismatches text;
@@ -34,9 +34,9 @@ BEGIN
     UNION ALL SELECT 'policies',count(*),md5(coalesce(string_agg(item,E'\n' ORDER BY item),'')) FROM policies
   ), expected(kind,objects,digest) AS (
     VALUES
-    ('relations',99::bigint,'1b9865232922d1aba1c4b2b5486be838'),
-    ('columns',1250::bigint,'0cb027c2dcd7c773b7d88be28f20737e'),
-    ('functions',314::bigint,'09738c52158253c992d96c05bcb57689'),
+    ('relations',99::bigint,'863eefacd663716b8d10635df2687683'),
+    ('columns',1247::bigint,'11bbd4b64d4cc8499065c5cdd340255a'),
+    ('functions',314::bigint,'40adbd69b2856d983c865e1ec7d788f2'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
