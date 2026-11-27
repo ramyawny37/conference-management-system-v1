@@ -10,6 +10,20 @@ test('public registration script is valid executable JavaScript',()=>{
   assert.doesNotThrow(()=>new vm.Script(js,{filename:'public-registration.js'}));
 });
 
+test('public experience carries the participant-facing mission identity and event journey',()=>{
+  assert.match(html,/إرسالية اصنع فرق/);
+  assert.match(html,/لِوَقْتٍ مِثْلِ هَذَا/);
+  assert.doesNotMatch(html,/نظام إدارة المؤتمرات/);
+  assert.match(js,/أهلاً بيك في بيتك/);
+  assert.match(js,/بياناتك/);
+  assert.match(js,/الأسرة/);
+  assert.match(js,/الاشتراك/);
+  assert.match(js,/المراجعة/);
+  assert.match(js,/e\.name/);
+  assert.match(js,/e\.startDate/);
+  assert.match(js,/e\.location/);
+});
+
 test('public page is isolated from authenticated platform shell',()=>{
   assert.match(html,/public-registration\.js/);
   assert.doesNotMatch(html,/script\.js|reservations-module\.js|device-session/);
@@ -94,8 +108,8 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-    assert.match(html,/public-registration\.css\?rev=public-registration-v2/);
-  assert.match(html,/public-registration\.js\?rev=public-registration-v2/);
+    assert.match(html,/public-registration\.css\?rev=public-experience-v1/);
+  assert.match(html,/public-registration\.js\?rev=public-experience-v1/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
