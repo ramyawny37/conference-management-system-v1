@@ -79,6 +79,12 @@
       var hash=String(location&&location.hash||'');
       return hash.indexOf('#/')===0?normalizeLogicalRoute(hash.slice(1)):'/';
     },
+    getLogicalQueryParam:function(name){
+      name=String(name||'').trim();
+      if(!name)return null;
+      var route=this.getLogicalPathname(),queryIndex=route.indexOf('?');
+      return queryIndex<0?null:new URLSearchParams(route.slice(queryIndex+1)).get(name);
+    },
     logicalPathname:logicalPathname,
     getConferenceRoute:getConferenceRoute,
     resolveConferenceTabRoute:resolveConferenceTabRoute,

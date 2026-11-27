@@ -48,3 +48,11 @@ test('canonical Conference routes map every application tab bidirectionally',()=
   assert.strictEqual(routing.getConferenceRoute('/warehouse'),null);
   assert.strictEqual(routing.getConferenceRoute('/conference/app/unknown').kind,'invalid');
 });
+
+
+test('logical query parameters have one canonical routing owner',()=>{
+  const routing=runtime('/preview/','/preview/','#/reservations/registration-requests?eventId=event-1&requestId=request-1');
+  assert.strictEqual(routing.getLogicalQueryParam('eventId'),'event-1');
+  assert.strictEqual(routing.getLogicalQueryParam('requestId'),'request-1');
+  assert.strictEqual(routing.getLogicalQueryParam('missing'),null);
+});

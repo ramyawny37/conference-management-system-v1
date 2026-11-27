@@ -14,3 +14,6 @@ assert.ok(pwa.includes("closePlatformNotificationPanel();markPlatformNotificatio
 assert.ok(pwa.includes("setAttribute('aria-expanded','false')"));
 assert.ok(legacy.includes("'./#/reservations/events/'||new.event_id::text||'?tab=registration'"));
 console.log('platform notification canonical requests route: PASS');
+
+assert.ok(pwa.includes("result.read!==true"));
+assert.ok(pwa.includes("PLATFORM_NOTIFICATION_READ_NOT_APPLIED"));
