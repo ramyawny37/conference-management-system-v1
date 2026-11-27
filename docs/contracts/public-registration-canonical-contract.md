@@ -504,8 +504,12 @@ Acceptance gates for the implementation pass:
 8. Focused tests, Reservations integration, zero-data validation and Development Preview guards pass before live browser acceptance.
 
 
-### 2026-11-27 — authenticated Platform Browser Push click ownership cleanup
-- The durable Platform inbox remains the sole owner of authenticated notification read state. mark_my_notification_read is invoked from the inbox item interaction, not from Browser Push navigation.
-- Browser Push remains a delivery channel and notification click remains canonical deep-link navigation only. It must not append platformNotificationId, post a parallel click/read message, retry inbox reads, or mutate inbox read state.
-- The stopped push-click/read experiment is retired rather than maintained beside the canonical inbox lifecycle. Service-worker scope isolation remains required when reusing an existing window.
-- Applicant Browser Push remains deferred and must use its explicit audience contract; it must not reuse Platform inbox read semantics.
+### 2026-11-27 — authenticated Platform Browser Push click ownership closure
+- The durable Platform inbox remains the sole owner of authenticated notification read state. Both bell-item opening and Browser Push opening converge on the same protected `mark_my_notification_read` operation; no Service Worker database mutation or second read writer exists.
+- The canonical Web Push delivery payload carries the exact notification event identity and a transient `notificationOpen` receipt in the deep-link URL. Receipt ownership is established at the server delivery boundary so an older active Service Worker cannot lose notification identity.
+- The Service Worker remains navigation-only: it opens/focuses the scoped client using the server-provided URL. It does not append notification identity, post a parallel click/read message, retry reads, or mutate inbox state.
+- The authenticated Platform shell consumes `notificationOpen` through the same inbox refresh path after session/device authorization is ready, marks the durable recipient read, removes only the transient receipt, and refreshes the unread count. Existing-client navigation consumes on foreground/focus/hash navigation, so a manual page refresh is not required.
+- The stopped `platformNotificationId` / `platformNotificationClick` / pending-click retry experiment remains retired. Service-worker scope isolation remains required when reusing an existing window.
+- Registration-request close owns route cleanup: it replaces the logical route with the selected `eventId` and removes `requestId`, so refresh cannot reopen the closed request. Entering the global requests workspace may legitimately have no `eventId`; this is not a second route.
+- Live Development acceptance: exact Platform Preview SHA `bd1e7b7994a06d32dba0e8376abd7ac243c0bde4`, Preview run `46028751100` PASS. A fresh Chrome Web Push opened the linked request, decremented the bell unread count immediately without manual refresh, and Development recorded `read_at` for notification event `f626ed7f-2e0d-40e0-92c3-035c69a89bf3`.
+- Applicant Browser Push remains deferred and must use its explicit audience contract; it has no Platform recipient/read row and must not reuse Platform inbox read semantics.
