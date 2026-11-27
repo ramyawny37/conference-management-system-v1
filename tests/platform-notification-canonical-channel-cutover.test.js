@@ -1,5 +1,7 @@
 const fs=require('fs'),assert=require('assert');
 const m=fs.readFileSync('supabase/migrations/20261127130000_platform_notification_canonical_channel_cutover.sql','utf8');
+const self=fs.readFileSync(__filename,'utf8');
+assert.doesNotMatch(self,/\\\\nassert/);
 assert.match(m,/create table platform\.notification_destinations/);
 assert.match(m,/create table platform\.notification_channel_deliveries/);
 assert.match(m,/push_subscription_id uuid references platform\.notification_push_subscriptions\(id\) on delete restrict/);
@@ -13,7 +15,8 @@ assert.match(m,/create or replace function platform\.notification_gateway/);
 assert.match(m,/from platform\.notification_channel_deliveries d\s+join platform\.notification_destinations nd/);
 assert.match(m,/d\.channel='web_push'/);
 assert.match(m,/lease_token=lease/);
-assert.match(m,/PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID/);\nassert.doesNotMatch(m,/d\\.created_at/);
+assert.match(m,/PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID/);
+assert.doesNotMatch(m,/d\.created_at/);
 assert.match(m,/stage_public_registration_decision_notification/);
 assert.match(m,/values\(v_event_id,v_destination_id,'whatsapp'\),\(v_event_id,v_destination_id,'sms'\)/);
 assert.match(m,/drop trigger public_registration_decision_external_notification/);
