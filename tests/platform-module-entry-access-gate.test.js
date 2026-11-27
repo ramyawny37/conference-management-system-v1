@@ -10,8 +10,10 @@ const migration=fs.readFileSync('supabase/migration-archive/development-pre-cano
 const script=fs.readFileSync('script.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 const reservationsBundle=fs.readFileSync('modules/reservations/reservations-module.js','utf8');
-const reservationsRevision='registration-notification-deeplink-v1';
 
 function runtime(initialRoute,denyModule){
   let route=initialRoute;
