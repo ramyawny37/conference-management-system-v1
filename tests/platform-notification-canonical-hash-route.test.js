@@ -17,7 +17,7 @@ console.log('platform notification canonical requests route: PASS');
 
 const worker=fs.readFileSync('service-worker.js','utf8');
 assert.ok(worker.includes("new URL(rawUrl,self.registration.scope)"));
-assert.ok(!worker.includes("platformNotificationId"));
+assert.ok(!worker.includes("platformNotificationId"));assert.ok(worker.includes("notificationOpen"));
 assert.ok(!worker.includes("platformNotificationClick"));
 assert.ok(!pwa.includes("consumePlatformNotificationClick"));
-assert.ok(!pwa.includes("pendingPlatformNotificationClickId"));
+assert.ok(!pwa.includes("pendingPlatformNotificationClickId"));assert.ok(pwa.includes("consumePlatformNotificationOpen"));

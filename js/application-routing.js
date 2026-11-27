@@ -84,7 +84,7 @@
       if(!name)return null;
       var route=this.getLogicalPathname(),queryIndex=route.indexOf('?');
       if(queryIndex<0)return null;var query=route.slice(queryIndex+1).split('&');for(var i=0;i<query.length;i++){var pair=query[i].split('='),key=decodeURIComponent(pair.shift()||'');if(key===name)return decodeURIComponent(pair.join('=')||'');}return null;
-    },
+    },removeLogicalQueryParam:function(name){var hash=String(global.location&&global.location.hash||'');if(hash.indexOf('#/')!==0)return false;var route=hash.slice(1),queryIndex=route.indexOf('?');if(queryIndex<0)return false;var key=encodeURIComponent(String(name||'')),parts=route.slice(queryIndex+1).split('&').filter(Boolean),kept=parts.filter(function(part){return part.split('=')[0]!==key;});if(kept.length===parts.length)return false;var next=route.slice(0,queryIndex)+(kept.length?'?'+kept.join('&'):'');if(global.history&&typeof global.history.replaceState==='function')global.history.replaceState(null,'',resolveLogicalRoute(next));return true;},
     logicalPathname:logicalPathname,
     getConferenceRoute:getConferenceRoute,
     resolveConferenceTabRoute:resolveConferenceTabRoute,

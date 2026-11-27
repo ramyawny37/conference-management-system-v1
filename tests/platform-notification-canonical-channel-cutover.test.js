@@ -23,3 +23,5 @@ assert.match(m,/drop table platform\.notification_external_outbox/);
 assert.match(m,/drop table platform\.notification_deliveries/);
 assert.doesNotMatch(m,/create table platform\.notification_external_outbox/);
 console.log('platform notification canonical channel cutover: PASS');
+
+const receipt=fs.readFileSync('supabase/migrations/20261127143000_platform_notification_push_open_receipt.sql','utf8');assert.match(receipt,/'notificationEventId',e\.id/);console.log('platform notification push open receipt: PASS');

@@ -1,0 +1,22 @@
+begin;
+create or replace function platform.notification_gateway(p_operation text,p_args jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $function$
+declare result jsonb; delivery_id uuid; status_value text; lease uuid;
+begin
+  if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501'; end if;
+  if p_operation='enqueue' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['eventType','moduleKey','resourceType','resourceId','scopeType','scopeId','title','body','targetUrl','dedupeKey']);
+    return platform_private.enqueue_notification(p_args->>'eventType',p_args->>'moduleKey',p_args->>'resourceType',p_args->>'resourceId',p_args->>'scopeType',p_args->>'scopeId',p_args->>'title',p_args->>'body',p_args->>'targetUrl',p_args->>'dedupeKey');
+  elsif p_operation='claim' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['limit']); lease:=extensions.gen_random_uuid();
+    with candidates as(select d.id from platform.notification_channel_deliveries d join platform.notification_destinations nd on nd.id=d.destination_id join platform.notification_push_subscriptions s on s.id=nd.push_subscription_id join platform.notification_events e on e.id=d.notification_event_id where d.channel='web_push' and nd.destination_kind='push_subscription' and d.status in('pending','failed') and d.attempt_count<5 and(d.next_attempt_at is null or d.next_attempt_at<=statement_timestamp()) and(d.lease_expires_at is null or d.lease_expires_at<=statement_timestamp()) and platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.scope_type,e.scope_id) order by d.notification_event_id,d.id for update of d skip locked limit least(greatest((p_args->>'limit')::int,1),100)), claimed as(update platform.notification_channel_deliveries d set lease_token=lease,lease_expires_at=statement_timestamp()+interval '2 minutes' from candidates c where d.id=c.id returning d.*)
+    select coalesce(jsonb_agg(jsonb_build_object('deliveryId',d.id,'leaseToken',d.lease_token,'notificationEventId',e.id,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type) order by e.created_at,d.id),'[]'::jsonb) into result from claimed d join platform.notification_destinations nd on nd.id=d.destination_id join platform.notification_push_subscriptions s on s.id=nd.push_subscription_id join platform.notification_events e on e.id=d.notification_event_id; return result;
+  elsif p_operation='mark' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['deliveryId','leaseToken','status','errorCode']); delivery_id:=(p_args->>'deliveryId')::uuid; lease:=(p_args->>'leaseToken')::uuid; status_value:=p_args->>'status'; if status_value not in('sent','failed','expired') then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_STATUS_INVALID' using errcode='22023'; end if;
+    update platform.notification_channel_deliveries set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),last_error_code=nullif(p_args->>'errorCode',''),delivered_at=case when status_value='sent' then statement_timestamp() else delivered_at end,next_attempt_at=case when status_value='failed' then statement_timestamp()+make_interval(secs=>least(1800,30*(2^least(attempt_count,6)))) else null end,lease_token=null,lease_expires_at=null where id=delivery_id and channel='web_push' and lease_token=lease and lease_expires_at>statement_timestamp(); if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID' using errcode='42501'; end if;
+    if status_value='expired' then update platform.notification_push_subscriptions s set active=false,updated_at=statement_timestamp() from platform.notification_channel_deliveries d join platform.notification_destinations nd on nd.id=d.destination_id where d.id=delivery_id and d.channel='web_push' and nd.destination_kind='push_subscription' and s.id=nd.push_subscription_id and s.active; end if; return jsonb_build_object('deliveryId',delivery_id,'status',status_value);
+  else raise exception 'PLATFORM_NOTIFICATION_OPERATION_NOT_ALLOWED' using errcode='42501'; end if;
+end
+$function$;
+revoke all on function platform.notification_gateway(text,jsonb) from public,anon,authenticated; grant execute on function platform.notification_gateway(text,jsonb) to service_role;
+commit;
