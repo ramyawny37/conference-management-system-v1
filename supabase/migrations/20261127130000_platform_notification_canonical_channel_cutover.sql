@@ -5,7 +5,7 @@ create table platform.notification_destinations(
   notification_event_id uuid not null references platform.notification_events(id) on delete cascade,
   destination_kind text not null check(destination_kind in('push_subscription','phone','email')),
   user_id uuid references platform.profiles(user_id) on delete cascade,
-  push_subscription_id uuid references platform.notification_push_subscriptions(id) on delete cascade,
+  push_subscription_id uuid references platform.notification_push_subscriptions(id) on delete restrict,
   destination text,
   created_at timestamptz not null default statement_timestamp(),
   check(
