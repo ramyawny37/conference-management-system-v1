@@ -39,9 +39,10 @@ function runtimeConfig(pathname){
   return window.SUPABASE_RUNTIME_CONFIG;
 }
 
-test('shared public config selects only the exact preview environment',()=>{
+test('shared public config selects the same canonical preview paths as browser storage namespace',()=>{
   assert.match(runtimeConfig('/conference-management-system-v1/').url,/mpezfbvcdfxpgflehuot/);
   assert.match(runtimeConfig('/conference-management-system-development-preview/').url,/gppwltrifgfxrkzvvxoe/);
+  assert.match(runtimeConfig('/conference-management-system-v1/conference-management-system-development-preview/').url,/gppwltrifgfxrkzvvxoe/);
   assert.match(runtimeConfig('/arbitrary-hosted-path/').url,/mpezfbvcdfxpgflehuot/);
 });
 
