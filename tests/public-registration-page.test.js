@@ -120,4 +120,4 @@ test('server migration makes governorate authoritative and preserves guardian sh
  assert.doesNotMatch(migration,/participants_governorate_check/);
 });
 
-test('submission and tracking UX do not require retaining a private link',()=>{assert.match(js,/يمكنك متابعة حالة الطلب من نفس رابط التسجيل العام على هذا الجهاز/);assert.match(js,/لا تحتاج للاحتفاظ برابط خاص/);assert.match(js,/من جهاز آخر يمكنك استرجاع الطلب بالاسم ورقم الهاتف \/ واتساب وتاريخ الميلاد/);assert.doesNotMatch(js,/احتفظ بهذا الرابط لمتابعة حالة الطلب/);});
+test('submission success reassures applicant and offers status notification without private-link dependency',()=>{assert.match(js,/طلبك وصل إلينا وهو الآن قيد المراجعة/);assert.match(js,/لا تحتاج إلى إعادة التسجيل أو عمل أي إجراء آخر الآن/);assert.match(js,/أبلغني عند تحديث حالة الطلب/);assert.match(js,/لا تحتاج للاحتفاظ برابط خاص/);assert.match(js,/من جهاز آخر يمكنك استرجاع الطلب بالاسم ورقم الهاتف \/ واتساب وتاريخ الميلاد/);assert.doesNotMatch(js,/احتفظ بهذا الرابط لمتابعة حالة الطلب/);});
