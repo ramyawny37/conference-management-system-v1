@@ -809,3 +809,11 @@ The internal notification system is not declared CLOSED until all of the followi
 - Development governorate correction migrations 20261126194500 and 20261126200000 retain participant constraints and provide audited request correction; historical missing values must not be invented.
 - Same-route request retargeting and review scrolling are included in the published artifact. Browser acceptance remains pending. Previous delivery evidence reported sent=1, failed=0 for PR-99A23643E065; this is not proof of visible Chrome notification presentation.
 - INTERNAL NOTIFICATION SYSTEM remains OPEN pending live browser acceptance and final push diagnosis. External delivery deferred. No Production changes.
+
+### 2026-11-27 — Exact artifact transfer and Preview deployment
+
+- Reservations source `8bed56ff57504f9dde8ea6a4b42d2ae6af4f98b9`; CI 45885259819 and validation 45885259898 PASS; artifact 15148628642.
+- Preflight 45990787590 PASS; Platform successor `b1b7aa0e4d5313a0cc16b63e5c583f47ca5e2c09`; validations 45990787594 and 45990809521 PASS.
+- Policy revision `source-8bed56ff5750`, approvedIntegrations empty; CSS and contract hashes unchanged.
+- Preview 45991166358 build and deploy PASS including provenance and Development guards. Independent public manifest retrieval unavailable; live browser acceptance pending.
+- No Production or database changes. Internal notification closure remains pending live acceptance. Documentation-only successor; runtime unchanged.
