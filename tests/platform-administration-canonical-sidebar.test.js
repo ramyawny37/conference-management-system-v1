@@ -10,6 +10,9 @@ const styles=fs.readFileSync('style.css','utf8');
 const integration=fs.readFileSync('js/platform-integration.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('service-worker.js','utf8');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 
 function runtime(route){
   const calls=[];
@@ -87,7 +90,7 @@ test('Development PWA serves the same revisioned canonical administration visibi
   const asset='style.css?rev=conference-state-ownership-v19';
   assert.ok(index.includes(asset),'HTML must request revised workspace stylesheet');
   assert.ok(worker.includes("'./"+asset+"'"),'service worker must precache the revised stylesheet');
-  assert.match(worker,/development-registration-notification-deeplink-v1-design-foundation-v1/);
+  assert.ok(worker.includes(developmentCacheRevision));
 });
 
 
