@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict wgKNcnEfqdMMLMCjrpI3MmjoV5N0Vh3KnxZcBBBP7xirdoDDy2ebavNhjAEFicj
+\restrict vOZJimtw6kGoPL6WsLKuBCDEphM9Tutvwd8uVnlpSNP2dhjvmQOCWD92Ewp17Av
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -1318,20 +1318,68 @@ $$;
 CREATE FUNCTION "platform"."notification_gateway"("p_operation" "text", "p_args" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare result jsonb;delivery_id uuid;status_value text;lease uuid;begin
- if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501';end if;
- if p_operation='enqueue' then perform platform_private.require_exact_jsonb_keys(p_args,array['eventType','moduleKey','resourceType','resourceId','scopeType','scopeId','title','body','targetUrl','dedupeKey']);return platform_private.enqueue_notification(p_args->>'eventType',p_args->>'moduleKey',p_args->>'resourceType',p_args->>'resourceId',p_args->>'scopeType',p_args->>'scopeId',p_args->>'title',p_args->>'body',p_args->>'targetUrl',p_args->>'dedupeKey');
- elsif p_operation='claim' then
-  perform platform_private.require_exact_jsonb_keys(p_args,array['limit']);lease:=extensions.gen_random_uuid();
-  with candidates as(select d.id from platform.notification_deliveries d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id where d.status in('pending','failed') and d.attempt_count<5 and (d.next_attempt_at is null or d.next_attempt_at<=statement_timestamp()) and(d.lease_expires_at is null or d.lease_expires_at<=statement_timestamp())and platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.scope_type,e.scope_id) order by d.notification_event_id,d.id for update of d skip locked limit least(greatest((p_args->>'limit')::int,1),100)),claimed as(update platform.notification_deliveries d set lease_token=lease,lease_expires_at=statement_timestamp()+interval '2 minutes' from candidates c where d.id=c.id returning d.*)select coalesce(jsonb_agg(jsonb_build_object('deliveryId',d.id,'leaseToken',d.lease_token,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type)order by e.created_at,d.id),'[]'::jsonb)into result from claimed d join platform.notification_push_subscriptions s on s.id=d.subscription_id join platform.notification_events e on e.id=d.notification_event_id;return result;
- elsif p_operation='mark' then
-  perform platform_private.require_exact_jsonb_keys(p_args,array['deliveryId','leaseToken','status','errorCode']);delivery_id:=(p_args->>'deliveryId')::uuid;lease:=(p_args->>'leaseToken')::uuid;status_value:=p_args->>'status';if status_value not in('sent','failed','expired')then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_STATUS_INVALID' using errcode='22023';end if;
-  update platform.notification_deliveries set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),last_error_code=nullif(p_args->>'errorCode',''),delivered_at=case when status_value='sent' then statement_timestamp()else delivered_at end,next_attempt_at=case when status_value='failed' then statement_timestamp()+make_interval(secs=>least(1800,30*(2^least(attempt_count,6)))) else null end,lease_token=null,lease_expires_at=null where id=delivery_id and lease_token=lease and lease_expires_at>statement_timestamp();
-  if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID' using errcode='42501';end if;
-  if status_value='expired' then update platform.notification_push_subscriptions s set active=false,updated_at=statement_timestamp() from platform.notification_deliveries d where d.id=delivery_id and s.id=d.subscription_id and s.active;end if;
-  return jsonb_build_object('deliveryId',delivery_id,'status',status_value);
- else raise exception 'PLATFORM_NOTIFICATION_OPERATION_NOT_ALLOWED' using errcode='42501';end if;
-end$$;
+    AS $$
+declare result jsonb; delivery_id uuid; status_value text; lease uuid;
+begin
+  if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'PLATFORM_NOTIFICATION_BACKEND_REQUIRED' using errcode='42501'; end if;
+  if p_operation='enqueue' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['eventType','moduleKey','resourceType','resourceId','scopeType','scopeId','title','body','targetUrl','dedupeKey']);
+    return platform_private.enqueue_notification(p_args->>'eventType',p_args->>'moduleKey',p_args->>'resourceType',p_args->>'resourceId',p_args->>'scopeType',p_args->>'scopeId',p_args->>'title',p_args->>'body',p_args->>'targetUrl',p_args->>'dedupeKey');
+  elsif p_operation='claim' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['limit']);
+    lease:=extensions.gen_random_uuid();
+    with candidates as(
+      select d.id
+      from platform.notification_channel_deliveries d
+      join platform.notification_destinations nd on nd.id=d.destination_id
+      join platform.notification_push_subscriptions s on s.id=nd.push_subscription_id
+      join platform.notification_events e on e.id=d.notification_event_id
+      where d.channel='web_push' and nd.destination_kind='push_subscription'
+        and d.status in('pending','failed') and d.attempt_count<5
+        and(d.next_attempt_at is null or d.next_attempt_at<=statement_timestamp())
+        and(d.lease_expires_at is null or d.lease_expires_at<=statement_timestamp())
+        and platform_private.notification_subscription_is_authorized(s.id,e.module_key,e.scope_type,e.scope_id)
+      order by d.notification_event_id,d.id
+      for update of d skip locked
+      limit least(greatest((p_args->>'limit')::int,1),100)
+    ), claimed as(
+      update platform.notification_channel_deliveries d
+      set lease_token=lease,lease_expires_at=statement_timestamp()+interval '2 minutes'
+      from candidates c where d.id=c.id returning d.*
+    )
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'deliveryId',d.id,'leaseToken',d.lease_token,'endpoint',s.endpoint,'p256dh',s.p256dh,'auth',s.auth_secret,
+      'title',e.title,'body',e.body,'targetUrl',e.target_url,'eventType',e.event_type
+    ) order by e.created_at,d.id),'[]'::jsonb) into result
+    from claimed d
+    join platform.notification_destinations nd on nd.id=d.destination_id
+    join platform.notification_push_subscriptions s on s.id=nd.push_subscription_id
+    join platform.notification_events e on e.id=d.notification_event_id;
+    return result;
+  elsif p_operation='mark' then
+    perform platform_private.require_exact_jsonb_keys(p_args,array['deliveryId','leaseToken','status','errorCode']);
+    delivery_id:=(p_args->>'deliveryId')::uuid; lease:=(p_args->>'leaseToken')::uuid; status_value:=p_args->>'status';
+    if status_value not in('sent','failed','expired') then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_STATUS_INVALID' using errcode='22023'; end if;
+    update platform.notification_channel_deliveries
+    set status=status_value,attempt_count=attempt_count+1,last_attempt_at=statement_timestamp(),
+      last_error_code=nullif(p_args->>'errorCode',''),
+      delivered_at=case when status_value='sent' then statement_timestamp() else delivered_at end,
+      next_attempt_at=case when status_value='failed' then statement_timestamp()+make_interval(secs=>least(1800,30*(2^least(attempt_count,6)))) else null end,
+      lease_token=null,lease_expires_at=null
+    where id=delivery_id and channel='web_push' and lease_token=lease and lease_expires_at>statement_timestamp();
+    if not found then raise exception 'PLATFORM_NOTIFICATION_DELIVERY_LEASE_INVALID' using errcode='42501'; end if;
+    if status_value='expired' then
+      update platform.notification_push_subscriptions s set active=false,updated_at=statement_timestamp()
+      from platform.notification_channel_deliveries d
+      join platform.notification_destinations nd on nd.id=d.destination_id
+      where d.id=delivery_id and d.channel='web_push' and nd.destination_kind='push_subscription' and s.id=nd.push_subscription_id and s.active;
+    end if;
+    return jsonb_build_object('deliveryId',delivery_id,'status',status_value);
+  else
+    raise exception 'PLATFORM_NOTIFICATION_OPERATION_NOT_ALLOWED' using errcode='42501';
+  end if;
+end
+$$;
 
 
 --
@@ -2393,7 +2441,55 @@ CREATE FUNCTION "platform_private"."enqueue_notification"("p_event_type" "text",
 CREATE FUNCTION "platform_private"."enqueue_notification_core"("p_event_type" "text", "p_module_key" "text", "p_resource_type" "text", "p_resource_id" "text", "p_scope_type" "text", "p_scope_id" "text", "p_title" "text", "p_body" "text", "p_target_url" "text", "p_dedupe_key" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $_$declare event_id uuid;inserted boolean:=false;delivery_count integer;recipient_count integer;begin if p_module_key not in('conference','reservations','warehouse','platform') or p_event_type !~ '^[a-z0-9_.-]{3,120}$' or p_resource_type !~ '^[a-z0-9_.-]{1,80}$' or ((p_scope_type is null)<>(p_scope_id is null)) or (p_scope_type is not null and p_scope_type !~ '^[a-z0-9_.-]{1,80}$') or (p_module_key='reservations' and (p_scope_type is distinct from 'event' or p_scope_id is null)) or char_length(coalesce(p_title,'')) not between 1 and 160 or char_length(coalesce(p_body,'')) not between 1 and 500 or char_length(coalesce(p_target_url,'')) not between 1 and 1000 or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240 then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023';end if;insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)on conflict(dedupe_key)do nothing returning id into event_id;if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key;else inserted:=true;end if;insert into platform.notification_recipients(notification_event_id,user_id)select event_id,pr.user_id from platform.profiles pr where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_scope_type,p_scope_id)on conflict do nothing;get diagnostics recipient_count=row_count;insert into platform.notification_deliveries(notification_event_id,subscription_id)select event_id,s.id from platform.notification_push_subscriptions s join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)on conflict(notification_event_id,subscription_id)do nothing;get diagnostics delivery_count=row_count;return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);end$_$;
+    AS $_$
+declare
+  event_id uuid;
+  inserted boolean:=false;
+  delivery_count integer;
+  recipient_count integer;
+begin
+  if p_module_key not in('conference','reservations','warehouse','platform')
+    or p_event_type !~ '^[a-z0-9_.-]{3,120}$'
+    or p_resource_type !~ '^[a-z0-9_.-]{1,80}$'
+    or ((p_scope_type is null)<>(p_scope_id is null))
+    or (p_scope_type is not null and p_scope_type !~ '^[a-z0-9_.-]{1,80}$')
+    or (p_module_key='reservations' and (p_scope_type is distinct from 'event' or p_scope_id is null))
+    or char_length(coalesce(p_title,'')) not between 1 and 160
+    or char_length(coalesce(p_body,'')) not between 1 and 500
+    or char_length(coalesce(p_target_url,'')) not between 1 and 1000
+    or char_length(coalesce(p_dedupe_key,'')) not between 1 and 240
+  then raise exception 'PLATFORM_NOTIFICATION_EVENT_INVALID' using errcode='22023'; end if;
+
+  insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)
+  values(p_event_type,p_module_key,p_resource_type,p_resource_id,p_scope_type,p_scope_id,p_title,p_body,p_target_url,p_dedupe_key)
+  on conflict(dedupe_key) do nothing returning id into event_id;
+  if event_id is null then select id into event_id from platform.notification_events where dedupe_key=p_dedupe_key; else inserted:=true; end if;
+
+  insert into platform.notification_recipients(notification_event_id,user_id)
+  select event_id,pr.user_id from platform.profiles pr
+  where platform_private.notification_user_is_authorized(pr.user_id,p_module_key,p_scope_type,p_scope_id)
+  on conflict do nothing;
+  get diagnostics recipient_count=row_count;
+
+  insert into platform.notification_destinations(notification_event_id,destination_kind,user_id,push_subscription_id)
+  select event_id,'push_subscription',s.user_id,s.id
+  from platform.notification_push_subscriptions s
+  join platform.notification_recipients r on r.notification_event_id=event_id and r.user_id=s.user_id
+  where platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)
+  on conflict do nothing;
+
+  insert into platform.notification_channel_deliveries(notification_event_id,destination_id,channel)
+  select event_id,d.id,'web_push'
+  from platform.notification_destinations d
+  join platform.notification_push_subscriptions s on s.id=d.push_subscription_id
+  where d.notification_event_id=event_id and d.destination_kind='push_subscription'
+    and platform_private.notification_subscription_is_authorized(s.id,p_module_key,p_scope_type,p_scope_id)
+  on conflict do nothing;
+  get diagnostics delivery_count=row_count;
+
+  return jsonb_build_object('notificationEventId',event_id,'created',inserted,'recipients',recipient_count,'queuedDeliveries',delivery_count);
+end
+$_$;
 
 
 --
@@ -3877,20 +3973,32 @@ begin new.updated_at:=pg_catalog.now(); return new; end; $$;
 
 
 --
--- Name: stage_public_registration_decision_external_notification(); Type: FUNCTION; Schema: platform_private; Owner: -
+-- Name: stage_public_registration_decision_notification(); Type: FUNCTION; Schema: platform_private; Owner: -
 --
 
-CREATE FUNCTION "platform_private"."stage_public_registration_decision_external_notification"() RETURNS "trigger"
+CREATE FUNCTION "platform_private"."stage_public_registration_decision_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$begin
- if new.state in('approved','rejected','waitlisted') and new.state is distinct from old.state then
-  insert into platform.notification_external_outbox(event_type,module_key,resource_type,resource_id,scope_type,scope_id,destination_kind,destination,channels,payload,dedupe_key)
-  values('public_registration.decision','reservations','public_registration_request',new.request_reference,'event',new.event_id::text,'phone',new.submitted_phone,array['whatsapp','sms']::text[],jsonb_build_object('requestReference',new.request_reference,'state',new.state,'decisionReason',new.decision_reason,'decidedAt',new.decided_at),'public-registration-decision:'||new.id::text||':'||new.revision::text)
-  on conflict(dedupe_key) do nothing;
- end if;
- return new;
-end$$;
+    AS $$
+declare v_event_id uuid; v_title text; v_body text; v_target text; v_dedupe text; v_destination_id uuid;
+begin
+  if new.state not in('approved','rejected','waitlisted') or new.state is not distinct from old.state then return new; end if;
+  v_title:=case new.state when 'approved' then 'تم اعتماد طلب التسجيل' when 'rejected' then 'تم رفض طلب التسجيل' else 'تم وضع طلب التسجيل في قائمة الانتظار' end;
+  v_body:=case new.state when 'approved' then 'تم اعتماد طلب التسجيل الخاص بك.' when 'rejected' then 'تم رفض طلب التسجيل الخاص بك.' else 'تم وضع طلب التسجيل الخاص بك في قائمة الانتظار.' end;
+  v_target:='./#/public-registration?requestReference='||new.request_reference;
+  v_dedupe:='public-registration-decision:'||new.id::text||':'||new.revision::text;
+  insert into platform.notification_events(event_type,module_key,resource_type,resource_id,scope_type,scope_id,title,body,target_url,dedupe_key)
+  values('public_registration.decision','reservations','public_registration_request',new.id::text,'event',new.event_id::text,v_title,v_body,v_target,v_dedupe)
+  on conflict(dedupe_key) do update set dedupe_key=excluded.dedupe_key returning id into v_event_id;
+  insert into platform.notification_destinations(notification_event_id,destination_kind,destination)
+  values(v_event_id,'phone',new.submitted_phone) on conflict do nothing;
+  select id into v_destination_id from platform.notification_destinations
+  where notification_event_id=v_event_id and destination_kind='phone' and destination=new.submitted_phone;
+  insert into platform.notification_channel_deliveries(notification_event_id,destination_id,channel)
+  values(v_event_id,v_destination_id,'whatsapp'),(v_event_id,v_destination_id,'sms') on conflict do nothing;
+  return new;
+end
+$$;
 
 
 --
@@ -11311,26 +11419,50 @@ CREATE TABLE "platform"."devices" (
 
 
 --
--- Name: notification_deliveries; Type: TABLE; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE "platform"."notification_deliveries" (
+CREATE TABLE "platform"."notification_channel_deliveries" (
     "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
     "notification_event_id" "uuid" NOT NULL,
-    "subscription_id" "uuid" NOT NULL,
+    "destination_id" "uuid" NOT NULL,
+    "channel" "text" NOT NULL,
     "status" "text" DEFAULT 'pending'::"text" NOT NULL,
     "attempt_count" integer DEFAULT 0 NOT NULL,
-    "last_attempt_at" timestamp with time zone,
-    "last_error_code" "text",
-    "delivered_at" timestamp with time zone,
     "lease_token" "uuid",
     "lease_expires_at" timestamp with time zone,
     "next_attempt_at" timestamp with time zone,
-    CONSTRAINT "notification_deliveries_attempt_count_check" CHECK (("attempt_count" >= 0)),
-    CONSTRAINT "notification_deliveries_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'sent'::"text", 'failed'::"text", 'expired'::"text"])))
+    "last_attempt_at" timestamp with time zone,
+    "delivered_at" timestamp with time zone,
+    "last_error_code" "text",
+    "provider_message_id" "text",
+    "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    CONSTRAINT "notification_channel_deliveries_attempt_count_check" CHECK (("attempt_count" >= 0)),
+    CONSTRAINT "notification_channel_deliveries_channel_check" CHECK (("channel" = ANY (ARRAY['web_push'::"text", 'whatsapp'::"text", 'sms'::"text", 'email'::"text"]))),
+    CONSTRAINT "notification_channel_deliveries_check" CHECK ((("lease_token" IS NULL) = ("lease_expires_at" IS NULL))),
+    CONSTRAINT "notification_channel_deliveries_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'sent'::"text", 'failed'::"text", 'expired'::"text"])))
 );
 
-ALTER TABLE ONLY "platform"."notification_deliveries" FORCE ROW LEVEL SECURITY;
+ALTER TABLE ONLY "platform"."notification_channel_deliveries" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: notification_destinations; Type: TABLE; Schema: platform; Owner: -
+--
+
+CREATE TABLE "platform"."notification_destinations" (
+    "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
+    "notification_event_id" "uuid" NOT NULL,
+    "destination_kind" "text" NOT NULL,
+    "user_id" "uuid",
+    "push_subscription_id" "uuid",
+    "destination" "text",
+    "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
+    CONSTRAINT "notification_destinations_check" CHECK (((("destination_kind" = 'push_subscription'::"text") AND ("user_id" IS NOT NULL) AND ("push_subscription_id" IS NOT NULL) AND ("destination" IS NULL)) OR (("destination_kind" = ANY (ARRAY['phone'::"text", 'email'::"text"])) AND ("user_id" IS NULL) AND ("push_subscription_id" IS NULL) AND ("destination" IS NOT NULL) AND (("char_length"("destination") >= 3) AND ("char_length"("destination") <= 320))))),
+    CONSTRAINT "notification_destinations_destination_kind_check" CHECK (("destination_kind" = ANY (ARRAY['push_subscription'::"text", 'phone'::"text", 'email'::"text"])))
+);
+
+ALTER TABLE ONLY "platform"."notification_destinations" FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -11362,38 +11494,6 @@ CREATE TABLE "platform"."notification_events" (
 );
 
 ALTER TABLE ONLY "platform"."notification_events" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: notification_external_outbox; Type: TABLE; Schema: platform; Owner: -
---
-
-CREATE TABLE "platform"."notification_external_outbox" (
-    "id" "uuid" DEFAULT "extensions"."gen_random_uuid"() NOT NULL,
-    "event_type" "text" NOT NULL,
-    "module_key" "text" NOT NULL,
-    "resource_type" "text" NOT NULL,
-    "resource_id" "text" NOT NULL,
-    "scope_type" "text" NOT NULL,
-    "scope_id" "text" NOT NULL,
-    "destination_kind" "text" NOT NULL,
-    "destination" "text" NOT NULL,
-    "channels" "text"[] NOT NULL,
-    "payload" "jsonb" NOT NULL,
-    "dedupe_key" "text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "statement_timestamp"() NOT NULL,
-    CONSTRAINT "notification_external_outbox_channels_check" CHECK ((("channels" <@ ARRAY['whatsapp'::"text", 'sms'::"text", 'email'::"text"]) AND ("cardinality"("channels") > 0))),
-    CONSTRAINT "notification_external_outbox_dedupe_key_check" CHECK ((("char_length"("dedupe_key") >= 1) AND ("char_length"("dedupe_key") <= 240))),
-    CONSTRAINT "notification_external_outbox_destination_check" CHECK ((("char_length"("destination") >= 3) AND ("char_length"("destination") <= 320))),
-    CONSTRAINT "notification_external_outbox_destination_kind_check" CHECK (("destination_kind" = ANY (ARRAY['phone'::"text", 'email'::"text"]))),
-    CONSTRAINT "notification_external_outbox_event_type_check" CHECK (("event_type" ~ '^[a-z][a-z0-9_.-]{2,80}$'::"text")),
-    CONSTRAINT "notification_external_outbox_module_key_check" CHECK (("module_key" = ANY (ARRAY['conference'::"text", 'reservations'::"text", 'warehouse'::"text", 'platform'::"text"]))),
-    CONSTRAINT "notification_external_outbox_payload_check" CHECK (("jsonb_typeof"("payload") = 'object'::"text")),
-    CONSTRAINT "notification_external_outbox_resource_type_check" CHECK (("resource_type" ~ '^[a-z][a-z0-9_.-]{2,80}$'::"text")),
-    CONSTRAINT "notification_external_outbox_scope_type_check" CHECK (("scope_type" ~ '^[a-z][a-z0-9_.-]{2,80}$'::"text"))
-);
-
-ALTER TABLE ONLY "platform"."notification_external_outbox" FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -13820,19 +13920,27 @@ ALTER TABLE ONLY "platform"."devices"
 
 
 --
--- Name: notification_deliveries notification_deliveries_notification_event_id_subscription__key; Type: CONSTRAINT; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries notification_channel_deliveri_notification_event_id_destina_key; Type: CONSTRAINT; Schema: platform; Owner: -
 --
 
-ALTER TABLE ONLY "platform"."notification_deliveries"
-    ADD CONSTRAINT "notification_deliveries_notification_event_id_subscription__key" UNIQUE ("notification_event_id", "subscription_id");
+ALTER TABLE ONLY "platform"."notification_channel_deliveries"
+    ADD CONSTRAINT "notification_channel_deliveri_notification_event_id_destina_key" UNIQUE ("notification_event_id", "destination_id", "channel");
 
 
 --
--- Name: notification_deliveries notification_deliveries_pkey; Type: CONSTRAINT; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries notification_channel_deliveries_pkey; Type: CONSTRAINT; Schema: platform; Owner: -
 --
 
-ALTER TABLE ONLY "platform"."notification_deliveries"
-    ADD CONSTRAINT "notification_deliveries_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "platform"."notification_channel_deliveries"
+    ADD CONSTRAINT "notification_channel_deliveries_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: notification_destinations notification_destinations_pkey; Type: CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_destinations"
+    ADD CONSTRAINT "notification_destinations_pkey" PRIMARY KEY ("id");
 
 
 --
@@ -13849,22 +13957,6 @@ ALTER TABLE ONLY "platform"."notification_events"
 
 ALTER TABLE ONLY "platform"."notification_events"
     ADD CONSTRAINT "notification_events_pkey" PRIMARY KEY ("id");
-
-
---
--- Name: notification_external_outbox notification_external_outbox_dedupe_key_key; Type: CONSTRAINT; Schema: platform; Owner: -
---
-
-ALTER TABLE ONLY "platform"."notification_external_outbox"
-    ADD CONSTRAINT "notification_external_outbox_dedupe_key_key" UNIQUE ("dedupe_key");
-
-
---
--- Name: notification_external_outbox notification_external_outbox_pkey; Type: CONSTRAINT; Schema: platform; Owner: -
---
-
-ALTER TABLE ONLY "platform"."notification_external_outbox"
-    ADD CONSTRAINT "notification_external_outbox_pkey" PRIMARY KEY ("id");
 
 
 --
@@ -15470,10 +15562,24 @@ CREATE UNIQUE INDEX "device_key_bindings_one_active_device_idx" ON "platform"."d
 
 
 --
--- Name: notification_deliveries_pending_idx; Type: INDEX; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries_claim_idx; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX "notification_deliveries_pending_idx" ON "platform"."notification_deliveries" USING "btree" ("status", "next_attempt_at", "lease_expires_at", "notification_event_id") WHERE ("status" = ANY (ARRAY['pending'::"text", 'failed'::"text"]));
+CREATE INDEX "notification_channel_deliveries_claim_idx" ON "platform"."notification_channel_deliveries" USING "btree" ("status", "next_attempt_at", "lease_expires_at", "created_at") WHERE ("status" = ANY (ARRAY['pending'::"text", 'failed'::"text"]));
+
+
+--
+-- Name: notification_destinations_external_uidx; Type: INDEX; Schema: platform; Owner: -
+--
+
+CREATE UNIQUE INDEX "notification_destinations_external_uidx" ON "platform"."notification_destinations" USING "btree" ("notification_event_id", "destination_kind", "destination") WHERE ("destination" IS NOT NULL);
+
+
+--
+-- Name: notification_destinations_push_uidx; Type: INDEX; Schema: platform; Owner: -
+--
+
+CREATE UNIQUE INDEX "notification_destinations_push_uidx" ON "platform"."notification_destinations" USING "btree" ("notification_event_id", "push_subscription_id") WHERE ("push_subscription_id" IS NOT NULL);
 
 
 --
@@ -16219,10 +16325,10 @@ CREATE TRIGGER "system_owner_recovery_authorizations_lifecycle_guard" BEFORE INS
 
 
 --
--- Name: public_registration_requests public_registration_decision_external_notification; Type: TRIGGER; Schema: reservations; Owner: -
+-- Name: public_registration_requests public_registration_decision_notification; Type: TRIGGER; Schema: reservations; Owner: -
 --
 
-CREATE TRIGGER "public_registration_decision_external_notification" AFTER UPDATE OF "state" ON "reservations"."public_registration_requests" FOR EACH ROW EXECUTE FUNCTION "platform_private"."stage_public_registration_decision_external_notification"();
+CREATE TRIGGER "public_registration_decision_notification" AFTER UPDATE OF "state" ON "reservations"."public_registration_requests" FOR EACH ROW EXECUTE FUNCTION "platform_private"."stage_public_registration_decision_notification"();
 
 
 --
@@ -16409,19 +16515,43 @@ ALTER TABLE ONLY "platform"."device_key_bindings"
 
 
 --
--- Name: notification_deliveries notification_deliveries_notification_event_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries notification_channel_deliveries_destination_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
 --
 
-ALTER TABLE ONLY "platform"."notification_deliveries"
-    ADD CONSTRAINT "notification_deliveries_notification_event_id_fkey" FOREIGN KEY ("notification_event_id") REFERENCES "platform"."notification_events"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "platform"."notification_channel_deliveries"
+    ADD CONSTRAINT "notification_channel_deliveries_destination_id_fkey" FOREIGN KEY ("destination_id") REFERENCES "platform"."notification_destinations"("id") ON DELETE CASCADE;
 
 
 --
--- Name: notification_deliveries notification_deliveries_subscription_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries notification_channel_deliveries_notification_event_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
 --
 
-ALTER TABLE ONLY "platform"."notification_deliveries"
-    ADD CONSTRAINT "notification_deliveries_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "platform"."notification_push_subscriptions"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "platform"."notification_channel_deliveries"
+    ADD CONSTRAINT "notification_channel_deliveries_notification_event_id_fkey" FOREIGN KEY ("notification_event_id") REFERENCES "platform"."notification_events"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: notification_destinations notification_destinations_notification_event_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_destinations"
+    ADD CONSTRAINT "notification_destinations_notification_event_id_fkey" FOREIGN KEY ("notification_event_id") REFERENCES "platform"."notification_events"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: notification_destinations notification_destinations_push_subscription_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_destinations"
+    ADD CONSTRAINT "notification_destinations_push_subscription_id_fkey" FOREIGN KEY ("push_subscription_id") REFERENCES "platform"."notification_push_subscriptions"("id") ON DELETE RESTRICT;
+
+
+--
+-- Name: notification_destinations notification_destinations_user_id_fkey; Type: FK CONSTRAINT; Schema: platform; Owner: -
+--
+
+ALTER TABLE ONLY "platform"."notification_destinations"
+    ADD CONSTRAINT "notification_destinations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "platform"."profiles"("user_id") ON DELETE CASCADE;
 
 
 --
@@ -18857,22 +18987,22 @@ CREATE POLICY "devices_select_self_or_platform_viewer" ON "platform"."devices" F
 
 
 --
--- Name: notification_deliveries; Type: ROW SECURITY; Schema: platform; Owner: -
+-- Name: notification_channel_deliveries; Type: ROW SECURITY; Schema: platform; Owner: -
 --
 
-ALTER TABLE "platform"."notification_deliveries" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "platform"."notification_channel_deliveries" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: notification_destinations; Type: ROW SECURITY; Schema: platform; Owner: -
+--
+
+ALTER TABLE "platform"."notification_destinations" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: notification_events; Type: ROW SECURITY; Schema: platform; Owner: -
 --
 
 ALTER TABLE "platform"."notification_events" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: notification_external_outbox; Type: ROW SECURITY; Schema: platform; Owner: -
---
-
-ALTER TABLE "platform"."notification_external_outbox" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: notification_outbox; Type: ROW SECURITY; Schema: platform; Owner: -
@@ -20380,10 +20510,10 @@ REVOKE ALL ON FUNCTION "platform_private"."set_updated_at"() FROM PUBLIC;
 
 
 --
--- Name: FUNCTION "stage_public_registration_decision_external_notification"(); Type: ACL; Schema: platform_private; Owner: -
+-- Name: FUNCTION "stage_public_registration_decision_notification"(); Type: ACL; Schema: platform_private; Owner: -
 --
 
-REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_decision_external_notification"() FROM PUBLIC;
+REVOKE ALL ON FUNCTION "platform_private"."stage_public_registration_decision_notification"() FROM PUBLIC;
 
 
 --
@@ -22094,4 +22224,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict wgKNcnEfqdMMLMCjrpI3MmjoV5N0Vh3KnxZcBBBP7xirdoDDy2ebavNhjAEFicj
+\unrestrict vOZJimtw6kGoPL6WsLKuBCDEphM9Tutvwd8uVnlpSNP2dhjvmQOCWD92Ewp17Av
