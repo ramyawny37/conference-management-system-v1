@@ -21,3 +21,5 @@ assert.ok(!worker.includes("platformNotificationId"));assert.ok(!worker.includes
 assert.ok(!worker.includes("platformNotificationClick"));
 assert.ok(!pwa.includes("consumePlatformNotificationClick"));
 assert.ok(!pwa.includes("pendingPlatformNotificationClickId"));assert.ok(pwa.includes("consumePlatformNotificationOpen"));
+
+test('external push navigation consumes read receipt immediately on existing client navigation',()=>{const pwa=fs.readFileSync('pwa.js','utf8');assert.match(pwa,/visibilityState==='visible'\)\{refreshPlatformNotificationState\(\);refreshPlatformNotificationInbox\(\);\}/);assert.match(pwa,/window\.addEventListener\('focus',refreshPlatformNotificationInbox\)/);assert.match(pwa,/window\.addEventListener\('hashchange',refreshPlatformNotificationInbox\)/);});
