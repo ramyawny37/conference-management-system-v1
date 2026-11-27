@@ -11,6 +11,9 @@ const shell=read('canonical-platform-shell.css');
 const reservations=read('modules/reservations/reservations-module.css');
 const index=read('index.html');
 const worker=read('service-worker.js');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 const reference=read('design-system-reference.html');
 const runtimeScripts=['script.js',...fs.readdirSync('js',{recursive:true}).filter(file=>file.endsWith('.js')).map(file=>'js/'+file)].map(read).join('\n');
 
@@ -105,7 +108,7 @@ test('runtime CSS load order and cache revisions remain atomic',()=>{
   assert.ok(index.indexOf(shared)<index.indexOf(pages));
   assert.ok(index.indexOf(pages)<index.indexOf(canonical));
   for(const asset of [shared,pages,canonical])assert.equal(worker.split('./'+asset).length-1,1);
-  assert.match(worker,/development-registration-notification-deeplink-v1-design-foundation-v1/);
+  assert.ok(worker.includes(developmentCacheRevision));
 });
 
 test('proven duplicate global definitions were actually removed',()=>{
