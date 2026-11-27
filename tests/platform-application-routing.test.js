@@ -7,7 +7,7 @@ const source=fs.readFileSync('js/application-routing.js','utf8');
 
 function runtime(basePath,pathname,hash){
   const origin='https://example.test';
-  const window={location:{origin,pathname:pathname||basePath,hash:hash||''},document:{
+  const history={replaceState(_state,_title,url){const marker=url.indexOf('#');window.location.hash=marker>=0?url.slice(marker):'';}};const window={location:{origin,pathname:pathname||basePath,hash:hash||''},history,document:{
     currentScript:{src:origin+basePath+'js/application-routing.js'}
   }};
   vm.runInNewContext(source,{window,URL,Error,Object,String});
@@ -55,4 +55,12 @@ test('logical query parameters have one canonical routing owner',()=>{
   assert.strictEqual(routing.getLogicalQueryParam('eventId'),'event-1');
   assert.strictEqual(routing.getLogicalQueryParam('requestId'),'request-1');
   assert.strictEqual(routing.getLogicalQueryParam('missing'),null);
+});
+
+test('notification receipt removal preserves canonical request route identity',()=>{
+  const routing=runtime('/preview/','/preview/','#/reservations/registration-requests?eventId=event-1&requestId=request-1&notificationOpen=11111111-1111-1111-1111-111111111111');
+  assert.strictEqual(routing.removeLogicalQueryParam('notificationOpen'),true);
+  assert.strictEqual(routing.getLogicalQueryParam('eventId'),'event-1');
+  assert.strictEqual(routing.getLogicalQueryParam('requestId'),'request-1');
+  assert.strictEqual(routing.getLogicalQueryParam('notificationOpen'),null);
 });
