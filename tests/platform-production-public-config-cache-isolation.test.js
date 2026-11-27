@@ -7,6 +7,9 @@ const test=require('node:test');
 
 const root=path.join(__dirname,'..');
 const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 const publicConfig=fs.readFileSync(
   path.join(root,'js/supabase/public-config.js'),'utf8'
 );
@@ -20,7 +23,7 @@ test('Production public config is isolated from stale Development caches',()=>{
   );
   assert(revisions,'missing environment-specific cache revisions');
   assert.strictEqual(
-    revisions[1],'development-registration-notification-deeplink-v1-design-foundation-v1'
+    revisions[1],developmentCacheRevision
   );
   assert.notStrictEqual(revisions[1],'conference-owner-preflight-correction-v1');
   assert.strictEqual(revisions[2],'production-3-6-0-release-v6');
