@@ -817,3 +817,15 @@ The internal notification system is not declared CLOSED until all of the followi
 - Policy revision `source-8bed56ff5750`, approvedIntegrations empty; CSS and contract hashes unchanged.
 - Preview 45991166358 build and deploy PASS including provenance and Development guards. Independent public manifest retrieval unavailable; live browser acceptance pending.
 - No Production or database changes. Internal notification closure remains pending live acceptance. Documentation-only successor; runtime unchanged.
+
+
+### 2026-11-27 — Canonical notification channel cutover on Development
+
+- Platform source cutover migration: `20261127130000_platform_notification_canonical_channel_cutover.sql`. Exact validated source HEAD before Development apply: `91de6ebd69bbfc9eaf1e32ad26a375d726bd0d86`; Reservations integration run `46000483016` PASS.
+- The first Development apply attempt was rejected transactionally because the legacy `platform.notification_deliveries` table has no `created_at` column. No partial objects remained. Source was corrected to migrate only columns that exist in the live legacy schema; the retry applied successfully to Development project `gppwltrifgfxrkzvvxoe`.
+- Canonical runtime now uses `platform.notification_destinations` plus `platform.notification_channel_deliveries`. Legacy runtime tables `platform.notification_deliveries` and `platform.notification_external_outbox`, the legacy public-registration decision trigger and its staging function are removed.
+- Live post-cutover verification: 7 push destinations and 7 `web_push` deliveries preserved; all 7 remain `sent`, maximum attempt count remains 1, active leases 0. The 2 legacy applicant decision rows became 2 phone destinations plus 2 pending WhatsApp and 2 pending SMS channel deliveries.
+- `platform.notification_gateway` and `platform_private.enqueue_notification_core` reference the canonical channel tables only. Push claim is restricted to `channel='web_push'`; invalid push-to-external targets 0 and invalid WhatsApp/SMS target kinds 0.
+- Security posture remains fail-closed: both new tables have forced RLS and all direct grants revoked. Supabase Security Advisor reports the expected RLS-without-policy informational lint for these private tables; no direct policy was added because access remains through security-definer canonical functions.
+- No external provider is connected yet. The next implementation step is provider-neutral external dispatch over the same canonical event/destination/channel graph; do not recreate an external outbox or a parallel retry lifecycle. Applicant email is not available in the current registration request model, so current external decision destinations are phone-only (WhatsApp/SMS).
+- Platform `main`, Production, Supabase Production and Vercel remain untouched.
