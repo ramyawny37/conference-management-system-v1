@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "registration-notification-deeplink-v1",
+    "revision": "source-8bed56ff5750",
     "files": {
-      "reservations-module.js": "e47cf78f51bc874f7dddfca4755b122d88aea5716195acfc15a3e0bcabe22f49",
+      "reservations-module.js": "c58bef5c23682d4d7f45334fadcfc12bd783bd037124f9f10d51acbf81d41ecb",
       "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
     },
     "contract": {
@@ -11,11 +11,7 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [
-    {
-      "sourceCommit": "8bed56ff57504f9dde8ea6a4b42d2ae6af4f98b9"
-    }
-  ],
+  "approvedIntegrations": [],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
@@ -27,4 +23,3 @@
     }
   ]
 }
-
