@@ -24,6 +24,10 @@ test('public experience carries the participant-facing mission identity and even
   assert.match(js,/e\.location/);
 });
 
+test('public experience uses a real four-step journey without changing the canonical family submission',()=>{
+ assert.match(js,/var currentStep=1/); assert.match(js,/data-step-panel="1"/); assert.match(js,/data-step-panel="2"/); assert.match(js,/data-step-panel="3"/); assert.match(js,/data-step-panel="4"/); assert.match(js,/function validateStep\(n\)/); assert.match(js,/function renderBookingStep\(\)/); assert.match(js,/data-booking-type/); assert.match(js,/setStep\(currentStep\+1\)/); assert.match(js,/setStep\(currentStep-1\)/); assert.match(js,/call\('submit_family'/);
+});
+
 test('public page is isolated from authenticated platform shell',()=>{
   assert.match(html,/public-registration\.js/);
   assert.doesNotMatch(html,/script\.js|reservations-module\.js|device-session/);
@@ -108,8 +112,8 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-    assert.match(html,/public-registration\.css\?rev=public-experience-v2/);
-  assert.match(html,/public-registration\.js\?rev=public-experience-v2/);
+    assert.match(html,/public-registration\.css\?rev=public-experience-v3/);
+  assert.match(html,/public-registration\.js\?rev=public-experience-v3/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
