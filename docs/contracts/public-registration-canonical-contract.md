@@ -502,3 +502,10 @@ Acceptance gates for the implementation pass:
 6. Existing 7 migrated Platform push deliveries and current pending external deliveries remain valid through the migration.
 7. No legacy/parallel notification tables/functions/routes remain after cutover.
 8. Focused tests, Reservations integration, zero-data validation and Development Preview guards pass before live browser acceptance.
+
+
+### 2026-11-27 — authenticated Platform Browser Push click ownership cleanup
+- The durable Platform inbox remains the sole owner of authenticated notification read state. mark_my_notification_read is invoked from the inbox item interaction, not from Browser Push navigation.
+- Browser Push remains a delivery channel and notification click remains canonical deep-link navigation only. It must not append platformNotificationId, post a parallel click/read message, retry inbox reads, or mutate inbox read state.
+- The stopped push-click/read experiment is retired rather than maintained beside the canonical inbox lifecycle. Service-worker scope isolation remains required when reusing an existing window.
+- Applicant Browser Push remains deferred and must use its explicit audience contract; it must not reuse Platform inbox read semantics.

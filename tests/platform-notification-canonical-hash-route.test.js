@@ -15,5 +15,9 @@ assert.ok(pwa.includes("setAttribute('aria-expanded','false')"));
 assert.ok(legacy.includes("'./#/reservations/events/'||new.event_id::text||'?tab=registration'"));
 console.log('platform notification canonical requests route: PASS');
 
-assert.ok(pwa.includes("result.read!==true"));
-assert.ok(pwa.includes("PLATFORM_NOTIFICATION_READ_NOT_APPLIED"));
+const worker=fs.readFileSync('service-worker.js','utf8');
+assert.ok(worker.includes("new URL(rawUrl,self.registration.scope)"));
+assert.ok(!worker.includes("platformNotificationId"));
+assert.ok(!worker.includes("platformNotificationClick"));
+assert.ok(!pwa.includes("consumePlatformNotificationClick"));
+assert.ok(!pwa.includes("pendingPlatformNotificationClickId"));
