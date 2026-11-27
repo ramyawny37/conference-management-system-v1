@@ -1,5 +1,5 @@
 -- Read-only exact structural parity gate for a clean, disposable Supabase-compatible target.
--- Structural fingerprints captured from current Development after the canonical notification channel cutover on Development; no data is read or copied.
+-- Structural fingerprints captured from current Development after the canonical public-registration identity-resolution cutover on Development; no data is read or copied.
 -- Run with psql -X -v ON_ERROR_STOP=1 after the full foundation has been applied.
 DO $parity$
 DECLARE mismatches text;
@@ -36,7 +36,7 @@ BEGIN
     VALUES
     ('relations',100::bigint,'94127c8426bdc10094abf70c22c0ac13'),
     ('columns',1257::bigint,'3b6604d3dece2c83e39de9b9928d6b92'),
-    ('functions',316::bigint,'3c7f46f42368ed890db312ae64d77855'),
+    ('functions',317::bigint,'47804a284a0455c7b0a94469c7ba3a4c'),
     ('policies',15::bigint,'be7f4626d990e0ef83d30fd648cfd9b5')
   )
   SELECT string_agg(format('%s expected=%s/%s actual=%s/%s',e.kind,e.objects,e.digest,a.objects,a.digest), E'\n')
