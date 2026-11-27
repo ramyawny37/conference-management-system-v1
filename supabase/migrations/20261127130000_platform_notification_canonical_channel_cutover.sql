@@ -48,8 +48,8 @@ from platform.notification_deliveries d
 join platform.notification_push_subscriptions s on s.id=d.subscription_id
 on conflict do nothing;
 
-insert into platform.notification_channel_deliveries(notification_event_id,destination_id,channel,status,attempt_count,lease_token,lease_expires_at,next_attempt_at,last_attempt_at,delivered_at,last_error_code,created_at)
-select d.notification_event_id,nd.id,'web_push',d.status,d.attempt_count,d.lease_token,d.lease_expires_at,d.next_attempt_at,d.last_attempt_at,d.delivered_at,d.last_error_code,d.created_at
+insert into platform.notification_channel_deliveries(notification_event_id,destination_id,channel,status,attempt_count,lease_token,lease_expires_at,next_attempt_at,last_attempt_at,delivered_at,last_error_code)
+select d.notification_event_id,nd.id,'web_push',d.status,d.attempt_count,d.lease_token,d.lease_expires_at,d.next_attempt_at,d.last_attempt_at,d.delivered_at,d.last_error_code
 from platform.notification_deliveries d
 join platform.notification_destinations nd on nd.notification_event_id=d.notification_event_id and nd.destination_kind='push_subscription' and nd.push_subscription_id=d.subscription_id
 on conflict do nothing;
