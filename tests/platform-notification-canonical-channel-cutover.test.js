@@ -1,7 +1,8 @@
 const fs=require('fs'),assert=require('assert');
 const m=fs.readFileSync('supabase/migrations/20261127130000_platform_notification_canonical_channel_cutover.sql','utf8');
 assert.match(m,/create table platform\.notification_destinations/);
-assert.match(m,/create table platform\.notification_channel_deliveries/);\nassert.match(m,/push_subscription_id uuid references platform\.notification_push_subscriptions\(id\) on delete restrict/);
+assert.match(m,/create table platform\.notification_channel_deliveries/);
+assert.match(m,/push_subscription_id uuid references platform\.notification_push_subscriptions\(id\) on delete restrict/);
 assert.match(m,/channel in\('web_push','whatsapp','sms','email'\)/);
 assert.match(m,/status in\('pending','sent','failed','expired'\)/);
 assert.doesNotMatch(m,/status in\([^\n]*sending/);
