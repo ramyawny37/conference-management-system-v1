@@ -10,3 +10,65 @@
 
 /* Public Experience — canonical shell for participant-facing forms */
 .public-registration-brand{justify-content:center;text-align:center;margin-bottom:20px}.public-registration-brand img{width:68px;height:68px;border-radius:22px}.public-registration-brand strong{font-size:20px;font-weight:900}.public-registration-brand span{margin-top:4px;color:#596780;font-size:14px;font-weight:700}.public-experience-hero{position:relative;overflow:hidden;margin:-4px -4px 24px;padding:26px 24px 22px;text-align:center;border-radius:22px;background:linear-gradient(145deg,#f8faff 0%,#eef3ff 55%,#f7f1ff 100%);border:1px solid #e0e7fb}.public-experience-hero:after{content:"";position:absolute;width:170px;height:170px;border-radius:50%;left:-70px;top:-95px;background:rgba(109,75,216,.08)}.public-experience-welcome{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 12px;border-radius:999px;background:#fff;color:#4a5b7a;font-size:12px;font-weight:800;box-shadow:0 4px 16px rgba(30,45,90,.06)}.public-experience-hero h1{position:relative;margin:0 0 10px;font-size:clamp(26px,5vw,36px);color:#1d2d58}.public-experience-hero .event-meta{justify-content:center;margin:0}.public-experience-guide{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:0 0 22px;padding:7px;border:1px solid #e4e9f4;border-radius:17px;background:#f8faff}.public-experience-step{display:grid;place-items:center;min-height:42px;padding:7px 5px;border-radius:12px;color:#667085;font-size:11px;font-weight:800;text-align:center}.public-experience-step:first-child{background:#fff;color:#3157d5;box-shadow:0 3px 12px rgba(49,87,213,.08)}.public-experience-note{margin:-10px 0 22px;text-align:center;color:#667085;font-size:12px;line-height:1.7}.registration-section-heading{scroll-margin-top:18px}.family-member{scroll-margin-top:18px}@media(max-width:640px){.public-registration-brand{margin-top:8px}.public-registration-brand img{width:58px;height:58px;border-radius:18px}.public-registration-brand strong{font-size:18px}.public-experience-hero{margin:0 0 18px;padding:22px 14px 18px;border-radius:18px}.public-experience-guide{gap:4px;padding:5px;margin-bottom:18px}.public-experience-step{min-height:38px;padding:6px 2px;font-size:10px}.public-experience-note{margin-top:-7px}.request-tracking-panel{background:#fbfcff}}
+
+/* Public Experience v2 — compact, clearer participant journey */
+.public-registration-shell{width:min(760px,calc(100% - 28px));margin-top:20px}
+.public-registration-brand{gap:12px;margin-bottom:14px}
+.public-registration-brand img{width:54px;height:54px;border-radius:17px}
+.public-registration-brand strong{font-size:18px}
+.public-registration-brand span{font-size:12px}
+.public-registration-card{padding:22px;border-radius:24px}
+.public-experience-hero{margin:0 0 16px;padding:18px 18px 16px;border-radius:18px}
+.public-experience-welcome{margin-bottom:5px;padding:5px 10px;font-size:11px;box-shadow:none}
+.public-experience-hero h1{font-size:clamp(24px,5vw,31px);margin-bottom:8px}
+.public-experience-hero .event-meta{gap:6px}
+.public-experience-hero .event-meta span{min-height:29px;padding:5px 9px;background:rgba(255,255,255,.72);font-size:12px}
+.public-experience-guide{margin-bottom:12px;border:0;background:transparent;padding:0;gap:5px}
+.public-experience-step{min-height:36px;border:1px solid #e5e9f2;background:#fafbff}
+.public-experience-step:first-child{border-color:#d9e2ff}
+.public-experience-note{margin:0 0 18px;padding:10px 12px;border-radius:12px;background:#f8faff;font-size:11px}
+.request-tracking-panel{margin-bottom:20px;padding:14px 15px;background:#fff;border-color:#e2e7f1}
+.request-tracking-heading span{line-height:1.55}
+.saved-requests-disclosure{margin-top:12px;border:1px solid #e3e8f2;border-radius:14px;background:#f8faff;overflow:hidden}
+.saved-requests-disclosure summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;cursor:pointer;list-style:none;color:#344054;font-size:13px;font-weight:800}
+.saved-requests-disclosure summary::-webkit-details-marker{display:none}
+.saved-requests-disclosure summary:after{content:"⌄";font-size:17px;color:#667085;transition:transform .18s}
+.saved-requests-disclosure[open] summary:after{transform:rotate(180deg)}
+.saved-requests-disclosure summary strong{display:grid;place-items:center;min-width:26px;height:26px;margin-inline-start:auto;border-radius:999px;background:#e9eeff;color:var(--brand);font-size:12px}
+.saved-requests-disclosure .saved-requests{display:grid;gap:7px;margin:0;padding:0 9px 9px}
+.saved-request-button{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;width:100%;padding:10px 11px;text-align:start;border:1px solid #e5e9f2;background:#fff;color:#344054;box-shadow:none}
+.saved-request-button:hover{background:#f8faff;border-color:#ccd6f1;box-shadow:none}
+.saved-request-button span{font-size:11px;color:#667085}
+.saved-request-button strong{direction:ltr;text-align:start;font-size:12px;letter-spacing:.02em}
+.saved-request-button small{color:var(--brand);font-weight:800}
+.request-recovery{margin-top:10px}
+.registration-section-heading{margin-top:4px;padding:14px 15px;border:1px solid #e6eaf2;border-radius:14px;background:#fbfcff}
+.family-intro{margin-bottom:14px;padding:13px 15px}
+.family-member{padding:15px;border-radius:16px}
+.family-member header{margin-bottom:12px;padding-bottom:10px}
+.form-grid{gap:12px}
+.field{gap:6px}
+label{font-size:12px}
+input,select,textarea{min-height:44px;padding:10px 12px;border-radius:12px;background:#fff}
+.family-add-panel{padding:14px;border-radius:15px}
+.family-summary{border-radius:15px}
+.actions #submitButton{min-height:46px}
+@media(max-width:640px){
+ .public-registration-shell{width:calc(100% - 14px);margin:6px auto 24px}
+ .public-registration-brand{margin:6px 4px 10px;justify-content:flex-start;text-align:start}
+ .public-registration-brand img{width:46px;height:46px;border-radius:14px}
+ .public-registration-brand strong{font-size:16px}
+ .public-registration-brand span{font-size:11px}
+ .public-registration-card{padding:14px 12px;border-radius:19px}
+ .public-experience-hero{padding:16px 10px 14px;margin-bottom:12px}
+ .public-experience-hero h1{font-size:26px}
+ .public-experience-guide{display:flex;overflow-x:auto;scrollbar-width:none}
+ .public-experience-step{flex:1 0 auto;min-width:74px}
+ .public-experience-note{text-align:start;line-height:1.6}
+ .request-tracking-panel{padding:12px}
+ .saved-request-button{grid-template-columns:auto 1fr}
+ .saved-request-button small{grid-column:1/-1}
+ .registration-section-heading{padding:12px}
+ .family-member{padding:13px 10px}
+ input,select,textarea{font-size:16px}
+}
