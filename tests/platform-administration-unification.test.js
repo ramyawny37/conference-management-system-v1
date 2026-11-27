@@ -14,6 +14,9 @@ const userUi=read('js/sync/user-management-ui.js');
 const script=read('script.js');
 const index=read('index.html');
 const worker=read('service-worker.js');
+const reservationsPolicy=JSON.parse(fs.readFileSync('tools/reservations-artifact-policy.json' ,'utf8'));
+const reservationsRevision=reservationsPolicy.currentRuntime.revision;
+const developmentCacheRevision='development-'+reservationsRevision+'-design-foundation-v1';
 const platformAdministration=read('js/sync/platform-administration-ui.js');
 
 test('existing canonical role and permission stores are extended without a parallel authority',()=>{
@@ -115,7 +118,7 @@ test('cache references are atomically consistent for every changed runtime asset
     assert.ok(index.includes(asset+'?rev='+assetRevision),asset+' missing from index');
     assert.ok(worker.includes('./'+asset+'?rev='+assetRevision),asset+' missing from worker');
   }
-  assert.match(worker,/\? 'development-registration-notification-deeplink-v1-design-foundation-v1'/);
+  assert.ok(worker.includes(`? 'development-${reservationsRevision}-design-foundation-v1'`));
 });
 
 test('retired tenancy, direct database clients and local permission fallbacks remain absent',()=>{
