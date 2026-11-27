@@ -11,7 +11,15 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [],
+  "approvedIntegrations": [
+    {
+      "sourceCommit": "397f0698d590311d023e95aa342bd744f8712fe1",
+      "files": {
+        "reservations-module.js": "66dc17ef91db29e8d413ee2df4b0d3e9a8f17002d2ff1f7b8e8d62d7f388c429",
+        "reservations-module.css": "2b4edb80f5993e48b8c1ecc7f4209774be583c97b63fd5a8e1c81164caca07be"
+      }
+    }
+  ],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
