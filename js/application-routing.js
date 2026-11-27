@@ -83,7 +83,7 @@
       name=String(name||'').trim();
       if(!name)return null;
       var route=this.getLogicalPathname(),queryIndex=route.indexOf('?');
-      return queryIndex<0?null:new URLSearchParams(route.slice(queryIndex+1)).get(name);
+      if(queryIndex<0)return null;var query=route.slice(queryIndex+1).split('&');for(var i=0;i<query.length;i++){var pair=query[i].split('='),key=decodeURIComponent(pair.shift()||'');if(key===name)return decodeURIComponent(pair.join('=')||'');}return null;
     },
     logicalPathname:logicalPathname,
     getConferenceRoute:getConferenceRoute,
