@@ -28,6 +28,22 @@ test('public experience uses a real four-step journey without changing the canon
  assert.match(js,/var currentStep=1/); assert.match(js,/data-step-panel="1"/); assert.match(js,/data-step-panel="2"/); assert.match(js,/data-step-panel="3"/); assert.match(js,/data-step-panel="4"/); assert.match(js,/function validateStep\(n\)/); assert.match(js,/function renderBookingStep\(\)/); assert.match(js,/data-booking-type/); assert.match(js,/setStep\(currentStep\+1\)/); assert.match(js,/setStep\(currentStep-1\)/); assert.match(js,/call\('submit_family'/);
 });
 
+test('step validation focuses the first incomplete field with a useful inline message',()=>{
+  assert.match(js,/function firstProfileIssue\(m,i\)/);
+  assert.match(js,/function firstStepIssue\(n\)/);
+  assert.match(js,/function focusIssue\(issue,step\)/);
+  assert.match(js,/من فضلك أكمل/);
+  assert.match(js,/scrollIntoView\(\{behavior:'smooth',block:'center'\}\)/);
+  assert.match(js,/aria-invalid/);
+  assert.doesNotMatch(js,/nextStep\(\).*errorMessage\(code\)/s);
+});
+
+test('previous-request recovery stays visually secondary and closed by default',()=>{
+  assert.match(js,/<details id="requestTrackingPanel"/);
+  assert.match(js,/متابعة أو استرجاع طلب/);
+  assert.doesNotMatch(js,/<details id="requestTrackingPanel"[^>]* open/);
+});
+
 test('public page is isolated from authenticated platform shell',()=>{
   assert.match(html,/public-registration\.js/);
   assert.doesNotMatch(html,/script\.js|reservations-module\.js|device-session/);
@@ -112,8 +128,8 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-    assert.match(html,/public-registration\.css\?rev=public-experience-v3/);
-  assert.match(html,/public-registration\.js\?rev=public-experience-v3/);
+    assert.match(html,/public-registration\.css\?rev=public-experience-v4/);
+  assert.match(html,/public-registration\.js\?rev=public-experience-v4/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
