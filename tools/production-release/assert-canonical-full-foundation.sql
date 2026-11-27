@@ -1,6 +1,6 @@
 -- FAIL-CLOSED, read-only verification. Run with psql -v ON_ERROR_STOP=1.
 -- Only after a clean bootstrap in a disposable Supabase-compatible database.
--- Expected counts are current Development foundation counts; structural fingerprints remain authoritative.
+-- Expected counts are current Development foundation counts; platform=20 includes the canonical applicant push subscription table. Structural fingerprints remain authoritative.
 DO $foundation_acceptance$
 DECLARE
   mismatch_count integer;
