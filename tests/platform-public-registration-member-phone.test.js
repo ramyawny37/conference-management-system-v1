@@ -24,6 +24,11 @@ test('paid adult family members require an independent personal phone before boo
  assert.doesNotMatch(migration,/m\.role='adult' and char_length\(v_phone\)/);
 });
 
+test('profile correction closes only after save and refreshed request both succeed',()=>{
+ assert.match(reservationsModule,/return saved&&refreshed&&C===D\.current/);
+ assert.match(reservationsModule,/onClick:async\(\)=>\{const Q=await d\(p\.memberKey,A,M,D,S\);Q&&E\(!1\)\}/);
+});
+ 
 test('paid children may use guardian phone only when their own phone is absent',()=>{
  assert.match(migration,/m\.role='child_paid'/);
  assert.match(migration,/coalesce\(nullif\(btrim\(m\.phone\),''\),v_guardian_phone\)/);
