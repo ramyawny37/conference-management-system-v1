@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const test=require('node:test');
 const migration=fs.readFileSync('supabase/migrations/20261128122000_public_registration_member_lifecycle_cutover.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/public-registration/index.ts','utf8');
+const replayCutover=fs.readFileSync('supabase/migrations/20261128133000_public_registration_family_decision_replay_cutover.sql','utf8');
 test('family additions extend canonical request members without parallel tables',()=>{
  assert.match(migration,/alter table reservations\.public_registration_request_members/);
  assert.match(migration,/review_state text/);
@@ -51,7 +52,7 @@ test('guardian lookup qualifies role against PL/pgSQL variable',()=>{
 
 test('original family approval uses deterministic member operations and one canonical member approval path',()=>{
  assert.match(migration,/decide_public_registration_family_request/);
- assert.match(migration,/child_operation:=extensions\.uuid_generate_v5\(p_operation_id,m\.member_key::text\)/);
- assert.match(migration,/approve_public_registration_member\(p_device_id,child_operation,r\.id,m\.member_key,choice,pid,p_reason\)/);
- assert.doesNotMatch(migration,/child_operation:=extensions\.gen_random_uuid\(\)/);
+ assert.match(replayCutover,/child_operation:=extensions\.uuid_generate_v5\(p_operation_id,m\.member_key::text\)/);
+ assert.match(replayCutover,/approve_public_registration_member\(p_device_id,child_operation,r\.id,m\.member_key,choice,pid,p_reason\)/);
+ assert.doesNotMatch(replayCutover,/child_operation:=extensions\.gen_random_uuid\(\)/);
 });
