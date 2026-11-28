@@ -188,7 +188,7 @@ test('disposable rehearsal covers old platform state and operational business da
 test('zero-data structural parity is pinned to the canonical family booking read model', () => {
   const parity = fs.readFileSync(path.resolve(__dirname, '../tools/production-release/assert-canonical-structural-parity.sql'), 'utf8');
   const familyReadModel = fs.readFileSync(path.resolve(__dirname, '../supabase/migrations/20261128134453_canonical_family_booking_read_model.sql'), 'utf8');
-  assert.match(parity, /\('functions',324::bigint,'778cc94de019ee0708574e1cb7f75c19'\)/);
+  assert.match(parity, /\('functions',324::bigint,'86026bbc9feefb74c39aa90eecb61ef3'\)/);
   assert.match(familyReadModel, /reservations_private\.booking_family_context/);
   assert.match(familyReadModel, /child_paid/);
   assert.match(familyReadModel, /child_dependent/);
