@@ -196,6 +196,7 @@ test('accepted tracking extends the same family request with independently revie
   assert.match(js,/call\('add_family_member'/);
   assert.match(js,/trackingSecret:tracking/);
   assert.match(js,/memberReviewLabel/);
+  assert.match(js,/approved:'تم الحجز'/);
   assert.match(js,/x\.reviewState==='approved'/);
 });
 
