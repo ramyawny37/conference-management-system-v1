@@ -11,7 +11,13 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [],
+  "approvedIntegrations": [
+    {
+      "sourceCommit": "39cc3999c809a0bc02fadae1a761d641f3254e6f",
+      "artifactId": 15239599017,
+      "reason": "Canonical public-registration invitation media and sharing flow; Reservations CI and develop validation both passed on exact source SHA."
+    }
+  ],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
