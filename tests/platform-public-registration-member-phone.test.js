@@ -14,6 +14,7 @@ test('paid adult family members require an independent personal phone before boo
  assert.match(migration,/PUBLIC_REGISTRATION_ADULT_PHONE_MUST_BE_INDEPENDENT/);
  assert.match(migration,/public_registration_request_members_adult_phone_check/);
  assert.match(migration,/char_length\(phone\) between 7 and 20/);
+ assert.doesNotMatch(migration,/m\.role='adult' and char_length\(v_phone\)/);
 });
 
 test('paid children may use guardian phone only when their own phone is absent',()=>{
