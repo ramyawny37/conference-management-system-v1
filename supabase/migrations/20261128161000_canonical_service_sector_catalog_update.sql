@@ -1,3 +1,4 @@
+-- Canonical, additive service-sector catalog cutover; existing request/member rows and stable sector IDs are preserved.
 begin;
 
 -- Keep stable canonical IDs for existing sectors; only labels change.
