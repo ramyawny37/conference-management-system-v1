@@ -84,7 +84,8 @@ Deno.serve(async(request)=>{
       const uploaded=await service.storage.from('public-registration-invites').upload(path,binary,{contentType:mime,upsert:true,cacheControl:'3600'});
       if(uploaded.error)throw uploaded.error;
       for(const stale of ['jpg','jpeg','png','webp'].filter(x=>x!==ext))await service.storage.from('public-registration-invites').remove([eventId+'/invite.'+stale]);
-      return json(200,{ok:true,data:{path}});
+      const publicUrl=service.storage.from('public-registration-invites').getPublicUrl(path).data.publicUrl;
+      return json(200,{ok:true,data:{path,publicUrl}});
     }
     const result=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:module,p_operation:operation,p_args:args});
     if(result.error)throw result.error;
