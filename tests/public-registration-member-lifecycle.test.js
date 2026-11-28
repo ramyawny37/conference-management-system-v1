@@ -48,3 +48,10 @@ test('guardian lookup qualifies role against PL/pgSQL variable',()=>{
   assert.match(migration,/from reservations\.public_registration_request_members x where x\.request_id=r\.id and x\.member_key=guardian and x\.role in\('primary','adult'\)and x\.review_state='approved'/);
   assert.doesNotMatch(migration,/member_key=guardian and role in\('primary','adult'\)/);
 });
+
+test('original family approval uses deterministic member operations and one canonical member approval path',()=>{
+ assert.match(migration,/decide_public_registration_family_request/);
+ assert.match(migration,/child_operation:=extensions\.uuid_generate_v5\(p_operation_id,m\.member_key::text\)/);
+ assert.match(migration,/approve_public_registration_member\(p_device_id,child_operation,r\.id,m\.member_key,choice,pid,p_reason\)/);
+ assert.doesNotMatch(migration,/child_operation:=extensions\.gen_random_uuid\(\)/);
+});
