@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict IaacAM6aS4fDtm8EMniG7GAqHhOJPXiQGXO5goltGELMlZYbOENQHJMUt9zbDnA
+\restrict RZKcLtdThNVupUrfPsnkMJEcsC266xJn0f6ewCXfXiQq9IhbZg65MSreKAzkgBe
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -10045,7 +10045,7 @@ begin
  for m in select * from reservations.public_registration_request_members where request_id=r.id and ordinal>0 and review_state in('pending','waitlisted') order by ordinal for update loop
   res:=p_resolutions->m.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;
   if choice is null or choice not in('existing','new')or(choice='existing'and pid is null)or(choice='new'and pid is not null)then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
-  child_operation:=extensions.gen_random_uuid();
+  child_operation:=extensions.uuid_generate_v5(p_operation_id,m.member_key::text);
   perform reservations_private.approve_public_registration_member(p_device_id,child_operation,r.id,m.member_key,choice,pid,p_reason);
  end loop;
  result:=primary_result||jsonb_build_object('members',reservations_private.public_registration_members_json(r.id));
@@ -22557,4 +22557,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict IaacAM6aS4fDtm8EMniG7GAqHhOJPXiQGXO5goltGELMlZYbOENQHJMUt9zbDnA
+\unrestrict RZKcLtdThNVupUrfPsnkMJEcsC266xJn0f6ewCXfXiQq9IhbZg65MSreKAzkgBe
