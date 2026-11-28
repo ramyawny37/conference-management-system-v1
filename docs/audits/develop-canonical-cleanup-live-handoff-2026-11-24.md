@@ -903,3 +903,17 @@ The internal notification system is not declared CLOSED until all of the followi
 - Development migration history was canonicalized to one source entry: `20261128122000_public_registration_member_lifecycle_cutover`; intermediate implementation migrations were removed from Development history.
 - Public experience cache revision advanced to `public-experience-v7`.
 - Main / Production were not changed by this cutover.
+
+
+## 2026-11-28 — Canonical family participants read model
+
+- Original family approval remains one transaction. Family approval now resolves pending members in dependency-safe order: adults, paid children, then dependent children; the primary remains first.
+- booking_family_context(uuid) is the single booking read-model extension for family display. It exposes family request/member identity, root booking, guardian booking, and approved dependent children without creating synthetic bookings.
+- list_bookings / search_participants_bookings enrich their existing rows with family_context; no parallel family-list endpoint or legacy path was introduced.
+- Reservations UI source 4008b40aed936a4a6c5a073ebdc223754b0b6a99 groups paid family members under the same root booking and renders dependent children beneath their guardian as «طفل بدون اشتراك» with no booking number. Financial KPIs continue to count real bookings only.
+- Reservations CI 46151240263 PASS and develop validation 46151240266 PASS. Official artifact 15265762138, digest sha256:474f937469354c51aada5ecb5194ed70070e7999bb2bb99a5efb714ff92a593c.
+- Supabase Development migration 20261128134453_canonical_family_booking_read_model is applied only to project gppwltrifgfxrkzvvxoe. Verification confirmed dependency-safe family ordering and a real dependent child returned under the guardian without a booking.
+- Structural parity advanced from functions 323/f7db3c5f13aa5ce9d38bdd2b036be9e1 to 324/d2560d3702ce0343da2a013f183d2440; Platform integration 46151349390 PASS and zero-data preparation 46151349345 PASS.
+- Zero-data generated canonical bootstrap successor 2bae493cc480fcb17a5d95063d5d2862298e4fa6.
+- Artifact preflight 46151511265 PASS and exact-SHA integration produced Platform successor 158c67a219c073598a4794e7fd586a7a1e444ecb. Final successor validation and Development Preview publication are tracked immediately after this handoff update.
+- Platform main, Production, Supabase Production, and Vercel were not touched.
