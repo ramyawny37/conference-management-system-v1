@@ -54,6 +54,19 @@ test('previous-request recovery stays visually secondary and closed by default',
   assert.doesNotMatch(js,/<details id="requestTrackingPanel"[^>]* open/);
 });
 
+test('dependent child policy is explicit wherever the family is reviewed',()=>{
+  assert.match(js,/طفل مرافق بدون اشتراك — من عمر يوم حتى 6 سنوات، لا يشمل سريرًا أو وجبات/);
+  assert.match(js,/dependent-child-notice/);
+  assert.match(js,/بدون اشتراك، بدون سرير أو وجبات \(من يوم حتى 6 سنوات\)/);
+});
+
+test('technical public errors are localized instead of exposing backend codes',()=>{
+  assert.match(js,/PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED:'أكمل البيانات الأساسية المطلوبة لكل فرد.'/);
+  assert.match(js,/PUBLIC_REGISTRATION_BOOKING_TYPE_REQUIRED:'اختر نوع الاشتراك لكل فرد له حجز مستقل.'/);
+  assert.match(js,/\^\[A-Z0-9_\]\+\$/);
+  assert.match(js,/حدث خطأ أثناء تنفيذ الطلب/);
+});
+
 test('public page is isolated from authenticated platform shell',()=>{
   assert.match(html,/public-registration\.js/);
   assert.doesNotMatch(html,/script\.js|reservations-module\.js|device-session/);
@@ -138,8 +151,8 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-    assert.match(html,/public-registration\.css\?rev=public-experience-v5/);
-  assert.match(html,/public-registration\.js\?rev=public-experience-v5/);
+    assert.match(html,/public-registration\.css\?rev=public-experience-v6/);
+  assert.match(html,/public-registration\.js\?rev=public-experience-v6/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
