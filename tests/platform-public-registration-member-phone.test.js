@@ -5,6 +5,7 @@ const test=require('node:test');
 const migration=fs.readFileSync('supabase/migrations/20261128173500_public_registration_adult_phone_contract.sql','utf8');
 const initialSubmit=fs.readFileSync('supabase/migrations/20261128174500_public_registration_initial_adult_phone_validation.sql','utf8');
 const publicPage=fs.readFileSync('public-registration.js','utf8');
+const reservationsModule=fs.readFileSync('modules/reservations/reservations-module.js','utf8');
 
 test('paid adult family members require an independent personal phone before booking creation',()=>{
  assert.match(migration,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
