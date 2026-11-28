@@ -98,7 +98,7 @@ test('family summary uses canonical event booking type prices and dependent chil
   assert.match(js,/function familySummary\(\)/);
   assert.match(js,/eventData\.bookingTypes/);
   assert.match(js,/t&&t\.price/);
-  assert.match(js,/طفل مرافق — بدون تكلفة مستقلة/);
+  assert.match(js,/طفل مرافق — بدون اشتراك، بدون سرير أو وجبات \(من يوم حتى 6 سنوات\)/);
   assert.match(js,/الإجمالي/);
 });
 
