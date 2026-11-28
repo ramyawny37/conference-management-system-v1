@@ -27,7 +27,7 @@ test('paid adult family members require an independent personal phone before boo
 test('profile correction uses the canonical save and refreshed-request flow',()=>{
  assert.match(reservationsModule,/update_public_registration_member_profile/);
  assert.match(reservationsModule,/get_public_registration_request/);
- assert.match(reservationsModule,/onClick:async\(\)=>\{const \w+=await \w+\(p\.memberKey,A,M,D,S\);\w+&&E\(!1\)\}/);
+ assert.match(reservationsModule,/onClick:async\(\)=>\{await \w+\(p\.memberKey,A,M,D,S\)&&E\(!1\)\}/);
  
 test('paid children may use guardian phone only when their own phone is absent',()=>{
  assert.match(migration,/m\.role='child_paid'/);
