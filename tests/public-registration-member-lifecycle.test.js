@@ -42,3 +42,9 @@ test('member decisions are exact-intent idempotent without re-notifying on repla
  const notify=migration.indexOf("stage_public_registration_member_decision_notification",replay);
  assert.ok(replay>=0&&notify>replay);
 });
+
+
+test('guardian lookup qualifies role against PL/pgSQL variable',()=>{
+  assert.match(sql,/from reservations\.public_registration_request_members x where x\.request_id=r\.id and x\.member_key=guardian and x\.role in\('primary','adult'\)and x\.review_state='approved'/);
+  assert.doesNotMatch(sql,/member_key=guardian and role in\('primary','adult'\)/);
+});
