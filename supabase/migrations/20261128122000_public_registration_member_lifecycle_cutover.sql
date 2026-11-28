@@ -174,24 +174,27 @@ CREATE OR REPLACE FUNCTION reservations_private.decide_public_registration_added
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;ctx jsonb;actor uuid;intent bytea;result jsonb;
+declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;ctx jsonb;actor uuid;intent bytea;result jsonb;target_state text;choice text;
 begin
  select * into r from reservations.public_registration_requests where id=p_request_id for update;if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002';end if;if r.state<>'approved'then raise exception 'PUBLIC_REGISTRATION_FAMILY_ADD_STATE_INVALID' using errcode='22023';end if;
  ctx:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');actor:=(ctx->>'actorUserId')::uuid;select * into m from reservations.public_registration_request_members where request_id=r.id and member_key=p_member_key for update;if not found or m.ordinal=0 then raise exception 'PUBLIC_REGISTRATION_MEMBER_NOT_FOUND' using errcode='P0002';end if;
- if p_decision in('approve_existing','approve_new')then result:=reservations_private.approve_public_registration_member(p_device_id,p_operation_id,r.id,m.member_key,case when p_decision='approve_existing'then'existing'else'new'end,p_person_id,p_reason);
- elsif p_decision in('reject','waitlist')then
-  if m.review_state not in('pending','waitlisted')then raise exception 'PUBLIC_REGISTRATION_MEMBER_STATE_CONFLICT' using errcode='40001';end if;
-  intent:=extensions.digest(convert_to(jsonb_build_object('requestId',r.id,'memberKey',m.member_key,'decision',p_decision,'reason',nullif(btrim(coalesce(p_reason,'')),''))::text,'UTF8'),'sha256');perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-member-decision:'||p_operation_id::text,0));
-  update reservations.public_registration_request_members set review_state=case when p_decision='reject'then'rejected'else'waitlisted'end,decided_at=statement_timestamp(),decided_by=actor,decided_by_device_id=p_device_id,decision_reason=nullif(btrim(coalesce(p_reason,'')),''),decision_operation_id=p_operation_id,decision_intent_digest=intent where id=m.id;
-  result:=jsonb_build_object('memberKey',m.member_key,'reviewState',case when p_decision='reject'then'rejected'else'waitlisted'end);
-  perform reservations_private.audit(ctx,'public_registration_member.'||case when p_decision='reject'then'rejected'else'waitlisted'end,'public_registration_request_member',m.id,p_operation_id,to_jsonb(m),result);
+ if p_decision in('approve_existing','approve_new')then choice:=case when p_decision='approve_existing'then'existing'else'new'end;target_state:='approved';intent:=extensions.digest(convert_to(jsonb_build_object('requestId',r.id,'memberKey',m.member_key,'choice',choice,'personId',p_person_id,'reason',nullif(btrim(coalesce(p_reason,'')),''))::text,'UTF8'),'sha256');
+ elsif p_decision in('reject','waitlist')then target_state:=case when p_decision='reject'then'rejected'else'waitlisted'end;intent:=extensions.digest(convert_to(jsonb_build_object('requestId',r.id,'memberKey',m.member_key,'decision',p_decision,'reason',nullif(btrim(coalesce(p_reason,'')),''))::text,'UTF8'),'sha256');
  else raise exception 'PUBLIC_REGISTRATION_MEMBER_DECISION_INVALID' using errcode='22023';end if;
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-member-decision:'||p_operation_id::text,0));
+ if m.decision_operation_id=p_operation_id then if m.decision_intent_digest is distinct from intent then raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001';end if;return jsonb_build_object('memberKey',m.member_key,'reviewState',m.review_state,'resolvedPersonId',m.resolved_person_id,'bookingId',m.booking_id,'requestId',r.id,'members',reservations_private.public_registration_members_json(r.id));end if;
+ if exists(select 1 from reservations.public_registration_request_members x where x.decision_operation_id=p_operation_id and x.id<>m.id)then raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001';end if;
+ if p_decision in('approve_existing','approve_new')then result:=reservations_private.approve_public_registration_member(p_device_id,p_operation_id,r.id,m.member_key,choice,p_person_id,p_reason);
+ else
+  if m.review_state not in('pending','waitlisted')then raise exception 'PUBLIC_REGISTRATION_MEMBER_STATE_CONFLICT' using errcode='40001';end if;
+  update reservations.public_registration_request_members set review_state=target_state,decided_at=statement_timestamp(),decided_by=actor,decided_by_device_id=p_device_id,decision_reason=nullif(btrim(coalesce(p_reason,'')),''),decision_operation_id=p_operation_id,decision_intent_digest=intent where id=m.id;
+  result:=jsonb_build_object('memberKey',m.member_key,'reviewState',target_state);perform reservations_private.audit(ctx,'public_registration_member.'||target_state,'public_registration_request_member',m.id,p_operation_id,to_jsonb(m),result);
+ end if;
  update reservations.public_registration_requests set revision=revision+1,updated_at=statement_timestamp(),decision_result=coalesce(decision_result,'{}'::jsonb)||jsonb_build_object('members',reservations_private.public_registration_members_json(r.id)) where id=r.id;
- perform platform_private.stage_public_registration_member_decision_notification(r.id,m.member_key,p_operation_id,result->>'reviewState');
+ perform platform_private.stage_public_registration_member_decision_notification(r.id,m.member_key,p_operation_id,target_state);
  return result||jsonb_build_object('requestId',r.id,'members',reservations_private.public_registration_members_json(r.id));
 end $function$
 
-;
 CREATE OR REPLACE FUNCTION reservations_private.decide_public_registration_family_request(p_device_id uuid, p_operation_id uuid, p_request_id uuid, p_expected_revision bigint, p_decision text, p_resolutions jsonb, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
