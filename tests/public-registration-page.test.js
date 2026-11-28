@@ -130,6 +130,15 @@ test('tracking page renders only server-projected optional financial and accommo
   assert.match(js,/لم يتم تخصيص غرفة بعد/);
 });
 
+test('tracking page identifies the request owner without exposing primary-booking internals',()=>{
+  assert.match(js,/طلب التسجيل باسم/);
+  assert.match(js,/x\.role==='primary'/);
+  assert.match(js,/أفراد الطلب/);
+  assert.match(js,/x\.role!=='primary'/);
+  assert.doesNotMatch(js,/رقم الحجز الأساسي/);
+  assert.doesNotMatch(js,/المسجل الأساسي/);
+});
+
 
 test('tracking and new-registration actions remain structurally separated',()=>{
   assert.match(js,/id="requestTrackingPanel"/);
