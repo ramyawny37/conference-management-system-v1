@@ -7,8 +7,9 @@ const sql=fs.readFileSync('supabase/migrations/20261125113000_public_registratio
 const edge=fs.readFileSync('supabase/functions/platform-device-operation/index.ts','utf8');
 const publicEdge=fs.readFileSync('supabase/functions/public-registration/index.ts','utf8');
 
-test('family decision is the only public-registration decision allowlisted on the approved-device dispatcher',()=>{
+test('approved-device dispatcher exposes only canonical family and added-member decisions',()=>{
   assert.match(edge,/const reservations=new Set\(\[[^\]]*'decide_public_registration_family_request'/);
+  assert.match(edge,/const reservations=new Set\(\[[^\]]*'decide_public_registration_added_member'/);
   assert.doesNotMatch(edge,/['"]decide_public_registration_request['"]/);
   assert.match(sql,/when \\'decide_public_registration_request\\' then/);
   assert.match(sql,/v_session\.device_id/);
