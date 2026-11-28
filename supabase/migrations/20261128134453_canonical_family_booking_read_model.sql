@@ -5,6 +5,10 @@ with member_row as (
  select m.* from reservations.public_registration_request_members m
  where m.booking_id=p_booking_id and m.review_state='approved'
  limit 1
+), root_row as (
+ select r.* from reservations.public_registration_request_members r
+ join member_row m on r.request_id=m.request_id and r.ordinal=0
+ where r.review_state='approved'
 ), guardian_row as (
  select g.* from reservations.public_registration_request_members g
  join member_row m on g.request_id=m.request_id and g.member_key=m.guardian_member_key
@@ -20,10 +24,10 @@ with member_row as (
 )
 select case when m.id is null then null else jsonb_strip_nulls(jsonb_build_object(
  'requestId',m.request_id,'memberKey',m.member_key,'role',m.role,
- 'guardianMemberKey',m.guardian_member_key,'guardianBookingId',g.booking_id,
+ 'rootBookingId',root.booking_id,'guardianMemberKey',m.guardian_member_key,'guardianBookingId',g.booking_id,
  'dependents',d.items
 )) end
-from (select 1) seed left join member_row m on true left join guardian_row g on true cross join dependents d
+from (select 1) seed left join member_row m on true left join root_row root on true left join guardian_row g on true cross join dependents d
 $$;
 revoke all on function reservations_private.booking_family_context(uuid) from public,anon,authenticated,service_role;
 
