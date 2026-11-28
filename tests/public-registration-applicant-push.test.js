@@ -10,6 +10,6 @@ test('applicant notification state is read-only until the user explicitly opts i
  assert.ok(enable.includes("call('subscribe_push'"));
  assert.ok(edge.includes("operation==='push_state'"));
  assert.ok(edge.includes("p_operation:'push_subscription_state'"));
- assert.ok(stateMigration.includes('public_registration_get_push_subscription_state'));
+ assert.ok(stateMigration.includes('public_registration_get_push_subscription_state'));\n assert.ok(inlineMigration.includes('drop function reservations.public_registration_get_push_subscription_state'));\n assert.ok(inlineMigration.includes('select exists('));\n assert.ok(inlineMigration.includes(\"p_operation='push_subscription_state'\"));
  assert.ok(stateMigration.includes("return jsonb_build_object('active',v_active)"));
 });
