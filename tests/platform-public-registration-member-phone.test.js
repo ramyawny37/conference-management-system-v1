@@ -14,7 +14,11 @@ test('paid adult family members require an independent personal phone before boo
  assert.match(reservationsModule,/تصحيح المحافظة/);
  assert.match(reservationsModule,/تصحيح الكنيسة/);
  assert.match(reservationsModule,/تصحيح المدينة أو القرية/);
- assert.match(reservationsModule,/onClick:.*d\(p\.memberKey,A,M,D,S\)/);
+ assert.match(reservationsModule,/onClick:\(\)=>E\(!0\)/);
+ assert.match(reservationsModule,/value:S/);
+ assert.match(reservationsModule,/value:A/);
+ assert.match(reservationsModule,/value:M/);
+ assert.match(reservationsModule,/value:D/);
  assert.match(initialSubmit,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
  assert.match(publicPage,/m\.role==='adult'/);
  assert.match(publicPage,/رقم هاتف البالغ المشترك مطلوب/);
@@ -28,6 +32,7 @@ test('profile correction uses the canonical save and refreshed-request flow',()=
  assert.match(reservationsModule,/update_public_registration_member_profile/);
  assert.match(reservationsModule,/get_public_registration_request/);
  assert.match(reservationsModule,/onClick:async\(\)=>\{await \w+\(p\.memberKey,A,M,D,S\)&&E\(!1\)\}/);
+});
  
 test('paid children may use guardian phone only when their own phone is absent',()=>{
  assert.match(migration,/m\.role='child_paid'/);
