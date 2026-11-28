@@ -8,6 +8,11 @@ const publicPage=fs.readFileSync('public-registration.js','utf8');
 
 test('paid adult family members require an independent personal phone before booking creation',()=>{
  assert.match(migration,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
+ assert.match(publicPage,/تصحيح الهاتف/);
+ assert.match(publicPage,/رقم الهاتف/);
+ assert.match(publicPage,/تصحيح المحافظة/);
+ assert.match(publicPage,/تصحيح الكنيسة/);
+ assert.match(publicPage,/تصحيح المدينة أو القرية/);
  assert.match(initialSubmit,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
  assert.match(publicPage,/m\.role==='adult'/);
  assert.match(publicPage,/رقم هاتف البالغ المشترك مطلوب/);
