@@ -193,3 +193,13 @@ test('zero-data structural parity is pinned to the canonical family booking read
   assert.match(familyReadModel, /child_paid/);
   assert.match(familyReadModel, /child_dependent/);
 });
+
+test('family booking read model and service-sector catalog migrations preserve production records', () => {
+  const family = fs.readFileSync(path.resolve(__dirname, '../supabase/migrations/20261128134453_canonical_family_booking_read_model.sql'), 'utf8');
+  const sectors = fs.readFileSync(path.resolve(__dirname, '../supabase/migrations/20261128161000_canonical_service_sector_catalog_update.sql'), 'utf8');
+  assert.match(family, /booking_family_context/);
+  assert.match(sectors, /house-of-prayer/);
+  assert.doesNotMatch(sectors, /\\b(drop table|truncate|delete from|drop schema)\\b/i);
+  assert.match(sectors, /alter table reservations\\.public_registration_requests/);
+  assert.match(sectors, /alter table reservations\\.public_registration_request_members/);
+});
