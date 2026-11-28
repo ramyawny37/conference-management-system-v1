@@ -122,7 +122,8 @@
         <button id="platform-notifications-inbox" type="button" class="platform-notification-bell" aria-label="التنبيهات" aria-expanded="false">🔔<span id="platform-notifications-count" class="platform-notification-count" hidden>0</span></button>
         <div id="platform-notifications-panel" class="platform-notification-panel" hidden><div class="platform-notification-panel__head"><strong>التنبيهات</strong><span id="platform-notifications-status"></span></div><div id="platform-notifications-list" class="platform-notification-list"></div></div>
       </div>
-      <button id="platform-notifications-enable" type="button" class="startup-auth-create">تفعيل التنبيهات</button>
+      <button id="platform-notifications-enable" type="button" class="startup-auth-create" hidden>تفعيل التنبيهات</button>
+      <span id="platform-notifications-enabled" class="muted" hidden></span>
       <button type="button" class="startup-auth-create" onclick="SyncSettingsUI.signOut()">تسجيل الخروج</button>
     </div>
     <button id="install-app-btn" type="button" class="startup-auth-create" style="display:none;">تثبيت البرنامج</button>
