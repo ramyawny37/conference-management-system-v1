@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict zfbd8uJihFsBvybvbZOljsjVH3h3HepazV77GjWYWak02ZJRoNIeByIkMpnQ0Tj
+\restrict cI42SHJ8lrjZPy7AVco8OdLrcWLSof4TaHhrh7WALEDU5v0WXqcZLOKIFfgrbtc
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -875,12 +875,15 @@ when 'upsert_notification_push_subscription' then
 
   if p_module='reservations' then
     case p_operation
+    when 'upload_public_registration_invite_image' then
+      perform platform_private.require_exact_jsonb_keys(p_args,array['p_event_id','p_mime_type','p_size']);
+      return reservations_private.authorize_public_registration_invite_image_upload(v_session.device_id,(p_args->>'p_event_id')::uuid,p_args->>'p_mime_type',(p_args->>'p_size')::integer);
     when 'get_public_registration_settings' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_event_id']);
       return reservations_private.get_public_registration_settings(v_session.device_id,(p_args->>'p_event_id')::uuid);
     when 'update_public_registration_settings' then
-      perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_expected_revision','p_enabled','p_registration_mode','p_full_policy','p_show_payment_status','p_show_accommodation'],array['p_opens_at','p_closes_at']);
-      return reservations_private.update_public_registration_settings(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_event_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_enabled')::boolean,p_args->>'p_registration_mode',p_args->>'p_full_policy',nullif(p_args->>'p_opens_at','')::timestamptz,nullif(p_args->>'p_closes_at','')::timestamptz,(p_args->>'p_show_payment_status')::boolean,(p_args->>'p_show_accommodation')::boolean);
+      perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_expected_revision','p_enabled','p_registration_mode','p_full_policy','p_show_payment_status','p_show_accommodation'],array['p_opens_at','p_closes_at','p_invite_image_path']);
+      return reservations_private.update_public_registration_settings(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_event_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_enabled')::boolean,p_args->>'p_registration_mode',p_args->>'p_full_policy',nullif(p_args->>'p_opens_at','')::timestamptz,nullif(p_args->>'p_closes_at','')::timestamptz,(p_args->>'p_show_payment_status')::boolean,(p_args->>'p_show_accommodation')::boolean,nullif(p_args->>'p_invite_image_path',''));
     when 'update_public_registration_member_profile' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_request_id','p_expected_revision','p_member_key','p_governorate','p_church','p_city_or_village']);
       return reservations_private.update_public_registration_member_profile(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_request_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_member_key')::uuid,p_args->>'p_governorate',p_args->>'p_church',p_args->>'p_city_or_village');
@@ -9445,6 +9448,24 @@ end $$;
 
 
 --
+-- Name: authorize_public_registration_invite_image_upload("uuid", "uuid", "text", integer); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."authorize_public_registration_invite_image_upload"("p_device_id" "uuid", "p_event_id" "uuid", "p_mime_type" "text", "p_size" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_context jsonb;
+begin
+ if p_event_id is null or p_mime_type not in('image/jpeg','image/png','image/webp') or p_size is null or p_size<1 or p_size>5242880 then
+  raise exception 'PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID' using errcode='22023';
+ end if;
+ v_context:=reservations_private.resolve_event_scope(p_device_id,p_event_id,'reservations.booking.create');
+ return jsonb_build_object('eventId',p_event_id,'authorized',true);
+end $$;
+
+
+--
 -- Name: begin_operation("uuid", "jsonb", "text", "jsonb"); Type: FUNCTION; Schema: reservations_private; Owner: -
 --
 
@@ -9869,10 +9890,10 @@ CREATE FUNCTION "reservations_private"."decide_public_registration_family_reques
 declare r reservations.public_registration_requests%rowtype;e reservations.events%rowtype;ctx jsonb;actor uuid;pm reservations.public_registration_request_members%rowtype;m reservations.public_registration_request_members%rowtype;res jsonb;choice text;pid uuid;br jsonb;bid uuid;age int;args jsonb;gp uuid;gpart uuid;cpart uuid;result jsonb;
 begin select * into r from reservations.public_registration_requests where id=p_request_id for update;if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002';end if;ctx:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');actor:=(ctx->>'actorUserId')::uuid;
 if p_decision in('reject','waitlist')then return reservations_private.decide_public_registration_request(p_device_id,p_operation_id,p_request_id,p_expected_revision,p_decision,null,p_reason);end if;if p_decision<>'approve' or jsonb_typeof(p_resolutions)<>'object' then raise exception 'PUBLIC_REGISTRATION_FAMILY_DECISION_INVALID' using errcode='22023';end if;
-select * into e from reservations.events where id=r.event_id and scope_partition_id=(ctx->>'scopePartitionId')::uuid;select * into pm from reservations.public_registration_request_members where request_id=r.id and ordinal=0;res:=p_resolutions->pm.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;if choice not in('existing','new')or(choice='existing' and pid is null)or(choice='new' and pid is not null)then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
+select * into e from reservations.events where id=r.event_id and scope_partition_id=(ctx->>'scopePartitionId')::uuid;select * into pm from reservations.public_registration_request_members where request_id=r.id and ordinal=0;res:=p_resolutions->pm.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;if choice is null or choice not in('existing','new') or (choice='existing' and pid is null) or (choice='new' and pid is not null) then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
 result:=reservations_private.decide_public_registration_request(p_device_id,p_operation_id,p_request_id,p_expected_revision,case when choice='existing' then 'approve_existing' else 'approve_new' end,pid,p_reason);select resolved_person_id,booking_id into pid,bid from reservations.public_registration_requests where id=r.id;update reservations.public_registration_request_members set resolved_person_id=pid,booking_id=bid where request_id=r.id and ordinal=0;
 for m in select * from reservations.public_registration_request_members where request_id=r.id and ordinal>0 order by ordinal for update loop
- if m.resolved_person_id is not null then continue;end if;res:=p_resolutions->m.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;if choice not in('existing','new')or(choice='existing' and pid is null)or(choice='new' and pid is not null)then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
+ if m.resolved_person_id is not null then continue;end if;res:=p_resolutions->m.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;if choice is null or choice not in('existing','new') or (choice='existing' and pid is null) or (choice='new' and pid is not null) then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
  if choice='existing' and not exists(select 1 from jsonb_array_elements(platform_private.reservations_person_identity_candidates(m.full_name,m.phone,10))c where c->>'personId'=pid::text)then raise exception 'PUBLIC_REGISTRATION_PERSON_CANDIDATE_STALE' using errcode='40001';end if;
  if m.role<>'child_dependent' then
   if m.date_of_birth is null or m.date_of_birth>e.start_date then raise exception 'PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID' using errcode='22023';end if;age:=extract(year from pg_catalog.age(e.start_date,m.date_of_birth))::int;args:=reservations_private.public_registration_booking_args(extensions.gen_random_uuid(),r.event_id,m.booking_type_id,m.full_name,m.phone,age,m.church,m.governorate,m.city_or_village,m.service_sector,m.service_sector_other,m.notes,m.gender,m.date_of_birth,case when choice='existing' then pid else null end);br:=reservations.mutate(p_device_id,'create_booking',args);if choice='new' and coalesce((br->>'identityResolutionRequired')::boolean,false)then br:=reservations.mutate(p_device_id,'create_booking',args||jsonb_build_object('p_identity_resolution_token',br->>'identityResolutionToken','p_identity_resolution_decision','different'));end if;bid:=nullif(br->>'bookingId','')::uuid;if bid is null then raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';end if;select p.person_id into pid from reservations.bookings b join reservations.participants p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id where b.id=bid;update reservations.public_registration_request_members set resolved_person_id=pid,booking_id=bid where id=m.id;if m.role='child_paid' then select gm.resolved_person_id into gp from reservations.public_registration_request_members gm where gm.request_id=r.id and gm.member_key=m.guardian_member_key;if gp is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;if e.conference_id is not null then select cp.id into gpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=gp and cp.status='active';if gpart is null then insert into public.conference_participations(conference_id,person_id,status,created_by,updated_by)values(e.conference_id,gp,'active',actor,actor)returning id into gpart;end if;select cp.id into cpart from public.conference_participations cp where cp.conference_id=e.conference_id and cp.person_id=pid;if cpart is null then insert into public.conference_participations(conference_id,person_id,guardian_participation_id,status,created_by,updated_by)values(e.conference_id,pid,gpart,'active',actor,actor)returning id into cpart;elsif exists(select 1 from public.conference_participations where id=cpart and guardian_participation_id is distinct from gpart)then raise exception 'PUBLIC_REGISTRATION_CHILD_GUARDIAN_CONFLICT' using errcode='40001';end if;end if;end if;
@@ -10207,7 +10228,7 @@ CREATE FUNCTION "reservations_private"."get_public_registration_family_request"(
     SET "search_path" TO ''
     AS $$
 declare base jsonb;r reservations.public_registration_requests%rowtype;items jsonb;begin base:=reservations_private.get_public_registration_request(p_device_id,p_request_id);select * into r from reservations.public_registration_requests where id=p_request_id;
-select coalesce(jsonb_agg(jsonb_build_object('member',jsonb_strip_nulls(jsonb_build_object('memberKey',m.member_key,'ordinal',m.ordinal,'role',m.role,'guardianMemberKey',m.guardian_member_key,'bookingTypeId',m.booking_type_id,'bookingTypeName',bt.name,'currentPrice',bt.price,'fullName',m.full_name,'phone',m.phone,'gender',m.gender,'dateOfBirth',m.date_of_birth,'church',m.church,'governorate',m.governorate,'cityOrVillage',m.city_or_village,'serviceSector',m.service_sector,'serviceSectorOther',m.service_sector_other,'notes',m.notes,'resolvedPersonId',m.resolved_person_id,'bookingId',m.booking_id)),'identityCandidates',platform_private.reservations_person_identity_candidates(m.full_name,m.phone,10))order by m.ordinal),'[]'::jsonb)into items from reservations.public_registration_request_members m left join reservations.booking_types bt on bt.id=m.booking_type_id and bt.event_id=r.event_id where m.request_id=r.id;return base||jsonb_build_object('members',items);end $$;
+select coalesce(jsonb_agg(jsonb_build_object('member',jsonb_strip_nulls(jsonb_build_object('memberKey',m.member_key,'ordinal',m.ordinal,'role',m.role,'guardianMemberKey',m.guardian_member_key,'bookingTypeId',m.booking_type_id,'bookingTypeName',bt.name,'currentPrice',bt.price,'fullName',m.full_name,'phone',m.phone,'gender',m.gender,'dateOfBirth',m.date_of_birth,'church',m.church,'governorate',m.governorate,'cityOrVillage',m.city_or_village,'serviceSector',m.service_sector,'serviceSectorOther',m.service_sector_other,'notes',m.notes,'resolvedPersonId',m.resolved_person_id,'bookingId',m.booking_id)),'identityCandidates',reservations_private.public_registration_identity_candidates(r.event_id,m.full_name,m.phone,10))order by m.ordinal),'[]'::jsonb)into items from reservations.public_registration_request_members m left join reservations.booking_types bt on bt.id=m.booking_type_id and bt.event_id=r.event_id where m.request_id=r.id;return base||jsonb_build_object('members',items);end $$;
 
 
 --
@@ -10218,28 +10239,13 @@ CREATE FUNCTION "reservations_private"."get_public_registration_request"("p_devi
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-declare r reservations.public_registration_requests%rowtype; v_context jsonb; v_candidates jsonb; v_type reservations.booking_types%rowtype;
+declare r reservations.public_registration_requests%rowtype; v_context jsonb; v_type reservations.booking_types%rowtype;
 begin
  select * into r from reservations.public_registration_requests where id=p_request_id;
  if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002'; end if;
  v_context:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');
  select * into v_type from reservations.booking_types where id=r.booking_type_id and event_id=r.event_id;
 
- select coalesce(jsonb_agg(candidate order by candidate->>'fullName',candidate->>'id'),'[]'::jsonb) into v_candidates
- from (
-   select jsonb_build_object(
-    'id',p.id,'fullName',p.full_name,'phone',p.phone,'church',p.church,'revision',p.revision,
-    'hasEventBooking',exists(
-      select 1 from reservations.participants rp join reservations.bookings b on b.participant_id=rp.id
-      where rp.person_id=p.id and b.event_id=r.event_id
-    )
-   ) candidate
-   from platform.people p
-   where (lower(regexp_replace(btrim(p.full_name),'\\s+',' ','g'))=lower(regexp_replace(btrim(r.submitted_full_name),'\\s+',' ','g')))
-      or (nullif(regexp_replace(coalesce(p.phone,''),'[^0-9]','','g'),'') is not null
-          and regexp_replace(coalesce(p.phone,''),'[^0-9]','','g')=regexp_replace(r.submitted_phone,'[^0-9]','','g'))
-   order by p.updated_at desc,p.id limit 20
- ) x;
 
  return jsonb_build_object(
   'request',jsonb_build_object(
@@ -10251,8 +10257,7 @@ begin
    'cityOrVillage',r.submitted_city_or_village,'serviceSector',r.submitted_service_sector,
    'serviceSectorOther',r.submitted_service_sector_other,'notes',r.submitted_notes,
    'submittedAt',r.submitted_at,'updatedAt',r.updated_at
-  ),
-  'identityCandidates',v_candidates
+  )
  );
 end $$;
 
@@ -10270,8 +10275,8 @@ begin
  if p_event_id is null then raise exception 'PUBLIC_REGISTRATION_SETTINGS_ARGUMENT_INVALID' using errcode='22023'; end if;
  v_context:=reservations_private.resolve_event_scope(p_device_id,p_event_id,'reservations.booking.create');
  select * into c from reservations.public_registration_channels where event_id=p_event_id;
- if not found then return jsonb_build_object('eventId',p_event_id,'configured',false,'enabled',false,'registrationMode','approval_required','fullPolicy','reject','opensAt',null,'closesAt',null,'showPaymentStatus',false,'showAccommodation',false,'revision',0); end if;
- return jsonb_build_object('eventId',c.event_id,'configured',true,'publicId',c.public_id,'enabled',c.enabled,'registrationMode',c.registration_mode,'fullPolicy',c.full_policy,'opensAt',c.opens_at,'closesAt',c.closes_at,'showPaymentStatus',c.show_payment_status,'showAccommodation',c.show_accommodation,'revision',c.revision);
+ if not found then return jsonb_build_object('eventId',p_event_id,'configured',false,'enabled',false,'registrationMode','approval_required','fullPolicy','reject','opensAt',null,'closesAt',null,'showPaymentStatus',false,'showAccommodation',false,'inviteImagePath',null,'revision',0); end if;
+ return jsonb_build_object('eventId',c.event_id,'configured',true,'publicId',c.public_id,'enabled',c.enabled,'registrationMode',c.registration_mode,'fullPolicy',c.full_policy,'opensAt',c.opens_at,'closesAt',c.closes_at,'showPaymentStatus',c.show_payment_status,'showAccommodation',c.show_accommodation,'inviteImagePath',c.invite_image_path,'revision',c.revision);
 end $$;
 
 
@@ -10929,6 +10934,19 @@ $$;
 
 
 --
+-- Name: public_registration_identity_candidates("uuid", "text", "text", integer); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."public_registration_identity_candidates"("p_event_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_limit" integer DEFAULT 10) RETURNS "jsonb"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+with candidates as (select c.value candidate,c.ordinality ord from jsonb_array_elements(platform_private.reservations_person_identity_candidates(p_full_name,p_phone,p_limit)) with ordinality c(value,ordinality))
+select coalesce(jsonb_agg(candidate||jsonb_build_object('hasEventBooking',exists(select 1 from reservations.events e join reservations.bookings b on b.event_id=e.id and b.scope_partition_id=e.scope_partition_id join reservations.participants rp on rp.id=b.participant_id and rp.scope_partition_id=b.scope_partition_id where e.id=p_event_id and rp.person_id=(candidate->>'personId')::uuid and b.lifecycle_status='active')) order by ord),'[]'::jsonb) from candidates
+$$;
+
+
+--
 -- Name: public_registration_members_json("uuid"); Type: FUNCTION; Schema: reservations_private; Owner: -
 --
 
@@ -11247,38 +11265,39 @@ end $$;
 
 
 --
--- Name: update_public_registration_settings("uuid", "uuid", "uuid", bigint, boolean, "text", "text", timestamp with time zone, timestamp with time zone, boolean, boolean); Type: FUNCTION; Schema: reservations_private; Owner: -
+-- Name: update_public_registration_settings("uuid", "uuid", "uuid", bigint, boolean, "text", "text", timestamp with time zone, timestamp with time zone, boolean, boolean, "text"); Type: FUNCTION; Schema: reservations_private; Owner: -
 --
 
-CREATE FUNCTION "reservations_private"."update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean) RETURNS "jsonb"
+CREATE FUNCTION "reservations_private"."update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean, "p_invite_image_path" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
+    AS $_$
 declare c reservations.public_registration_channels%rowtype; replay reservations.public_registration_channels%rowtype; v_context jsonb; v_actor uuid; v_intent bytea; v_result jsonb;
 begin
  if p_device_id is null or p_operation_id is null or p_event_id is null or p_expected_revision is null or p_expected_revision<0 or p_enabled is null
  or p_registration_mode not in('approval_required','auto_approve') or p_full_policy not in('reject','waitlist') or p_show_payment_status is null or p_show_accommodation is null
+ or (p_invite_image_path is not null and p_invite_image_path !~ '^[0-9a-f-]{36}/invite\.(jpg|jpeg|png|webp)$')
  or (p_opens_at is not null and p_closes_at is not null and p_closes_at<=p_opens_at) then raise exception 'PUBLIC_REGISTRATION_SETTINGS_ARGUMENT_INVALID' using errcode='22023'; end if;
  v_context:=reservations_private.resolve_event_scope(p_device_id,p_event_id,'reservations.booking.create'); v_actor:=(v_context->>'actorUserId')::uuid;
- v_intent:=extensions.digest(convert_to(jsonb_build_object('eventId',p_event_id,'expectedRevision',p_expected_revision,'enabled',p_enabled,'registrationMode',p_registration_mode,'fullPolicy',p_full_policy,'opensAt',p_opens_at,'closesAt',p_closes_at,'showPaymentStatus',p_show_payment_status,'showAccommodation',p_show_accommodation)::text,'UTF8'),'sha256');
+ v_intent:=extensions.digest(convert_to(jsonb_build_object('eventId',p_event_id,'expectedRevision',p_expected_revision,'enabled',p_enabled,'registrationMode',p_registration_mode,'fullPolicy',p_full_policy,'opensAt',p_opens_at,'closesAt',p_closes_at,'showPaymentStatus',p_show_payment_status,'showAccommodation',p_show_accommodation,'inviteImagePath',p_invite_image_path)::text,'UTF8'),'sha256');
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-settings:'||p_operation_id::text,0));
  select * into replay from reservations.public_registration_channels where settings_operation_id=p_operation_id;
  if found then if replay.event_id<>p_event_id or replay.settings_intent_digest<>v_intent then raise exception 'PUBLIC_REGISTRATION_SETTINGS_IDEMPOTENCY_CONFLICT' using errcode='40001'; end if; return replay.settings_result; end if;
  select * into c from reservations.public_registration_channels where event_id=p_event_id for update;
  if not found then
   if p_expected_revision<>0 then raise exception 'PUBLIC_REGISTRATION_SETTINGS_REVISION_CONFLICT' using errcode='40001'; end if;
-  insert into reservations.public_registration_channels(event_id,enabled,registration_mode,full_policy,opens_at,closes_at,show_payment_status,show_accommodation,created_by,updated_by,settings_operation_id,settings_intent_digest)
-  values(p_event_id,p_enabled,p_registration_mode,p_full_policy,p_opens_at,p_closes_at,p_show_payment_status,p_show_accommodation,v_actor,v_actor,p_operation_id,v_intent) returning * into c;
+  insert into reservations.public_registration_channels(event_id,enabled,registration_mode,full_policy,opens_at,closes_at,show_payment_status,show_accommodation,invite_image_path,created_by,updated_by,settings_operation_id,settings_intent_digest)
+  values(p_event_id,p_enabled,p_registration_mode,p_full_policy,p_opens_at,p_closes_at,p_show_payment_status,p_show_accommodation,p_invite_image_path,v_actor,v_actor,p_operation_id,v_intent) returning * into c;
  else
   if c.revision<>p_expected_revision then raise exception 'PUBLIC_REGISTRATION_SETTINGS_REVISION_CONFLICT' using errcode='40001'; end if;
   update reservations.public_registration_channels set enabled=p_enabled,registration_mode=p_registration_mode,full_policy=p_full_policy,opens_at=p_opens_at,closes_at=p_closes_at,
-   show_payment_status=p_show_payment_status,show_accommodation=p_show_accommodation,revision=revision+1,updated_at=statement_timestamp(),updated_by=v_actor,settings_operation_id=p_operation_id,settings_intent_digest=v_intent
+   show_payment_status=p_show_payment_status,show_accommodation=p_show_accommodation,invite_image_path=p_invite_image_path,revision=revision+1,updated_at=statement_timestamp(),updated_by=v_actor,settings_operation_id=p_operation_id,settings_intent_digest=v_intent
   where id=c.id returning * into c;
  end if;
- v_result:=jsonb_build_object('eventId',c.event_id,'configured',true,'publicId',c.public_id,'enabled',c.enabled,'registrationMode',c.registration_mode,'fullPolicy',c.full_policy,'opensAt',c.opens_at,'closesAt',c.closes_at,'showPaymentStatus',c.show_payment_status,'showAccommodation',c.show_accommodation,'revision',c.revision);
+ v_result:=jsonb_build_object('eventId',c.event_id,'configured',true,'publicId',c.public_id,'enabled',c.enabled,'registrationMode',c.registration_mode,'fullPolicy',c.full_policy,'opensAt',c.opens_at,'closesAt',c.closes_at,'showPaymentStatus',c.show_payment_status,'showAccommodation',c.show_accommodation,'inviteImagePath',c.invite_image_path,'revision',c.revision);
  update reservations.public_registration_channels set settings_result=v_result where id=c.id;
  perform reservations_private.audit(v_context,'public_registration.settings_updated','public_registration_channel',c.id,p_operation_id,null,v_result); return v_result;
-end $$;
+end $_$;
 
 
 --
@@ -13694,9 +13713,11 @@ CREATE TABLE "reservations"."public_registration_channels" (
     "settings_result" "jsonb",
     "show_payment_status" boolean DEFAULT false NOT NULL,
     "show_accommodation" boolean DEFAULT false NOT NULL,
+    "invite_image_path" "text",
     CONSTRAINT "public_registration_channels_check" CHECK ((("opens_at" IS NULL) OR ("closes_at" IS NULL) OR ("closes_at" > "opens_at"))),
     CONSTRAINT "public_registration_channels_check1" CHECK (("updated_at" >= "created_at")),
     CONSTRAINT "public_registration_channels_full_policy_check" CHECK (("full_policy" = ANY (ARRAY['reject'::"text", 'waitlist'::"text"]))),
+    CONSTRAINT "public_registration_channels_invite_image_path_check" CHECK ((("invite_image_path" IS NULL) OR ("invite_image_path" ~ '^[0-9a-f-]{36}/invite\.(jpg|jpeg|png|webp)$'::"text"))),
     CONSTRAINT "public_registration_channels_registration_mode_check" CHECK (("registration_mode" = ANY (ARRAY['approval_required'::"text", 'auto_approve'::"text"]))),
     CONSTRAINT "public_registration_channels_revision_check" CHECK (("revision" > 0)),
     CONSTRAINT "public_registration_channels_settings_intent_digest_check" CHECK ((("settings_intent_digest" IS NULL) OR ("octet_length"("settings_intent_digest") = 32)))
@@ -21666,6 +21687,13 @@ REVOKE ALL ON FUNCTION "reservations_private"."audit"("p_context" "jsonb", "p_ac
 
 
 --
+-- Name: FUNCTION "authorize_public_registration_invite_image_upload"("p_device_id" "uuid", "p_event_id" "uuid", "p_mime_type" "text", "p_size" integer); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."authorize_public_registration_invite_image_upload"("p_device_id" "uuid", "p_event_id" "uuid", "p_mime_type" "text", "p_size" integer) FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "begin_operation"("p_operation_id" "uuid", "p_context" "jsonb", "p_operation" "text", "p_args" "jsonb"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -21874,6 +21902,13 @@ GRANT ALL ON FUNCTION "reservations_private"."public_registration_booking_args"(
 
 
 --
+-- Name: FUNCTION "public_registration_identity_candidates"("p_event_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_limit" integer); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."public_registration_identity_candidates"("p_event_id" "uuid", "p_full_name" "text", "p_phone" "text", "p_limit" integer) FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "public_registration_members_json"("p_request_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -21966,10 +22001,10 @@ REVOKE ALL ON FUNCTION "reservations_private"."update_public_registration_member
 
 
 --
--- Name: FUNCTION "update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean); Type: ACL; Schema: reservations_private; Owner: -
+-- Name: FUNCTION "update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean, "p_invite_image_path" "text"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
-REVOKE ALL ON FUNCTION "reservations_private"."update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "reservations_private"."update_public_registration_settings"("p_device_id" "uuid", "p_operation_id" "uuid", "p_event_id" "uuid", "p_expected_revision" bigint, "p_enabled" boolean, "p_registration_mode" "text", "p_full_policy" "text", "p_opens_at" timestamp with time zone, "p_closes_at" timestamp with time zone, "p_show_payment_status" boolean, "p_show_accommodation" boolean, "p_invite_image_path" "text") FROM PUBLIC;
 
 
 --
@@ -22296,4 +22331,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zfbd8uJihFsBvybvbZOljsjVH3h3HepazV77GjWYWak02ZJRoNIeByIkMpnQ0Tj
+\unrestrict cI42SHJ8lrjZPy7AVco8OdLrcWLSof4TaHhrh7WALEDU5v0WXqcZLOKIFfgrbtc
