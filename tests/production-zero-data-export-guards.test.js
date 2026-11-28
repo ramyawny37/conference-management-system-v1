@@ -200,6 +200,6 @@ test('family booking read model and service-sector catalog migrations preserve p
   assert.match(family, /booking_family_context/);
   assert.match(sectors, /house-of-prayer/);
   assert.doesNotMatch(sectors, /\\b(drop table|truncate|delete from|drop schema)\\b/i);
-  assert.match(sectors, /alter table reservations\\.public_registration_requests/);
-  assert.match(sectors, /alter table reservations\\.public_registration_request_members/);
+  assert.match(sectors, /alter table reservations\.public_registration_requests/);
+  assert.match(sectors, /alter table reservations\.public_registration_request_members/);
 });
