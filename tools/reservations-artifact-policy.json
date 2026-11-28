@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currentRuntime": {
-    "revision": "source-be9ed44f0169",
+    "revision": "source-308a81eac85c",
     "files": {
-      "reservations-module.js": "a3d92e6b0f42a0e0000916d913fc2140a9206529d0bce2f1c63a81e0e044f4cc",
+      "reservations-module.js": "9b3d1f21cdf60ede0c584abc785e8119148bb1697ad55b7d3c6142eed0e0d2eb",
       "reservations-module.css": "ce89ab46d568a933256579f940d2cc5a9b8120a0bd636640d95f71d62b1fae6c"
     },
     "contract": {
@@ -11,11 +11,7 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [
-    {
-      "sourceCommit": "308a81eac85c50f4dbca643e2b7e645835ee68be"
-    }
-  ],
+  "approvedIntegrations": [],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
