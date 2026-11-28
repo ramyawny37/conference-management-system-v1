@@ -193,7 +193,7 @@ begin
  update reservations.public_registration_requests set revision=revision+1,updated_at=statement_timestamp(),decision_result=coalesce(decision_result,'{}'::jsonb)||jsonb_build_object('members',reservations_private.public_registration_members_json(r.id)) where id=r.id;
  perform platform_private.stage_public_registration_member_decision_notification(r.id,m.member_key,p_operation_id,target_state);
  return result||jsonb_build_object('requestId',r.id,'members',reservations_private.public_registration_members_json(r.id));
-end $function$
+end $function$;
 
 CREATE OR REPLACE FUNCTION reservations_private.decide_public_registration_family_request(p_device_id uuid, p_operation_id uuid, p_request_id uuid, p_expected_revision bigint, p_decision text, p_resolutions jsonb, p_reason text)
  RETURNS jsonb
