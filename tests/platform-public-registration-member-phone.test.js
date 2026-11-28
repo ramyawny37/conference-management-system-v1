@@ -9,11 +9,11 @@ const reservationsModule=fs.readFileSync('modules/reservations/reservations-modu
 
 test('paid adult family members require an independent personal phone before booking creation',()=>{
  assert.match(migration,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
- assert.match(publicPage,/تصحيح الهاتف/);
- assert.match(publicPage,/رقم الهاتف/);
- assert.match(publicPage,/تصحيح المحافظة/);
- assert.match(publicPage,/تصحيح الكنيسة/);
- assert.match(publicPage,/تصحيح المدينة أو القرية/);
+ assert.match(reservationsModule,/تصحيح الهاتف/);
+ assert.match(reservationsModule,/رقم الهاتف/);
+ assert.match(reservationsModule,/تصحيح المحافظة/);
+ assert.match(reservationsModule,/تصحيح الكنيسة/);
+ assert.match(reservationsModule,/تصحيح المدينة أو القرية/);
  assert.match(reservationsModule,/onClick:\(\)=>\{w\(p\.phone\);I\(p\.governorate\);\$\(p\.church\);B\(p\.cityOrVillage\);E\(!0\)\}/);
  assert.match(initialSubmit,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
  assert.match(publicPage,/m\.role==='adult'/);
