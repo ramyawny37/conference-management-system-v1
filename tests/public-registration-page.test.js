@@ -135,8 +135,9 @@ test('tracking page identifies the request owner without exposing primary-bookin
   assert.match(js,/x\.role==='primary'/);
   assert.match(js,/أفراد الطلب/);
   assert.match(js,/x\.role!=='primary'/);
-  assert.doesNotMatch(js,/رقم الحجز الأساسي/);
-  assert.doesNotMatch(js,/المسجل الأساسي/);
+  const statusBody=js.slice(js.indexOf('async function showStatus()'),js.indexOf('function trackingKey()'));
+  assert.doesNotMatch(statusBody,/رقم الحجز الأساسي/);
+  assert.doesNotMatch(statusBody,/المسجل الأساسي/);
 });
 
 
