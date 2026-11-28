@@ -33,3 +33,12 @@ test('member notifications reuse canonical notification infrastructure',()=>{
  assert.match(migration,/platform\.notification_applicant_push_subscriptions/);
  assert.match(migration,/public_registration\.decision/);
 });
+
+test('member decisions are exact-intent idempotent without re-notifying on replay',()=>{
+ assert.match(migration,/m\.decision_operation_id=p_operation_id/);
+ assert.match(migration,/m\.decision_intent_digest is distinct from intent/);
+ assert.match(migration,/PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT/);
+ const replay=migration.indexOf("if m.decision_operation_id=p_operation_id");
+ const notify=migration.indexOf("stage_public_registration_member_decision_notification",replay);
+ assert.ok(replay>=0&&notify>replay);
+});
