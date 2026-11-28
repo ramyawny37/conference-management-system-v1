@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict RZKcLtdThNVupUrfPsnkMJEcsC266xJn0f6ewCXfXiQq9IhbZg65MSreKAzkgBe
+\restrict tpu5k3n5swqjL7aTLeRuoVgIY4AdysJRV6fRJMeKoVubYYnllZAtR7g0Ks52HgI
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -9652,6 +9652,43 @@ end $$;
 
 
 --
+-- Name: booking_family_context("uuid"); Type: FUNCTION; Schema: reservations_private; Owner: -
+--
+
+CREATE FUNCTION "reservations_private"."booking_family_context"("p_booking_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+with member_row as (
+ select m.* from reservations.public_registration_request_members m
+ where m.booking_id=p_booking_id and m.review_state='approved' limit 1
+), root_row as (
+ select r.* from reservations.public_registration_request_members r
+ join member_row m on r.request_id=m.request_id and r.ordinal=0
+ where r.review_state='approved'
+), guardian_row as (
+ select g.* from reservations.public_registration_request_members g
+ join member_row m on g.request_id=m.request_id and g.member_key=m.guardian_member_key
+ where g.review_state='approved'
+), dependents as (
+ select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+  'memberKey',c.member_key,'fullName',c.full_name,'dateOfBirth',c.date_of_birth,
+  'gender',c.gender,'role',c.role,'resolvedPersonId',c.resolved_person_id
+ )) order by c.ordinal,c.id),'[]'::jsonb) items
+ from reservations.public_registration_request_members c
+ join member_row m on c.request_id=m.request_id and c.guardian_member_key=m.member_key
+ where c.review_state='approved' and c.role='child_dependent'
+)
+select case when m.id is null then null else jsonb_strip_nulls(jsonb_build_object(
+ 'requestId',m.request_id,'memberKey',m.member_key,'role',m.role,
+ 'rootBookingId',root.booking_id,'guardianMemberKey',m.guardian_member_key,
+ 'guardianBookingId',g.booking_id,'dependents',d.items
+)) end
+from (select 1) seed left join member_row m on true left join root_row root on true left join guardian_row g on true cross join dependents d
+$$;
+
+
+--
 -- Name: booking_target_context("uuid"); Type: FUNCTION; Schema: reservations_private; Owner: -
 --
 
@@ -10042,7 +10079,7 @@ begin
  primary_result:=reservations_private.decide_public_registration_request(p_device_id,p_operation_id,p_request_id,p_expected_revision,case when choice='existing'then'approve_existing'else'approve_new'end,pid,p_reason);
  select resolved_person_id,booking_id into pid,child_operation from reservations.public_registration_requests where id=r.id;
  update reservations.public_registration_request_members set resolved_person_id=pid,booking_id=(select booking_id from reservations.public_registration_requests where id=r.id),review_state='approved',decided_at=statement_timestamp(),decision_operation_id=p_operation_id where id=pm.id;
- for m in select * from reservations.public_registration_request_members where request_id=r.id and ordinal>0 and review_state in('pending','waitlisted') order by ordinal for update loop
+ for m in select * from reservations.public_registration_request_members where request_id=r.id and ordinal>0 and review_state in('pending','waitlisted') order by case role when 'adult' then 0 when 'child_paid' then 1 when 'child_dependent' then 2 else 3 end,ordinal for update loop
   res:=p_resolutions->m.member_key::text;choice:=res->>'decision';pid:=nullif(res->>'personId','')::uuid;
   if choice is null or choice not in('existing','new')or(choice='existing'and pid is null)or(choice='new'and pid is not null)then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
   child_operation:=extensions.uuid_generate_v5(p_operation_id,m.member_key::text);
@@ -11182,7 +11219,7 @@ begin
  if p_operation='get_event' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_event_id']); select to_jsonb(e)||jsonb_build_object('periods',(select coalesce(jsonb_agg(to_jsonb(p) order by p.display_order),'[]') from reservations.event_periods p where p.event_id=e.id and p.scope_partition_id=e.scope_partition_id),'bookingTypes',(select coalesce(jsonb_agg(to_jsonb(t) order by t.display_order),'[]') from reservations.booking_types t where t.event_id=e.id and t.scope_partition_id=e.scope_partition_id)) into v_result from reservations.events e where e.id=v_event_id and e.scope_partition_id=v_partition;
  elsif p_operation='list_event_periods' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_event_id']); select coalesce(jsonb_agg(to_jsonb(p) order by p.display_order),'[]') into v_result from reservations.event_periods p where p.event_id=v_event_id and p.scope_partition_id=v_partition;
  elsif p_operation='list_booking_types' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_event_id']); select coalesce(jsonb_agg(to_jsonb(t) order by t.display_order),'[]') into v_result from reservations.booking_types t where t.event_id=v_event_id and t.scope_partition_id=v_partition;
- elsif p_operation in('list_bookings','search_participants_bookings') then perform platform_private.require_exact_jsonb_keys(p_args,case when p_operation='list_bookings' and v_conference_id is not null then array['p_conference_id','p_event_id','p_limit'] when p_operation='list_bookings' then array['p_event_id','p_limit'] when v_conference_id is not null then array['p_conference_id','p_query','p_event_id','p_limit'] else array['p_event_id','p_query','p_limit'] end); if v_limit<1 or v_limit>5000 then raise exception 'RESERVATIONS_READ_ARGUMENTS_INVALID' using errcode='22023'; end if; select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc,x.id),'[]') into v_result from (select b.*,to_jsonb(p) participant,to_jsonb(e) event,coalesce(pay.total_paid,0) total_paid,greatest(b.price_snapshot-coalesce(pay.total_paid,0),0) remaining_balance,greatest(coalesce(pay.total_paid,0)-b.price_snapshot,0) overpaid_amount,case when coalesce(pay.total_paid,0)=0 then 'unpaid' when pay.total_paid>=b.price_snapshot then 'paid' else 'partial' end payment_status from reservations.bookings_operational b join reservations.participants_canonical p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id join reservations.events e on e.id=b.event_id and e.scope_partition_id=b.scope_partition_id left join lateral(select sum(z.amount) total_paid from reservations.payments z where z.booking_id=b.id and z.scope_partition_id=b.scope_partition_id and z.status='active') pay on true where ((v_event_id is not null and b.event_id=v_event_id and b.scope_partition_id=v_partition) or (v_event_id is null and e.scope_type='conference' and e.conference_id=v_conference_id)) and (p_operation='list_bookings' or lower(p.full_name||' '||p.phone||' '||b.booking_number) like '%'||lower(btrim(p_args->>'p_query'))||'%') order by b.created_at desc,b.id limit v_limit) x;
+ elsif p_operation in('list_bookings','search_participants_bookings') then perform platform_private.require_exact_jsonb_keys(p_args,case when p_operation='list_bookings' and v_conference_id is not null then array['p_conference_id','p_event_id','p_limit'] when p_operation='list_bookings' then array['p_event_id','p_limit'] when v_conference_id is not null then array['p_conference_id','p_query','p_event_id','p_limit'] else array['p_event_id','p_query','p_limit'] end); if v_limit<1 or v_limit>5000 then raise exception 'RESERVATIONS_READ_ARGUMENTS_INVALID' using errcode='22023'; end if; select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc,x.id),'[]') into v_result from (select b.*,reservations_private.booking_family_context(b.id) family_context,to_jsonb(p) participant,to_jsonb(e) event,coalesce(pay.total_paid,0) total_paid,greatest(b.price_snapshot-coalesce(pay.total_paid,0),0) remaining_balance,greatest(coalesce(pay.total_paid,0)-b.price_snapshot,0) overpaid_amount,case when coalesce(pay.total_paid,0)=0 then 'unpaid' when pay.total_paid>=b.price_snapshot then 'paid' else 'partial' end payment_status from reservations.bookings_operational b join reservations.participants_canonical p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id join reservations.events e on e.id=b.event_id and e.scope_partition_id=b.scope_partition_id left join lateral(select sum(z.amount) total_paid from reservations.payments z where z.booking_id=b.id and z.scope_partition_id=b.scope_partition_id and z.status='active') pay on true where ((v_event_id is not null and b.event_id=v_event_id and b.scope_partition_id=v_partition) or (v_event_id is null and e.scope_type='conference' and e.conference_id=v_conference_id)) and (p_operation='list_bookings' or lower(p.full_name||' '||p.phone||' '||b.booking_number) like '%'||lower(btrim(p_args->>'p_query'))||'%') order by b.created_at desc,b.id limit v_limit) x;
  elsif p_operation='get_booking_detail' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_booking_id']); select to_jsonb(b)||jsonb_build_object('participant',to_jsonb(p),'event',to_jsonb(e),'payments',(select coalesce(jsonb_agg(to_jsonb(z) order by z.payment_date desc,z.id),'[]') from reservations.payments z where z.booking_id=b.id and z.scope_partition_id=b.scope_partition_id),'attendance',(select coalesce(jsonb_agg(to_jsonb(a) order by a.segment),'[]') from reservations.attendance_records a where a.booking_id=b.id and a.scope_partition_id=b.scope_partition_id),'operationalReview',(select to_jsonb(o) from reservations.operational_reviews o where o.booking_id=b.id and o.scope_partition_id=b.scope_partition_id)) into v_result from reservations.bookings_operational b join reservations.participants_canonical p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id join reservations.events e on e.id=b.event_id and e.scope_partition_id=b.scope_partition_id where b.id=v_booking_id and b.scope_partition_id=v_partition;
  elsif p_operation='list_booking_payments' then perform platform_private.require_exact_jsonb_keys(p_args,array['p_booking_id']); select coalesce(jsonb_agg(to_jsonb(z) order by z.payment_date desc,z.id),'[]') into v_result from reservations.payments z where z.booking_id=v_booking_id and z.scope_partition_id=v_partition;
  elsif p_operation='list_attendance' then perform platform_private.require_exact_jsonb_keys(p_args,case when v_conference_id is not null then array['p_conference_id','p_event_id','p_limit'] else array['p_event_id','p_limit'] end); if v_limit<1 or v_limit>5000 then raise exception 'RESERVATIONS_READ_ARGUMENTS_INVALID' using errcode='22023'; end if; select coalesce(jsonb_agg(to_jsonb(x) order by x.full_name,x.booking_id,x.segment),'[]') into v_result from (select a.*,p.full_name,b.booking_number from reservations.attendance_records a join reservations.bookings_operational b on b.id=a.booking_id and b.scope_partition_id=a.scope_partition_id join reservations.participants_canonical p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id join reservations.events e on e.id=b.event_id and e.scope_partition_id=b.scope_partition_id where (v_event_id is not null and b.event_id=v_event_id and b.scope_partition_id=v_partition) or (v_event_id is null and e.scope_type='conference' and e.conference_id=v_conference_id) limit v_limit) x;
@@ -21935,6 +21972,13 @@ GRANT ALL ON FUNCTION "reservations_private"."booking_creation_context"("p_devic
 
 
 --
+-- Name: FUNCTION "booking_family_context"("p_booking_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
+--
+
+REVOKE ALL ON FUNCTION "reservations_private"."booking_family_context"("p_booking_id" "uuid") FROM PUBLIC;
+
+
+--
 -- Name: FUNCTION "booking_target_context"("p_device_id" "uuid"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
@@ -22557,4 +22601,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict RZKcLtdThNVupUrfPsnkMJEcsC266xJn0f6ewCXfXiQq9IhbZg65MSreKAzkgBe
+\unrestrict tpu5k3n5swqjL7aTLeRuoVgIY4AdysJRV6fRJMeKoVubYYnllZAtR7g0Ks52HgI
