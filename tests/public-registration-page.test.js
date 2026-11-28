@@ -198,3 +198,9 @@ test('accepted tracking extends the same family request with independently revie
   assert.match(js,/memberReviewLabel/);
   assert.match(js,/x\.reviewState==='approved'/);
 });
+
+
+test('other service sector explains explicit no-service value',()=>{
+  assert.match(js,/إذا كنت تخدم في خدمة معينة اكتب اسمها، وإذا لم توجد خدمة اكتب «لا يوجد»/);
+  assert.match(js,/placeholder="اكتب الخدمة، وإذا لم توجد خدمة اكتب: لا يوجد"/);
+});
