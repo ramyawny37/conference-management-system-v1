@@ -13,6 +13,7 @@ test('paid adult family members require an independent personal phone before boo
  assert.match(publicPage,/تصحيح المحافظة/);
  assert.match(publicPage,/تصحيح الكنيسة/);
  assert.match(publicPage,/تصحيح المدينة أو القرية/);
+ assert.match(reservationsModule,/onClick:\(\)=>\{w\(p\.phone\);I\(p\.governorate\);\$\(p\.church\);B\(p\.cityOrVillage\);E\(!0\)\}/);
  assert.match(initialSubmit,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
  assert.match(publicPage,/m\.role==='adult'/);
  assert.match(publicPage,/رقم هاتف البالغ المشترك مطلوب/);
