@@ -73,22 +73,18 @@ Deno.serve(async(request)=>{
     const token=bytes(body.token),hash=new Uint8Array(await crypto.subtle.digest('SHA-256',token));
     stage='operation_dispatch';
     const service=createClient(required('SUPABASE_URL'),required('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false,autoRefreshToken:false}});
+    let inviteUpload:null|{eventId:string,mime:string,binary:Uint8Array}=null;
+    let dispatchArgs=args;
     if(module==='reservations'&&operation==='upload_public_registration_invite_image'){
       const eventId=String((args as Record<string,unknown>).p_event_id||''),mime=String((args as Record<string,unknown>).p_mime_type||''),base64=String((args as Record<string,unknown>).p_base64||'');
       if(!/^[0-9a-f-]{36}$/i.test(eventId)||!['image/jpeg','image/png','image/webp'].includes(mime)||!base64||base64.length>7200000)throw new Error('PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID');
-      const authorized=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:'reservations',p_operation:'get_public_registration_settings',p_args:{p_event_id:eventId}});
-      if(authorized.error)throw authorized.error;
       let binary:Uint8Array;try{binary=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));}catch{throw new Error('PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID');}
       if(binary.byteLength===0||binary.byteLength>5242880)throw new Error('PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID');
-      const ext=mime==='image/png'?'png':mime==='image/webp'?'webp':'jpg',path=eventId+'/invite.'+ext;
-      const uploaded=await service.storage.from('public-registration-invites').upload(path,binary,{contentType:mime,upsert:true,cacheControl:'3600'});
-      if(uploaded.error)throw uploaded.error;
-      for(const stale of ['jpg','jpeg','png','webp'].filter(x=>x!==ext))await service.storage.from('public-registration-invites').remove([eventId+'/invite.'+stale]);
-      const publicUrl=service.storage.from('public-registration-invites').getPublicUrl(path).data.publicUrl;
-      return json(200,{ok:true,data:{path,publicUrl}});
+      inviteUpload={eventId,mime,binary};dispatchArgs={p_event_id:eventId,p_mime_type:mime,p_size:binary.byteLength};
     }
-    const result=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:module,p_operation:operation,p_args:args});
+    const result=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:module,p_operation:operation,p_args:dispatchArgs});
     if(result.error)throw result.error;
+    if(inviteUpload){const ext=inviteUpload.mime==='image/png'?'png':inviteUpload.mime==='image/webp'?'webp':'jpg',path=inviteUpload.eventId+'/invite.'+ext;const uploaded=await service.storage.from('public-registration-invites').upload(path,inviteUpload.binary,{contentType:inviteUpload.mime,upsert:true,cacheControl:'3600'});if(uploaded.error)throw uploaded.error;for(const stale of ['jpg','jpeg','png','webp'].filter(x=>x!==ext))await service.storage.from('public-registration-invites').remove([inviteUpload.eventId+'/invite.'+stale]);const publicUrl=service.storage.from('public-registration-invites').getPublicUrl(path).data.publicUrl;return json(200,{ok:true,data:{path,publicUrl}});}
     if(module==='reservations'&&operation==='get_public_registration_settings'&&result.data&&typeof result.data==='object'&&(result.data as Record<string,unknown>).inviteImagePath){const path=String((result.data as Record<string,unknown>).inviteImagePath);(result.data as Record<string,unknown>).inviteImageUrl=service.storage.from('public-registration-invites').getPublicUrl(path).data.publicUrl;}
     if(module==='reservations'&&operation==='decide_public_registration_family_request'){try{const secretKey=JSON.parse(required('SUPABASE_SECRET_KEYS'))['default'];if(!secretKey)throw new Error('MISSING_SUPABASE_SECRET_KEYS_DEFAULT');const flushed=await fetch(required('SUPABASE_URL')+'/functions/v1/platform-notifications',{method:'POST',headers:{'Content-Type':'application/json','apikey':secretKey},body:JSON.stringify({operation:'flush'})});if(!flushed.ok)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_DECISION_FLUSH_FAILED',requestId,timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_DECISION_FLUSH_FAILED',requestId,timestamp:new Date().toISOString()}));}}
     return json(200,{ok:true,data:result.data});
