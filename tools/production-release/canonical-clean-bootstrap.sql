@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict kp49T2aOxeNThjpzkWCp5PKlCJSNO8WUV39052MYYgtJ6ZKhJqgm06bcn9CIiti
+\restrict p9TMrOOgSy2Zm6wgMhJOtwapawmPp95TiVoI2aVowWRmcFvYrXb7D3nbi6A2DO0
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.12 (Ubuntu 17.12-1.pgdg26.04+1)
@@ -885,8 +885,8 @@ when 'upsert_notification_push_subscription' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_event_id','p_expected_revision','p_enabled','p_registration_mode','p_full_policy','p_show_payment_status','p_show_accommodation'],array['p_opens_at','p_closes_at','p_invite_image_path']);
       return reservations_private.update_public_registration_settings(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_event_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_enabled')::boolean,p_args->>'p_registration_mode',p_args->>'p_full_policy',nullif(p_args->>'p_opens_at','')::timestamptz,nullif(p_args->>'p_closes_at','')::timestamptz,(p_args->>'p_show_payment_status')::boolean,(p_args->>'p_show_accommodation')::boolean,nullif(p_args->>'p_invite_image_path',''));
     when 'update_public_registration_member_profile' then
-      perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_request_id','p_expected_revision','p_member_key','p_governorate','p_church','p_city_or_village']);
-      return reservations_private.update_public_registration_member_profile(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_request_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_member_key')::uuid,p_args->>'p_governorate',p_args->>'p_church',p_args->>'p_city_or_village');
+      perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_request_id','p_expected_revision','p_member_key','p_governorate','p_church','p_city_or_village','p_phone']);
+      return reservations_private.update_public_registration_member_profile(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_request_id')::uuid,(p_args->>'p_expected_revision')::bigint,(p_args->>'p_member_key')::uuid,p_args->>'p_governorate',p_args->>'p_church',p_args->>'p_city_or_village',p_args->>'p_phone');
     when 'decide_public_registration_added_member' then
       perform platform_private.require_exact_jsonb_keys(p_args,array['p_operation_id','p_request_id','p_member_key','p_decision'],array['p_person_id','p_reason']);
       return reservations_private.decide_public_registration_added_member(v_session.device_id,(p_args->>'p_operation_id')::uuid,(p_args->>'p_request_id')::uuid,(p_args->>'p_member_key')::uuid,p_args->>'p_decision',nullif(p_args->>'p_person_id','')::uuid,p_args->>'p_reason');
@@ -9161,7 +9161,7 @@ begin
  select * into existing from reservations.public_registration_request_members where request_id=r.id and submit_operation_id=p_operation_id;if found then if existing.submit_intent_digest<>v_intent then raise exception 'PUBLIC_REGISTRATION_IDEMPOTENCY_CONFLICT' using errcode='40001';end if;return jsonb_build_object('requestId',r.id,'reference',r.request_reference,'state',r.state,'members',reservations_private.public_registration_members_json(r.id));end if;
  if(select count(*)from reservations.public_registration_request_members where request_id=r.id)>=12 then raise exception 'PUBLIC_REGISTRATION_FAMILY_SIZE_INVALID' using errcode='22023';end if;
  k:=(p_member->>'memberKey')::uuid;role:=p_member->>'role';guardian:=nullif(p_member->>'guardianMemberKey','')::uuid;bt:=nullif(p_member->>'bookingTypeId','')::uuid;v_sector:=p_member->>'serviceSector';v_sector_other:=nullif(btrim(coalesce(p_member->>'serviceSectorOther','')),'');v_governorate:=nullif(btrim(p_member->>'governorate'),'');
- if role not in('adult','child_paid','child_dependent')then raise exception 'PUBLIC_REGISTRATION_MEMBER_ROLE_INVALID' using errcode='22023';end if;if nullif(btrim(p_member->>'fullName'),'')is null or nullif(p_member->>'dateOfBirth','')is null or(p_member->>'gender')not in('male','female')then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if;v_dob:=(p_member->>'dateOfBirth')::date;perform reservations_private.require_public_registration_member_age(e.start_date,v_dob,role);
+ if role not in('adult','child_paid','child_dependent')then raise exception 'PUBLIC_REGISTRATION_MEMBER_ROLE_INVALID' using errcode='22023';end if;if role='adult' then if char_length(btrim(coalesce(p_member->>'phone',''))) not between 7 and 20 then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED' using errcode='22023';end if;if platform_private.person_phone_key(p_member->>'phone')=platform_private.person_phone_key(r.submitted_phone) then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_MUST_BE_INDEPENDENT' using errcode='22023';end if;end if;if nullif(btrim(p_member->>'fullName'),'')is null or nullif(p_member->>'dateOfBirth','')is null or(p_member->>'gender')not in('male','female')then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if;v_dob:=(p_member->>'dateOfBirth')::date;perform reservations_private.require_public_registration_member_age(e.start_date,v_dob,role);
  if v_governorate is null or char_length(v_governorate)>120 then raise exception 'PUBLIC_REGISTRATION_GOVERNORATE_REQUIRED' using errcode='22023';end if;if v_sector not in('widows','widows-daughters','discipleship-primary-prep','discipleship-secondary-university','worship','media','servant-preparation','administration','house-of-prayer','other')or(v_sector='other' and v_sector_other is null)or(v_sector<>'other' and v_sector_other is not null)then raise exception 'PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID' using errcode='22023';end if;
  if role in('child_paid','child_dependent')then if guardian is null then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;select x.* into g from reservations.public_registration_request_members x where x.request_id=r.id and x.member_key=guardian and x.role in('primary','adult')and x.review_state='approved';if not found then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_INVALID' using errcode='22023';end if;if btrim(p_member->>'governorate')is distinct from btrim(g.governorate)or btrim(coalesce(p_member->>'church',''))is distinct from btrim(g.church)or btrim(coalesce(p_member->>'cityOrVillage',''))is distinct from btrim(g.city_or_village)or coalesce(p_member->>'serviceSector','')is distinct from g.service_sector or btrim(coalesce(p_member->>'serviceSectorOther',''))is distinct from btrim(coalesce(g.service_sector_other,''))then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_CONTEXT_MISMATCH' using errcode='22023';end if;if role='child_dependent'then if bt is not null then raise exception 'PUBLIC_REGISTRATION_DEPENDENT_INVALID' using errcode='22023';end if;elsif bt is null or not exists(select 1 from reservations.booking_types x where x.id=bt and x.event_id=e.id and x.active)then raise exception 'PUBLIC_REGISTRATION_BOOKING_TYPE_UNAVAILABLE' using errcode='22023';end if;
  else if guardian is not null or bt is null or not exists(select 1 from reservations.booking_types x where x.id=bt and x.event_id=e.id and x.active)then raise exception 'PUBLIC_REGISTRATION_BOOKING_TYPE_UNAVAILABLE' using errcode='22023';end if;end if;
@@ -9329,7 +9329,7 @@ begin
  for v_member in select value from jsonb_array_elements(p_members) loop
    if (select array_agg(k order by k) from jsonb_object_keys(v_member) k)<>array['bookingTypeId','church','cityOrVillage','dateOfBirth','fullName','gender','governorate','guardianMemberKey','memberKey','notes','phone','role','serviceSector','serviceSectorOther']::text[] then raise exception 'PUBLIC_REGISTRATION_MEMBER_SHAPE_INVALID' using errcode='22023';end if;
    v_key:=(v_member->>'memberKey')::uuid;v_role:=v_member->>'role';v_guardian:=nullif(v_member->>'guardianMemberKey','')::uuid;v_type:=nullif(v_member->>'bookingTypeId','')::uuid;v_sector:=v_member->>'serviceSector';v_governorate:=nullif(btrim(v_member->>'governorate'),'');v_sector_other:=nullif(btrim(coalesce(v_member->>'serviceSectorOther','')),'');
-   if v_role not in('primary','adult','child_paid','child_dependent') or (v_ordinal=0 and v_role<>'primary') or (v_ordinal>0 and v_role='primary') then raise exception 'PUBLIC_REGISTRATION_MEMBER_ROLE_INVALID' using errcode='22023';end if;
+   if v_role not in('primary','adult','child_paid','child_dependent') or (v_ordinal=0 and v_role<>'primary') or (v_ordinal>0 and v_role='primary') then raise exception 'PUBLIC_REGISTRATION_MEMBER_ROLE_INVALID' using errcode='22023';end if;if v_role='adult' then if char_length(btrim(coalesce(v_member->>'phone',''))) not between 7 and 20 then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED' using errcode='22023';end if;if platform_private.person_phone_key(v_member->>'phone')=platform_private.person_phone_key(v_primary->>'phone') then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_MUST_BE_INDEPENDENT' using errcode='22023';end if;end if;
    if nullif(btrim(v_member->>'fullName'),'') is null or nullif(v_member->>'dateOfBirth','') is null or (v_member->>'gender') not in('male','female') then raise exception 'PUBLIC_REGISTRATION_MEMBER_IDENTITY_REQUIRED' using errcode='22023';end if; v_dob:=(v_member->>'dateOfBirth')::date; perform reservations_private.require_public_registration_member_age(v_event.start_date,v_dob,v_role);
    if v_governorate is null or char_length(v_governorate)>120 then raise exception 'PUBLIC_REGISTRATION_GOVERNORATE_REQUIRED' using errcode='22023';end if;
    if v_sector not in('widows','widows-daughters','discipleship-primary-prep','discipleship-secondary-university','worship','media','servant-preparation','administration','house-of-prayer','other') or (v_sector='other' and v_sector_other is null) or (v_sector<>'other' and v_sector_other is not null) then raise exception 'PUBLIC_REGISTRATION_SERVICE_SECTOR_INVALID' using errcode='22023';end if;
@@ -9496,12 +9496,12 @@ CREATE FUNCTION "reservations_private"."approve_public_registration_member"("p_d
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;e reservations.events%rowtype;ctx jsonb;actor uuid;intent bytea;pid uuid:=p_person_id;br jsonb;bid uuid;age int;args jsonb;gp uuid;gpart uuid;cpart uuid;result jsonb;
+declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;e reservations.events%rowtype;ctx jsonb;actor uuid;intent bytea;pid uuid:=p_person_id;br jsonb;bid uuid;age int;args jsonb;gp uuid;gpart uuid;cpart uuid;result jsonb;v_booking_phone text;v_primary_phone text;v_guardian_phone text;
 begin
  if p_device_id is null or p_operation_id is null or p_request_id is null or p_member_key is null or p_choice not in('existing','new')or(p_choice='existing' and p_person_id is null)or(p_choice='new' and p_person_id is not null)then raise exception 'PUBLIC_REGISTRATION_MEMBER_RESOLUTION_REQUIRED' using errcode='22023';end if;
  select * into r from reservations.public_registration_requests where id=p_request_id for update;if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002';end if;
  ctx:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');actor:=(ctx->>'actorUserId')::uuid;
- select * into m from reservations.public_registration_request_members where request_id=r.id and member_key=p_member_key for update;if not found then raise exception 'PUBLIC_REGISTRATION_MEMBER_NOT_FOUND' using errcode='P0002';end if;
+ select * into m from reservations.public_registration_request_members where request_id=r.id and member_key=p_member_key for update;if not found then raise exception 'PUBLIC_REGISTRATION_MEMBER_NOT_FOUND' using errcode='P0002';end if;if m.role='adult' and char_length(v_phone) not between 7 and 20 then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED' using errcode='22023';end if;if m.role='adult' then if char_length(btrim(coalesce(m.phone,''))) not between 7 and 20 then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED' using errcode='22023';end if;select phone into v_primary_phone from reservations.public_registration_request_members where request_id=r.id and ordinal=0;if platform_private.person_phone_key(m.phone)=platform_private.person_phone_key(v_primary_phone) then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_MUST_BE_INDEPENDENT' using errcode='22023';end if;v_booking_phone:=btrim(m.phone);elsif m.role='child_paid' then select nullif(btrim(g.phone),'') into v_guardian_phone from reservations.public_registration_request_members g where g.request_id=r.id and g.member_key=m.guardian_member_key and g.review_state='approved';v_booking_phone:=coalesce(nullif(btrim(m.phone),''),v_guardian_phone);if char_length(coalesce(v_booking_phone,'')) not between 7 and 20 then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_PHONE_REQUIRED' using errcode='22023';end if;else v_booking_phone:=m.phone;end if;
  intent:=extensions.digest(convert_to(jsonb_build_object('requestId',r.id,'memberKey',m.member_key,'choice',p_choice,'personId',p_person_id,'reason',nullif(btrim(coalesce(p_reason,'')),''))::text,'UTF8'),'sha256');
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('public-registration-member-decision:'||p_operation_id::text,0));
  if m.review_state='approved' then if m.decision_operation_id=p_operation_id and m.decision_intent_digest=intent then return jsonb_build_object('memberKey',m.member_key,'reviewState','approved','resolvedPersonId',m.resolved_person_id,'bookingId',m.booking_id);end if;raise exception 'PUBLIC_REGISTRATION_MEMBER_STATE_CONFLICT' using errcode='40001';end if;
@@ -9510,7 +9510,7 @@ begin
  select * into e from reservations.events where id=r.event_id and scope_partition_id=(ctx->>'scopePartitionId')::uuid for key share;if not found then raise exception 'PUBLIC_REGISTRATION_EVENT_SCOPE_CONFLICT' using errcode='40001';end if;
  if m.role<>'child_dependent' then
   if m.date_of_birth is null or m.date_of_birth>e.start_date then raise exception 'PUBLIC_REGISTRATION_DATE_OF_BIRTH_INVALID' using errcode='22023';end if;age:=extract(year from pg_catalog.age(e.start_date,m.date_of_birth))::int;
-  args:=reservations_private.public_registration_booking_args(p_operation_id,r.event_id,m.booking_type_id,m.full_name,m.phone,age,m.church,m.governorate,m.city_or_village,m.service_sector,m.service_sector_other,m.notes,m.gender,m.date_of_birth,case when p_choice='existing' then pid else null end);
+  args:=reservations_private.public_registration_booking_args(p_operation_id,r.event_id,m.booking_type_id,m.full_name,v_booking_phone,age,m.church,m.governorate,m.city_or_village,m.service_sector,m.service_sector_other,m.notes,m.gender,m.date_of_birth,case when p_choice='existing' then pid else null end);
   br:=reservations.mutate(p_device_id,'create_booking',args);if p_choice='new' and coalesce((br->>'identityResolutionRequired')::boolean,false)then if nullif(br->>'identityResolutionToken','')is null then raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';end if;br:=reservations.mutate(p_device_id,'create_booking',args||jsonb_build_object('p_identity_resolution_token',br->>'identityResolutionToken','p_identity_resolution_decision','different'));end if;
   bid:=nullif(br->>'bookingId','')::uuid;if bid is null then raise exception 'PUBLIC_REGISTRATION_IDENTITY_RESOLUTION_STALE' using errcode='40001';end if;select p.person_id into pid from reservations.bookings b join reservations.participants p on p.id=b.participant_id and p.scope_partition_id=b.scope_partition_id where b.id=bid and b.event_id=r.event_id;if pid is null then raise exception 'PUBLIC_REGISTRATION_BOOKING_LINK_INVALID' using errcode='40001';end if;
  else
@@ -11437,30 +11437,30 @@ $$;
 
 
 --
--- Name: update_public_registration_member_profile("uuid", "uuid", "uuid", bigint, "uuid", "text", "text", "text"); Type: FUNCTION; Schema: reservations_private; Owner: -
+-- Name: update_public_registration_member_profile("uuid", "uuid", "uuid", bigint, "uuid", "text", "text", "text", "text"); Type: FUNCTION; Schema: reservations_private; Owner: -
 --
 
-CREATE FUNCTION "reservations_private"."update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text") RETURNS "jsonb"
+CREATE FUNCTION "reservations_private"."update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text", "p_phone" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;ctx jsonb;oldv jsonb;newv jsonb;v_governorate text:=nullif(btrim(coalesce(p_governorate,'')),'');v_church text:=btrim(coalesce(p_church,''));v_city text:=btrim(coalesce(p_city_or_village,''));
+declare r reservations.public_registration_requests%rowtype;m reservations.public_registration_request_members%rowtype;ctx jsonb;oldv jsonb;newv jsonb;v_governorate text:=nullif(btrim(coalesce(p_governorate,'')),'');v_church text:=btrim(coalesce(p_church,''));v_city text:=btrim(coalesce(p_city_or_village,''));v_phone text:=btrim(coalesce(p_phone,''));v_primary_phone text;
 begin
- if p_device_id is null or p_operation_id is null or p_request_id is null or p_member_key is null or p_expected_revision is null or v_governorate is null or char_length(v_governorate)>120 or char_length(v_church)>200 or char_length(v_city)>160 then raise exception 'PUBLIC_REGISTRATION_PROFILE_DATA_INVALID' using errcode='22023';end if;
+ if p_device_id is null or p_operation_id is null or p_request_id is null or p_member_key is null or p_expected_revision is null or v_governorate is null or char_length(v_governorate)>120 or char_length(v_church)>200 or char_length(v_city)>160 or char_length(v_phone)>20 then raise exception 'PUBLIC_REGISTRATION_PROFILE_DATA_INVALID' using errcode='22023';end if;
  select * into r from reservations.public_registration_requests where id=p_request_id for update;if not found then raise exception 'PUBLIC_REGISTRATION_REQUEST_NOT_FOUND' using errcode='P0002';end if;
  ctx:=reservations_private.resolve_event_scope(p_device_id,r.event_id,'reservations.booking.create');
  if r.revision<>p_expected_revision then raise exception 'PUBLIC_REGISTRATION_REQUEST_REVISION_CONFLICT' using errcode='40001';end if;
  if r.state not in('submitted','under_review','waitlisted') then raise exception 'PUBLIC_REGISTRATION_REQUEST_STATE_INVALID' using errcode='22023';end if;
- select * into m from reservations.public_registration_request_members where request_id=r.id and member_key=p_member_key for update;if not found then raise exception 'PUBLIC_REGISTRATION_MEMBER_NOT_FOUND' using errcode='P0002';end if;
- oldv:=jsonb_build_object('memberKey',m.member_key,'governorate',m.governorate,'church',m.church,'cityOrVillage',m.city_or_village,'revision',r.revision);
+ select * into m from reservations.public_registration_request_members where request_id=r.id and member_key=p_member_key for update;if not found then raise exception 'PUBLIC_REGISTRATION_MEMBER_NOT_FOUND' using errcode='P0002';end if;if m.role='adult' then select phone into v_primary_phone from reservations.public_registration_request_members where request_id=r.id and ordinal=0;if platform_private.person_phone_key(v_phone)=platform_private.person_phone_key(v_primary_phone) then raise exception 'PUBLIC_REGISTRATION_ADULT_PHONE_MUST_BE_INDEPENDENT' using errcode='22023';end if;end if;
+ oldv:=jsonb_build_object('memberKey',m.member_key,'governorate',m.governorate,'church',m.church,'cityOrVillage',m.city_or_village,'phone',m.phone,'revision',r.revision);
  if m.role in('child_paid','child_dependent') then
    if not exists(select 1 from reservations.public_registration_request_members g where g.request_id=r.id and g.member_key=m.guardian_member_key and btrim(g.governorate)=v_governorate and btrim(g.church)=v_church and btrim(g.city_or_village)=v_city) then raise exception 'PUBLIC_REGISTRATION_GUARDIAN_CONTEXT_MISMATCH' using errcode='22023';end if;
  end if;
- update reservations.public_registration_request_members set governorate=v_governorate,church=v_church,city_or_village=v_city where id=m.id;
+ update reservations.public_registration_request_members set governorate=v_governorate,church=v_church,city_or_village=v_city,phone=v_phone where id=m.id;
  if m.role in('primary','adult') then update reservations.public_registration_request_members set governorate=v_governorate,church=v_church,city_or_village=v_city where request_id=r.id and guardian_member_key=m.member_key;end if;
- if m.ordinal=0 then update reservations.public_registration_requests set submitted_governorate=v_governorate,submitted_church=v_church,submitted_city_or_village=v_city where id=r.id;end if;
+ if m.ordinal=0 then update reservations.public_registration_requests set submitted_governorate=v_governorate,submitted_church=v_church,submitted_city_or_village=v_city,submitted_phone=v_phone where id=r.id;end if;
  update reservations.public_registration_requests set revision=revision+1,updated_at=statement_timestamp() where id=r.id returning * into r;
- newv:=jsonb_build_object('memberKey',m.member_key,'governorate',v_governorate,'church',v_church,'cityOrVillage',v_city,'revision',r.revision);
+ newv:=jsonb_build_object('memberKey',m.member_key,'governorate',v_governorate,'church',v_church,'cityOrVillage',v_city,'phone',v_phone,'revision',r.revision);
  perform reservations_private.audit(ctx,'public_registration.profile_corrected','public_registration_request',r.id,p_operation_id,oldv,newv);
  return jsonb_build_object('requestId',r.id,'revision',r.revision,'members',reservations_private.public_registration_members_json(r.id));
 end $$;
@@ -15556,6 +15556,14 @@ ALTER TABLE ONLY "reservations"."public_registration_channels"
 
 ALTER TABLE ONLY "reservations"."public_registration_rate_limits"
     ADD CONSTRAINT "public_registration_rate_limits_pkey" PRIMARY KEY ("channel_id", "fingerprint_digest", "bucket_start");
+
+
+--
+-- Name: public_registration_request_members public_registration_request_members_adult_phone_check; Type: CHECK CONSTRAINT; Schema: reservations; Owner: -
+--
+
+ALTER TABLE "reservations"."public_registration_request_members"
+    ADD CONSTRAINT "public_registration_request_members_adult_phone_check" CHECK ((("role" <> 'adult'::"text") OR (("phone" IS NOT NULL) AND ("phone" = "btrim"("phone")) AND (("char_length"("phone") >= 7) AND ("char_length"("phone") <= 20))))) NOT VALID;
 
 
 --
@@ -22264,10 +22272,10 @@ REVOKE ALL ON FUNCTION "reservations_private"."standalone_create_intent"("p_args
 
 
 --
--- Name: FUNCTION "update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text"); Type: ACL; Schema: reservations_private; Owner: -
+-- Name: FUNCTION "update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text", "p_phone" "text"); Type: ACL; Schema: reservations_private; Owner: -
 --
 
-REVOKE ALL ON FUNCTION "reservations_private"."update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text") FROM PUBLIC;
+REVOKE ALL ON FUNCTION "reservations_private"."update_public_registration_member_profile"("p_device_id" "uuid", "p_operation_id" "uuid", "p_request_id" "uuid", "p_expected_revision" bigint, "p_member_key" "uuid", "p_governorate" "text", "p_church" "text", "p_city_or_village" "text", "p_phone" "text") FROM PUBLIC;
 
 
 --
@@ -22601,4 +22609,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- PostgreSQL database dump complete
 --
 
-\unrestrict kp49T2aOxeNThjpzkWCp5PKlCJSNO8WUV39052MYYgtJ6ZKhJqgm06bcn9CIiti
+\unrestrict p9TMrOOgSy2Zm6wgMhJOtwapawmPp95TiVoI2aVowWRmcFvYrXb7D3nbi6A2DO0
