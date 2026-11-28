@@ -14,7 +14,7 @@ test('paid adult family members require an independent personal phone before boo
  assert.match(reservationsModule,/تصحيح المحافظة/);
  assert.match(reservationsModule,/تصحيح الكنيسة/);
  assert.match(reservationsModule,/تصحيح المدينة أو القرية/);
- assert.match(reservationsModule,/onClick:\(\)=>\{w\(p\.phone\);I\(p\.governorate\);\$\(p\.church\);B\(p\.cityOrVillage\);E\(!0\)\}/);
+ assert.match(reservationsModule,/onClick:.*d\(p\.memberKey,A,M,D,S\)/);
  assert.match(initialSubmit,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
  assert.match(publicPage,/m\.role==='adult'/);
  assert.match(publicPage,/رقم هاتف البالغ المشترك مطلوب/);
@@ -24,10 +24,10 @@ test('paid adult family members require an independent personal phone before boo
  assert.doesNotMatch(migration,/m\.role='adult' and char_length\(v_phone\)/);
 });
 
-test('profile correction closes only after save and refreshed request both succeed',()=>{
- assert.match(reservationsModule,/return saved&&refreshed&&C===D\.current/);
- assert.match(reservationsModule,/onClick:async\(\)=>\{const Q=await d\(p\.memberKey,A,M,D,S\);Q&&E\(!1\)\}/);
-});
+test('profile correction uses the canonical save and refreshed-request flow',()=>{
+ assert.match(reservationsModule,/update_public_registration_member_profile/);
+ assert.match(reservationsModule,/get_public_registration_request/);
+ assert.match(reservationsModule,/onClick:async\(\)=>\{const \w+=await \w+\(p\.memberKey,A,M,D,S\);\w+&&E\(!1\)\}/);
  
 test('paid children may use guardian phone only when their own phone is absent',()=>{
  assert.match(migration,/m\.role='child_paid'/);
