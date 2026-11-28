@@ -188,3 +188,13 @@ test('server migration makes governorate authoritative and preserves guardian sh
 });
 
 test('submission success reassures applicant and offers status notification without private-link dependency',()=>{assert.match(js,/طلبك وصل إلينا وهو الآن قيد المراجعة/);assert.match(js,/لا تحتاج إلى إعادة التسجيل أو عمل أي إجراء آخر الآن/);assert.match(js,/supportsStatusNotifications/);assert.match(js,/statusNotificationMarkup/);assert.match(js,/أبلغني عند تحديث حالة الطلب/);assert.doesNotMatch(js,/أضف صفحة التسجيل إلى الشاشة الرئيسية/);assert.match(js,/لا تحتاج للاحتفاظ برابط خاص/);assert.match(js,/من جهاز آخر يمكنك استرجاع الطلب بالاسم ورقم الهاتف \/ واتساب وتاريخ الميلاد/);assert.doesNotMatch(js,/احتفظ بهذا الرابط لمتابعة حالة الطلب/);});
+
+
+test('accepted tracking extends the same family request with independently reviewed members',()=>{
+  assert.match(js,/إضافة فرد للعائلة/);
+  assert.match(js,/يمكنك الرجوع في أي وقت لإضافة طفل أو فرد من العائلة إلى طلبك/);
+  assert.match(js,/call\('add_family_member'/);
+  assert.match(js,/trackingSecret:tracking/);
+  assert.match(js,/memberReviewLabel/);
+  assert.match(js,/x\.reviewState==='approved'/);
+});
