@@ -13,9 +13,7 @@
   },
   "approvedIntegrations": [
     {
-      "sourceCommit": "39cc3999c809a0bc02fadae1a761d641f3254e6f",
-      "artifactId": 15239599017,
-      "reason": "Canonical public-registration invitation media and sharing flow; Reservations CI and develop validation both passed on exact source SHA."
+      "sourceCommit": "39cc3999c809a0bc02fadae1a761d641f3254e6f"
     }
   ],
   "rejectedArtifacts": [
