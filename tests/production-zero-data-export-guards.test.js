@@ -184,3 +184,22 @@ test('disposable rehearsal covers old platform state and operational business da
   assert.match(rehearsal, /CREATE TRIGGER platform_auth_user_provisioned AFTER INSERT ON auth\.users/);
   assert.ok(rehearsal.indexOf('legacy_conference_operational_data') < rehearsal.indexOf('prepare-canonical-application-replacement.sql'));
 });
+
+test('zero-data structural parity is pinned to the canonical family booking read model', () => {
+  const parity = fs.readFileSync(path.resolve(__dirname, '../tools/production-release/assert-canonical-structural-parity.sql'), 'utf8');
+  const familyReadModel = fs.readFileSync(path.resolve(__dirname, '../supabase/migrations/20261128134453_canonical_family_booking_read_model.sql'), 'utf8');
+  assert.match(parity, /\('functions',324::bigint,'778cc94de019ee0708574e1cb7f75c19'\)/);
+  assert.match(familyReadModel, /reservations_private\.booking_family_context/);
+  assert.match(familyReadModel, /child_paid/);
+  assert.match(familyReadModel, /child_dependent/);
+});
+
+test('family booking read model and service-sector catalog migrations preserve production records', () => {
+  const family = fs.readFileSync(path.resolve(__dirname, '../supabase/migrations/20261128134453_canonical_family_booking_read_model.sql'), 'utf8');
+  const sectors = fs.readFileSync(path.resolve(__dirname, '../supabase/migrations/20261128161000_canonical_service_sector_catalog_update.sql'), 'utf8');
+  assert.match(family, /booking_family_context/);
+  assert.match(sectors, /house-of-prayer/);
+  assert.doesNotMatch(sectors, /\\b(drop table|truncate|delete from|drop schema)\\b/i);
+  assert.match(sectors, /alter table reservations\.public_registration_requests/);
+  assert.match(sectors, /alter table reservations\.public_registration_request_members/);
+});

@@ -903,3 +903,40 @@ The internal notification system is not declared CLOSED until all of the followi
 - Development migration history was canonicalized to one source entry: `20261128122000_public_registration_member_lifecycle_cutover`; intermediate implementation migrations were removed from Development history.
 - Public experience cache revision advanced to `public-experience-v7`.
 - Main / Production were not changed by this cutover.
+
+
+## 2026-11-28 — Canonical family participants read model
+
+- Original family approval remains one transaction. Family approval now resolves pending members in dependency-safe order: adults, paid children, then dependent children; the primary remains first.
+- booking_family_context(uuid) is the single booking read-model extension for family display. It exposes family request/member identity, root booking, guardian booking, and approved dependent children without creating synthetic bookings.
+- list_bookings / search_participants_bookings enrich their existing rows with family_context; no parallel family-list endpoint or legacy path was introduced.
+- Reservations UI source 4008b40aed936a4a6c5a073ebdc223754b0b6a99 groups paid family members under the same root booking and renders dependent children beneath their guardian as «طفل بدون اشتراك» with no booking number. Financial KPIs continue to count real bookings only.
+- Reservations CI 46151240263 PASS and develop validation 46151240266 PASS. Official artifact 15265762138, digest sha256:474f937469354c51aada5ecb5194ed70070e7999bb2bb99a5efb714ff92a593c.
+- Supabase Development migration 20261128134453_canonical_family_booking_read_model is applied only to project gppwltrifgfxrkzvvxoe. Verification confirmed dependency-safe family ordering and a real dependent child returned under the guardian without a booking.
+- Structural parity advanced from functions 323/f7db3c5f13aa5ce9d38bdd2b036be9e1 to 324/d2560d3702ce0343da2a013f183d2440; Platform integration 46151349390 PASS and zero-data preparation 46151349345 PASS.
+- Zero-data generated canonical bootstrap successor 2bae493cc480fcb17a5d95063d5d2862298e4fa6.
+- Artifact preflight 46151511265 PASS and exact-SHA integration produced Platform successor 158c67a219c073598a4794e7fd586a7a1e444ecb. Final successor validation and Development Preview publication are tracked immediately after this handoff update.
+- Platform main, Production, Supabase Production, and Vercel were not touched.
+
+
+## 2026-11-28 — Paid child guardian label and final artifact successor
+
+- Reservations `develop` advanced to `bff0c62dc39fadf46115ce9d639881e33bdd420e` after adding an explicit paid-child label in the participants register. The label resolves `guardianBookingId` against the canonical participant booking rows and displays the guardian's actual name; no synthetic booking, booking-number change, or financial calculation was introduced.
+- Regression test `tests/reservations-family-participants-read-model.test.mjs` now asserts the guardian label and canonical guardianBookingId mapping.
+- Reservations CI `46152888052` and develop validation `46152888058` both PASS on the exact source SHA `bff0c62dc39fadf46115ce9d639881e33bdd420e`.
+- Official Reservations artifact `15266312342`, SHA-256 `19ac2172e7c2f24782d451784745eb6de892a1a977c58098f91d14100f37d864`.
+- Next required gates: integrate this exact artifact into Platform develop; run Integration Validation and Zero-data validation on the resulting exact Platform SHA; publish Development Preview from that exact SHA. No Production targets are authorized.
+
+
+## 2026-11-28 — Canonical service-sector catalog update
+
+- Central Platform reference data labels updated: canonical ID `widows` now displays «أرملة صرفه»; canonical ID `widows-daughters` now displays «البنات»; new ID `house-of-prayer` displays «بيت الصلاة».
+- Existing sector IDs were preserved; no existing participant/request data was rewritten. The new sector ID is added to both public-registration request/member constraints and to the two canonical public family submission/member-add RPC validation whitelists.
+- Development-only migration `canonical_service_sector_catalog_update` applied and recorded on project `gppwltrifgfxrkzvvxoe`; verified both RPCs accept `house-of-prayer` and both DB constraints include it.
+- Platform source commit `9e0ee3aa06fcebf6f62e312c039b318c66cf043f`; catalog regression test commit `64f0c4c82720c409cf9f08e57c7f9f973d35b633`; integration run `46154459884` PASS. Platform zero-data run `46154448911` pending at handoff.
+- Reservations standalone catalog and ServiceSector union updated; latest Reservations SHA `924bccd54107973817c2c90daa4c7a49a45f1034`. CI `46154471510` and develop validation `46154471505` pending at handoff.
+- No Production database, main branch, or production deployment touched.
+
+- Final Platform develop SHA `5092f83e293d18ec7d5099ae322eea5b8fb4044f` passed Reservations integration run `46154695257` (SUCCESS) after exact-SHA artifact integration; artifact preflight `46154677609` also SUCCESS.
+- Development Preview deployment `46154929089` completed SUCCESS; logs confirm exact deployed Platform SHA `5092f83e293d18ec7d5099ae322eea5b8fb4044f`; published URL `https://ramyawny37.github.io/conference-management-system-development-preview/`.
+- Zero-data readiness run `46154642860` SUCCESS on predecessor Platform SHA `a4f54aac5f233720491587a569093270a2ba3651`, not final integrated SHA. Do not describe this as zero-data revalidation of final SHA; rerun exact latest SHA before any production cutover.
