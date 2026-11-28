@@ -34,7 +34,7 @@ conference.add('record_conference_output_event');
 conference.add('save_conference_accommodation_room_draft');
 conference.add('save_conference_family_accommodation_draft');
 for(const operation of ['acquire_resource_lease','renew_resource_lease','release_resource_lease','get_resource_lease'])conference.add(operation);
-const reservations=new Set(['get_public_registration_settings','update_public_registration_settings','decide_public_registration_family_request','update_public_registration_member_profile','list_public_registration_requests','get_public_registration_request','list_conference_options','get_booking_creation_context','get_booking_accommodation','get_dashboard_summary','list_events','get_event','list_event_periods','list_booking_types','list_bookings','get_booking_detail','search_participants_bookings','list_booking_payments','list_attendance','get_operational_state','get_report_source_data','get_report_booking_page','create_event','update_event','delete_event','create_event_period','update_event_period','delete_event_period','reorder_event_periods','create_booking_type','update_booking_type','create_booking','update_participant_booking','delete_booking','record_payment','void_payment','update_attendance','update_operational_review','link_standalone_event_to_conference']);
+const reservations=new Set(['get_public_registration_settings','update_public_registration_settings','upload_public_registration_invite_image','decide_public_registration_family_request','update_public_registration_member_profile','list_public_registration_requests','get_public_registration_request','list_conference_options','get_booking_creation_context','get_booking_accommodation','get_dashboard_summary','list_events','get_event','list_event_periods','list_booking_types','list_bookings','get_booking_detail','search_participants_bookings','list_booking_payments','list_attendance','get_operational_state','get_report_source_data','get_report_booking_page','create_event','update_event','delete_event','create_event_period','update_event_period','delete_event_period','reorder_event_periods','create_booking_type','update_booking_type','create_booking','update_participant_booking','delete_booking','record_payment','void_payment','update_attendance','update_operational_review','link_standalone_event_to_conference']);
 for(const operation of ['search_module_permission_candidates','list_module_permission_catalog_for_administration','list_module_permission_resources_for_administration','manage_catalog_module_grant'])platform.add(operation);
 warehouse.add('list_permission_administration_stores');
 conference.add('check_module_access');
@@ -73,6 +73,19 @@ Deno.serve(async(request)=>{
     const token=bytes(body.token),hash=new Uint8Array(await crypto.subtle.digest('SHA-256',token));
     stage='operation_dispatch';
     const service=createClient(required('SUPABASE_URL'),required('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false,autoRefreshToken:false}});
+    if(module==='reservations'&&operation==='upload_public_registration_invite_image'){
+      const eventId=String((args as Record<string,unknown>).p_event_id||''),mime=String((args as Record<string,unknown>).p_mime_type||''),base64=String((args as Record<string,unknown>).p_base64||'');
+      if(!/^[0-9a-f-]{36}$/i.test(eventId)||!['image/jpeg','image/png','image/webp'].includes(mime)||!base64||base64.length>7200000)throw new Error('PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID');
+      const authorized=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:'reservations',p_operation:'get_public_registration_settings',p_args:{p_event_id:eventId}});
+      if(authorized.error)throw authorized.error;
+      let binary:Uint8Array;try{binary=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));}catch{throw new Error('PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID');}
+      if(binary.byteLength===0||binary.byteLength>5242880)throw new Error('PUBLIC_REGISTRATION_INVITE_IMAGE_INVALID');
+      const ext=mime==='image/png'?'png':mime==='image/webp'?'webp':'jpg',path=eventId+'/invite.'+ext;
+      const uploaded=await service.storage.from('public-registration-invites').upload(path,binary,{contentType:mime,upsert:true,cacheControl:'3600'});
+      if(uploaded.error)throw uploaded.error;
+      for(const stale of ['jpg','jpeg','png','webp'].filter(x=>x!==ext))await service.storage.from('public-registration-invites').remove([eventId+'/invite.'+stale]);
+      return json(200,{ok:true,data:{path}});
+    }
     const result=await service.schema('platform').rpc('execute_device_operation',{p_user_id:user.data.user.id,p_session_id:sessionId,p_token_hash:bytea(hash),p_module:module,p_operation:operation,p_args:args});
     if(result.error)throw result.error;
     if(module==='reservations'&&operation==='decide_public_registration_family_request'){try{const secretKey=JSON.parse(required('SUPABASE_SECRET_KEYS'))['default'];if(!secretKey)throw new Error('MISSING_SUPABASE_SECRET_KEYS_DEFAULT');const flushed=await fetch(required('SUPABASE_URL')+'/functions/v1/platform-notifications',{method:'POST',headers:{'Content-Type':'application/json','apikey':secretKey},body:JSON.stringify({operation:'flush'})});if(!flushed.ok)console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_DECISION_FLUSH_FAILED',requestId,timestamp:new Date().toISOString()}));}catch(_notificationError){console.error(JSON.stringify({code:'PLATFORM_NOTIFICATION_DECISION_FLUSH_FAILED',requestId,timestamp:new Date().toISOString()}));}}
