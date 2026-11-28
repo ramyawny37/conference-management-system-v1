@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const ORIGIN='https://ramyawny37.github.io';
 const cors={'Access-Control-Allow-Headers':'content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Origin':ORIGIN,'Vary':'Origin'};
-const operations=new Set(['event','submit_family','add_family_member','status','recover','push_config','subscribe_push','unsubscribe_push']);
+const operations=new Set(['event','submit_family','add_family_member','status','recover','push_config','push_state','subscribe_push','unsubscribe_push']);
 function required(name:string){const value=String(Deno.env.get(name)||'').trim();if(!value)throw new Error('PUBLIC_REGISTRATION_SERVER_CONFIGURATION');return value;}
 function json(status:number,body:unknown){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});}
 function exact(value:unknown,keys:string[]){if(!value||typeof value!=='object'||Array.isArray(value))return false;const actual=Object.keys(value as Record<string,unknown>).sort();return actual.length===keys.length&&actual.every((key,i)=>key===keys.slice().sort()[i]);}
@@ -40,6 +40,8 @@ Deno.serve(async request=>{
     const recoveryBytes=crypto.getRandomValues(new Uint8Array(32)),trackingSecret=b64url(recoveryBytes);
     result=await service.rpc('public_registration_gateway',{p_operation:'recover_family',p_args:{publicId,fullName,phone,dateOfBirth,newTrackingSecretDigest:hex(await hmac(secret,'track:'+trackingSecret)),fingerprintDigest:hex(fingerprint)}});
     if(!result.error)result={...result,data:{...result.data,trackingSecret}};
+  }else if(operation==='push_state'){
+    if(!exact(args,['endpoint','publicId','trackingSecret']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');const a=args as any,tracking=bounded(a.trackingSecret,128,true);result=await service.rpc('public_registration_gateway',{p_operation:'push_subscription_state',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),endpoint:bounded(a.endpoint,4096,true)}});
   }else if(operation==='subscribe_push'){
     if(!exact(args,['auth','endpoint','p256dh','publicId','trackingSecret','userAgent']))throw new Error('PUBLIC_REGISTRATION_ARGUMENT_INVALID');const a=args as any,tracking=bounded(a.trackingSecret,128,true);result=await service.rpc('public_registration_gateway',{p_operation:'upsert_push_subscription',p_args:{publicId:uuid(a.publicId),trackingSecretDigest:hex(await hmac(secret,'track:'+tracking)),endpoint:bounded(a.endpoint,4096,true),p256dh:bounded(a.p256dh,512,true),auth:bounded(a.auth,256,true),userAgent:bounded(a.userAgent,512)}});
   }else if(operation==='unsubscribe_push'){
