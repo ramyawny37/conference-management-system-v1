@@ -207,7 +207,7 @@ test('family booking read model and service-sector catalog migrations preserve p
 
 test('family adult-phone cutover preserves existing Production request and member rows',()=>{
  const migration=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261128173500_public_registration_adult_phone_contract.sql'),'utf8');
- const initial=fs.readFileSync(path.join(root,'supabase/migrations/20261128174500_public_registration_initial_adult_phone_validation.sql'),'utf8');
+ const initial=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261128174500_public_registration_initial_adult_phone_validation.sql'),'utf8');
  assert.match(migration,/add constraint public_registration_request_members_adult_phone_check[\s\S]*?not valid/);
  assert.match(migration,/PUBLIC_REGISTRATION_ADULT_PHONE_REQUIRED/);
  assert.match(migration,/PUBLIC_REGISTRATION_ADULT_PHONE_MUST_BE_INDEPENDENT/);
