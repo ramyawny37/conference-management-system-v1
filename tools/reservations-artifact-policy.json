@@ -3,7 +3,7 @@
   "currentRuntime": {
     "revision": "source-2c2bef978b5b",
     "files": {
-      "reservations-module.js": "34e23fcf8ba963918c769b91819fc692e72c4170d685a6461d5520dcd629265e",
+      "reservations-module.js": "376e295370bb51de2aad5ff10f06322a83dfb745230de7da563cf643f43ef88c",
       "reservations-module.css": "2710e420a4973f775100e57c07cc0d8a7a06cdbc6edd763f6345926d3761005d"
     },
     "contract": {
