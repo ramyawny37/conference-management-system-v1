@@ -11,7 +11,11 @@
       "sha256": "d202be299bae5bfc2281852bf010ac45ebd5796a2456d3915d2a15a9d12f90b1"
     }
   },
-  "approvedIntegrations": [],
+  "approvedIntegrations": [
+    {
+      "sourceCommit": "be9ed44f01693547c00d3bce012106d954e7ee43"
+    }
+  ],
   "rejectedArtifacts": [
     {
       "sourceCommit": "c56a8fdd2ccde4405a3c73f3580b27b08b1cf5c9",
