@@ -926,3 +926,13 @@ The internal notification system is not declared CLOSED until all of the followi
 - Reservations CI `46152888052` and develop validation `46152888058` both PASS on the exact source SHA `bff0c62dc39fadf46115ce9d639881e33bdd420e`.
 - Official Reservations artifact `15266312342`, SHA-256 `19ac2172e7c2f24782d451784745eb6de892a1a977c58098f91d14100f37d864`.
 - Next required gates: integrate this exact artifact into Platform develop; run Integration Validation and Zero-data validation on the resulting exact Platform SHA; publish Development Preview from that exact SHA. No Production targets are authorized.
+
+
+## 2026-11-28 — Canonical service-sector catalog update
+
+- Central Platform reference data labels updated: canonical ID `widows` now displays «أرملة صرفه»; canonical ID `widows-daughters` now displays «البنات»; new ID `house-of-prayer` displays «بيت الصلاة».
+- Existing sector IDs were preserved; no existing participant/request data was rewritten. The new sector ID is added to both public-registration request/member constraints and to the two canonical public family submission/member-add RPC validation whitelists.
+- Development-only migration `canonical_service_sector_catalog_update` applied and recorded on project `gppwltrifgfxrkzvvxoe`; verified both RPCs accept `house-of-prayer` and both DB constraints include it.
+- Platform source commit `9e0ee3aa06fcebf6f62e312c039b318c66cf043f`; catalog regression test commit `64f0c4c82720c409cf9f08e57c7f9f973d35b633`; integration run `46154459884` PASS. Platform zero-data run `46154448911` pending at handoff.
+- Reservations standalone catalog and ServiceSector union updated; latest Reservations SHA `924bccd54107973817c2c90daa4c7a49a45f1034`. CI `46154471510` and develop validation `46154471505` pending at handoff.
+- No Production database, main branch, or production deployment touched.
