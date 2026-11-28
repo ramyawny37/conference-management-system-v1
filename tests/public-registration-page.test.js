@@ -34,9 +34,18 @@ test('step validation focuses the first incomplete field with a useful inline me
   assert.match(js,/function focusIssue\(issue,step\)/);
   assert.match(js,/من فضلك أكمل/);
   assert.match(js,/scrollIntoView\(\{behavior:'smooth',block:'center'\}\)/);
+  assert.match(js,/setStep\(step,\{scroll:false\}\)/);
   assert.match(js,/aria-invalid/);
   const nextStepBody=js.slice(js.indexOf('function nextStep()'),js.indexOf('function renderBookingStep()'));
   assert.doesNotMatch(nextStepBody,/errorMessage\(code\)/);
+});
+
+test('mobile step navigation does not scroll on initial render and native selects commit on change',()=>{
+  assert.match(js,/function setStep\(n,options\)/);
+  assert.match(js,/options&&options\.scroll/);
+  assert.match(js,/setStep\(1,\{scroll:false\}\)/);
+  assert.match(js,/el\.tagName==='SELECT'\)el\.blur\(\)/);
+  assert.match(js,/el\.blur\(\);var m=members\.find/);
 });
 
 test('previous-request recovery stays visually secondary and closed by default',()=>{
@@ -129,8 +138,8 @@ test('service sector UI matches canonical submission contract',()=>{
 
 
 test('public registration assets stay cache-coherent and date fields open from the field',()=>{
-    assert.match(html,/public-registration\.css\?rev=public-experience-v4/);
-  assert.match(html,/public-registration\.js\?rev=public-experience-v4/);
+    assert.match(html,/public-registration\.css\?rev=public-experience-v5/);
+  assert.match(html,/public-registration\.js\?rev=public-experience-v5/);
   assert.match(js,/function bindDatePickers\(root\)/);
   assert.match(js,/typeof input\.showPicker==='function'/);
   assert.match(js,/bindDatePickers\(host\)/);
