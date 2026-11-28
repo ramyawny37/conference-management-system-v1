@@ -884,3 +884,22 @@ The internal notification system is not declared CLOSED until all of the followi
 - Production retained its existing public-registration channel row; after the additive migration it has no invitation path until the user performs the first real Production upload. No Production data reset was performed.
 - Development still has the temporary Edge Function `temporary-invite-preview-upload` ACTIVE at version 2. It is not canonical architecture and cleanup is NOT considered complete while it exists. The currently available Supabase connector exposes deploy/list/get but no Edge Function undeploy/delete action, so it was not replaced with a dummy function or hidden by a compatibility path.
 - Browser acceptance remaining for this cutover: upload one real invitation image in Production, refresh, and verify the image remains linked through persisted `invite_image_path`.
+
+
+## Accepted-request family member lifecycle cutover — 2026-11-28
+
+- Canonical ownership remains one request plus `reservations.public_registration_request_members`; no parallel family-addition table or second request path was introduced.
+- Added member-level review lifecycle: `pending / approved / rejected / waitlisted`, with separate submit and decision idempotency.
+- Accepted requests remain `approved` when a later adult, paid child, or dependent child is added; only the new member enters review.
+- One private approval primitive, `reservations_private.approve_public_registration_member`, owns person/booking creation for family members and reuses `public_registration_booking_args`.
+- Initial family approval and later member approval share the canonical member approval path.
+- Public tracking exposes member review state and adds `إضافة فرد للعائلة` on accepted requests using the same request/tracking capability.
+- Admin review exposes member state and decides only the added member without reopening the accepted primary booking.
+- Member-added admin notifications and applicant member-decision notifications reuse the canonical notification outbox/push infrastructure.
+- Development Edge: `public-registration` v23; `platform-device-operation` v54.
+- Reservations source: `88e5dbc4a272c5f6090640acda6902d26f20e9e8`; CI `46143666396` SUCCESS; validation `46143666362` SUCCESS; artifact `15262693704`.
+- Platform runtime integrated as `source-88e5dbc4a272`; Platform develop validation on `af4c43784d8e80e4545cd606bafb9dca33e1b7f7` succeeded.
+- Zero-data canonical preparation `46144500122` SUCCESS, including disposable catalog replay and structural/access parity.
+- Development migration history was canonicalized to one source entry: `20261128122000_public_registration_member_lifecycle_cutover`; intermediate implementation migrations were removed from Development history.
+- Public experience cache revision advanced to `public-experience-v7`.
+- Main / Production were not changed by this cutover.
