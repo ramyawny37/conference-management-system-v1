@@ -917,3 +917,12 @@ The internal notification system is not declared CLOSED until all of the followi
 - Zero-data generated canonical bootstrap successor 2bae493cc480fcb17a5d95063d5d2862298e4fa6.
 - Artifact preflight 46151511265 PASS and exact-SHA integration produced Platform successor 158c67a219c073598a4794e7fd586a7a1e444ecb. Final successor validation and Development Preview publication are tracked immediately after this handoff update.
 - Platform main, Production, Supabase Production, and Vercel were not touched.
+
+
+## 2026-11-28 — Paid child guardian label and final artifact successor
+
+- Reservations `develop` advanced to `bff0c62dc39fadf46115ce9d639881e33bdd420e` after adding an explicit paid-child label in the participants register. The label resolves `guardianBookingId` against the canonical participant booking rows and displays the guardian's actual name; no synthetic booking, booking-number change, or financial calculation was introduced.
+- Regression test `tests/reservations-family-participants-read-model.test.mjs` now asserts the guardian label and canonical guardianBookingId mapping.
+- Reservations CI `46152888052` and develop validation `46152888058` both PASS on the exact source SHA `bff0c62dc39fadf46115ce9d639881e33bdd420e`.
+- Official Reservations artifact `15266312342`, SHA-256 `19ac2172e7c2f24782d451784745eb6de892a1a977c58098f91d14100f37d864`.
+- Next required gates: integrate this exact artifact into Platform develop; run Integration Validation and Zero-data validation on the resulting exact Platform SHA; publish Development Preview from that exact SHA. No Production targets are authorized.
